@@ -235,6 +235,7 @@ type SystemSettings struct {
 
 type DefaultSubscriptionSetting struct {
 	GroupID      int64 `json:"group_id"`
+	PlanID       int64 `json:"plan_id,omitempty"`
 	ValidityDays int   `json:"validity_days"`
 }
 

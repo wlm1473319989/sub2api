@@ -81,6 +81,33 @@ func (PaymentOrder) Fields() []ent.Field {
 		field.Int64("plan_id").
 			Optional().
 			Nillable(),
+		field.String("subscription_action").
+			Optional().
+			Nillable().
+			MaxLen(20),
+		field.String("subscription_plan_name_snapshot").
+			Optional().
+			Nillable().
+			MaxLen(100),
+		field.Float("subscription_plan_price_snapshot").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}),
+		field.Int("subscription_validity_days_snapshot").
+			Optional().
+			Nillable(),
+		field.Float("subscription_daily_quota_knives_snapshot").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("subscription_weekly_quota_knives_snapshot").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("subscription_monthly_quota_knives_snapshot").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
 		field.Int64("subscription_group_id").
 			Optional().
 			Nillable(),
@@ -195,5 +222,6 @@ func (PaymentOrder) Indexes() []ent.Index {
 		index.Fields("paid_at"),
 		index.Fields("payment_type", "paid_at"),
 		index.Fields("order_type"),
+		index.Fields("subscription_action"),
 	}
 }

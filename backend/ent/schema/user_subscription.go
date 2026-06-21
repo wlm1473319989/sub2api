@@ -37,6 +37,17 @@ func (UserSubscription) Fields() []ent.Field {
 	return []ent.Field{
 		field.Int64("user_id"),
 		field.Int64("group_id"),
+		field.Int64("plan_id").
+			Optional().
+			Nillable(),
+		field.String("plan_name_snapshot").
+			MaxLen(100).
+			Optional().
+			Nillable(),
+		field.Float("plan_price_snapshot").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}),
 
 		field.Time("starts_at").
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
@@ -68,6 +79,30 @@ func (UserSubscription) Fields() []ent.Field {
 		field.Float("monthly_usage_usd").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
 			Default(0),
+		field.Float("daily_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("weekly_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("monthly_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("daily_used_knives").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
+			Default(0),
+		field.Float("weekly_used_knives").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
+			Default(0),
+		field.Float("monthly_used_knives").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}).
+			Default(0),
+		field.Int64("superseded_by_id").
+			Optional().
+			Nillable(),
 
 		field.Int64("assigned_by").
 			Optional().
@@ -106,11 +141,13 @@ func (UserSubscription) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("user_id"),
 		index.Fields("group_id"),
+		index.Fields("plan_id"),
 		index.Fields("status"),
 		index.Fields("expires_at"),
 		// 活跃订阅查询复合索引（线上由 SQL 迁移创建部分索引，schema 仅用于模型可读性对齐）
 		index.Fields("user_id", "status", "expires_at"),
 		index.Fields("assigned_by"),
+		index.Fields("superseded_by_id"),
 		// 唯一约束通过部分索引实现（WHERE deleted_at IS NULL），支持软删除后重新订阅
 		// 见迁移文件 016_soft_delete_partial_unique_indexes.sql
 		index.Fields("user_id", "group_id"),

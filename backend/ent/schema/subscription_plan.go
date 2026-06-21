@@ -48,6 +48,18 @@ func (SubscriptionPlan) Fields() []ent.Field {
 		field.String("validity_unit").
 			MaxLen(10).
 			Default("day"),
+		field.Float("daily_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("weekly_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
+		field.Float("monthly_quota_knives").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
 		field.String("features").
 			SchemaType(map[string]string{dialect.Postgres: "text"}).
 			Default(""),
