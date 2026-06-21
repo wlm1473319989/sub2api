@@ -26,6 +26,10 @@ func (r *subscriptionExpiryRepoStub) GetByUserIDAndGroupID(context.Context, int6
 	return nil, ErrSubscriptionNotFound
 }
 
+func (r *subscriptionExpiryRepoStub) GetActiveByUserID(context.Context, int64) (*UserSubscription, error) {
+	return nil, ErrSubscriptionNotFound
+}
+
 func (r *subscriptionExpiryRepoStub) GetActiveByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
 	return nil, ErrSubscriptionNotFound
 }
@@ -56,6 +60,10 @@ func (r *subscriptionExpiryRepoStub) List(context.Context, pagination.Pagination
 }
 
 func (r *subscriptionExpiryRepoStub) ExistsByUserIDAndGroupID(context.Context, int64, int64) (bool, error) {
+	return false, nil
+}
+
+func (r *subscriptionExpiryRepoStub) HasActiveByUserID(context.Context, int64) (bool, error) {
 	return false, nil
 }
 

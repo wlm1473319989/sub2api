@@ -248,6 +248,37 @@ func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID_ExpiredIgnor
 	s.Require().Error(err, "expected error for expired subscription")
 }
 
+func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID() {
+	user := s.mustCreateUser("active-by-user@test.com", service.RoleUser)
+	group := s.mustCreateGroup("g-active-by-user")
+
+	active := s.mustCreateSubscription(user.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetPlanID(901)
+		c.SetExpiresAt(time.Now().Add(2 * time.Hour))
+	})
+
+	got, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
+	s.Require().NoError(err, "GetActiveByUserID")
+	s.Require().Equal(active.ID, got.ID)
+	s.Require().NotNil(got.Group, "expected Group preload")
+}
+
+func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID_MultipleActiveConflict() {
+	user := s.mustCreateUser("dup-active@test.com", service.RoleUser)
+	g1 := s.mustCreateGroup("g-dup-1")
+	g2 := s.mustCreateGroup("g-dup-2")
+
+	s.mustCreateSubscription(user.ID, g1.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetExpiresAt(time.Now().Add(2 * time.Hour))
+	})
+	s.mustCreateSubscription(user.ID, g2.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetExpiresAt(time.Now().Add(3 * time.Hour))
+	})
+
+	_, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
+	s.Require().ErrorIs(err, service.ErrMultipleActiveSubscriptions)
+}
+
 // --- ListByUserID / ListActiveByUserID ---
 
 func (s *UserSubscriptionRepoSuite) TestListByUserID() {
@@ -286,6 +317,39 @@ func (s *UserSubscriptionRepoSuite) TestListActiveByUserID() {
 	s.Require().NoError(err, "ListActiveByUserID")
 	s.Require().Len(subs, 1)
 	s.Require().Equal(service.SubscriptionStatusActive, subs[0].Status)
+}
+
+func (s *UserSubscriptionRepoSuite) TestHasActiveByUserID() {
+	user := s.mustCreateUser("has-active@test.com", service.RoleUser)
+	group := s.mustCreateGroup("g-has-active")
+
+	active, err := s.repo.HasActiveByUserID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().False(active)
+
+	s.mustCreateSubscription(user.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetExpiresAt(time.Now().Add(24 * time.Hour))
+	})
+
+	active, err = s.repo.HasActiveByUserID(s.ctx, user.ID)
+	s.Require().NoError(err)
+	s.Require().True(active)
+}
+
+func (s *UserSubscriptionRepoSuite) TestHasActiveByUserID_MultipleActiveConflict() {
+	user := s.mustCreateUser("has-active-dup@test.com", service.RoleUser)
+	g1 := s.mustCreateGroup("g-has-dup-1")
+	g2 := s.mustCreateGroup("g-has-dup-2")
+
+	s.mustCreateSubscription(user.ID, g1.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetExpiresAt(time.Now().Add(24 * time.Hour))
+	})
+	s.mustCreateSubscription(user.ID, g2.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetExpiresAt(time.Now().Add(24 * time.Hour))
+	})
+
+	_, err := s.repo.HasActiveByUserID(s.ctx, user.ID)
+	s.Require().ErrorIs(err, service.ErrMultipleActiveSubscriptions)
 }
 
 // --- ListByGroupID ---

@@ -94,6 +94,31 @@ func (r *userSubscriptionRepository) GetByUserIDAndGroupID(ctx context.Context, 
 	return userSubscriptionEntityToService(m), nil
 }
 
+func (r *userSubscriptionRepository) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+	client := clientFromContext(ctx, r.client)
+	subs, err := client.UserSubscription.Query().
+		Where(
+			usersubscription.UserIDEQ(userID),
+			usersubscription.StatusEQ(service.SubscriptionStatusActive),
+			usersubscription.ExpiresAtGT(time.Now()),
+		).
+		WithGroup().
+		Order(dbent.Desc(usersubscription.FieldCreatedAt)).
+		Limit(2).
+		All(ctx)
+	if err != nil {
+		return nil, err
+	}
+	switch len(subs) {
+	case 0:
+		return nil, service.ErrSubscriptionNotFound
+	case 1:
+		return userSubscriptionEntityToService(subs[0]), nil
+	default:
+		return nil, service.ErrMultipleActiveSubscriptions
+	}
+}
+
 func (r *userSubscriptionRepository) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
 	client := clientFromContext(ctx, r.client)
 	m, err := client.UserSubscription.Query().
@@ -293,6 +318,26 @@ func (r *userSubscriptionRepository) ExistsByUserIDAndGroupID(ctx context.Contex
 	return client.UserSubscription.Query().
 		Where(usersubscription.UserIDEQ(userID), usersubscription.GroupIDEQ(groupID)).
 		Exist(ctx)
+}
+
+func (r *userSubscriptionRepository) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {
+	client := clientFromContext(ctx, r.client)
+	ids, err := client.UserSubscription.Query().
+		Where(
+			usersubscription.UserIDEQ(userID),
+			usersubscription.StatusEQ(service.SubscriptionStatusActive),
+			usersubscription.ExpiresAtGT(time.Now()),
+		).
+		Order(dbent.Desc(usersubscription.FieldCreatedAt)).
+		Limit(2).
+		IDs(ctx)
+	if err != nil {
+		return false, err
+	}
+	if len(ids) > 1 {
+		return false, service.ErrMultipleActiveSubscriptions
+	}
+	return len(ids) == 1, nil
 }
 
 func (r *userSubscriptionRepository) ExtendExpiry(ctx context.Context, subscriptionID int64, newExpiresAt time.Time) error {

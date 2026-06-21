@@ -76,6 +76,9 @@ func (userSubRepoNoop) GetByID(context.Context, int64) (*UserSubscription, error
 func (userSubRepoNoop) GetByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
 	panic("unexpected GetByUserIDAndGroupID call")
 }
+func (userSubRepoNoop) GetActiveByUserID(context.Context, int64) (*UserSubscription, error) {
+	panic("unexpected GetActiveByUserID call")
+}
 func (userSubRepoNoop) GetActiveByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
 	panic("unexpected GetActiveByUserIDAndGroupID call")
 }
@@ -97,6 +100,9 @@ func (userSubRepoNoop) List(context.Context, pagination.PaginationParams, *int64
 }
 func (userSubRepoNoop) ExistsByUserIDAndGroupID(context.Context, int64, int64) (bool, error) {
 	panic("unexpected ExistsByUserIDAndGroupID call")
+}
+func (userSubRepoNoop) HasActiveByUserID(context.Context, int64) (bool, error) {
+	panic("unexpected HasActiveByUserID call")
 }
 func (userSubRepoNoop) ExtendExpiry(context.Context, int64, time.Time) error {
 	panic("unexpected ExtendExpiry call")

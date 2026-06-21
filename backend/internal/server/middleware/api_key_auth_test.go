@@ -1179,6 +1179,21 @@ func (r *stubUserSubscriptionRepo) GetByUserIDAndGroupID(ctx context.Context, us
 	return nil, errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+	if r.activeByUser == nil {
+		return nil, service.ErrSubscriptionNotFound
+	}
+	subs := r.activeByUser[userID]
+	if len(subs) == 0 {
+		return nil, service.ErrSubscriptionNotFound
+	}
+	if len(subs) > 1 {
+		return nil, service.ErrMultipleActiveSubscriptions
+	}
+	cp := subs[0]
+	return &cp, nil
+}
+
 func (r *stubUserSubscriptionRepo) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
 	if r.getActive != nil {
 		return r.getActive(ctx, userID, groupID)
@@ -1212,6 +1227,17 @@ func (r *stubUserSubscriptionRepo) List(ctx context.Context, params pagination.P
 
 func (r *stubUserSubscriptionRepo) ExistsByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
 	return false, errors.New("not implemented")
+}
+
+func (r *stubUserSubscriptionRepo) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {
+	if r.activeByUser == nil {
+		return false, nil
+	}
+	subs := r.activeByUser[userID]
+	if len(subs) > 1 {
+		return false, service.ErrMultipleActiveSubscriptions
+	}
+	return len(subs) == 1, nil
 }
 
 func (r *stubUserSubscriptionRepo) ExtendExpiry(ctx context.Context, subscriptionID int64, newExpiresAt time.Time) error {
