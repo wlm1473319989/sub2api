@@ -25,6 +25,12 @@ const (
 	FieldUserID = "user_id"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
+	// FieldPlanID holds the string denoting the plan_id field in the database.
+	FieldPlanID = "plan_id"
+	// FieldPlanNameSnapshot holds the string denoting the plan_name_snapshot field in the database.
+	FieldPlanNameSnapshot = "plan_name_snapshot"
+	// FieldPlanPriceSnapshot holds the string denoting the plan_price_snapshot field in the database.
+	FieldPlanPriceSnapshot = "plan_price_snapshot"
 	// FieldStartsAt holds the string denoting the starts_at field in the database.
 	FieldStartsAt = "starts_at"
 	// FieldExpiresAt holds the string denoting the expires_at field in the database.
@@ -43,6 +49,20 @@ const (
 	FieldWeeklyUsageUsd = "weekly_usage_usd"
 	// FieldMonthlyUsageUsd holds the string denoting the monthly_usage_usd field in the database.
 	FieldMonthlyUsageUsd = "monthly_usage_usd"
+	// FieldDailyQuotaKnives holds the string denoting the daily_quota_knives field in the database.
+	FieldDailyQuotaKnives = "daily_quota_knives"
+	// FieldWeeklyQuotaKnives holds the string denoting the weekly_quota_knives field in the database.
+	FieldWeeklyQuotaKnives = "weekly_quota_knives"
+	// FieldMonthlyQuotaKnives holds the string denoting the monthly_quota_knives field in the database.
+	FieldMonthlyQuotaKnives = "monthly_quota_knives"
+	// FieldDailyUsedKnives holds the string denoting the daily_used_knives field in the database.
+	FieldDailyUsedKnives = "daily_used_knives"
+	// FieldWeeklyUsedKnives holds the string denoting the weekly_used_knives field in the database.
+	FieldWeeklyUsedKnives = "weekly_used_knives"
+	// FieldMonthlyUsedKnives holds the string denoting the monthly_used_knives field in the database.
+	FieldMonthlyUsedKnives = "monthly_used_knives"
+	// FieldSupersededByID holds the string denoting the superseded_by_id field in the database.
+	FieldSupersededByID = "superseded_by_id"
 	// FieldAssignedBy holds the string denoting the assigned_by field in the database.
 	FieldAssignedBy = "assigned_by"
 	// FieldAssignedAt holds the string denoting the assigned_at field in the database.
@@ -97,6 +117,9 @@ var Columns = []string{
 	FieldDeletedAt,
 	FieldUserID,
 	FieldGroupID,
+	FieldPlanID,
+	FieldPlanNameSnapshot,
+	FieldPlanPriceSnapshot,
 	FieldStartsAt,
 	FieldExpiresAt,
 	FieldStatus,
@@ -106,6 +129,13 @@ var Columns = []string{
 	FieldDailyUsageUsd,
 	FieldWeeklyUsageUsd,
 	FieldMonthlyUsageUsd,
+	FieldDailyQuotaKnives,
+	FieldWeeklyQuotaKnives,
+	FieldMonthlyQuotaKnives,
+	FieldDailyUsedKnives,
+	FieldWeeklyUsedKnives,
+	FieldMonthlyUsedKnives,
+	FieldSupersededByID,
 	FieldAssignedBy,
 	FieldAssignedAt,
 	FieldNotes,
@@ -135,6 +165,8 @@ var (
 	DefaultUpdatedAt func() time.Time
 	// UpdateDefaultUpdatedAt holds the default value on update for the "updated_at" field.
 	UpdateDefaultUpdatedAt func() time.Time
+	// PlanNameSnapshotValidator is a validator for the "plan_name_snapshot" field. It is called by the builders before save.
+	PlanNameSnapshotValidator func(string) error
 	// DefaultStatus holds the default value on creation for the "status" field.
 	DefaultStatus string
 	// StatusValidator is a validator for the "status" field. It is called by the builders before save.
@@ -145,6 +177,12 @@ var (
 	DefaultWeeklyUsageUsd float64
 	// DefaultMonthlyUsageUsd holds the default value on creation for the "monthly_usage_usd" field.
 	DefaultMonthlyUsageUsd float64
+	// DefaultDailyUsedKnives holds the default value on creation for the "daily_used_knives" field.
+	DefaultDailyUsedKnives float64
+	// DefaultWeeklyUsedKnives holds the default value on creation for the "weekly_used_knives" field.
+	DefaultWeeklyUsedKnives float64
+	// DefaultMonthlyUsedKnives holds the default value on creation for the "monthly_used_knives" field.
+	DefaultMonthlyUsedKnives float64
 	// DefaultAssignedAt holds the default value on creation for the "assigned_at" field.
 	DefaultAssignedAt func() time.Time
 )
@@ -180,6 +218,21 @@ func ByUserID(opts ...sql.OrderTermOption) OrderOption {
 // ByGroupID orders the results by the group_id field.
 func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+}
+
+// ByPlanID orders the results by the plan_id field.
+func ByPlanID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlanID, opts...).ToFunc()
+}
+
+// ByPlanNameSnapshot orders the results by the plan_name_snapshot field.
+func ByPlanNameSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlanNameSnapshot, opts...).ToFunc()
+}
+
+// ByPlanPriceSnapshot orders the results by the plan_price_snapshot field.
+func ByPlanPriceSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPlanPriceSnapshot, opts...).ToFunc()
 }
 
 // ByStartsAt orders the results by the starts_at field.
@@ -225,6 +278,41 @@ func ByWeeklyUsageUsd(opts ...sql.OrderTermOption) OrderOption {
 // ByMonthlyUsageUsd orders the results by the monthly_usage_usd field.
 func ByMonthlyUsageUsd(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldMonthlyUsageUsd, opts...).ToFunc()
+}
+
+// ByDailyQuotaKnives orders the results by the daily_quota_knives field.
+func ByDailyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDailyQuotaKnives, opts...).ToFunc()
+}
+
+// ByWeeklyQuotaKnives orders the results by the weekly_quota_knives field.
+func ByWeeklyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWeeklyQuotaKnives, opts...).ToFunc()
+}
+
+// ByMonthlyQuotaKnives orders the results by the monthly_quota_knives field.
+func ByMonthlyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMonthlyQuotaKnives, opts...).ToFunc()
+}
+
+// ByDailyUsedKnives orders the results by the daily_used_knives field.
+func ByDailyUsedKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDailyUsedKnives, opts...).ToFunc()
+}
+
+// ByWeeklyUsedKnives orders the results by the weekly_used_knives field.
+func ByWeeklyUsedKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWeeklyUsedKnives, opts...).ToFunc()
+}
+
+// ByMonthlyUsedKnives orders the results by the monthly_used_knives field.
+func ByMonthlyUsedKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMonthlyUsedKnives, opts...).ToFunc()
+}
+
+// BySupersededByID orders the results by the superseded_by_id field.
+func BySupersededByID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSupersededByID, opts...).ToFunc()
 }
 
 // ByAssignedBy orders the results by the assigned_by field.

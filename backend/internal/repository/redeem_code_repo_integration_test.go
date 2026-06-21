@@ -53,12 +53,17 @@ func (s *RedeemCodeRepoSuite) createGroup(name string) *dbent.Group {
 
 func (s *RedeemCodeRepoSuite) TestCreate() {
 	expiresAt := time.Now().UTC().Add(2 * time.Hour)
+	group := s.createGroup(uniqueTestValue(s.T(), "create-group"))
+	planID := int64(601)
 	code := &service.RedeemCode{
-		Code:      "TEST-CREATE",
-		Type:      service.RedeemTypeBalance,
-		Value:     100,
-		Status:    service.StatusUnused,
-		ExpiresAt: &expiresAt,
+		Code:         "TEST-CREATE",
+		Type:         service.RedeemTypeSubscription,
+		Value:        100,
+		Status:       service.StatusUnused,
+		ExpiresAt:    &expiresAt,
+		GroupID:      &group.ID,
+		PlanID:       &planID,
+		ValidityDays: 45,
 	}
 
 	err := s.repo.Create(s.ctx, code)
@@ -70,12 +75,18 @@ func (s *RedeemCodeRepoSuite) TestCreate() {
 	s.Require().Equal("TEST-CREATE", got.Code)
 	s.Require().NotNil(got.ExpiresAt)
 	s.Require().WithinDuration(expiresAt, *got.ExpiresAt, time.Second)
+	s.Require().NotNil(got.GroupID)
+	s.Require().Equal(group.ID, *got.GroupID)
+	s.Require().NotNil(got.PlanID)
+	s.Require().Equal(planID, *got.PlanID)
+	s.Require().Equal(45, got.ValidityDays)
 }
 
 func (s *RedeemCodeRepoSuite) TestCreateBatch() {
+	planID := int64(602)
 	codes := []service.RedeemCode{
 		{Code: "BATCH-1", Type: service.RedeemTypeBalance, Value: 10, Status: service.StatusUnused},
-		{Code: "BATCH-2", Type: service.RedeemTypeBalance, Value: 20, Status: service.StatusUnused},
+		{Code: "BATCH-2", Type: service.RedeemTypeSubscription, Value: 20, Status: service.StatusUnused, PlanID: &planID, ValidityDays: 14},
 	}
 
 	err := s.repo.CreateBatch(s.ctx, codes)
@@ -88,6 +99,9 @@ func (s *RedeemCodeRepoSuite) TestCreateBatch() {
 	got2, err := s.repo.GetByCode(s.ctx, "BATCH-2")
 	s.Require().NoError(err)
 	s.Require().Equal(float64(20), got2.Value)
+	s.Require().NotNil(got2.PlanID)
+	s.Require().Equal(planID, *got2.PlanID)
+	s.Require().Equal(14, got2.ValidityDays)
 }
 
 func (s *RedeemCodeRepoSuite) TestGetByID_NotFound() {

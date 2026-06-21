@@ -96,6 +96,48 @@ func (_c *SubscriptionPlanCreate) SetNillableValidityUnit(v *string) *Subscripti
 	return _c
 }
 
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_c *SubscriptionPlanCreate) SetDailyQuotaKnives(v float64) *SubscriptionPlanCreate {
+	_c.mutation.SetDailyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableDailyQuotaKnives(v *float64) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetDailyQuotaKnives(*v)
+	}
+	return _c
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_c *SubscriptionPlanCreate) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanCreate {
+	_c.mutation.SetWeeklyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableWeeklyQuotaKnives(v *float64) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetWeeklyQuotaKnives(*v)
+	}
+	return _c
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_c *SubscriptionPlanCreate) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanCreate {
+	_c.mutation.SetMonthlyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillableMonthlyQuotaKnives(v *float64) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetMonthlyQuotaKnives(*v)
+	}
+	return _c
+}
+
 // SetFeatures sets the "features" field.
 func (_c *SubscriptionPlanCreate) SetFeatures(v string) *SubscriptionPlanCreate {
 	_c.mutation.SetFeatures(v)
@@ -361,6 +403,18 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 		_spec.SetField(subscriptionplan.FieldValidityUnit, field.TypeString, value)
 		_node.ValidityUnit = value
 	}
+	if value, ok := _c.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64, value)
+		_node.DailyQuotaKnives = &value
+	}
+	if value, ok := _c.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+		_node.WeeklyQuotaKnives = &value
+	}
+	if value, ok := _c.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+		_node.MonthlyQuotaKnives = &value
+	}
 	if value, ok := _c.mutation.Features(); ok {
 		_spec.SetField(subscriptionplan.FieldFeatures, field.TypeString, value)
 		_node.Features = value
@@ -548,6 +602,78 @@ func (u *SubscriptionPlanUpsert) SetValidityUnit(v string) *SubscriptionPlanUpse
 // UpdateValidityUnit sets the "validity_unit" field to the value that was provided on create.
 func (u *SubscriptionPlanUpsert) UpdateValidityUnit() *SubscriptionPlanUpsert {
 	u.SetExcluded(subscriptionplan.FieldValidityUnit)
+	return u
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsert) SetDailyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldDailyQuotaKnives, v)
+	return u
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateDailyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldDailyQuotaKnives)
+	return u
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsert) AddDailyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldDailyQuotaKnives, v)
+	return u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsert) ClearDailyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldDailyQuotaKnives)
+	return u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldWeeklyQuotaKnives, v)
+	return u
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateWeeklyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldWeeklyQuotaKnives)
+	return u
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) AddWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldWeeklyQuotaKnives, v)
+	return u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) ClearWeeklyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldWeeklyQuotaKnives)
+	return u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldMonthlyQuotaKnives, v)
+	return u
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdateMonthlyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldMonthlyQuotaKnives)
+	return u
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) AddMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldMonthlyQuotaKnives, v)
+	return u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsert) ClearMonthlyQuotaKnives() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldMonthlyQuotaKnives)
 	return u
 }
 
@@ -792,6 +918,90 @@ func (u *SubscriptionPlanUpsertOne) SetValidityUnit(v string) *SubscriptionPlanU
 func (u *SubscriptionPlanUpsertOne) UpdateValidityUnit() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateValidityUnit()
+	})
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) SetDailyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetDailyQuotaKnives(v)
+	})
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) AddDailyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddDailyQuotaKnives(v)
+	})
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateDailyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateDailyQuotaKnives()
+	})
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) ClearDailyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearDailyQuotaKnives()
+	})
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetWeeklyQuotaKnives(v)
+	})
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) AddWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddWeeklyQuotaKnives(v)
+	})
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateWeeklyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateWeeklyQuotaKnives()
+	})
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) ClearWeeklyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearWeeklyQuotaKnives()
+	})
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetMonthlyQuotaKnives(v)
+	})
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) AddMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddMonthlyQuotaKnives(v)
+	})
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdateMonthlyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateMonthlyQuotaKnives()
+	})
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertOne) ClearMonthlyQuotaKnives() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearMonthlyQuotaKnives()
 	})
 }
 
@@ -1213,6 +1423,90 @@ func (u *SubscriptionPlanUpsertBulk) SetValidityUnit(v string) *SubscriptionPlan
 func (u *SubscriptionPlanUpsertBulk) UpdateValidityUnit() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateValidityUnit()
+	})
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) SetDailyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetDailyQuotaKnives(v)
+	})
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) AddDailyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddDailyQuotaKnives(v)
+	})
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateDailyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateDailyQuotaKnives()
+	})
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) ClearDailyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearDailyQuotaKnives()
+	})
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetWeeklyQuotaKnives(v)
+	})
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) AddWeeklyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddWeeklyQuotaKnives(v)
+	})
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateWeeklyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateWeeklyQuotaKnives()
+	})
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) ClearWeeklyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearWeeklyQuotaKnives()
+	})
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetMonthlyQuotaKnives(v)
+	})
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) AddMonthlyQuotaKnives(v float64) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddMonthlyQuotaKnives(v)
+	})
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdateMonthlyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdateMonthlyQuotaKnives()
+	})
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *SubscriptionPlanUpsertBulk) ClearMonthlyQuotaKnives() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearMonthlyQuotaKnives()
 	})
 }
 

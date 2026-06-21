@@ -29,6 +29,12 @@ type UserSubscription struct {
 	UserID int64 `json:"user_id,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID int64 `json:"group_id,omitempty"`
+	// PlanID holds the value of the "plan_id" field.
+	PlanID *int64 `json:"plan_id,omitempty"`
+	// PlanNameSnapshot holds the value of the "plan_name_snapshot" field.
+	PlanNameSnapshot *string `json:"plan_name_snapshot,omitempty"`
+	// PlanPriceSnapshot holds the value of the "plan_price_snapshot" field.
+	PlanPriceSnapshot *float64 `json:"plan_price_snapshot,omitempty"`
 	// StartsAt holds the value of the "starts_at" field.
 	StartsAt time.Time `json:"starts_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
@@ -47,6 +53,20 @@ type UserSubscription struct {
 	WeeklyUsageUsd float64 `json:"weekly_usage_usd,omitempty"`
 	// MonthlyUsageUsd holds the value of the "monthly_usage_usd" field.
 	MonthlyUsageUsd float64 `json:"monthly_usage_usd,omitempty"`
+	// DailyQuotaKnives holds the value of the "daily_quota_knives" field.
+	DailyQuotaKnives *float64 `json:"daily_quota_knives,omitempty"`
+	// WeeklyQuotaKnives holds the value of the "weekly_quota_knives" field.
+	WeeklyQuotaKnives *float64 `json:"weekly_quota_knives,omitempty"`
+	// MonthlyQuotaKnives holds the value of the "monthly_quota_knives" field.
+	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
+	// DailyUsedKnives holds the value of the "daily_used_knives" field.
+	DailyUsedKnives float64 `json:"daily_used_knives,omitempty"`
+	// WeeklyUsedKnives holds the value of the "weekly_used_knives" field.
+	WeeklyUsedKnives float64 `json:"weekly_used_knives,omitempty"`
+	// MonthlyUsedKnives holds the value of the "monthly_used_knives" field.
+	MonthlyUsedKnives float64 `json:"monthly_used_knives,omitempty"`
+	// SupersededByID holds the value of the "superseded_by_id" field.
+	SupersededByID *int64 `json:"superseded_by_id,omitempty"`
 	// AssignedBy holds the value of the "assigned_by" field.
 	AssignedBy *int64 `json:"assigned_by,omitempty"`
 	// AssignedAt holds the value of the "assigned_at" field.
@@ -121,11 +141,11 @@ func (*UserSubscription) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd:
+		case usersubscription.FieldPlanPriceSnapshot, usersubscription.FieldDailyUsageUsd, usersubscription.FieldWeeklyUsageUsd, usersubscription.FieldMonthlyUsageUsd, usersubscription.FieldDailyQuotaKnives, usersubscription.FieldWeeklyQuotaKnives, usersubscription.FieldMonthlyQuotaKnives, usersubscription.FieldDailyUsedKnives, usersubscription.FieldWeeklyUsedKnives, usersubscription.FieldMonthlyUsedKnives:
 			values[i] = new(sql.NullFloat64)
-		case usersubscription.FieldID, usersubscription.FieldUserID, usersubscription.FieldGroupID, usersubscription.FieldAssignedBy:
+		case usersubscription.FieldID, usersubscription.FieldUserID, usersubscription.FieldGroupID, usersubscription.FieldPlanID, usersubscription.FieldSupersededByID, usersubscription.FieldAssignedBy:
 			values[i] = new(sql.NullInt64)
-		case usersubscription.FieldStatus, usersubscription.FieldNotes:
+		case usersubscription.FieldPlanNameSnapshot, usersubscription.FieldStatus, usersubscription.FieldNotes:
 			values[i] = new(sql.NullString)
 		case usersubscription.FieldCreatedAt, usersubscription.FieldUpdatedAt, usersubscription.FieldDeletedAt, usersubscription.FieldStartsAt, usersubscription.FieldExpiresAt, usersubscription.FieldDailyWindowStart, usersubscription.FieldWeeklyWindowStart, usersubscription.FieldMonthlyWindowStart, usersubscription.FieldAssignedAt:
 			values[i] = new(sql.NullTime)
@@ -180,6 +200,27 @@ func (_m *UserSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field group_id", values[i])
 			} else if value.Valid {
 				_m.GroupID = value.Int64
+			}
+		case usersubscription.FieldPlanID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field plan_id", values[i])
+			} else if value.Valid {
+				_m.PlanID = new(int64)
+				*_m.PlanID = value.Int64
+			}
+		case usersubscription.FieldPlanNameSnapshot:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field plan_name_snapshot", values[i])
+			} else if value.Valid {
+				_m.PlanNameSnapshot = new(string)
+				*_m.PlanNameSnapshot = value.String
+			}
+		case usersubscription.FieldPlanPriceSnapshot:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field plan_price_snapshot", values[i])
+			} else if value.Valid {
+				_m.PlanPriceSnapshot = new(float64)
+				*_m.PlanPriceSnapshot = value.Float64
 			}
 		case usersubscription.FieldStartsAt:
 			if value, ok := values[i].(*sql.NullTime); !ok {
@@ -237,6 +278,52 @@ func (_m *UserSubscription) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field monthly_usage_usd", values[i])
 			} else if value.Valid {
 				_m.MonthlyUsageUsd = value.Float64
+			}
+		case usersubscription.FieldDailyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field daily_quota_knives", values[i])
+			} else if value.Valid {
+				_m.DailyQuotaKnives = new(float64)
+				*_m.DailyQuotaKnives = value.Float64
+			}
+		case usersubscription.FieldWeeklyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field weekly_quota_knives", values[i])
+			} else if value.Valid {
+				_m.WeeklyQuotaKnives = new(float64)
+				*_m.WeeklyQuotaKnives = value.Float64
+			}
+		case usersubscription.FieldMonthlyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field monthly_quota_knives", values[i])
+			} else if value.Valid {
+				_m.MonthlyQuotaKnives = new(float64)
+				*_m.MonthlyQuotaKnives = value.Float64
+			}
+		case usersubscription.FieldDailyUsedKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field daily_used_knives", values[i])
+			} else if value.Valid {
+				_m.DailyUsedKnives = value.Float64
+			}
+		case usersubscription.FieldWeeklyUsedKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field weekly_used_knives", values[i])
+			} else if value.Valid {
+				_m.WeeklyUsedKnives = value.Float64
+			}
+		case usersubscription.FieldMonthlyUsedKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field monthly_used_knives", values[i])
+			} else if value.Valid {
+				_m.MonthlyUsedKnives = value.Float64
+			}
+		case usersubscription.FieldSupersededByID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field superseded_by_id", values[i])
+			} else if value.Valid {
+				_m.SupersededByID = new(int64)
+				*_m.SupersededByID = value.Int64
 			}
 		case usersubscription.FieldAssignedBy:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -331,6 +418,21 @@ func (_m *UserSubscription) String() string {
 	builder.WriteString("group_id=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GroupID))
 	builder.WriteString(", ")
+	if v := _m.PlanID; v != nil {
+		builder.WriteString("plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.PlanNameSnapshot; v != nil {
+		builder.WriteString("plan_name_snapshot=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.PlanPriceSnapshot; v != nil {
+		builder.WriteString("plan_price_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
 	builder.WriteString("starts_at=")
 	builder.WriteString(_m.StartsAt.Format(time.ANSIC))
 	builder.WriteString(", ")
@@ -363,6 +465,35 @@ func (_m *UserSubscription) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("monthly_usage_usd=")
 	builder.WriteString(fmt.Sprintf("%v", _m.MonthlyUsageUsd))
+	builder.WriteString(", ")
+	if v := _m.DailyQuotaKnives; v != nil {
+		builder.WriteString("daily_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.WeeklyQuotaKnives; v != nil {
+		builder.WriteString("weekly_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.MonthlyQuotaKnives; v != nil {
+		builder.WriteString("monthly_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("daily_used_knives=")
+	builder.WriteString(fmt.Sprintf("%v", _m.DailyUsedKnives))
+	builder.WriteString(", ")
+	builder.WriteString("weekly_used_knives=")
+	builder.WriteString(fmt.Sprintf("%v", _m.WeeklyUsedKnives))
+	builder.WriteString(", ")
+	builder.WriteString("monthly_used_knives=")
+	builder.WriteString(fmt.Sprintf("%v", _m.MonthlyUsedKnives))
+	builder.WriteString(", ")
+	if v := _m.SupersededByID; v != nil {
+		builder.WriteString("superseded_by_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	if v := _m.AssignedBy; v != nil {
 		builder.WriteString("assigned_by=")

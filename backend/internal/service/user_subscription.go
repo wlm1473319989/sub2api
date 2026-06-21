@@ -7,6 +7,10 @@ type UserSubscription struct {
 	UserID  int64
 	GroupID int64
 
+	PlanID            *int64
+	PlanNameSnapshot  *string
+	PlanPriceSnapshot *float64
+
 	StartsAt  time.Time
 	ExpiresAt time.Time
 	Status    string
@@ -18,6 +22,15 @@ type UserSubscription struct {
 	DailyUsageUSD   float64
 	WeeklyUsageUSD  float64
 	MonthlyUsageUSD float64
+
+	DailyQuotaKnives   *float64
+	WeeklyQuotaKnives  *float64
+	MonthlyQuotaKnives *float64
+	DailyUsedKnives    float64
+	WeeklyUsedKnives   float64
+	MonthlyUsedKnives  float64
+
+	SupersededByID *int64
 
 	AssignedBy *int64
 	AssignedAt time.Time

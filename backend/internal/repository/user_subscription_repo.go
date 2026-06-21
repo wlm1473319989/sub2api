@@ -28,6 +28,9 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 	builder := client.UserSubscription.Create().
 		SetUserID(sub.UserID).
 		SetGroupID(sub.GroupID).
+		SetNillablePlanID(sub.PlanID).
+		SetNillablePlanNameSnapshot(sub.PlanNameSnapshot).
+		SetNillablePlanPriceSnapshot(sub.PlanPriceSnapshot).
 		SetExpiresAt(sub.ExpiresAt).
 		SetNillableDailyWindowStart(sub.DailyWindowStart).
 		SetNillableWeeklyWindowStart(sub.WeeklyWindowStart).
@@ -35,6 +38,13 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 		SetDailyUsageUsd(sub.DailyUsageUSD).
 		SetWeeklyUsageUsd(sub.WeeklyUsageUSD).
 		SetMonthlyUsageUsd(sub.MonthlyUsageUSD).
+		SetNillableDailyQuotaKnives(sub.DailyQuotaKnives).
+		SetNillableWeeklyQuotaKnives(sub.WeeklyQuotaKnives).
+		SetNillableMonthlyQuotaKnives(sub.MonthlyQuotaKnives).
+		SetDailyUsedKnives(sub.DailyUsedKnives).
+		SetWeeklyUsedKnives(sub.WeeklyUsedKnives).
+		SetMonthlyUsedKnives(sub.MonthlyUsedKnives).
+		SetNillableSupersededByID(sub.SupersededByID).
 		SetNillableAssignedBy(sub.AssignedBy)
 
 	if sub.StartsAt.IsZero() {
@@ -110,6 +120,9 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 	builder := client.UserSubscription.UpdateOneID(sub.ID).
 		SetUserID(sub.UserID).
 		SetGroupID(sub.GroupID).
+		SetNillablePlanID(sub.PlanID).
+		SetNillablePlanNameSnapshot(sub.PlanNameSnapshot).
+		SetNillablePlanPriceSnapshot(sub.PlanPriceSnapshot).
 		SetStartsAt(sub.StartsAt).
 		SetExpiresAt(sub.ExpiresAt).
 		SetStatus(sub.Status).
@@ -119,6 +132,13 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 		SetDailyUsageUsd(sub.DailyUsageUSD).
 		SetWeeklyUsageUsd(sub.WeeklyUsageUSD).
 		SetMonthlyUsageUsd(sub.MonthlyUsageUSD).
+		SetNillableDailyQuotaKnives(sub.DailyQuotaKnives).
+		SetNillableWeeklyQuotaKnives(sub.WeeklyQuotaKnives).
+		SetNillableMonthlyQuotaKnives(sub.MonthlyQuotaKnives).
+		SetDailyUsedKnives(sub.DailyUsedKnives).
+		SetWeeklyUsedKnives(sub.WeeklyUsedKnives).
+		SetMonthlyUsedKnives(sub.MonthlyUsedKnives).
+		SetNillableSupersededByID(sub.SupersededByID).
 		SetNillableAssignedBy(sub.AssignedBy).
 		SetAssignedAt(sub.AssignedAt).
 		SetNotes(sub.Notes)
@@ -433,6 +453,9 @@ func userSubscriptionEntityToService(m *dbent.UserSubscription) *service.UserSub
 		ID:                 m.ID,
 		UserID:             m.UserID,
 		GroupID:            m.GroupID,
+		PlanID:             m.PlanID,
+		PlanNameSnapshot:   m.PlanNameSnapshot,
+		PlanPriceSnapshot:  m.PlanPriceSnapshot,
 		StartsAt:           m.StartsAt,
 		ExpiresAt:          m.ExpiresAt,
 		Status:             m.Status,
@@ -442,6 +465,13 @@ func userSubscriptionEntityToService(m *dbent.UserSubscription) *service.UserSub
 		DailyUsageUSD:      m.DailyUsageUsd,
 		WeeklyUsageUSD:     m.WeeklyUsageUsd,
 		MonthlyUsageUSD:    m.MonthlyUsageUsd,
+		DailyQuotaKnives:   m.DailyQuotaKnives,
+		WeeklyQuotaKnives:  m.WeeklyQuotaKnives,
+		MonthlyQuotaKnives: m.MonthlyQuotaKnives,
+		DailyUsedKnives:    m.DailyUsedKnives,
+		WeeklyUsedKnives:   m.WeeklyUsedKnives,
+		MonthlyUsedKnives:  m.MonthlyUsedKnives,
+		SupersededByID:     m.SupersededByID,
 		AssignedBy:         m.AssignedBy,
 		AssignedAt:         m.AssignedAt,
 		Notes:              derefString(m.Notes),

@@ -102,9 +102,11 @@ const (
 
 // Subscription status constants
 const (
-	SubscriptionStatusActive    = domain.SubscriptionStatusActive
-	SubscriptionStatusExpired   = domain.SubscriptionStatusExpired
-	SubscriptionStatusSuspended = domain.SubscriptionStatusSuspended
+	SubscriptionStatusActive     = domain.SubscriptionStatusActive
+	SubscriptionStatusExpired    = domain.SubscriptionStatusExpired
+	SubscriptionStatusSuspended  = domain.SubscriptionStatusSuspended
+	SubscriptionStatusSuperseded = domain.SubscriptionStatusSuperseded
+	SubscriptionStatusRefunded   = domain.SubscriptionStatusRefunded
 )
 
 // LinuxDoConnectSyntheticEmailDomain 是 LinuxDo Connect 用户的合成邮箱后缀（RFC 保留域名）。

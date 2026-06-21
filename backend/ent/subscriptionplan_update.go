@@ -160,6 +160,87 @@ func (_u *SubscriptionPlanUpdate) SetNillableValidityUnit(v *string) *Subscripti
 	return _u
 }
 
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) SetDailyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetDailyQuotaKnives()
+	_u.mutation.SetDailyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableDailyQuotaKnives(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetDailyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyQuotaKnives adds value to the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) AddDailyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddDailyQuotaKnives(v)
+	return _u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) ClearDailyQuotaKnives() *SubscriptionPlanUpdate {
+	_u.mutation.ClearDailyQuotaKnives()
+	return _u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetWeeklyQuotaKnives()
+	_u.mutation.SetWeeklyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableWeeklyQuotaKnives(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetWeeklyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyQuotaKnives adds value to the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) AddWeeklyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddWeeklyQuotaKnives(v)
+	return _u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) ClearWeeklyQuotaKnives() *SubscriptionPlanUpdate {
+	_u.mutation.ClearWeeklyQuotaKnives()
+	return _u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.ResetMonthlyQuotaKnives()
+	_u.mutation.SetMonthlyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillableMonthlyQuotaKnives(v *float64) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetMonthlyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyQuotaKnives adds value to the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) AddMonthlyQuotaKnives(v float64) *SubscriptionPlanUpdate {
+	_u.mutation.AddMonthlyQuotaKnives(v)
+	return _u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdate) ClearMonthlyQuotaKnives() *SubscriptionPlanUpdate {
+	_u.mutation.ClearMonthlyQuotaKnives()
+	return _u
+}
+
 // SetFeatures sets the "features" field.
 func (_u *SubscriptionPlanUpdate) SetFeatures(v string) *SubscriptionPlanUpdate {
 	_u.mutation.SetFeatures(v)
@@ -338,6 +419,33 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	if value, ok := _u.mutation.ValidityUnit(); ok {
 		_spec.SetField(subscriptionplan.FieldValidityUnit, field.TypeString, value)
 	}
+	if value, ok := _u.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.DailyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.WeeklyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.MonthlyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.Features(); ok {
 		_spec.SetField(subscriptionplan.FieldFeatures, field.TypeString, value)
 	}
@@ -505,6 +613,87 @@ func (_u *SubscriptionPlanUpdateOne) SetNillableValidityUnit(v *string) *Subscri
 	if v != nil {
 		_u.SetValidityUnit(*v)
 	}
+	return _u
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) SetDailyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetDailyQuotaKnives()
+	_u.mutation.SetDailyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableDailyQuotaKnives(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetDailyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyQuotaKnives adds value to the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) AddDailyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddDailyQuotaKnives(v)
+	return _u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) ClearDailyQuotaKnives() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearDailyQuotaKnives()
+	return _u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) SetWeeklyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetWeeklyQuotaKnives()
+	_u.mutation.SetWeeklyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableWeeklyQuotaKnives(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetWeeklyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyQuotaKnives adds value to the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) AddWeeklyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddWeeklyQuotaKnives(v)
+	return _u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) ClearWeeklyQuotaKnives() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearWeeklyQuotaKnives()
+	return _u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) SetMonthlyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetMonthlyQuotaKnives()
+	_u.mutation.SetMonthlyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillableMonthlyQuotaKnives(v *float64) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetMonthlyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyQuotaKnives adds value to the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) AddMonthlyQuotaKnives(v float64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddMonthlyQuotaKnives(v)
+	return _u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (_u *SubscriptionPlanUpdateOne) ClearMonthlyQuotaKnives() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearMonthlyQuotaKnives()
 	return _u
 }
 
@@ -715,6 +904,33 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.ValidityUnit(); ok {
 		_spec.SetField(subscriptionplan.FieldValidityUnit, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.DailyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldDailyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.WeeklyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldWeeklyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyQuotaKnives(); ok {
+		_spec.AddField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.MonthlyQuotaKnivesCleared() {
+		_spec.ClearField(subscriptionplan.FieldMonthlyQuotaKnives, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.Features(); ok {
 		_spec.SetField(subscriptionplan.FieldFeatures, field.TypeString, value)

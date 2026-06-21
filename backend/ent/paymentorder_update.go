@@ -311,6 +311,181 @@ func (_u *PaymentOrderUpdate) ClearPlanID() *PaymentOrderUpdate {
 	return _u
 }
 
+// SetSubscriptionAction sets the "subscription_action" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionAction(v string) *PaymentOrderUpdate {
+	_u.mutation.SetSubscriptionAction(v)
+	return _u
+}
+
+// SetNillableSubscriptionAction sets the "subscription_action" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionAction(v *string) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionAction(*v)
+	}
+	return _u
+}
+
+// ClearSubscriptionAction clears the value of the "subscription_action" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionAction() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionAction()
+	return _u
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderUpdate {
+	_u.mutation.SetSubscriptionPlanNameSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionPlanNameSnapshot(v *string) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionPlanNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearSubscriptionPlanNameSnapshot clears the value of the "subscription_plan_name_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionPlanNameSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionPlanNameSnapshot()
+	return _u
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetSubscriptionPlanPriceSnapshot()
+	_u.mutation.SetSubscriptionPlanPriceSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionPlanPriceSnapshot(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionPlanPriceSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionPlanPriceSnapshot adds value to the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdate) AddSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddSubscriptionPlanPriceSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionPlanPriceSnapshot clears the value of the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionPlanPriceSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionPlanPriceSnapshot()
+	return _u
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpdate {
+	_u.mutation.ResetSubscriptionValidityDaysSnapshot()
+	_u.mutation.SetSubscriptionValidityDaysSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionValidityDaysSnapshot(v *int) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionValidityDaysSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionValidityDaysSnapshot adds value to the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdate) AddSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpdate {
+	_u.mutation.AddSubscriptionValidityDaysSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionValidityDaysSnapshot clears the value of the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionValidityDaysSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionValidityDaysSnapshot()
+	return _u
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetSubscriptionDailyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionDailyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionDailyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionDailyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionDailyQuotaKnivesSnapshot adds value to the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) AddSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddSubscriptionDailyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionDailyQuotaKnivesSnapshot clears the value of the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionDailyQuotaKnivesSnapshot()
+	return _u
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetSubscriptionWeeklyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionWeeklyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionWeeklyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionWeeklyQuotaKnivesSnapshot adds value to the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) AddSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionWeeklyQuotaKnivesSnapshot clears the value of the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionWeeklyQuotaKnivesSnapshot()
+	return _u
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetSubscriptionMonthlyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableSubscriptionMonthlyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetSubscriptionMonthlyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionMonthlyQuotaKnivesSnapshot adds value to the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) AddSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionMonthlyQuotaKnivesSnapshot clears the value of the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearSubscriptionMonthlyQuotaKnivesSnapshot()
+	return _u
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (_u *PaymentOrderUpdate) SetSubscriptionGroupID(v int64) *PaymentOrderUpdate {
 	_u.mutation.ResetSubscriptionGroupID()
@@ -803,6 +978,16 @@ func (_u *PaymentOrderUpdate) check() error {
 			return &ValidationError{Name: "order_type", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.order_type": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SubscriptionAction(); ok {
+		if err := paymentorder.SubscriptionActionValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_action", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_action": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SubscriptionPlanNameSnapshot(); ok {
+		if err := paymentorder.SubscriptionPlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_plan_name_snapshot": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ProviderInstanceID(); ok {
 		if err := paymentorder.ProviderInstanceIDValidator(v); err != nil {
 			return &ValidationError{Name: "provider_instance_id", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.provider_instance_id": %w`, err)}
@@ -922,6 +1107,63 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if _u.mutation.PlanIDCleared() {
 		_spec.ClearField(paymentorder.FieldPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.SubscriptionAction(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionAction, field.TypeString, value)
+	}
+	if _u.mutation.SubscriptionActionCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionAction, field.TypeString)
+	}
+	if value, ok := _u.mutation.SubscriptionPlanNameSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.SubscriptionPlanNameSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionPlanNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.SubscriptionPlanPriceSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionPlanPriceSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionPlanPriceSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionValidityDaysSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionValidityDaysSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt, value)
+	}
+	if _u.mutation.SubscriptionValidityDaysSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt)
+	}
+	if value, ok := _u.mutation.SubscriptionDailyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionDailyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionDailyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionWeeklyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionWeeklyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionWeeklyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionMonthlyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionMonthlyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionMonthlyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)
@@ -1371,6 +1613,181 @@ func (_u *PaymentOrderUpdateOne) AddPlanID(v int64) *PaymentOrderUpdateOne {
 // ClearPlanID clears the value of the "plan_id" field.
 func (_u *PaymentOrderUpdateOne) ClearPlanID() *PaymentOrderUpdateOne {
 	_u.mutation.ClearPlanID()
+	return _u
+}
+
+// SetSubscriptionAction sets the "subscription_action" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionAction(v string) *PaymentOrderUpdateOne {
+	_u.mutation.SetSubscriptionAction(v)
+	return _u
+}
+
+// SetNillableSubscriptionAction sets the "subscription_action" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionAction(v *string) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionAction(*v)
+	}
+	return _u
+}
+
+// ClearSubscriptionAction clears the value of the "subscription_action" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionAction() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionAction()
+	return _u
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderUpdateOne {
+	_u.mutation.SetSubscriptionPlanNameSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionPlanNameSnapshot(v *string) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionPlanNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearSubscriptionPlanNameSnapshot clears the value of the "subscription_plan_name_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionPlanNameSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionPlanNameSnapshot()
+	return _u
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSubscriptionPlanPriceSnapshot()
+	_u.mutation.SetSubscriptionPlanPriceSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionPlanPriceSnapshot(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionPlanPriceSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionPlanPriceSnapshot adds value to the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdateOne) AddSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSubscriptionPlanPriceSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionPlanPriceSnapshot clears the value of the "subscription_plan_price_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionPlanPriceSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionPlanPriceSnapshot()
+	return _u
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSubscriptionValidityDaysSnapshot()
+	_u.mutation.SetSubscriptionValidityDaysSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionValidityDaysSnapshot(v *int) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionValidityDaysSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionValidityDaysSnapshot adds value to the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdateOne) AddSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpdateOne {
+	_u.mutation.AddSubscriptionValidityDaysSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionValidityDaysSnapshot clears the value of the "subscription_validity_days_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionValidityDaysSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionValidityDaysSnapshot()
+	return _u
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSubscriptionDailyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionDailyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionDailyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionDailyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionDailyQuotaKnivesSnapshot adds value to the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) AddSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSubscriptionDailyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionDailyQuotaKnivesSnapshot clears the value of the "subscription_daily_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionDailyQuotaKnivesSnapshot()
+	return _u
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSubscriptionWeeklyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionWeeklyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionWeeklyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionWeeklyQuotaKnivesSnapshot adds value to the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) AddSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionWeeklyQuotaKnivesSnapshot clears the value of the "subscription_weekly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionWeeklyQuotaKnivesSnapshot()
+	return _u
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetSubscriptionMonthlyQuotaKnivesSnapshot()
+	_u.mutation.SetSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// SetNillableSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableSubscriptionMonthlyQuotaKnivesSnapshot(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionMonthlyQuotaKnivesSnapshot(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionMonthlyQuotaKnivesSnapshot adds value to the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) AddSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	return _u
+}
+
+// ClearSubscriptionMonthlyQuotaKnivesSnapshot clears the value of the "subscription_monthly_quota_knives_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearSubscriptionMonthlyQuotaKnivesSnapshot()
 	return _u
 }
 
@@ -1879,6 +2296,16 @@ func (_u *PaymentOrderUpdateOne) check() error {
 			return &ValidationError{Name: "order_type", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.order_type": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.SubscriptionAction(); ok {
+		if err := paymentorder.SubscriptionActionValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_action", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_action": %w`, err)}
+		}
+	}
+	if v, ok := _u.mutation.SubscriptionPlanNameSnapshot(); ok {
+		if err := paymentorder.SubscriptionPlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_plan_name_snapshot": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.ProviderInstanceID(); ok {
 		if err := paymentorder.ProviderInstanceIDValidator(v); err != nil {
 			return &ValidationError{Name: "provider_instance_id", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.provider_instance_id": %w`, err)}
@@ -2015,6 +2442,63 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 	}
 	if _u.mutation.PlanIDCleared() {
 		_spec.ClearField(paymentorder.FieldPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.SubscriptionAction(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionAction, field.TypeString, value)
+	}
+	if _u.mutation.SubscriptionActionCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionAction, field.TypeString)
+	}
+	if value, ok := _u.mutation.SubscriptionPlanNameSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.SubscriptionPlanNameSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionPlanNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.SubscriptionPlanPriceSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionPlanPriceSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionPlanPriceSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionValidityDaysSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionValidityDaysSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt, value)
+	}
+	if _u.mutation.SubscriptionValidityDaysSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt)
+	}
+	if value, ok := _u.mutation.SubscriptionDailyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionDailyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionDailyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionWeeklyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionWeeklyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionWeeklyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.SubscriptionMonthlyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionMonthlyQuotaKnivesSnapshot(); ok {
+		_spec.AddField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.SubscriptionMonthlyQuotaKnivesSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)

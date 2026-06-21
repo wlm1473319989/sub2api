@@ -89,6 +89,21 @@ func ValidityUnit(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldValidityUnit, v))
 }
 
+// DailyQuotaKnives applies equality check predicate on the "daily_quota_knives" field. It's identical to DailyQuotaKnivesEQ.
+func DailyQuotaKnives(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldDailyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnives applies equality check predicate on the "weekly_quota_knives" field. It's identical to WeeklyQuotaKnivesEQ.
+func WeeklyQuotaKnives(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldWeeklyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnives applies equality check predicate on the "monthly_quota_knives" field. It's identical to MonthlyQuotaKnivesEQ.
+func MonthlyQuotaKnives(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldMonthlyQuotaKnives, v))
+}
+
 // Features applies equality check predicate on the "features" field. It's identical to FeaturesEQ.
 func Features(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldFeatures, v))
@@ -482,6 +497,156 @@ func ValidityUnitEqualFold(v string) predicate.SubscriptionPlan {
 // ValidityUnitContainsFold applies the ContainsFold predicate on the "validity_unit" field.
 func ValidityUnitContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldValidityUnit, v))
+}
+
+// DailyQuotaKnivesEQ applies the EQ predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesNEQ applies the NEQ predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesNEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesIn applies the In predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldDailyQuotaKnives, vs...))
+}
+
+// DailyQuotaKnivesNotIn applies the NotIn predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesNotIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldDailyQuotaKnives, vs...))
+}
+
+// DailyQuotaKnivesGT applies the GT predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesGT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesGTE applies the GTE predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesGTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesLT applies the LT predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesLT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesLTE applies the LTE predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesLTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldDailyQuotaKnives, v))
+}
+
+// DailyQuotaKnivesIsNil applies the IsNil predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldDailyQuotaKnives))
+}
+
+// DailyQuotaKnivesNotNil applies the NotNil predicate on the "daily_quota_knives" field.
+func DailyQuotaKnivesNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldDailyQuotaKnives))
+}
+
+// WeeklyQuotaKnivesEQ applies the EQ predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesNEQ applies the NEQ predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesNEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesIn applies the In predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldWeeklyQuotaKnives, vs...))
+}
+
+// WeeklyQuotaKnivesNotIn applies the NotIn predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesNotIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldWeeklyQuotaKnives, vs...))
+}
+
+// WeeklyQuotaKnivesGT applies the GT predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesGT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesGTE applies the GTE predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesGTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesLT applies the LT predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesLT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesLTE applies the LTE predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesLTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldWeeklyQuotaKnives, v))
+}
+
+// WeeklyQuotaKnivesIsNil applies the IsNil predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldWeeklyQuotaKnives))
+}
+
+// WeeklyQuotaKnivesNotNil applies the NotNil predicate on the "weekly_quota_knives" field.
+func WeeklyQuotaKnivesNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldWeeklyQuotaKnives))
+}
+
+// MonthlyQuotaKnivesEQ applies the EQ predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesNEQ applies the NEQ predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesNEQ(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesIn applies the In predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldMonthlyQuotaKnives, vs...))
+}
+
+// MonthlyQuotaKnivesNotIn applies the NotIn predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesNotIn(vs ...float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldMonthlyQuotaKnives, vs...))
+}
+
+// MonthlyQuotaKnivesGT applies the GT predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesGT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesGTE applies the GTE predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesGTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesLT applies the LT predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesLT(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesLTE applies the LTE predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesLTE(v float64) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldMonthlyQuotaKnives, v))
+}
+
+// MonthlyQuotaKnivesIsNil applies the IsNil predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldMonthlyQuotaKnives))
+}
+
+// MonthlyQuotaKnivesNotNil applies the NotNil predicate on the "monthly_quota_knives" field.
+func MonthlyQuotaKnivesNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldMonthlyQuotaKnives))
 }
 
 // FeaturesEQ applies the EQ predicate on the "features" field.

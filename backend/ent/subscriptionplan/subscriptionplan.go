@@ -27,6 +27,12 @@ const (
 	FieldValidityDays = "validity_days"
 	// FieldValidityUnit holds the string denoting the validity_unit field in the database.
 	FieldValidityUnit = "validity_unit"
+	// FieldDailyQuotaKnives holds the string denoting the daily_quota_knives field in the database.
+	FieldDailyQuotaKnives = "daily_quota_knives"
+	// FieldWeeklyQuotaKnives holds the string denoting the weekly_quota_knives field in the database.
+	FieldWeeklyQuotaKnives = "weekly_quota_knives"
+	// FieldMonthlyQuotaKnives holds the string denoting the monthly_quota_knives field in the database.
+	FieldMonthlyQuotaKnives = "monthly_quota_knives"
 	// FieldFeatures holds the string denoting the features field in the database.
 	FieldFeatures = "features"
 	// FieldProductName holds the string denoting the product_name field in the database.
@@ -53,6 +59,9 @@ var Columns = []string{
 	FieldOriginalPrice,
 	FieldValidityDays,
 	FieldValidityUnit,
+	FieldDailyQuotaKnives,
+	FieldWeeklyQuotaKnives,
+	FieldMonthlyQuotaKnives,
 	FieldFeatures,
 	FieldProductName,
 	FieldForSale,
@@ -141,6 +150,21 @@ func ByValidityDays(opts ...sql.OrderTermOption) OrderOption {
 // ByValidityUnit orders the results by the validity_unit field.
 func ByValidityUnit(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldValidityUnit, opts...).ToFunc()
+}
+
+// ByDailyQuotaKnives orders the results by the daily_quota_knives field.
+func ByDailyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldDailyQuotaKnives, opts...).ToFunc()
+}
+
+// ByWeeklyQuotaKnives orders the results by the weekly_quota_knives field.
+func ByWeeklyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldWeeklyQuotaKnives, opts...).ToFunc()
+}
+
+// ByMonthlyQuotaKnives orders the results by the monthly_quota_knives field.
+func ByMonthlyQuotaKnives(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldMonthlyQuotaKnives, opts...).ToFunc()
 }
 
 // ByFeatures orders the results by the features field.

@@ -87,12 +87,29 @@ func (s *UserSubscriptionRepoSuite) mustCreateSubscription(userID, groupID int64
 func (s *UserSubscriptionRepoSuite) TestCreate() {
 	user := s.mustCreateUser("sub-create@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-create")
+	planID := int64(501)
+	planName := "Starter"
+	planPrice := 19.9
+	dailyQuota := 10.0
+	weeklyQuota := 50.0
+	monthlyQuota := 200.0
+	supersededByID := int64(777)
 
 	sub := &service.UserSubscription{
-		UserID:    user.ID,
-		GroupID:   group.ID,
-		Status:    service.SubscriptionStatusActive,
-		ExpiresAt: time.Now().Add(24 * time.Hour),
+		UserID:             user.ID,
+		GroupID:            group.ID,
+		PlanID:             &planID,
+		PlanNameSnapshot:   &planName,
+		PlanPriceSnapshot:  &planPrice,
+		Status:             service.SubscriptionStatusSuperseded,
+		ExpiresAt:          time.Now().Add(24 * time.Hour),
+		DailyQuotaKnives:   &dailyQuota,
+		WeeklyQuotaKnives:  &weeklyQuota,
+		MonthlyQuotaKnives: &monthlyQuota,
+		DailyUsedKnives:    1.5,
+		WeeklyUsedKnives:   8.5,
+		MonthlyUsedKnives:  21.25,
+		SupersededByID:     &supersededByID,
 	}
 
 	err := s.repo.Create(s.ctx, sub)
@@ -103,6 +120,17 @@ func (s *UserSubscriptionRepoSuite) TestCreate() {
 	s.Require().NoError(err, "GetByID")
 	s.Require().Equal(sub.UserID, got.UserID)
 	s.Require().Equal(sub.GroupID, got.GroupID)
+	s.Require().Equal(planID, *got.PlanID)
+	s.Require().Equal(planName, *got.PlanNameSnapshot)
+	s.Require().Equal(planPrice, *got.PlanPriceSnapshot)
+	s.Require().Equal(service.SubscriptionStatusSuperseded, got.Status)
+	s.Require().Equal(dailyQuota, *got.DailyQuotaKnives)
+	s.Require().Equal(weeklyQuota, *got.WeeklyQuotaKnives)
+	s.Require().Equal(monthlyQuota, *got.MonthlyQuotaKnives)
+	s.Require().InDelta(1.5, got.DailyUsedKnives, 1e-6)
+	s.Require().InDelta(8.5, got.WeeklyUsedKnives, 1e-6)
+	s.Require().InDelta(21.25, got.MonthlyUsedKnives, 1e-6)
+	s.Require().Equal(supersededByID, *got.SupersededByID)
 }
 
 func (s *UserSubscriptionRepoSuite) TestGetByID_WithPreloads() {
@@ -137,12 +165,28 @@ func (s *UserSubscriptionRepoSuite) TestUpdate() {
 	sub, err := s.repo.GetByID(s.ctx, created.ID)
 	s.Require().NoError(err, "GetByID")
 
+	planID := int64(502)
+	planName := "Pro"
+	planPrice := 29.9
+	dailyQuota := 15.0
 	sub.Notes = "updated notes"
+	sub.PlanID = &planID
+	sub.PlanNameSnapshot = &planName
+	sub.PlanPriceSnapshot = &planPrice
+	sub.DailyQuotaKnives = &dailyQuota
+	sub.DailyUsedKnives = 2.75
+	sub.Status = service.SubscriptionStatusRefunded
 	s.Require().NoError(s.repo.Update(s.ctx, sub), "Update")
 
 	got, err := s.repo.GetByID(s.ctx, sub.ID)
 	s.Require().NoError(err, "GetByID after update")
 	s.Require().Equal("updated notes", got.Notes)
+	s.Require().Equal(planID, *got.PlanID)
+	s.Require().Equal(planName, *got.PlanNameSnapshot)
+	s.Require().Equal(planPrice, *got.PlanPriceSnapshot)
+	s.Require().Equal(dailyQuota, *got.DailyQuotaKnives)
+	s.Require().InDelta(2.75, got.DailyUsedKnives, 1e-6)
+	s.Require().Equal(service.SubscriptionStatusRefunded, got.Status)
 }
 
 func (s *UserSubscriptionRepoSuite) TestDelete() {

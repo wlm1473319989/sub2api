@@ -31,6 +31,12 @@ type SubscriptionPlan struct {
 	ValidityDays int `json:"validity_days,omitempty"`
 	// ValidityUnit holds the value of the "validity_unit" field.
 	ValidityUnit string `json:"validity_unit,omitempty"`
+	// DailyQuotaKnives holds the value of the "daily_quota_knives" field.
+	DailyQuotaKnives *float64 `json:"daily_quota_knives,omitempty"`
+	// WeeklyQuotaKnives holds the value of the "weekly_quota_knives" field.
+	WeeklyQuotaKnives *float64 `json:"weekly_quota_knives,omitempty"`
+	// MonthlyQuotaKnives holds the value of the "monthly_quota_knives" field.
+	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
 	// Features holds the value of the "features" field.
 	Features string `json:"features,omitempty"`
 	// ProductName holds the value of the "product_name" field.
@@ -53,7 +59,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case subscriptionplan.FieldForSale:
 			values[i] = new(sql.NullBool)
-		case subscriptionplan.FieldPrice, subscriptionplan.FieldOriginalPrice:
+		case subscriptionplan.FieldPrice, subscriptionplan.FieldOriginalPrice, subscriptionplan.FieldDailyQuotaKnives, subscriptionplan.FieldWeeklyQuotaKnives, subscriptionplan.FieldMonthlyQuotaKnives:
 			values[i] = new(sql.NullFloat64)
 		case subscriptionplan.FieldID, subscriptionplan.FieldGroupID, subscriptionplan.FieldValidityDays, subscriptionplan.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
@@ -124,6 +130,27 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field validity_unit", values[i])
 			} else if value.Valid {
 				_m.ValidityUnit = value.String
+			}
+		case subscriptionplan.FieldDailyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field daily_quota_knives", values[i])
+			} else if value.Valid {
+				_m.DailyQuotaKnives = new(float64)
+				*_m.DailyQuotaKnives = value.Float64
+			}
+		case subscriptionplan.FieldWeeklyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field weekly_quota_knives", values[i])
+			} else if value.Valid {
+				_m.WeeklyQuotaKnives = new(float64)
+				*_m.WeeklyQuotaKnives = value.Float64
+			}
+		case subscriptionplan.FieldMonthlyQuotaKnives:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field monthly_quota_knives", values[i])
+			} else if value.Valid {
+				_m.MonthlyQuotaKnives = new(float64)
+				*_m.MonthlyQuotaKnives = value.Float64
 			}
 		case subscriptionplan.FieldFeatures:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -219,6 +246,21 @@ func (_m *SubscriptionPlan) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("validity_unit=")
 	builder.WriteString(_m.ValidityUnit)
+	builder.WriteString(", ")
+	if v := _m.DailyQuotaKnives; v != nil {
+		builder.WriteString("daily_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.WeeklyQuotaKnives; v != nil {
+		builder.WriteString("weekly_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.MonthlyQuotaKnives; v != nil {
+		builder.WriteString("monthly_quota_knives=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
 	builder.WriteString(", ")
 	builder.WriteString("features=")
 	builder.WriteString(_m.Features)

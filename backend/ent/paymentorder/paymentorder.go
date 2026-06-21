@@ -46,6 +46,20 @@ const (
 	FieldOrderType = "order_type"
 	// FieldPlanID holds the string denoting the plan_id field in the database.
 	FieldPlanID = "plan_id"
+	// FieldSubscriptionAction holds the string denoting the subscription_action field in the database.
+	FieldSubscriptionAction = "subscription_action"
+	// FieldSubscriptionPlanNameSnapshot holds the string denoting the subscription_plan_name_snapshot field in the database.
+	FieldSubscriptionPlanNameSnapshot = "subscription_plan_name_snapshot"
+	// FieldSubscriptionPlanPriceSnapshot holds the string denoting the subscription_plan_price_snapshot field in the database.
+	FieldSubscriptionPlanPriceSnapshot = "subscription_plan_price_snapshot"
+	// FieldSubscriptionValidityDaysSnapshot holds the string denoting the subscription_validity_days_snapshot field in the database.
+	FieldSubscriptionValidityDaysSnapshot = "subscription_validity_days_snapshot"
+	// FieldSubscriptionDailyQuotaKnivesSnapshot holds the string denoting the subscription_daily_quota_knives_snapshot field in the database.
+	FieldSubscriptionDailyQuotaKnivesSnapshot = "subscription_daily_quota_knives_snapshot"
+	// FieldSubscriptionWeeklyQuotaKnivesSnapshot holds the string denoting the subscription_weekly_quota_knives_snapshot field in the database.
+	FieldSubscriptionWeeklyQuotaKnivesSnapshot = "subscription_weekly_quota_knives_snapshot"
+	// FieldSubscriptionMonthlyQuotaKnivesSnapshot holds the string denoting the subscription_monthly_quota_knives_snapshot field in the database.
+	FieldSubscriptionMonthlyQuotaKnivesSnapshot = "subscription_monthly_quota_knives_snapshot"
 	// FieldSubscriptionGroupID holds the string denoting the subscription_group_id field in the database.
 	FieldSubscriptionGroupID = "subscription_group_id"
 	// FieldSubscriptionDays holds the string denoting the subscription_days field in the database.
@@ -124,6 +138,13 @@ var Columns = []string{
 	FieldQrCodeImg,
 	FieldOrderType,
 	FieldPlanID,
+	FieldSubscriptionAction,
+	FieldSubscriptionPlanNameSnapshot,
+	FieldSubscriptionPlanPriceSnapshot,
+	FieldSubscriptionValidityDaysSnapshot,
+	FieldSubscriptionDailyQuotaKnivesSnapshot,
+	FieldSubscriptionWeeklyQuotaKnivesSnapshot,
+	FieldSubscriptionMonthlyQuotaKnivesSnapshot,
 	FieldSubscriptionGroupID,
 	FieldSubscriptionDays,
 	FieldProviderInstanceID,
@@ -180,6 +201,10 @@ var (
 	DefaultOrderType string
 	// OrderTypeValidator is a validator for the "order_type" field. It is called by the builders before save.
 	OrderTypeValidator func(string) error
+	// SubscriptionActionValidator is a validator for the "subscription_action" field. It is called by the builders before save.
+	SubscriptionActionValidator func(string) error
+	// SubscriptionPlanNameSnapshotValidator is a validator for the "subscription_plan_name_snapshot" field. It is called by the builders before save.
+	SubscriptionPlanNameSnapshotValidator func(string) error
 	// ProviderInstanceIDValidator is a validator for the "provider_instance_id" field. It is called by the builders before save.
 	ProviderInstanceIDValidator func(string) error
 	// ProviderKeyValidator is a validator for the "provider_key" field. It is called by the builders before save.
@@ -292,6 +317,41 @@ func ByOrderType(opts ...sql.OrderTermOption) OrderOption {
 // ByPlanID orders the results by the plan_id field.
 func ByPlanID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldPlanID, opts...).ToFunc()
+}
+
+// BySubscriptionAction orders the results by the subscription_action field.
+func BySubscriptionAction(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionAction, opts...).ToFunc()
+}
+
+// BySubscriptionPlanNameSnapshot orders the results by the subscription_plan_name_snapshot field.
+func BySubscriptionPlanNameSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionPlanNameSnapshot, opts...).ToFunc()
+}
+
+// BySubscriptionPlanPriceSnapshot orders the results by the subscription_plan_price_snapshot field.
+func BySubscriptionPlanPriceSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionPlanPriceSnapshot, opts...).ToFunc()
+}
+
+// BySubscriptionValidityDaysSnapshot orders the results by the subscription_validity_days_snapshot field.
+func BySubscriptionValidityDaysSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionValidityDaysSnapshot, opts...).ToFunc()
+}
+
+// BySubscriptionDailyQuotaKnivesSnapshot orders the results by the subscription_daily_quota_knives_snapshot field.
+func BySubscriptionDailyQuotaKnivesSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionDailyQuotaKnivesSnapshot, opts...).ToFunc()
+}
+
+// BySubscriptionWeeklyQuotaKnivesSnapshot orders the results by the subscription_weekly_quota_knives_snapshot field.
+func BySubscriptionWeeklyQuotaKnivesSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionWeeklyQuotaKnivesSnapshot, opts...).ToFunc()
+}
+
+// BySubscriptionMonthlyQuotaKnivesSnapshot orders the results by the subscription_monthly_quota_knives_snapshot field.
+func BySubscriptionMonthlyQuotaKnivesSnapshot(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionMonthlyQuotaKnivesSnapshot, opts...).ToFunc()
 }
 
 // BySubscriptionGroupID orders the results by the subscription_group_id field.

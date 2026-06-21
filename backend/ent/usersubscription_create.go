@@ -79,6 +79,48 @@ func (_c *UserSubscriptionCreate) SetGroupID(v int64) *UserSubscriptionCreate {
 	return _c
 }
 
+// SetPlanID sets the "plan_id" field.
+func (_c *UserSubscriptionCreate) SetPlanID(v int64) *UserSubscriptionCreate {
+	_c.mutation.SetPlanID(v)
+	return _c
+}
+
+// SetNillablePlanID sets the "plan_id" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillablePlanID(v *int64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetPlanID(*v)
+	}
+	return _c
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (_c *UserSubscriptionCreate) SetPlanNameSnapshot(v string) *UserSubscriptionCreate {
+	_c.mutation.SetPlanNameSnapshot(v)
+	return _c
+}
+
+// SetNillablePlanNameSnapshot sets the "plan_name_snapshot" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillablePlanNameSnapshot(v *string) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetPlanNameSnapshot(*v)
+	}
+	return _c
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (_c *UserSubscriptionCreate) SetPlanPriceSnapshot(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetPlanPriceSnapshot(v)
+	return _c
+}
+
+// SetNillablePlanPriceSnapshot sets the "plan_price_snapshot" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillablePlanPriceSnapshot(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetPlanPriceSnapshot(*v)
+	}
+	return _c
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (_c *UserSubscriptionCreate) SetStartsAt(v time.Time) *UserSubscriptionCreate {
 	_c.mutation.SetStartsAt(v)
@@ -185,6 +227,104 @@ func (_c *UserSubscriptionCreate) SetMonthlyUsageUsd(v float64) *UserSubscriptio
 func (_c *UserSubscriptionCreate) SetNillableMonthlyUsageUsd(v *float64) *UserSubscriptionCreate {
 	if v != nil {
 		_c.SetMonthlyUsageUsd(*v)
+	}
+	return _c
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_c *UserSubscriptionCreate) SetDailyQuotaKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetDailyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableDailyQuotaKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetDailyQuotaKnives(*v)
+	}
+	return _c
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_c *UserSubscriptionCreate) SetWeeklyQuotaKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetWeeklyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableWeeklyQuotaKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetWeeklyQuotaKnives(*v)
+	}
+	return _c
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_c *UserSubscriptionCreate) SetMonthlyQuotaKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetMonthlyQuotaKnives(v)
+	return _c
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableMonthlyQuotaKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetMonthlyQuotaKnives(*v)
+	}
+	return _c
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (_c *UserSubscriptionCreate) SetDailyUsedKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetDailyUsedKnives(v)
+	return _c
+}
+
+// SetNillableDailyUsedKnives sets the "daily_used_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableDailyUsedKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetDailyUsedKnives(*v)
+	}
+	return _c
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (_c *UserSubscriptionCreate) SetWeeklyUsedKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetWeeklyUsedKnives(v)
+	return _c
+}
+
+// SetNillableWeeklyUsedKnives sets the "weekly_used_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableWeeklyUsedKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetWeeklyUsedKnives(*v)
+	}
+	return _c
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (_c *UserSubscriptionCreate) SetMonthlyUsedKnives(v float64) *UserSubscriptionCreate {
+	_c.mutation.SetMonthlyUsedKnives(v)
+	return _c
+}
+
+// SetNillableMonthlyUsedKnives sets the "monthly_used_knives" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableMonthlyUsedKnives(v *float64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetMonthlyUsedKnives(*v)
+	}
+	return _c
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (_c *UserSubscriptionCreate) SetSupersededByID(v int64) *UserSubscriptionCreate {
+	_c.mutation.SetSupersededByID(v)
+	return _c
+}
+
+// SetNillableSupersededByID sets the "superseded_by_id" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableSupersededByID(v *int64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetSupersededByID(*v)
 	}
 	return _c
 }
@@ -342,6 +482,18 @@ func (_c *UserSubscriptionCreate) defaults() error {
 		v := usersubscription.DefaultMonthlyUsageUsd
 		_c.mutation.SetMonthlyUsageUsd(v)
 	}
+	if _, ok := _c.mutation.DailyUsedKnives(); !ok {
+		v := usersubscription.DefaultDailyUsedKnives
+		_c.mutation.SetDailyUsedKnives(v)
+	}
+	if _, ok := _c.mutation.WeeklyUsedKnives(); !ok {
+		v := usersubscription.DefaultWeeklyUsedKnives
+		_c.mutation.SetWeeklyUsedKnives(v)
+	}
+	if _, ok := _c.mutation.MonthlyUsedKnives(); !ok {
+		v := usersubscription.DefaultMonthlyUsedKnives
+		_c.mutation.SetMonthlyUsedKnives(v)
+	}
 	if _, ok := _c.mutation.AssignedAt(); !ok {
 		if usersubscription.DefaultAssignedAt == nil {
 			return fmt.Errorf("ent: uninitialized usersubscription.DefaultAssignedAt (forgotten import ent/runtime?)")
@@ -366,6 +518,11 @@ func (_c *UserSubscriptionCreate) check() error {
 	if _, ok := _c.mutation.GroupID(); !ok {
 		return &ValidationError{Name: "group_id", err: errors.New(`ent: missing required field "UserSubscription.group_id"`)}
 	}
+	if v, ok := _c.mutation.PlanNameSnapshot(); ok {
+		if err := usersubscription.PlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.plan_name_snapshot": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.StartsAt(); !ok {
 		return &ValidationError{Name: "starts_at", err: errors.New(`ent: missing required field "UserSubscription.starts_at"`)}
 	}
@@ -388,6 +545,15 @@ func (_c *UserSubscriptionCreate) check() error {
 	}
 	if _, ok := _c.mutation.MonthlyUsageUsd(); !ok {
 		return &ValidationError{Name: "monthly_usage_usd", err: errors.New(`ent: missing required field "UserSubscription.monthly_usage_usd"`)}
+	}
+	if _, ok := _c.mutation.DailyUsedKnives(); !ok {
+		return &ValidationError{Name: "daily_used_knives", err: errors.New(`ent: missing required field "UserSubscription.daily_used_knives"`)}
+	}
+	if _, ok := _c.mutation.WeeklyUsedKnives(); !ok {
+		return &ValidationError{Name: "weekly_used_knives", err: errors.New(`ent: missing required field "UserSubscription.weekly_used_knives"`)}
+	}
+	if _, ok := _c.mutation.MonthlyUsedKnives(); !ok {
+		return &ValidationError{Name: "monthly_used_knives", err: errors.New(`ent: missing required field "UserSubscription.monthly_used_knives"`)}
 	}
 	if _, ok := _c.mutation.AssignedAt(); !ok {
 		return &ValidationError{Name: "assigned_at", err: errors.New(`ent: missing required field "UserSubscription.assigned_at"`)}
@@ -437,6 +603,18 @@ func (_c *UserSubscriptionCreate) createSpec() (*UserSubscription, *sqlgraph.Cre
 		_spec.SetField(usersubscription.FieldDeletedAt, field.TypeTime, value)
 		_node.DeletedAt = &value
 	}
+	if value, ok := _c.mutation.PlanID(); ok {
+		_spec.SetField(usersubscription.FieldPlanID, field.TypeInt64, value)
+		_node.PlanID = &value
+	}
+	if value, ok := _c.mutation.PlanNameSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanNameSnapshot, field.TypeString, value)
+		_node.PlanNameSnapshot = &value
+	}
+	if value, ok := _c.mutation.PlanPriceSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64, value)
+		_node.PlanPriceSnapshot = &value
+	}
 	if value, ok := _c.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)
 		_node.StartsAt = value
@@ -472,6 +650,34 @@ func (_c *UserSubscriptionCreate) createSpec() (*UserSubscription, *sqlgraph.Cre
 	if value, ok := _c.mutation.MonthlyUsageUsd(); ok {
 		_spec.SetField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
 		_node.MonthlyUsageUsd = value
+	}
+	if value, ok := _c.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64, value)
+		_node.DailyQuotaKnives = &value
+	}
+	if value, ok := _c.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+		_node.WeeklyQuotaKnives = &value
+	}
+	if value, ok := _c.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+		_node.MonthlyQuotaKnives = &value
+	}
+	if value, ok := _c.mutation.DailyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyUsedKnives, field.TypeFloat64, value)
+		_node.DailyUsedKnives = value
+	}
+	if value, ok := _c.mutation.WeeklyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyUsedKnives, field.TypeFloat64, value)
+		_node.WeeklyUsedKnives = value
+	}
+	if value, ok := _c.mutation.MonthlyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyUsedKnives, field.TypeFloat64, value)
+		_node.MonthlyUsedKnives = value
+	}
+	if value, ok := _c.mutation.SupersededByID(); ok {
+		_spec.SetField(usersubscription.FieldSupersededByID, field.TypeInt64, value)
+		_node.SupersededByID = &value
 	}
 	if value, ok := _c.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)
@@ -654,6 +860,72 @@ func (u *UserSubscriptionUpsert) UpdateGroupID() *UserSubscriptionUpsert {
 	return u
 }
 
+// SetPlanID sets the "plan_id" field.
+func (u *UserSubscriptionUpsert) SetPlanID(v int64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldPlanID, v)
+	return u
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdatePlanID() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldPlanID)
+	return u
+}
+
+// AddPlanID adds v to the "plan_id" field.
+func (u *UserSubscriptionUpsert) AddPlanID(v int64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldPlanID, v)
+	return u
+}
+
+// ClearPlanID clears the value of the "plan_id" field.
+func (u *UserSubscriptionUpsert) ClearPlanID() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldPlanID)
+	return u
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsert) SetPlanNameSnapshot(v string) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldPlanNameSnapshot, v)
+	return u
+}
+
+// UpdatePlanNameSnapshot sets the "plan_name_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdatePlanNameSnapshot() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldPlanNameSnapshot)
+	return u
+}
+
+// ClearPlanNameSnapshot clears the value of the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsert) ClearPlanNameSnapshot() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldPlanNameSnapshot)
+	return u
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsert) SetPlanPriceSnapshot(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldPlanPriceSnapshot, v)
+	return u
+}
+
+// UpdatePlanPriceSnapshot sets the "plan_price_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdatePlanPriceSnapshot() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldPlanPriceSnapshot)
+	return u
+}
+
+// AddPlanPriceSnapshot adds v to the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsert) AddPlanPriceSnapshot(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldPlanPriceSnapshot, v)
+	return u
+}
+
+// ClearPlanPriceSnapshot clears the value of the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsert) ClearPlanPriceSnapshot() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldPlanPriceSnapshot)
+	return u
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (u *UserSubscriptionUpsert) SetStartsAt(v time.Time) *UserSubscriptionUpsert {
 	u.Set(usersubscription.FieldStartsAt, v)
@@ -795,6 +1067,156 @@ func (u *UserSubscriptionUpsert) UpdateMonthlyUsageUsd() *UserSubscriptionUpsert
 // AddMonthlyUsageUsd adds v to the "monthly_usage_usd" field.
 func (u *UserSubscriptionUpsert) AddMonthlyUsageUsd(v float64) *UserSubscriptionUpsert {
 	u.Add(usersubscription.FieldMonthlyUsageUsd, v)
+	return u
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsert) SetDailyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldDailyQuotaKnives, v)
+	return u
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateDailyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldDailyQuotaKnives)
+	return u
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsert) AddDailyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldDailyQuotaKnives, v)
+	return u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsert) ClearDailyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldDailyQuotaKnives)
+	return u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsert) SetWeeklyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldWeeklyQuotaKnives, v)
+	return u
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateWeeklyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldWeeklyQuotaKnives)
+	return u
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsert) AddWeeklyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldWeeklyQuotaKnives, v)
+	return u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsert) ClearWeeklyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldWeeklyQuotaKnives)
+	return u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsert) SetMonthlyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldMonthlyQuotaKnives, v)
+	return u
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateMonthlyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldMonthlyQuotaKnives)
+	return u
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsert) AddMonthlyQuotaKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldMonthlyQuotaKnives, v)
+	return u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsert) ClearMonthlyQuotaKnives() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldMonthlyQuotaKnives)
+	return u
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (u *UserSubscriptionUpsert) SetDailyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldDailyUsedKnives, v)
+	return u
+}
+
+// UpdateDailyUsedKnives sets the "daily_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateDailyUsedKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldDailyUsedKnives)
+	return u
+}
+
+// AddDailyUsedKnives adds v to the "daily_used_knives" field.
+func (u *UserSubscriptionUpsert) AddDailyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldDailyUsedKnives, v)
+	return u
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsert) SetWeeklyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldWeeklyUsedKnives, v)
+	return u
+}
+
+// UpdateWeeklyUsedKnives sets the "weekly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateWeeklyUsedKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldWeeklyUsedKnives)
+	return u
+}
+
+// AddWeeklyUsedKnives adds v to the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsert) AddWeeklyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldWeeklyUsedKnives, v)
+	return u
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsert) SetMonthlyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldMonthlyUsedKnives, v)
+	return u
+}
+
+// UpdateMonthlyUsedKnives sets the "monthly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateMonthlyUsedKnives() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldMonthlyUsedKnives)
+	return u
+}
+
+// AddMonthlyUsedKnives adds v to the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsert) AddMonthlyUsedKnives(v float64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldMonthlyUsedKnives, v)
+	return u
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (u *UserSubscriptionUpsert) SetSupersededByID(v int64) *UserSubscriptionUpsert {
+	u.Set(usersubscription.FieldSupersededByID, v)
+	return u
+}
+
+// UpdateSupersededByID sets the "superseded_by_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsert) UpdateSupersededByID() *UserSubscriptionUpsert {
+	u.SetExcluded(usersubscription.FieldSupersededByID)
+	return u
+}
+
+// AddSupersededByID adds v to the "superseded_by_id" field.
+func (u *UserSubscriptionUpsert) AddSupersededByID(v int64) *UserSubscriptionUpsert {
+	u.Add(usersubscription.FieldSupersededByID, v)
+	return u
+}
+
+// ClearSupersededByID clears the value of the "superseded_by_id" field.
+func (u *UserSubscriptionUpsert) ClearSupersededByID() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldSupersededByID)
 	return u
 }
 
@@ -951,6 +1373,83 @@ func (u *UserSubscriptionUpsertOne) SetGroupID(v int64) *UserSubscriptionUpsertO
 func (u *UserSubscriptionUpsertOne) UpdateGroupID() *UserSubscriptionUpsertOne {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// SetPlanID sets the "plan_id" field.
+func (u *UserSubscriptionUpsertOne) SetPlanID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanID(v)
+	})
+}
+
+// AddPlanID adds v to the "plan_id" field.
+func (u *UserSubscriptionUpsertOne) AddPlanID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddPlanID(v)
+	})
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdatePlanID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanID()
+	})
+}
+
+// ClearPlanID clears the value of the "plan_id" field.
+func (u *UserSubscriptionUpsertOne) ClearPlanID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanID()
+	})
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsertOne) SetPlanNameSnapshot(v string) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanNameSnapshot(v)
+	})
+}
+
+// UpdatePlanNameSnapshot sets the "plan_name_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdatePlanNameSnapshot() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanNameSnapshot()
+	})
+}
+
+// ClearPlanNameSnapshot clears the value of the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsertOne) ClearPlanNameSnapshot() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanNameSnapshot()
+	})
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertOne) SetPlanPriceSnapshot(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanPriceSnapshot(v)
+	})
+}
+
+// AddPlanPriceSnapshot adds v to the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertOne) AddPlanPriceSnapshot(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddPlanPriceSnapshot(v)
+	})
+}
+
+// UpdatePlanPriceSnapshot sets the "plan_price_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdatePlanPriceSnapshot() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanPriceSnapshot()
+	})
+}
+
+// ClearPlanPriceSnapshot clears the value of the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertOne) ClearPlanPriceSnapshot() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanPriceSnapshot()
 	})
 }
 
@@ -1119,6 +1618,181 @@ func (u *UserSubscriptionUpsertOne) AddMonthlyUsageUsd(v float64) *UserSubscript
 func (u *UserSubscriptionUpsertOne) UpdateMonthlyUsageUsd() *UserSubscriptionUpsertOne {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateMonthlyUsageUsd()
+	})
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) SetDailyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetDailyQuotaKnives(v)
+	})
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) AddDailyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddDailyQuotaKnives(v)
+	})
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateDailyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateDailyQuotaKnives()
+	})
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) ClearDailyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearDailyQuotaKnives()
+	})
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) SetWeeklyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetWeeklyQuotaKnives(v)
+	})
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) AddWeeklyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddWeeklyQuotaKnives(v)
+	})
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateWeeklyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateWeeklyQuotaKnives()
+	})
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) ClearWeeklyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearWeeklyQuotaKnives()
+	})
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) SetMonthlyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetMonthlyQuotaKnives(v)
+	})
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) AddMonthlyQuotaKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddMonthlyQuotaKnives(v)
+	})
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateMonthlyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateMonthlyQuotaKnives()
+	})
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertOne) ClearMonthlyQuotaKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearMonthlyQuotaKnives()
+	})
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (u *UserSubscriptionUpsertOne) SetDailyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetDailyUsedKnives(v)
+	})
+}
+
+// AddDailyUsedKnives adds v to the "daily_used_knives" field.
+func (u *UserSubscriptionUpsertOne) AddDailyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddDailyUsedKnives(v)
+	})
+}
+
+// UpdateDailyUsedKnives sets the "daily_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateDailyUsedKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateDailyUsedKnives()
+	})
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsertOne) SetWeeklyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetWeeklyUsedKnives(v)
+	})
+}
+
+// AddWeeklyUsedKnives adds v to the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsertOne) AddWeeklyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddWeeklyUsedKnives(v)
+	})
+}
+
+// UpdateWeeklyUsedKnives sets the "weekly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateWeeklyUsedKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateWeeklyUsedKnives()
+	})
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsertOne) SetMonthlyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetMonthlyUsedKnives(v)
+	})
+}
+
+// AddMonthlyUsedKnives adds v to the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsertOne) AddMonthlyUsedKnives(v float64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddMonthlyUsedKnives(v)
+	})
+}
+
+// UpdateMonthlyUsedKnives sets the "monthly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateMonthlyUsedKnives() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateMonthlyUsedKnives()
+	})
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertOne) SetSupersededByID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetSupersededByID(v)
+	})
+}
+
+// AddSupersededByID adds v to the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertOne) AddSupersededByID(v int64) *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddSupersededByID(v)
+	})
+}
+
+// UpdateSupersededByID sets the "superseded_by_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertOne) UpdateSupersededByID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateSupersededByID()
+	})
+}
+
+// ClearSupersededByID clears the value of the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertOne) ClearSupersededByID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearSupersededByID()
 	})
 }
 
@@ -1452,6 +2126,83 @@ func (u *UserSubscriptionUpsertBulk) UpdateGroupID() *UserSubscriptionUpsertBulk
 	})
 }
 
+// SetPlanID sets the "plan_id" field.
+func (u *UserSubscriptionUpsertBulk) SetPlanID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanID(v)
+	})
+}
+
+// AddPlanID adds v to the "plan_id" field.
+func (u *UserSubscriptionUpsertBulk) AddPlanID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddPlanID(v)
+	})
+}
+
+// UpdatePlanID sets the "plan_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdatePlanID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanID()
+	})
+}
+
+// ClearPlanID clears the value of the "plan_id" field.
+func (u *UserSubscriptionUpsertBulk) ClearPlanID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanID()
+	})
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsertBulk) SetPlanNameSnapshot(v string) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanNameSnapshot(v)
+	})
+}
+
+// UpdatePlanNameSnapshot sets the "plan_name_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdatePlanNameSnapshot() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanNameSnapshot()
+	})
+}
+
+// ClearPlanNameSnapshot clears the value of the "plan_name_snapshot" field.
+func (u *UserSubscriptionUpsertBulk) ClearPlanNameSnapshot() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanNameSnapshot()
+	})
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertBulk) SetPlanPriceSnapshot(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetPlanPriceSnapshot(v)
+	})
+}
+
+// AddPlanPriceSnapshot adds v to the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertBulk) AddPlanPriceSnapshot(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddPlanPriceSnapshot(v)
+	})
+}
+
+// UpdatePlanPriceSnapshot sets the "plan_price_snapshot" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdatePlanPriceSnapshot() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdatePlanPriceSnapshot()
+	})
+}
+
+// ClearPlanPriceSnapshot clears the value of the "plan_price_snapshot" field.
+func (u *UserSubscriptionUpsertBulk) ClearPlanPriceSnapshot() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearPlanPriceSnapshot()
+	})
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (u *UserSubscriptionUpsertBulk) SetStartsAt(v time.Time) *UserSubscriptionUpsertBulk {
 	return u.Update(func(s *UserSubscriptionUpsert) {
@@ -1617,6 +2368,181 @@ func (u *UserSubscriptionUpsertBulk) AddMonthlyUsageUsd(v float64) *UserSubscrip
 func (u *UserSubscriptionUpsertBulk) UpdateMonthlyUsageUsd() *UserSubscriptionUpsertBulk {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateMonthlyUsageUsd()
+	})
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetDailyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetDailyQuotaKnives(v)
+	})
+}
+
+// AddDailyQuotaKnives adds v to the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddDailyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddDailyQuotaKnives(v)
+	})
+}
+
+// UpdateDailyQuotaKnives sets the "daily_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateDailyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateDailyQuotaKnives()
+	})
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) ClearDailyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearDailyQuotaKnives()
+	})
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetWeeklyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetWeeklyQuotaKnives(v)
+	})
+}
+
+// AddWeeklyQuotaKnives adds v to the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddWeeklyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddWeeklyQuotaKnives(v)
+	})
+}
+
+// UpdateWeeklyQuotaKnives sets the "weekly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateWeeklyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateWeeklyQuotaKnives()
+	})
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) ClearWeeklyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearWeeklyQuotaKnives()
+	})
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetMonthlyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetMonthlyQuotaKnives(v)
+	})
+}
+
+// AddMonthlyQuotaKnives adds v to the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddMonthlyQuotaKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddMonthlyQuotaKnives(v)
+	})
+}
+
+// UpdateMonthlyQuotaKnives sets the "monthly_quota_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateMonthlyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateMonthlyQuotaKnives()
+	})
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (u *UserSubscriptionUpsertBulk) ClearMonthlyQuotaKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearMonthlyQuotaKnives()
+	})
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetDailyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetDailyUsedKnives(v)
+	})
+}
+
+// AddDailyUsedKnives adds v to the "daily_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddDailyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddDailyUsedKnives(v)
+	})
+}
+
+// UpdateDailyUsedKnives sets the "daily_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateDailyUsedKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateDailyUsedKnives()
+	})
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetWeeklyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetWeeklyUsedKnives(v)
+	})
+}
+
+// AddWeeklyUsedKnives adds v to the "weekly_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddWeeklyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddWeeklyUsedKnives(v)
+	})
+}
+
+// UpdateWeeklyUsedKnives sets the "weekly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateWeeklyUsedKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateWeeklyUsedKnives()
+	})
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) SetMonthlyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetMonthlyUsedKnives(v)
+	})
+}
+
+// AddMonthlyUsedKnives adds v to the "monthly_used_knives" field.
+func (u *UserSubscriptionUpsertBulk) AddMonthlyUsedKnives(v float64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddMonthlyUsedKnives(v)
+	})
+}
+
+// UpdateMonthlyUsedKnives sets the "monthly_used_knives" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateMonthlyUsedKnives() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateMonthlyUsedKnives()
+	})
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertBulk) SetSupersededByID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.SetSupersededByID(v)
+	})
+}
+
+// AddSupersededByID adds v to the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertBulk) AddSupersededByID(v int64) *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.AddSupersededByID(v)
+	})
+}
+
+// UpdateSupersededByID sets the "superseded_by_id" field to the value that was provided on create.
+func (u *UserSubscriptionUpsertBulk) UpdateSupersededByID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.UpdateSupersededByID()
+	})
+}
+
+// ClearSupersededByID clears the value of the "superseded_by_id" field.
+func (u *UserSubscriptionUpsertBulk) ClearSupersededByID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearSupersededByID()
 	})
 }
 

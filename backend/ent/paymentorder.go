@@ -51,6 +51,20 @@ type PaymentOrder struct {
 	OrderType string `json:"order_type,omitempty"`
 	// PlanID holds the value of the "plan_id" field.
 	PlanID *int64 `json:"plan_id,omitempty"`
+	// SubscriptionAction holds the value of the "subscription_action" field.
+	SubscriptionAction *string `json:"subscription_action,omitempty"`
+	// SubscriptionPlanNameSnapshot holds the value of the "subscription_plan_name_snapshot" field.
+	SubscriptionPlanNameSnapshot *string `json:"subscription_plan_name_snapshot,omitempty"`
+	// SubscriptionPlanPriceSnapshot holds the value of the "subscription_plan_price_snapshot" field.
+	SubscriptionPlanPriceSnapshot *float64 `json:"subscription_plan_price_snapshot,omitempty"`
+	// SubscriptionValidityDaysSnapshot holds the value of the "subscription_validity_days_snapshot" field.
+	SubscriptionValidityDaysSnapshot *int `json:"subscription_validity_days_snapshot,omitempty"`
+	// SubscriptionDailyQuotaKnivesSnapshot holds the value of the "subscription_daily_quota_knives_snapshot" field.
+	SubscriptionDailyQuotaKnivesSnapshot *float64 `json:"subscription_daily_quota_knives_snapshot,omitempty"`
+	// SubscriptionWeeklyQuotaKnivesSnapshot holds the value of the "subscription_weekly_quota_knives_snapshot" field.
+	SubscriptionWeeklyQuotaKnivesSnapshot *float64 `json:"subscription_weekly_quota_knives_snapshot,omitempty"`
+	// SubscriptionMonthlyQuotaKnivesSnapshot holds the value of the "subscription_monthly_quota_knives_snapshot" field.
+	SubscriptionMonthlyQuotaKnivesSnapshot *float64 `json:"subscription_monthly_quota_knives_snapshot,omitempty"`
 	// SubscriptionGroupID holds the value of the "subscription_group_id" field.
 	SubscriptionGroupID *int64 `json:"subscription_group_id,omitempty"`
 	// SubscriptionDays holds the value of the "subscription_days" field.
@@ -132,11 +146,11 @@ func (*PaymentOrder) scanValues(columns []string) ([]any, error) {
 			values[i] = new([]byte)
 		case paymentorder.FieldForceRefund:
 			values[i] = new(sql.NullBool)
-		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldRefundAmount:
+		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldSubscriptionPlanPriceSnapshot, paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, paymentorder.FieldRefundAmount:
 			values[i] = new(sql.NullFloat64)
-		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
+		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionValidityDaysSnapshot, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
 			values[i] = new(sql.NullInt64)
-		case paymentorder.FieldUserEmail, paymentorder.FieldUserName, paymentorder.FieldUserNotes, paymentorder.FieldRechargeCode, paymentorder.FieldOutTradeNo, paymentorder.FieldPaymentType, paymentorder.FieldPaymentTradeNo, paymentorder.FieldPayURL, paymentorder.FieldQrCode, paymentorder.FieldQrCodeImg, paymentorder.FieldOrderType, paymentorder.FieldProviderInstanceID, paymentorder.FieldProviderKey, paymentorder.FieldStatus, paymentorder.FieldRefundReason, paymentorder.FieldRefundRequestReason, paymentorder.FieldRefundRequestedBy, paymentorder.FieldFailedReason, paymentorder.FieldClientIP, paymentorder.FieldSrcHost, paymentorder.FieldSrcURL:
+		case paymentorder.FieldUserEmail, paymentorder.FieldUserName, paymentorder.FieldUserNotes, paymentorder.FieldRechargeCode, paymentorder.FieldOutTradeNo, paymentorder.FieldPaymentType, paymentorder.FieldPaymentTradeNo, paymentorder.FieldPayURL, paymentorder.FieldQrCode, paymentorder.FieldQrCodeImg, paymentorder.FieldOrderType, paymentorder.FieldSubscriptionAction, paymentorder.FieldSubscriptionPlanNameSnapshot, paymentorder.FieldProviderInstanceID, paymentorder.FieldProviderKey, paymentorder.FieldStatus, paymentorder.FieldRefundReason, paymentorder.FieldRefundRequestReason, paymentorder.FieldRefundRequestedBy, paymentorder.FieldFailedReason, paymentorder.FieldClientIP, paymentorder.FieldSrcHost, paymentorder.FieldSrcURL:
 			values[i] = new(sql.NullString)
 		case paymentorder.FieldRefundAt, paymentorder.FieldRefundRequestedAt, paymentorder.FieldExpiresAt, paymentorder.FieldPaidAt, paymentorder.FieldCompletedAt, paymentorder.FieldFailedAt, paymentorder.FieldCreatedAt, paymentorder.FieldUpdatedAt:
 			values[i] = new(sql.NullTime)
@@ -261,6 +275,55 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.PlanID = new(int64)
 				*_m.PlanID = value.Int64
+			}
+		case paymentorder.FieldSubscriptionAction:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_action", values[i])
+			} else if value.Valid {
+				_m.SubscriptionAction = new(string)
+				*_m.SubscriptionAction = value.String
+			}
+		case paymentorder.FieldSubscriptionPlanNameSnapshot:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_plan_name_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionPlanNameSnapshot = new(string)
+				*_m.SubscriptionPlanNameSnapshot = value.String
+			}
+		case paymentorder.FieldSubscriptionPlanPriceSnapshot:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_plan_price_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionPlanPriceSnapshot = new(float64)
+				*_m.SubscriptionPlanPriceSnapshot = value.Float64
+			}
+		case paymentorder.FieldSubscriptionValidityDaysSnapshot:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_validity_days_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionValidityDaysSnapshot = new(int)
+				*_m.SubscriptionValidityDaysSnapshot = int(value.Int64)
+			}
+		case paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_daily_quota_knives_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionDailyQuotaKnivesSnapshot = new(float64)
+				*_m.SubscriptionDailyQuotaKnivesSnapshot = value.Float64
+			}
+		case paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_weekly_quota_knives_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionWeeklyQuotaKnivesSnapshot = new(float64)
+				*_m.SubscriptionWeeklyQuotaKnivesSnapshot = value.Float64
+			}
+		case paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field subscription_monthly_quota_knives_snapshot", values[i])
+			} else if value.Valid {
+				_m.SubscriptionMonthlyQuotaKnivesSnapshot = new(float64)
+				*_m.SubscriptionMonthlyQuotaKnivesSnapshot = value.Float64
 			}
 		case paymentorder.FieldSubscriptionGroupID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -512,6 +575,41 @@ func (_m *PaymentOrder) String() string {
 	builder.WriteString(", ")
 	if v := _m.PlanID; v != nil {
 		builder.WriteString("plan_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionAction; v != nil {
+		builder.WriteString("subscription_action=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionPlanNameSnapshot; v != nil {
+		builder.WriteString("subscription_plan_name_snapshot=")
+		builder.WriteString(*v)
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionPlanPriceSnapshot; v != nil {
+		builder.WriteString("subscription_plan_price_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionValidityDaysSnapshot; v != nil {
+		builder.WriteString("subscription_validity_days_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionDailyQuotaKnivesSnapshot; v != nil {
+		builder.WriteString("subscription_daily_quota_knives_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionWeeklyQuotaKnivesSnapshot; v != nil {
+		builder.WriteString("subscription_weekly_quota_knives_snapshot=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.SubscriptionMonthlyQuotaKnivesSnapshot; v != nil {
+		builder.WriteString("subscription_monthly_quota_knives_snapshot=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

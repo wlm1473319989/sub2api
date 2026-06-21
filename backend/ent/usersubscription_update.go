@@ -85,6 +85,80 @@ func (_u *UserSubscriptionUpdate) SetNillableGroupID(v *int64) *UserSubscription
 	return _u
 }
 
+// SetPlanID sets the "plan_id" field.
+func (_u *UserSubscriptionUpdate) SetPlanID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.ResetPlanID()
+	_u.mutation.SetPlanID(v)
+	return _u
+}
+
+// SetNillablePlanID sets the "plan_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillablePlanID(v *int64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetPlanID(*v)
+	}
+	return _u
+}
+
+// AddPlanID adds value to the "plan_id" field.
+func (_u *UserSubscriptionUpdate) AddPlanID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.AddPlanID(v)
+	return _u
+}
+
+// ClearPlanID clears the value of the "plan_id" field.
+func (_u *UserSubscriptionUpdate) ClearPlanID() *UserSubscriptionUpdate {
+	_u.mutation.ClearPlanID()
+	return _u
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (_u *UserSubscriptionUpdate) SetPlanNameSnapshot(v string) *UserSubscriptionUpdate {
+	_u.mutation.SetPlanNameSnapshot(v)
+	return _u
+}
+
+// SetNillablePlanNameSnapshot sets the "plan_name_snapshot" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillablePlanNameSnapshot(v *string) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetPlanNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearPlanNameSnapshot clears the value of the "plan_name_snapshot" field.
+func (_u *UserSubscriptionUpdate) ClearPlanNameSnapshot() *UserSubscriptionUpdate {
+	_u.mutation.ClearPlanNameSnapshot()
+	return _u
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdate) SetPlanPriceSnapshot(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetPlanPriceSnapshot()
+	_u.mutation.SetPlanPriceSnapshot(v)
+	return _u
+}
+
+// SetNillablePlanPriceSnapshot sets the "plan_price_snapshot" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillablePlanPriceSnapshot(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetPlanPriceSnapshot(*v)
+	}
+	return _u
+}
+
+// AddPlanPriceSnapshot adds value to the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdate) AddPlanPriceSnapshot(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddPlanPriceSnapshot(v)
+	return _u
+}
+
+// ClearPlanPriceSnapshot clears the value of the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdate) ClearPlanPriceSnapshot() *UserSubscriptionUpdate {
+	_u.mutation.ClearPlanPriceSnapshot()
+	return _u
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (_u *UserSubscriptionUpdate) SetStartsAt(v time.Time) *UserSubscriptionUpdate {
 	_u.mutation.SetStartsAt(v)
@@ -247,6 +321,177 @@ func (_u *UserSubscriptionUpdate) SetNillableMonthlyUsageUsd(v *float64) *UserSu
 // AddMonthlyUsageUsd adds value to the "monthly_usage_usd" field.
 func (_u *UserSubscriptionUpdate) AddMonthlyUsageUsd(v float64) *UserSubscriptionUpdate {
 	_u.mutation.AddMonthlyUsageUsd(v)
+	return _u
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdate) SetDailyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetDailyQuotaKnives()
+	_u.mutation.SetDailyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableDailyQuotaKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetDailyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyQuotaKnives adds value to the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdate) AddDailyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddDailyQuotaKnives(v)
+	return _u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdate) ClearDailyQuotaKnives() *UserSubscriptionUpdate {
+	_u.mutation.ClearDailyQuotaKnives()
+	return _u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) SetWeeklyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetWeeklyQuotaKnives()
+	_u.mutation.SetWeeklyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableWeeklyQuotaKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetWeeklyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyQuotaKnives adds value to the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) AddWeeklyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddWeeklyQuotaKnives(v)
+	return _u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) ClearWeeklyQuotaKnives() *UserSubscriptionUpdate {
+	_u.mutation.ClearWeeklyQuotaKnives()
+	return _u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) SetMonthlyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetMonthlyQuotaKnives()
+	_u.mutation.SetMonthlyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableMonthlyQuotaKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetMonthlyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyQuotaKnives adds value to the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) AddMonthlyQuotaKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddMonthlyQuotaKnives(v)
+	return _u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdate) ClearMonthlyQuotaKnives() *UserSubscriptionUpdate {
+	_u.mutation.ClearMonthlyQuotaKnives()
+	return _u
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (_u *UserSubscriptionUpdate) SetDailyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetDailyUsedKnives()
+	_u.mutation.SetDailyUsedKnives(v)
+	return _u
+}
+
+// SetNillableDailyUsedKnives sets the "daily_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableDailyUsedKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetDailyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyUsedKnives adds value to the "daily_used_knives" field.
+func (_u *UserSubscriptionUpdate) AddDailyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddDailyUsedKnives(v)
+	return _u
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (_u *UserSubscriptionUpdate) SetWeeklyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetWeeklyUsedKnives()
+	_u.mutation.SetWeeklyUsedKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyUsedKnives sets the "weekly_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableWeeklyUsedKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetWeeklyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyUsedKnives adds value to the "weekly_used_knives" field.
+func (_u *UserSubscriptionUpdate) AddWeeklyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddWeeklyUsedKnives(v)
+	return _u
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (_u *UserSubscriptionUpdate) SetMonthlyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.ResetMonthlyUsedKnives()
+	_u.mutation.SetMonthlyUsedKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyUsedKnives sets the "monthly_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableMonthlyUsedKnives(v *float64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetMonthlyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyUsedKnives adds value to the "monthly_used_knives" field.
+func (_u *UserSubscriptionUpdate) AddMonthlyUsedKnives(v float64) *UserSubscriptionUpdate {
+	_u.mutation.AddMonthlyUsedKnives(v)
+	return _u
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdate) SetSupersededByID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.ResetSupersededByID()
+	_u.mutation.SetSupersededByID(v)
+	return _u
+}
+
+// SetNillableSupersededByID sets the "superseded_by_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdate) SetNillableSupersededByID(v *int64) *UserSubscriptionUpdate {
+	if v != nil {
+		_u.SetSupersededByID(*v)
+	}
+	return _u
+}
+
+// AddSupersededByID adds value to the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdate) AddSupersededByID(v int64) *UserSubscriptionUpdate {
+	_u.mutation.AddSupersededByID(v)
+	return _u
+}
+
+// ClearSupersededByID clears the value of the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdate) ClearSupersededByID() *UserSubscriptionUpdate {
+	_u.mutation.ClearSupersededByID()
 	return _u
 }
 
@@ -436,6 +681,11 @@ func (_u *UserSubscriptionUpdate) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserSubscriptionUpdate) check() error {
+	if v, ok := _u.mutation.PlanNameSnapshot(); ok {
+		if err := usersubscription.PlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.plan_name_snapshot": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := usersubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.status": %w`, err)}
@@ -470,6 +720,30 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(usersubscription.FieldDeletedAt, field.TypeTime)
+	}
+	if value, ok := _u.mutation.PlanID(); ok {
+		_spec.SetField(usersubscription.FieldPlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPlanID(); ok {
+		_spec.AddField(usersubscription.FieldPlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.PlanIDCleared() {
+		_spec.ClearField(usersubscription.FieldPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.PlanNameSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.PlanNameSnapshotCleared() {
+		_spec.ClearField(usersubscription.FieldPlanNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.PlanPriceSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedPlanPriceSnapshot(); ok {
+		_spec.AddField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.PlanPriceSnapshotCleared() {
+		_spec.ClearField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64)
 	}
 	if value, ok := _u.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)
@@ -515,6 +789,60 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.DailyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.WeeklyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.MonthlyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.DailyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldDailyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.WeeklyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldWeeklyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.MonthlyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldMonthlyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SupersededByID(); ok {
+		_spec.SetField(usersubscription.FieldSupersededByID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSupersededByID(); ok {
+		_spec.AddField(usersubscription.FieldSupersededByID, field.TypeInt64, value)
+	}
+	if _u.mutation.SupersededByIDCleared() {
+		_spec.ClearField(usersubscription.FieldSupersededByID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)
@@ -731,6 +1059,80 @@ func (_u *UserSubscriptionUpdateOne) SetNillableGroupID(v *int64) *UserSubscript
 	return _u
 }
 
+// SetPlanID sets the "plan_id" field.
+func (_u *UserSubscriptionUpdateOne) SetPlanID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetPlanID()
+	_u.mutation.SetPlanID(v)
+	return _u
+}
+
+// SetNillablePlanID sets the "plan_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillablePlanID(v *int64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPlanID(*v)
+	}
+	return _u
+}
+
+// AddPlanID adds value to the "plan_id" field.
+func (_u *UserSubscriptionUpdateOne) AddPlanID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddPlanID(v)
+	return _u
+}
+
+// ClearPlanID clears the value of the "plan_id" field.
+func (_u *UserSubscriptionUpdateOne) ClearPlanID() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearPlanID()
+	return _u
+}
+
+// SetPlanNameSnapshot sets the "plan_name_snapshot" field.
+func (_u *UserSubscriptionUpdateOne) SetPlanNameSnapshot(v string) *UserSubscriptionUpdateOne {
+	_u.mutation.SetPlanNameSnapshot(v)
+	return _u
+}
+
+// SetNillablePlanNameSnapshot sets the "plan_name_snapshot" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillablePlanNameSnapshot(v *string) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPlanNameSnapshot(*v)
+	}
+	return _u
+}
+
+// ClearPlanNameSnapshot clears the value of the "plan_name_snapshot" field.
+func (_u *UserSubscriptionUpdateOne) ClearPlanNameSnapshot() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearPlanNameSnapshot()
+	return _u
+}
+
+// SetPlanPriceSnapshot sets the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdateOne) SetPlanPriceSnapshot(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetPlanPriceSnapshot()
+	_u.mutation.SetPlanPriceSnapshot(v)
+	return _u
+}
+
+// SetNillablePlanPriceSnapshot sets the "plan_price_snapshot" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillablePlanPriceSnapshot(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetPlanPriceSnapshot(*v)
+	}
+	return _u
+}
+
+// AddPlanPriceSnapshot adds value to the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdateOne) AddPlanPriceSnapshot(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddPlanPriceSnapshot(v)
+	return _u
+}
+
+// ClearPlanPriceSnapshot clears the value of the "plan_price_snapshot" field.
+func (_u *UserSubscriptionUpdateOne) ClearPlanPriceSnapshot() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearPlanPriceSnapshot()
+	return _u
+}
+
 // SetStartsAt sets the "starts_at" field.
 func (_u *UserSubscriptionUpdateOne) SetStartsAt(v time.Time) *UserSubscriptionUpdateOne {
 	_u.mutation.SetStartsAt(v)
@@ -893,6 +1295,177 @@ func (_u *UserSubscriptionUpdateOne) SetNillableMonthlyUsageUsd(v *float64) *Use
 // AddMonthlyUsageUsd adds value to the "monthly_usage_usd" field.
 func (_u *UserSubscriptionUpdateOne) AddMonthlyUsageUsd(v float64) *UserSubscriptionUpdateOne {
 	_u.mutation.AddMonthlyUsageUsd(v)
+	return _u
+}
+
+// SetDailyQuotaKnives sets the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetDailyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetDailyQuotaKnives()
+	_u.mutation.SetDailyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableDailyQuotaKnives sets the "daily_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableDailyQuotaKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDailyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyQuotaKnives adds value to the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddDailyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddDailyQuotaKnives(v)
+	return _u
+}
+
+// ClearDailyQuotaKnives clears the value of the "daily_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) ClearDailyQuotaKnives() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearDailyQuotaKnives()
+	return _u
+}
+
+// SetWeeklyQuotaKnives sets the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetWeeklyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetWeeklyQuotaKnives()
+	_u.mutation.SetWeeklyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyQuotaKnives sets the "weekly_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableWeeklyQuotaKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetWeeklyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyQuotaKnives adds value to the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddWeeklyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddWeeklyQuotaKnives(v)
+	return _u
+}
+
+// ClearWeeklyQuotaKnives clears the value of the "weekly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) ClearWeeklyQuotaKnives() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearWeeklyQuotaKnives()
+	return _u
+}
+
+// SetMonthlyQuotaKnives sets the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetMonthlyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetMonthlyQuotaKnives()
+	_u.mutation.SetMonthlyQuotaKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyQuotaKnives sets the "monthly_quota_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableMonthlyQuotaKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetMonthlyQuotaKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyQuotaKnives adds value to the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddMonthlyQuotaKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddMonthlyQuotaKnives(v)
+	return _u
+}
+
+// ClearMonthlyQuotaKnives clears the value of the "monthly_quota_knives" field.
+func (_u *UserSubscriptionUpdateOne) ClearMonthlyQuotaKnives() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearMonthlyQuotaKnives()
+	return _u
+}
+
+// SetDailyUsedKnives sets the "daily_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetDailyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetDailyUsedKnives()
+	_u.mutation.SetDailyUsedKnives(v)
+	return _u
+}
+
+// SetNillableDailyUsedKnives sets the "daily_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableDailyUsedKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetDailyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddDailyUsedKnives adds value to the "daily_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddDailyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddDailyUsedKnives(v)
+	return _u
+}
+
+// SetWeeklyUsedKnives sets the "weekly_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetWeeklyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetWeeklyUsedKnives()
+	_u.mutation.SetWeeklyUsedKnives(v)
+	return _u
+}
+
+// SetNillableWeeklyUsedKnives sets the "weekly_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableWeeklyUsedKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetWeeklyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddWeeklyUsedKnives adds value to the "weekly_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddWeeklyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddWeeklyUsedKnives(v)
+	return _u
+}
+
+// SetMonthlyUsedKnives sets the "monthly_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) SetMonthlyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetMonthlyUsedKnives()
+	_u.mutation.SetMonthlyUsedKnives(v)
+	return _u
+}
+
+// SetNillableMonthlyUsedKnives sets the "monthly_used_knives" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableMonthlyUsedKnives(v *float64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetMonthlyUsedKnives(*v)
+	}
+	return _u
+}
+
+// AddMonthlyUsedKnives adds value to the "monthly_used_knives" field.
+func (_u *UserSubscriptionUpdateOne) AddMonthlyUsedKnives(v float64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddMonthlyUsedKnives(v)
+	return _u
+}
+
+// SetSupersededByID sets the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdateOne) SetSupersededByID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.ResetSupersededByID()
+	_u.mutation.SetSupersededByID(v)
+	return _u
+}
+
+// SetNillableSupersededByID sets the "superseded_by_id" field if the given value is not nil.
+func (_u *UserSubscriptionUpdateOne) SetNillableSupersededByID(v *int64) *UserSubscriptionUpdateOne {
+	if v != nil {
+		_u.SetSupersededByID(*v)
+	}
+	return _u
+}
+
+// AddSupersededByID adds value to the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdateOne) AddSupersededByID(v int64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddSupersededByID(v)
+	return _u
+}
+
+// ClearSupersededByID clears the value of the "superseded_by_id" field.
+func (_u *UserSubscriptionUpdateOne) ClearSupersededByID() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearSupersededByID()
 	return _u
 }
 
@@ -1095,6 +1668,11 @@ func (_u *UserSubscriptionUpdateOne) defaults() error {
 
 // check runs all checks and user-defined validators on the builder.
 func (_u *UserSubscriptionUpdateOne) check() error {
+	if v, ok := _u.mutation.PlanNameSnapshot(); ok {
+		if err := usersubscription.PlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.plan_name_snapshot": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.Status(); ok {
 		if err := usersubscription.StatusValidator(v); err != nil {
 			return &ValidationError{Name: "status", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.status": %w`, err)}
@@ -1147,6 +1725,30 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 	if _u.mutation.DeletedAtCleared() {
 		_spec.ClearField(usersubscription.FieldDeletedAt, field.TypeTime)
 	}
+	if value, ok := _u.mutation.PlanID(); ok {
+		_spec.SetField(usersubscription.FieldPlanID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedPlanID(); ok {
+		_spec.AddField(usersubscription.FieldPlanID, field.TypeInt64, value)
+	}
+	if _u.mutation.PlanIDCleared() {
+		_spec.ClearField(usersubscription.FieldPlanID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.PlanNameSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanNameSnapshot, field.TypeString, value)
+	}
+	if _u.mutation.PlanNameSnapshotCleared() {
+		_spec.ClearField(usersubscription.FieldPlanNameSnapshot, field.TypeString)
+	}
+	if value, ok := _u.mutation.PlanPriceSnapshot(); ok {
+		_spec.SetField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedPlanPriceSnapshot(); ok {
+		_spec.AddField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64, value)
+	}
+	if _u.mutation.PlanPriceSnapshotCleared() {
+		_spec.ClearField(usersubscription.FieldPlanPriceSnapshot, field.TypeFloat64)
+	}
 	if value, ok := _u.mutation.StartsAt(); ok {
 		_spec.SetField(usersubscription.FieldStartsAt, field.TypeTime, value)
 	}
@@ -1191,6 +1793,60 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 	}
 	if value, ok := _u.mutation.AddedMonthlyUsageUsd(); ok {
 		_spec.AddField(usersubscription.FieldMonthlyUsageUsd, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.DailyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.DailyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldDailyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.WeeklyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.WeeklyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldWeeklyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.MonthlyQuotaKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyQuotaKnives(); ok {
+		_spec.AddField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64, value)
+	}
+	if _u.mutation.MonthlyQuotaKnivesCleared() {
+		_spec.ClearField(usersubscription.FieldMonthlyQuotaKnives, field.TypeFloat64)
+	}
+	if value, ok := _u.mutation.DailyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldDailyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedDailyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldDailyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.WeeklyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldWeeklyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedWeeklyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldWeeklyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.MonthlyUsedKnives(); ok {
+		_spec.SetField(usersubscription.FieldMonthlyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedMonthlyUsedKnives(); ok {
+		_spec.AddField(usersubscription.FieldMonthlyUsedKnives, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SupersededByID(); ok {
+		_spec.SetField(usersubscription.FieldSupersededByID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedSupersededByID(); ok {
+		_spec.AddField(usersubscription.FieldSupersededByID, field.TypeInt64, value)
+	}
+	if _u.mutation.SupersededByIDCleared() {
+		_spec.ClearField(usersubscription.FieldSupersededByID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.AssignedAt(); ok {
 		_spec.SetField(usersubscription.FieldAssignedAt, field.TypeTime, value)

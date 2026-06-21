@@ -183,6 +183,104 @@ func (_c *PaymentOrderCreate) SetNillablePlanID(v *int64) *PaymentOrderCreate {
 	return _c
 }
 
+// SetSubscriptionAction sets the "subscription_action" field.
+func (_c *PaymentOrderCreate) SetSubscriptionAction(v string) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionAction(v)
+	return _c
+}
+
+// SetNillableSubscriptionAction sets the "subscription_action" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionAction(v *string) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionAction(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionPlanNameSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionPlanNameSnapshot(v *string) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionPlanNameSnapshot(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionPlanPriceSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionPlanPriceSnapshot(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionPlanPriceSnapshot(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionValidityDaysSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionValidityDaysSnapshot(v *int) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionValidityDaysSnapshot(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionDailyQuotaKnivesSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionDailyQuotaKnivesSnapshot(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionDailyQuotaKnivesSnapshot(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionWeeklyQuotaKnivesSnapshot(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionWeeklyQuotaKnivesSnapshot(*v)
+	}
+	return _c
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (_c *PaymentOrderCreate) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderCreate {
+	_c.mutation.SetSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	return _c
+}
+
+// SetNillableSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableSubscriptionMonthlyQuotaKnivesSnapshot(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetSubscriptionMonthlyQuotaKnivesSnapshot(*v)
+	}
+	return _c
+}
+
 // SetSubscriptionGroupID sets the "subscription_group_id" field.
 func (_c *PaymentOrderCreate) SetSubscriptionGroupID(v int64) *PaymentOrderCreate {
 	_c.mutation.SetSubscriptionGroupID(v)
@@ -617,6 +715,16 @@ func (_c *PaymentOrderCreate) check() error {
 			return &ValidationError{Name: "order_type", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.order_type": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.SubscriptionAction(); ok {
+		if err := paymentorder.SubscriptionActionValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_action", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_action": %w`, err)}
+		}
+	}
+	if v, ok := _c.mutation.SubscriptionPlanNameSnapshot(); ok {
+		if err := paymentorder.SubscriptionPlanNameSnapshotValidator(v); err != nil {
+			return &ValidationError{Name: "subscription_plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.subscription_plan_name_snapshot": %w`, err)}
+		}
+	}
 	if v, ok := _c.mutation.ProviderInstanceID(); ok {
 		if err := paymentorder.ProviderInstanceIDValidator(v); err != nil {
 			return &ValidationError{Name: "provider_instance_id", err: fmt.Errorf(`ent: validator failed for field "PaymentOrder.provider_instance_id": %w`, err)}
@@ -760,6 +868,34 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.PlanID(); ok {
 		_spec.SetField(paymentorder.FieldPlanID, field.TypeInt64, value)
 		_node.PlanID = &value
+	}
+	if value, ok := _c.mutation.SubscriptionAction(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionAction, field.TypeString, value)
+		_node.SubscriptionAction = &value
+	}
+	if value, ok := _c.mutation.SubscriptionPlanNameSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanNameSnapshot, field.TypeString, value)
+		_node.SubscriptionPlanNameSnapshot = &value
+	}
+	if value, ok := _c.mutation.SubscriptionPlanPriceSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionPlanPriceSnapshot, field.TypeFloat64, value)
+		_node.SubscriptionPlanPriceSnapshot = &value
+	}
+	if value, ok := _c.mutation.SubscriptionValidityDaysSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionValidityDaysSnapshot, field.TypeInt, value)
+		_node.SubscriptionValidityDaysSnapshot = &value
+	}
+	if value, ok := _c.mutation.SubscriptionDailyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, field.TypeFloat64, value)
+		_node.SubscriptionDailyQuotaKnivesSnapshot = &value
+	}
+	if value, ok := _c.mutation.SubscriptionWeeklyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, field.TypeFloat64, value)
+		_node.SubscriptionWeeklyQuotaKnivesSnapshot = &value
+	}
+	if value, ok := _c.mutation.SubscriptionMonthlyQuotaKnivesSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, field.TypeFloat64, value)
+		_node.SubscriptionMonthlyQuotaKnivesSnapshot = &value
 	}
 	if value, ok := _c.mutation.SubscriptionGroupID(); ok {
 		_spec.SetField(paymentorder.FieldSubscriptionGroupID, field.TypeInt64, value)
@@ -1165,6 +1301,162 @@ func (u *PaymentOrderUpsert) AddPlanID(v int64) *PaymentOrderUpsert {
 // ClearPlanID clears the value of the "plan_id" field.
 func (u *PaymentOrderUpsert) ClearPlanID() *PaymentOrderUpsert {
 	u.SetNull(paymentorder.FieldPlanID)
+	return u
+}
+
+// SetSubscriptionAction sets the "subscription_action" field.
+func (u *PaymentOrderUpsert) SetSubscriptionAction(v string) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionAction, v)
+	return u
+}
+
+// UpdateSubscriptionAction sets the "subscription_action" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionAction() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionAction)
+	return u
+}
+
+// ClearSubscriptionAction clears the value of the "subscription_action" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionAction() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionAction)
+	return u
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionPlanNameSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionPlanNameSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionPlanNameSnapshot)
+	return u
+}
+
+// ClearSubscriptionPlanNameSnapshot clears the value of the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionPlanNameSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionPlanNameSnapshot)
+	return u
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionPlanPriceSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionPlanPriceSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionPlanPriceSnapshot)
+	return u
+}
+
+// AddSubscriptionPlanPriceSnapshot adds v to the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsert) AddSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSubscriptionPlanPriceSnapshot, v)
+	return u
+}
+
+// ClearSubscriptionPlanPriceSnapshot clears the value of the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionPlanPriceSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionPlanPriceSnapshot)
+	return u
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionValidityDaysSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionValidityDaysSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionValidityDaysSnapshot)
+	return u
+}
+
+// AddSubscriptionValidityDaysSnapshot adds v to the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsert) AddSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSubscriptionValidityDaysSnapshot, v)
+	return u
+}
+
+// ClearSubscriptionValidityDaysSnapshot clears the value of the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionValidityDaysSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionValidityDaysSnapshot)
+	return u
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot)
+	return u
+}
+
+// AddSubscriptionDailyQuotaKnivesSnapshot adds v to the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) AddSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// ClearSubscriptionDailyQuotaKnivesSnapshot clears the value of the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot)
+	return u
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot)
+	return u
+}
+
+// AddSubscriptionWeeklyQuotaKnivesSnapshot adds v to the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) AddSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// ClearSubscriptionWeeklyQuotaKnivesSnapshot clears the value of the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot)
+	return u
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// UpdateSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot)
+	return u
+}
+
+// AddSubscriptionMonthlyQuotaKnivesSnapshot adds v to the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) AddSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, v)
+	return u
+}
+
+// ClearSubscriptionMonthlyQuotaKnivesSnapshot clears the value of the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsert) ClearSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot)
 	return u
 }
 
@@ -1869,6 +2161,188 @@ func (u *PaymentOrderUpsertOne) UpdatePlanID() *PaymentOrderUpsertOne {
 func (u *PaymentOrderUpsertOne) ClearPlanID() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.ClearPlanID()
+	})
+}
+
+// SetSubscriptionAction sets the "subscription_action" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionAction(v string) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionAction(v)
+	})
+}
+
+// UpdateSubscriptionAction sets the "subscription_action" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionAction() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionAction()
+	})
+}
+
+// ClearSubscriptionAction clears the value of the "subscription_action" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionAction() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionAction()
+	})
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionPlanNameSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionPlanNameSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionPlanNameSnapshot()
+	})
+}
+
+// ClearSubscriptionPlanNameSnapshot clears the value of the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionPlanNameSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionPlanNameSnapshot()
+	})
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionPlanPriceSnapshot(v)
+	})
+}
+
+// AddSubscriptionPlanPriceSnapshot adds v to the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertOne) AddSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionPlanPriceSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionPlanPriceSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionPlanPriceSnapshot()
+	})
+}
+
+// ClearSubscriptionPlanPriceSnapshot clears the value of the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionPlanPriceSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionPlanPriceSnapshot()
+	})
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionValidityDaysSnapshot(v)
+	})
+}
+
+// AddSubscriptionValidityDaysSnapshot adds v to the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertOne) AddSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionValidityDaysSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionValidityDaysSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionValidityDaysSnapshot()
+	})
+}
+
+// ClearSubscriptionValidityDaysSnapshot clears the value of the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionValidityDaysSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionValidityDaysSnapshot()
+	})
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionDailyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionDailyQuotaKnivesSnapshot adds v to the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) AddSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionDailyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionDailyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionDailyQuotaKnivesSnapshot clears the value of the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionDailyQuotaKnivesSnapshot()
+	})
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionWeeklyQuotaKnivesSnapshot adds v to the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) AddSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionWeeklyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionWeeklyQuotaKnivesSnapshot clears the value of the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionWeeklyQuotaKnivesSnapshot()
+	})
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionMonthlyQuotaKnivesSnapshot adds v to the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) AddSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionMonthlyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionMonthlyQuotaKnivesSnapshot clears the value of the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionMonthlyQuotaKnivesSnapshot()
 	})
 }
 
@@ -2801,6 +3275,188 @@ func (u *PaymentOrderUpsertBulk) UpdatePlanID() *PaymentOrderUpsertBulk {
 func (u *PaymentOrderUpsertBulk) ClearPlanID() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.ClearPlanID()
+	})
+}
+
+// SetSubscriptionAction sets the "subscription_action" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionAction(v string) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionAction(v)
+	})
+}
+
+// UpdateSubscriptionAction sets the "subscription_action" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionAction() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionAction()
+	})
+}
+
+// ClearSubscriptionAction clears the value of the "subscription_action" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionAction() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionAction()
+	})
+}
+
+// SetSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionPlanNameSnapshot(v string) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionPlanNameSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionPlanNameSnapshot sets the "subscription_plan_name_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionPlanNameSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionPlanNameSnapshot()
+	})
+}
+
+// ClearSubscriptionPlanNameSnapshot clears the value of the "subscription_plan_name_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionPlanNameSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionPlanNameSnapshot()
+	})
+}
+
+// SetSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionPlanPriceSnapshot(v)
+	})
+}
+
+// AddSubscriptionPlanPriceSnapshot adds v to the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertBulk) AddSubscriptionPlanPriceSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionPlanPriceSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionPlanPriceSnapshot sets the "subscription_plan_price_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionPlanPriceSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionPlanPriceSnapshot()
+	})
+}
+
+// ClearSubscriptionPlanPriceSnapshot clears the value of the "subscription_plan_price_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionPlanPriceSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionPlanPriceSnapshot()
+	})
+}
+
+// SetSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionValidityDaysSnapshot(v)
+	})
+}
+
+// AddSubscriptionValidityDaysSnapshot adds v to the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertBulk) AddSubscriptionValidityDaysSnapshot(v int) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionValidityDaysSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionValidityDaysSnapshot sets the "subscription_validity_days_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionValidityDaysSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionValidityDaysSnapshot()
+	})
+}
+
+// ClearSubscriptionValidityDaysSnapshot clears the value of the "subscription_validity_days_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionValidityDaysSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionValidityDaysSnapshot()
+	})
+}
+
+// SetSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionDailyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionDailyQuotaKnivesSnapshot adds v to the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) AddSubscriptionDailyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionDailyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionDailyQuotaKnivesSnapshot sets the "subscription_daily_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionDailyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionDailyQuotaKnivesSnapshot clears the value of the "subscription_daily_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionDailyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionDailyQuotaKnivesSnapshot()
+	})
+}
+
+// SetSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionWeeklyQuotaKnivesSnapshot adds v to the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) AddSubscriptionWeeklyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionWeeklyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionWeeklyQuotaKnivesSnapshot sets the "subscription_weekly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionWeeklyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionWeeklyQuotaKnivesSnapshot clears the value of the "subscription_weekly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionWeeklyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionWeeklyQuotaKnivesSnapshot()
+	})
+}
+
+// SetSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	})
+}
+
+// AddSubscriptionMonthlyQuotaKnivesSnapshot adds v to the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) AddSubscriptionMonthlyQuotaKnivesSnapshot(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddSubscriptionMonthlyQuotaKnivesSnapshot(v)
+	})
+}
+
+// UpdateSubscriptionMonthlyQuotaKnivesSnapshot sets the "subscription_monthly_quota_knives_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateSubscriptionMonthlyQuotaKnivesSnapshot()
+	})
+}
+
+// ClearSubscriptionMonthlyQuotaKnivesSnapshot clears the value of the "subscription_monthly_quota_knives_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearSubscriptionMonthlyQuotaKnivesSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearSubscriptionMonthlyQuotaKnivesSnapshot()
 	})
 }
 

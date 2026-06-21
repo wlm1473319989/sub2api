@@ -62,9 +62,11 @@ const (
 
 // Subscription status constants
 const (
-	SubscriptionStatusActive    = "active"
-	SubscriptionStatusExpired   = "expired"
-	SubscriptionStatusSuspended = "suspended"
+	SubscriptionStatusActive     = "active"
+	SubscriptionStatusExpired    = "expired"
+	SubscriptionStatusSuspended  = "suspended"
+	SubscriptionStatusSuperseded = "superseded"
+	SubscriptionStatusRefunded   = "refunded"
 )
 
 // DefaultAntigravityModelMapping 是 Antigravity 平台的默认模型映射
