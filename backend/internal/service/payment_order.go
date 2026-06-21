@@ -137,7 +137,10 @@ func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRe
 	if err != nil || !plan.ForSale {
 		return nil, infraerrors.NotFound("PLAN_NOT_AVAILABLE", "plan not found or not for sale")
 	}
-	group, err := s.groupRepo.GetByID(ctx, plan.GroupID)
+	if plan.GroupID == nil {
+		return nil, infraerrors.BadRequest("PLAN_NOT_PURCHASABLE_YET", "plan is not yet available in the legacy purchase flow")
+	}
+	group, err := s.groupRepo.GetByID(ctx, *plan.GroupID)
 	if err != nil || group.Status != payment.EntityStatusActive {
 		return nil, infraerrors.NotFound("GROUP_NOT_FOUND", "subscription group is no longer available")
 	}
@@ -205,7 +208,10 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		b.SetProviderSnapshot(providerSnapshot)
 	}
 	if plan != nil {
-		b.SetPlanID(plan.ID).SetSubscriptionGroupID(plan.GroupID).SetSubscriptionDays(psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit))
+		b.SetPlanID(plan.ID).SetSubscriptionDays(psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit))
+		if plan.GroupID != nil {
+			b.SetSubscriptionGroupID(*plan.GroupID)
+		}
 	}
 	order, err := b.Save(ctx)
 	if err != nil {

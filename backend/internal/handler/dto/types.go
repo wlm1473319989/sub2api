@@ -565,9 +565,10 @@ type Setting struct {
 }
 
 type UserSubscription struct {
-	ID      int64 `json:"id"`
-	UserID  int64 `json:"user_id"`
-	GroupID int64 `json:"group_id"`
+	ID      int64  `json:"id"`
+	UserID  int64  `json:"user_id"`
+	GroupID int64  `json:"group_id"`
+	PlanID  *int64 `json:"plan_id,omitempty"`
 
 	StartsAt  time.Time `json:"starts_at"`
 	ExpiresAt time.Time `json:"expires_at"`
@@ -580,6 +581,13 @@ type UserSubscription struct {
 	DailyUsageUSD   float64 `json:"daily_usage_usd"`
 	WeeklyUsageUSD  float64 `json:"weekly_usage_usd"`
 	MonthlyUsageUSD float64 `json:"monthly_usage_usd"`
+
+	DailyQuotaKnives   *float64 `json:"daily_quota_knives,omitempty"`
+	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives,omitempty"`
+	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
+	DailyUsedKnives    float64  `json:"daily_used_knives"`
+	WeeklyUsedKnives   float64  `json:"weekly_used_knives"`
+	MonthlyUsedKnives  float64  `json:"monthly_used_knives"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`

@@ -1555,11 +1555,18 @@ export interface UserSubscription {
   id: number
   user_id: number
   group_id: number
-  status: 'active' | 'expired' | 'revoked'
+  plan_id?: number | null
+  status: 'active' | 'expired' | 'revoked' | 'superseded' | 'refunded'
   starts_at: string
   daily_usage_usd: number
   weekly_usage_usd: number
   monthly_usage_usd: number
+  daily_quota_knives?: number | null
+  weekly_quota_knives?: number | null
+  monthly_quota_knives?: number | null
+  daily_used_knives?: number
+  weekly_used_knives?: number
+  monthly_used_knives?: number
   daily_window_start: string | null
   weekly_window_start: string | null
   monthly_window_start: string | null
