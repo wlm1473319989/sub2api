@@ -360,21 +360,25 @@ func (s *PaymentService) sendBalanceRechargeSuccessNotification(ctx context.Cont
 
 func (s *PaymentService) sendSubscriptionPurchaseSuccessNotification(ctx context.Context, o *dbent.PaymentOrder) error {
 	variables := map[string]string{
-		"subscription_group": "Subscription",
+		"subscription_group": firstNonEmpty(derefString(o.SubscriptionPlanNameSnapshot), "Subscription"),
 		"subscription_days":  "",
 		"expiry_time":        "",
 		"order_id":           strconv.FormatInt(o.ID, 10),
 	}
-	if o.SubscriptionDays != nil {
+	if o.SubscriptionValidityDaysSnapshot != nil {
+		variables["subscription_days"] = strconv.Itoa(*o.SubscriptionValidityDaysSnapshot)
+	} else if o.SubscriptionDays != nil {
 		variables["subscription_days"] = strconv.Itoa(*o.SubscriptionDays)
 	}
-	if o.SubscriptionGroupID != nil {
-		if s.groupRepo != nil {
-			if group, err := s.groupRepo.GetByID(ctx, *o.SubscriptionGroupID); err == nil && group != nil && strings.TrimSpace(group.Name) != "" {
-				variables["subscription_group"] = group.Name
-			}
+	if o.SubscriptionGroupID != nil && variables["subscription_group"] == "Subscription" && s.groupRepo != nil {
+		if group, err := s.groupRepo.GetByID(ctx, *o.SubscriptionGroupID); err == nil && group != nil && strings.TrimSpace(group.Name) != "" {
+			variables["subscription_group"] = group.Name
 		}
-		if s.subscriptionSvc != nil {
+	}
+	if s.subscriptionSvc != nil {
+		if sub, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, o.UserID); err == nil && sub != nil {
+			variables["expiry_time"] = sub.ExpiresAt.Format("2006-01-02 15:04")
+		} else if o.SubscriptionGroupID != nil {
 			if sub, err := s.subscriptionSvc.GetActiveSubscription(ctx, o.UserID, *o.SubscriptionGroupID); err == nil && sub != nil {
 				variables["expiry_time"] = sub.ExpiresAt.Format("2006-01-02 15:04")
 			}
@@ -405,7 +409,7 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 	if o.Status != OrderStatusPaid && o.Status != OrderStatusFailed {
 		return infraerrors.BadRequest("INVALID_STATUS", "order cannot fulfill in status "+o.Status)
 	}
-	if o.SubscriptionGroupID == nil || o.SubscriptionDays == nil {
+	if o.SubscriptionAction == nil && (o.SubscriptionGroupID == nil || o.SubscriptionDays == nil) {
 		return infraerrors.BadRequest("INVALID_STATUS", "missing subscription info")
 	}
 	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.StatusIn(OrderStatusPaid, OrderStatusFailed)).SetStatus(OrderStatusRecharging).Save(ctx)
@@ -423,24 +427,76 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 }
 
 func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error {
+	// Idempotency: check audit log to see if subscription was already assigned.
+	// Prevents double-extension on retry after markCompleted fails.
+	if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
+		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "subscriptionAction", derefString(o.SubscriptionAction))
+		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	}
+
+	if o.SubscriptionAction != nil && o.PlanID != nil {
+		if err := s.doUserLevelSubscriptionFulfillment(ctx, o); err != nil {
+			return err
+		}
+		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	}
+
 	gid := *o.SubscriptionGroupID
 	days := *o.SubscriptionDays
 	g, err := s.groupRepo.GetByID(ctx, gid)
 	if err != nil || g.Status != payment.EntityStatusActive {
 		return fmt.Errorf("group %d no longer exists or inactive", gid)
 	}
-	// Idempotency: check audit log to see if subscription was already assigned.
-	// Prevents double-extension on retry after markCompleted fails.
-	if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
-		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "groupID", gid)
-		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
-	}
 	orderNote := fmt.Sprintf("payment order %d", o.ID)
 	_, _, err = s.subscriptionSvc.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{UserID: o.UserID, GroupID: gid, ValidityDays: days, AssignedBy: 0, Notes: orderNote})
 	if err != nil {
 		return fmt.Errorf("assign subscription: %w", err)
 	}
-	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	return nil
+}
+
+func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context, o *dbent.PaymentOrder) error {
+	if o.PlanID == nil || o.SubscriptionAction == nil {
+		return infraerrors.BadRequest("INVALID_STATUS", "missing user-level subscription fulfillment fields")
+	}
+	plan, err := s.configService.GetPlan(ctx, *o.PlanID)
+	if err != nil {
+		return fmt.Errorf("get plan: %w", err)
+	}
+	orderNote := fmt.Sprintf("payment order %d", o.ID)
+	switch strings.TrimSpace(*o.SubscriptionAction) {
+	case subscriptionActionPurchase:
+		_, err = s.subscriptionSvc.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
+			UserID: o.UserID,
+			Plan:   plan,
+			Notes:  orderNote,
+		})
+	case subscriptionActionRenew:
+		_, err = s.subscriptionSvc.RenewActivePlan(ctx, &RenewActivePlanInput{
+			UserID: o.UserID,
+			Plan:   plan,
+			Notes:  orderNote,
+		})
+	case subscriptionActionUpgrade:
+		_, err = s.subscriptionSvc.UpgradeActivePlan(ctx, &UpgradeActivePlanInput{
+			UserID:     o.UserID,
+			TargetPlan: plan,
+			Notes:      orderNote,
+		})
+	default:
+		return infraerrors.BadRequest("INVALID_SUBSCRIPTION_ACTION", "unknown subscription action")
+	}
+	if err != nil {
+		return fmt.Errorf("apply user-level subscription action %s: %w", *o.SubscriptionAction, err)
+	}
+	return nil
+}
+
+func derefString(v *string) string {
+	if v == nil {
+		return ""
+	}
+	return *v
 }
 
 func (s *PaymentService) hasAuditLog(ctx context.Context, orderID int64, action string) bool {
