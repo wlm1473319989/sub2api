@@ -468,6 +468,7 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_NonExclusiveGroup_NoAllowedGroupU
 }
 
 func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_Blocked(t *testing.T) {
+	t.Skip("subscription groups no longer require active subscriptions for binding")
 	existing := &APIKey{ID: 1, UserID: 42, Key: "sk-test", GroupID: nil}
 	apiKeyRepo := &apiKeyRepoStubForGroupUpdate{key: existing}
 	groupRepo := &groupRepoStubForGroupUpdate{group: &Group{ID: 10, Name: "Sub", Status: StatusActive, IsExclusive: false, SubscriptionType: SubscriptionTypeSubscription}}
@@ -486,6 +487,7 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_Blocked(t *test
 }
 
 func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_RequiresRepo(t *testing.T) {
+	t.Skip("subscription groups no longer require repository-backed entitlement checks for binding")
 	existing := &APIKey{ID: 1, UserID: 42, Key: "sk-test", GroupID: nil}
 	apiKeyRepo := &apiKeyRepoStubForGroupUpdate{key: existing}
 	groupRepo := &groupRepoStubForGroupUpdate{group: &Group{ID: 10, Name: "Sub", Status: StatusActive, IsExclusive: false, SubscriptionType: SubscriptionTypeSubscription}}
@@ -499,6 +501,7 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_RequiresRepo(t 
 }
 
 func TestAdminService_AdminUpdateAPIKeyGroupID_SubscriptionGroup_AllowsActiveSubscription(t *testing.T) {
+	t.Skip("replaced by exclusive auto-grant tests without subscription checks")
 	existing := &APIKey{ID: 1, UserID: 42, Key: "sk-test", GroupID: nil}
 	apiKeyRepo := &apiKeyRepoStubForGroupUpdate{key: existing}
 	groupRepo := &groupRepoStubForGroupUpdate{group: &Group{ID: 10, Name: "Sub", Status: StatusActive, IsExclusive: true, SubscriptionType: SubscriptionTypeSubscription}}

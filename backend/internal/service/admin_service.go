@@ -2380,25 +2380,12 @@ func (s *adminServiceImpl) AdminUpdateAPIKeyGroupID(ctx context.Context, keyID i
 		if group.Status != StatusActive {
 			return nil, infraerrors.BadRequest("GROUP_NOT_ACTIVE", "target group is not active")
 		}
-		// 订阅类型分组：用户须持有该分组的有效订阅才可绑定
-		if group.IsSubscriptionType() {
-			if s.userSubRepo == nil {
-				return nil, infraerrors.InternalServer("SUBSCRIPTION_REPOSITORY_UNAVAILABLE", "subscription repository is not configured")
-			}
-			if _, err := s.userSubRepo.GetActiveByUserIDAndGroupID(ctx, apiKey.UserID, *groupID); err != nil {
-				if errors.Is(err, ErrSubscriptionNotFound) {
-					return nil, infraerrors.BadRequest("SUBSCRIPTION_REQUIRED", "user does not have an active subscription for this group")
-				}
-				return nil, err
-			}
-		}
-
 		gid := *groupID
 		apiKey.GroupID = &gid
 		apiKey.Group = group
 
-		// 专属标准分组：使用事务保证「添加分组权限」与「更新 API Key」的原子性
-		if group.IsExclusive && !group.IsSubscriptionType() {
+		// 专属分组：使用事务保证「添加分组权限」与「更新 API Key」的原子性
+		if group.IsExclusive {
 			opCtx := ctx
 			var tx *dbent.Tx
 			if s.entClient == nil {
