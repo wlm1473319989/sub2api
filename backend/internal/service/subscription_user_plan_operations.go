@@ -361,7 +361,14 @@ func (s *SubscriptionService) latestSubscriptionOrderForActive(ctx context.Conte
 		Where(
 			paymentorder.UserIDEQ(userID),
 			paymentorder.OrderTypeEQ(payment.OrderTypeSubscription),
-			paymentorder.StatusIn(OrderStatusPaid, OrderStatusRecharging, OrderStatusCompleted),
+			paymentorder.StatusIn(
+				OrderStatusPaid,
+				OrderStatusRecharging,
+				OrderStatusCompleted,
+				OrderStatusRefundRequested,
+				OrderStatusRefunding,
+				OrderStatusRefundFailed,
+			),
 		).
 		Order(dbent.Desc(paymentorder.FieldCreatedAt))
 

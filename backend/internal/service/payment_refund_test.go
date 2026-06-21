@@ -14,6 +14,199 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func TestPrepareRefund_NewSubscriptionOrderCapturesActiveSnapshot(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+
+	groupRepo := newPaymentSubscriptionGroupRepoStub()
+	userSubRepo := newSubscriptionUserSubRepoStub()
+	subscriptionSvc := NewSubscriptionService(groupRepo, userSubRepo, nil, client, nil)
+	configSvc := NewPaymentConfigService(client, nil, nil)
+	svc := &PaymentService{
+		entClient:       client,
+		configService:   configSvc,
+		subscriptionSvc: subscriptionSvc,
+	}
+
+	user, err := client.User.Create().
+		SetEmail("refund-user-level@example.com").
+		SetPasswordHash("hash").
+		SetUsername("refund-user-level").
+		Save(ctx)
+	require.NoError(t, err)
+
+	group, err := client.Group.Create().
+		SetName("refund-user-level-group").
+		SetStatus(StatusActive).
+		SetSubscriptionType(SubscriptionTypeSubscription).
+		Save(ctx)
+	require.NoError(t, err)
+	groupRepo.byID[group.ID] = groupToService(group)
+
+	plan, err := client.SubscriptionPlan.Create().
+		SetGroupID(group.ID).
+		SetName("User Level").
+		SetDescription("plan").
+		SetPrice(88).
+		SetValidityDays(30).
+		SetValidityUnit("day").
+		SetForSale(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	sub, err := subscriptionSvc.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   plan,
+	})
+	require.NoError(t, err)
+
+	inst, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("alipay-refund-instance").
+		SetConfig("{}").
+		SetSupportedTypes("alipay").
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	instID := strconv.FormatInt(inst.ID, 10)
+	order, err := client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(88).
+		SetPayAmount(88).
+		SetFeeRate(0).
+		SetRechargeCode("REFUND-USER-LEVEL").
+		SetOutTradeNo("sub2_refund_user_level").
+		SetPaymentType(payment.TypeAlipay).
+		SetPaymentTradeNo("").
+		SetOrderType(payment.OrderTypeSubscription).
+		SetPlanID(plan.ID).
+		SetSubscriptionAction(subscriptionActionPurchase).
+		SetSubscriptionPlanNameSnapshot(plan.Name).
+		SetSubscriptionPlanPriceSnapshot(plan.Price).
+		SetSubscriptionValidityDaysSnapshot(30).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		SetStatus(OrderStatusCompleted).
+		SetExpiresAt(time.Now().Add(time.Hour)).
+		SetPaidAt(time.Now()).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("api.example.com").
+		Save(ctx)
+	require.NoError(t, err)
+
+	p, result, err := svc.PrepareRefund(ctx, order.ID, 0, "", false, true)
+	require.NoError(t, err)
+	require.Nil(t, result)
+	require.NotNil(t, p)
+	require.Equal(t, payment.DeductionTypeSubscription, p.DeductionType)
+	require.Equal(t, sub.ID, p.SubscriptionID)
+	require.NotNil(t, p.SubscriptionSnapshot)
+	require.Nil(t, p.SubscriptionSnapshot.SupersededByID)
+}
+
+func TestExecuteRefund_UserLevelSubscriptionOrderMarksSubscriptionRefunded(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+
+	groupRepo := newPaymentSubscriptionGroupRepoStub()
+	userSubRepo := newSubscriptionUserSubRepoStub()
+	subscriptionSvc := NewSubscriptionService(groupRepo, userSubRepo, nil, client, nil)
+	configSvc := NewPaymentConfigService(client, nil, nil)
+	svc := &PaymentService{
+		entClient:       client,
+		configService:   configSvc,
+		subscriptionSvc: subscriptionSvc,
+	}
+
+	user, err := client.User.Create().
+		SetEmail("refund-exec@example.com").
+		SetPasswordHash("hash").
+		SetUsername("refund-exec").
+		Save(ctx)
+	require.NoError(t, err)
+
+	group, err := client.Group.Create().
+		SetName("refund-exec-group").
+		SetStatus(StatusActive).
+		SetSubscriptionType(SubscriptionTypeSubscription).
+		Save(ctx)
+	require.NoError(t, err)
+	groupRepo.byID[group.ID] = groupToService(group)
+
+	plan, err := client.SubscriptionPlan.Create().
+		SetGroupID(group.ID).
+		SetName("Refundable").
+		SetDescription("plan").
+		SetPrice(88).
+		SetValidityDays(30).
+		SetValidityUnit("day").
+		SetForSale(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	sub, err := subscriptionSvc.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   plan,
+	})
+	require.NoError(t, err)
+
+	inst, err := client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("alipay-refund-instance").
+		SetConfig("{}").
+		SetSupportedTypes("alipay").
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		Save(ctx)
+	require.NoError(t, err)
+
+	instID := strconv.FormatInt(inst.ID, 10)
+	order, err := client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Username).
+		SetAmount(88).
+		SetPayAmount(88).
+		SetFeeRate(0).
+		SetRechargeCode("REFUND-EXEC").
+		SetOutTradeNo("sub2_refund_exec").
+		SetPaymentType(payment.TypeAlipay).
+		SetPaymentTradeNo("").
+		SetOrderType(payment.OrderTypeSubscription).
+		SetPlanID(plan.ID).
+		SetSubscriptionAction(subscriptionActionPurchase).
+		SetSubscriptionPlanNameSnapshot(plan.Name).
+		SetSubscriptionPlanPriceSnapshot(plan.Price).
+		SetSubscriptionValidityDaysSnapshot(30).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		SetStatus(OrderStatusCompleted).
+		SetExpiresAt(time.Now().Add(time.Hour)).
+		SetPaidAt(time.Now()).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("api.example.com").
+		Save(ctx)
+	require.NoError(t, err)
+
+	p, result, err := svc.PrepareRefund(ctx, order.ID, 0, "", false, true)
+	require.NoError(t, err)
+	require.Nil(t, result)
+	require.NotNil(t, p)
+
+	got, err := svc.ExecuteRefund(ctx, p)
+	require.NoError(t, err)
+	require.NotNil(t, got)
+	require.True(t, got.Success)
+
+	refunded, err := subscriptionSvc.GetByID(ctx, sub.ID)
+	require.NoError(t, err)
+	require.Equal(t, SubscriptionStatusRefunded, refunded.Status)
+}
+
 func TestValidateRefundRequestRejectsLegacyGuessedProviderInstance(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)
