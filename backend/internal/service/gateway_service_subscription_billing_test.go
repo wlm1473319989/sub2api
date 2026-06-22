@@ -3,6 +3,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 )
 
@@ -81,5 +82,37 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 				t.Errorf("BalanceCost = %v, want %v", cmd.BalanceCost, tt.wantBalance)
 			}
 		})
+	}
+}
+
+func TestApplyUsageBilling_SyncsSplitCostsBackToUsageLog(t *testing.T) {
+	t.Parallel()
+
+	subID := int64(42)
+	log := &UsageLog{
+		RequestID: "req-mixed-sync",
+		Model:     "gpt-5",
+	}
+	p := &postUsageBillingParams{
+		Cost:               &CostBreakdown{TotalCost: 1.0, ActualCost: 1.0},
+		User:               &User{ID: 1},
+		APIKey:             &APIKey{ID: 2},
+		Account:            &Account{ID: 3},
+		Subscription:       &UserSubscription{ID: subID},
+		IsSubscriptionBill: true,
+	}
+
+	_, err := applyUsageBilling(context.Background(), "req-mixed-sync", log, p, &billingDeps{}, nil)
+	if err != nil {
+		t.Fatalf("applyUsageBilling returned error: %v", err)
+	}
+	if log.SubscriptionCost != 1.0 {
+		t.Fatalf("SubscriptionCost = %v, want 1.0", log.SubscriptionCost)
+	}
+	if log.BalanceCost != 0 {
+		t.Fatalf("BalanceCost = %v, want 0", log.BalanceCost)
+	}
+	if log.BillingType != BillingTypeSubscription {
+		t.Fatalf("BillingType = %v, want %v", log.BillingType, BillingTypeSubscription)
 	}
 }

@@ -30,7 +30,7 @@ import (
 	"golang.org/x/sync/errgroup"
 )
 
-const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
+const usageLogSelectColumns = "id, user_id, api_key_id, account_id, request_id, model, requested_model, upstream_model, group_id, subscription_id, input_tokens, output_tokens, cache_creation_tokens, cache_read_tokens, cache_creation_5m_tokens, cache_creation_1h_tokens, image_output_tokens, image_output_cost, input_cost, output_cost, cache_creation_cost, cache_read_cost, total_cost, actual_cost, subscription_cost, balance_cost, rate_multiplier, account_rate_multiplier, billing_type, request_type, stream, openai_ws_mode, duration_ms, first_token_ms, user_agent, ip_address, image_count, image_size, image_input_size, image_output_size, image_size_source, image_size_breakdown, service_tier, reasoning_effort, inbound_endpoint, upstream_endpoint, cache_ttl_overridden, channel_id, model_mapping_chain, billing_tier, billing_mode, account_stats_cost, created_at"
 
 // usageLogInsertArgTypes must stay in the same order as:
 //  1. prepareUsageLogInsert().args
@@ -63,6 +63,8 @@ var usageLogInsertArgTypes = [...]string{
 	"numeric",     // cache_read_cost
 	"numeric",     // total_cost
 	"numeric",     // actual_cost
+	"numeric",     // subscription_cost
+	"numeric",     // balance_cost
 	"numeric",     // rate_multiplier
 	"numeric",     // account_rate_multiplier
 	"smallint",    // billing_type
@@ -380,6 +382,8 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			subscription_cost,
+			balance_cost,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -412,8 +416,8 @@ func (r *usageLogRepository) createSingle(ctx context.Context, sqlq sqlExecutor,
 			$8, $9,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
-			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$18, $19, $20, $21, $22, $23, $24, $25,
+			$26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 		RETURNING id, created_at
@@ -822,6 +826,8 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			subscription_cost,
+			balance_cost,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -903,6 +909,8 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				cache_read_cost,
 				total_cost,
 				actual_cost,
+				subscription_cost,
+				balance_cost,
 				rate_multiplier,
 				account_rate_multiplier,
 				billing_type,
@@ -955,6 +963,8 @@ func buildUsageLogBatchInsertQuery(keys []string, preparedByKey map[string]usage
 				cache_read_cost,
 				total_cost,
 				actual_cost,
+				subscription_cost,
+				balance_cost,
 				rate_multiplier,
 				account_rate_multiplier,
 				billing_type,
@@ -1047,6 +1057,8 @@ func buildUsageLogBestEffortInsertQuery(preparedList []usageLogInsertPrepared) (
 			cache_read_cost,
 			total_cost,
 			actual_cost,
+			subscription_cost,
+			balance_cost,
 			rate_multiplier,
 			account_rate_multiplier,
 			billing_type,
@@ -1269,8 +1281,8 @@ func execUsageLogInsertNoResult(ctx context.Context, sqlq sqlExecutor, prepared 
 			$8, $9,
 			$10, $11, $12, $13,
 			$14, $15, $16, $17,
-			$18, $19, $20, $21, $22, $23,
-			$24, $25, $26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50
+			$18, $19, $20, $21, $22, $23, $24, $25,
+			$26, $27, $28, $29, $30, $31, $32, $33, $34, $35, $36, $37, $38, $39, $40, $41, $42, $43, $44, $45, $46, $47, $48, $49, $50, $51, $52
 		)
 		ON CONFLICT (request_id, api_key_id) DO NOTHING
 	`, prepared.args...)
@@ -1349,6 +1361,8 @@ func prepareUsageLogInsert(log *service.UsageLog) usageLogInsertPrepared {
 			log.CacheReadCost,
 			log.TotalCost,
 			log.ActualCost,
+			log.SubscriptionCost,
+			log.BalanceCost,
 			rateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
@@ -1608,6 +1622,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(SUM(account_cost), 0) as total_account_cost,
 			COALESCE(SUM(total_duration_ms), 0) as total_duration_ms
 		FROM usage_dashboard_daily
@@ -1625,6 +1641,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.TotalAccountCost,
 		&totalDurationMs,
 	); err != nil {
@@ -1644,6 +1662,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 			cache_read_tokens as today_cache_read_tokens,
 			total_cost as today_cost,
 			actual_cost as today_actual_cost,
+			subscription_cost as today_subscription_cost,
+			balance_cost as today_balance_cost,
 			account_cost as today_account_cost,
 			active_users as active_users
 		FROM usage_dashboard_daily
@@ -1661,6 +1681,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsAggregated(ctx context.Conte
 		&stats.TodayCacheReadTokens,
 		&stats.TodayCost,
 		&stats.TodayActualCost,
+		&stats.TodaySubscriptionCost,
+		&stats.TodayBalanceCost,
 		&stats.TodayAccountCost,
 		&stats.ActiveUsers,
 	); err != nil {
@@ -1697,6 +1719,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 				cache_read_tokens,
 				total_cost,
 				actual_cost,
+				subscription_cost,
+				balance_cost,
 				COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1) AS account_cost,
 				COALESCE(duration_ms, 0) AS duration_ms
 			FROM usage_logs
@@ -1711,6 +1735,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_cache_read_tokens,
 			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_cost,
 			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_actual_cost,
+			COALESCE(SUM(subscription_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_subscription_cost,
+			COALESCE(SUM(balance_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_balance_cost,
 			COALESCE(SUM(account_cost) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_account_cost,
 			COALESCE(SUM(duration_ms) FILTER (WHERE created_at >= $1::timestamptz AND created_at < $2::timestamptz), 0) AS total_duration_ms,
 			COUNT(*) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz) AS today_requests,
@@ -1720,6 +1746,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 			COALESCE(SUM(cache_read_tokens) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_cache_read_tokens,
 			COALESCE(SUM(total_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_cost,
 			COALESCE(SUM(actual_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_actual_cost,
+			COALESCE(SUM(subscription_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_subscription_cost,
+			COALESCE(SUM(balance_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_balance_cost,
 			COALESCE(SUM(account_cost) FILTER (WHERE created_at >= $3::timestamptz AND created_at < $4::timestamptz), 0) AS today_account_cost
 		FROM scoped
 	`
@@ -1736,6 +1764,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.TotalAccountCost,
 		&totalDurationMs,
 		&stats.TodayRequests,
@@ -1745,6 +1775,8 @@ func (r *usageLogRepository) fillDashboardUsageStatsFromUsageLogs(ctx context.Co
 		&stats.TodayCacheReadTokens,
 		&stats.TodayCost,
 		&stats.TodayActualCost,
+		&stats.TodaySubscriptionCost,
+		&stats.TodayBalanceCost,
 		&stats.TodayAccountCost,
 	); err != nil {
 		return err
@@ -1799,6 +1831,8 @@ func (r *usageLogRepository) GetUserStatsAggregated(ctx context.Context, userID 
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE user_id = $1 AND created_at >= $2 AND created_at < $3
@@ -1818,6 +1852,8 @@ func (r *usageLogRepository) GetUserStatsAggregated(ctx context.Context, userID 
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.AverageDurationMs,
 	); err != nil {
 		return nil, err
@@ -1838,6 +1874,8 @@ func (r *usageLogRepository) GetAPIKeyStatsAggregated(ctx context.Context, apiKe
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE api_key_id = $1 AND created_at >= $2 AND created_at < $3
@@ -1857,6 +1895,8 @@ func (r *usageLogRepository) GetAPIKeyStatsAggregated(ctx context.Context, apiKe
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.AverageDurationMs,
 	); err != nil {
 		return nil, err
@@ -1887,6 +1927,8 @@ func (r *usageLogRepository) GetAccountStatsAggregated(ctx context.Context, acco
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE account_id = $1 AND created_at >= $2 AND created_at < $3
@@ -1906,6 +1948,8 @@ func (r *usageLogRepository) GetAccountStatsAggregated(ctx context.Context, acco
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.AverageDurationMs,
 	); err != nil {
 		return nil, err
@@ -1927,6 +1971,8 @@ func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelN
 			COALESCE(SUM(cache_read_tokens), 0) as total_cache_read_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE %s = $1 AND created_at >= $2 AND created_at < $3
@@ -1946,6 +1992,8 @@ func (r *usageLogRepository) GetModelStatsAggregated(ctx context.Context, modelN
 		&stats.TotalCacheReadTokens,
 		&stats.TotalCost,
 		&stats.TotalActualCost,
+		&stats.TotalSubscriptionCost,
+		&stats.TotalBalanceCost,
 		&stats.AverageDurationMs,
 	); err != nil {
 		return nil, err
@@ -1968,6 +2016,8 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 			COALESCE(SUM(cache_creation_tokens + cache_read_tokens), 0) as total_cache_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(AVG(COALESCE(duration_ms, 0)), 0) as avg_duration_ms
 		FROM usage_logs
 		WHERE user_id = $1 AND created_at >= $2 AND created_at < $3
@@ -1989,14 +2039,16 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 	result = make([]map[string]any, 0)
 	for rows.Next() {
 		var (
-			date              string
-			totalRequests     int64
-			totalInputTokens  int64
-			totalOutputTokens int64
-			totalCacheTokens  int64
-			totalCost         float64
-			totalActualCost   float64
-			avgDurationMs     float64
+			date                  string
+			totalRequests         int64
+			totalInputTokens      int64
+			totalOutputTokens     int64
+			totalCacheTokens      int64
+			totalCost             float64
+			totalActualCost       float64
+			totalSubscriptionCost float64
+			totalBalanceCost      float64
+			avgDurationMs         float64
 		)
 		if err = rows.Scan(
 			&date,
@@ -2006,20 +2058,24 @@ func (r *usageLogRepository) GetDailyStatsAggregated(ctx context.Context, userID
 			&totalCacheTokens,
 			&totalCost,
 			&totalActualCost,
+			&totalSubscriptionCost,
+			&totalBalanceCost,
 			&avgDurationMs,
 		); err != nil {
 			return nil, err
 		}
 		result = append(result, map[string]any{
-			"date":                date,
-			"total_requests":      totalRequests,
-			"total_input_tokens":  totalInputTokens,
-			"total_output_tokens": totalOutputTokens,
-			"total_cache_tokens":  totalCacheTokens,
-			"total_tokens":        totalInputTokens + totalOutputTokens + totalCacheTokens,
-			"total_cost":          totalCost,
-			"total_actual_cost":   totalActualCost,
-			"average_duration_ms": avgDurationMs,
+			"date":                    date,
+			"total_requests":          totalRequests,
+			"total_input_tokens":      totalInputTokens,
+			"total_output_tokens":     totalOutputTokens,
+			"total_cache_tokens":      totalCacheTokens,
+			"total_tokens":            totalInputTokens + totalOutputTokens + totalCacheTokens,
+			"total_cost":              totalCost,
+			"total_actual_cost":       totalActualCost,
+			"total_subscription_cost": totalSubscriptionCost,
+			"total_balance_cost":      totalBalanceCost,
+			"average_duration_ms":     avgDurationMs,
 		})
 	}
 
@@ -4273,6 +4329,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		cacheReadCost         float64
 		totalCost             float64
 		actualCost            float64
+		subscriptionCost      float64
+		balanceCost           float64
 		rateMultiplier        float64
 		accountRateMultiplier sql.NullFloat64
 		billingType           int16
@@ -4327,6 +4385,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		&cacheReadCost,
 		&totalCost,
 		&actualCost,
+		&subscriptionCost,
+		&balanceCost,
 		&rateMultiplier,
 		&accountRateMultiplier,
 		&billingType,
@@ -4379,6 +4439,8 @@ func scanUsageLog(scanner interface{ Scan(...any) error }) (*service.UsageLog, e
 		CacheReadCost:         cacheReadCost,
 		TotalCost:             totalCost,
 		ActualCost:            actualCost,
+		SubscriptionCost:      subscriptionCost,
+		BalanceCost:           balanceCost,
 		RateMultiplier:        rateMultiplier,
 		AccountRateMultiplier: nullFloat64Ptr(accountRateMultiplier),
 		BillingType:           int8(billingType),

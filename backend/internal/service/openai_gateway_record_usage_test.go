@@ -1362,6 +1362,8 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	require.NoError(t, err)
 	require.NotNil(t, usageRepo.lastLog)
 	require.Equal(t, BillingTypeSubscription, usageRepo.lastLog.BillingType)
+	require.InDelta(t, usageRepo.lastLog.ActualCost, usageRepo.lastLog.SubscriptionCost, 1e-12)
+	require.InDelta(t, 0.0, usageRepo.lastLog.BalanceCost, 1e-12)
 	require.NotNil(t, usageRepo.lastLog.SubscriptionID)
 	require.Equal(t, subscription.ID, *usageRepo.lastLog.SubscriptionID)
 	require.Equal(t, 1, subRepo.incrementCalls)

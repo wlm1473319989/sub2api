@@ -64,6 +64,8 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			log.CacheReadCost,
 			log.TotalCost,
 			log.ActualCost,
+			log.SubscriptionCost,
+			log.BalanceCost,
 			log.RateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
@@ -147,6 +149,8 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			log.CacheReadCost,
 			log.TotalCost,
 			log.ActualCost,
+			log.SubscriptionCost,
+			log.BalanceCost,
 			log.RateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
@@ -259,13 +263,32 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[34])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[35])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[36])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[37])
-	breakdownJSON, ok := prepared.args[38].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[36])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[37])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[38])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[39])
+	breakdownJSON, ok := prepared.args[40].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
+}
+
+func TestPrepareUsageLogInsert_PersistsSplitBillingCosts(t *testing.T) {
+	prepared := prepareUsageLogInsert(&service.UsageLog{
+		UserID:           1,
+		APIKeyID:         2,
+		AccountID:        3,
+		RequestID:        "req-split-costs",
+		Model:            "gpt-5",
+		RequestedModel:   "gpt-5",
+		ActualCost:       1.2,
+		SubscriptionCost: 0.7,
+		BalanceCost:      0.5,
+		CreatedAt:        time.Date(2025, 1, 7, 12, 0, 0, 0, time.UTC),
+	})
+
+	require.Equal(t, 1.2, prepared.args[22])
+	require.Equal(t, 0.7, prepared.args[23])
+	require.Equal(t, 0.5, prepared.args[24])
 }
 
 func TestCoalesceTrimmedString(t *testing.T) {
@@ -613,7 +636,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			0, 0, 0, 0, 0, 0,
 			0, 0.0, // image_output_tokens, image_output_cost
-			0.0, 0.0, 0.0, 0.0, 0.8, 0.8,
+			0.0, 0.0, 0.0, 0.0, 0.8, 0.8, 0.0, 0.8,
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
@@ -682,6 +705,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0.4,               // cache_read_cost
 			1.0,               // total_cost
 			0.9,               // actual_cost
+			0.0,               // subscription_cost
+			0.9,               // balance_cost
 			1.0,               // rate_multiplier
 			sql.NullFloat64{}, // account_rate_multiplier
 			int16(service.BillingTypeBalance),
@@ -733,7 +758,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
-			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
+			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.0, 0.9,
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
@@ -785,7 +810,7 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			sql.NullInt64{},
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
-			0.1, 0.2, 0.3, 0.4, 1.0, 0.9,
+			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.0, 0.9,
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
@@ -817,6 +842,56 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 		require.NoError(t, err)
 		require.NotNil(t, log.ServiceTier)
 		require.Equal(t, "priority", *log.ServiceTier)
+	})
+
+	t.Run("split_billing_costs_are_scanned", func(t *testing.T) {
+		now := time.Now().UTC()
+		log, err := scanUsageLog(usageLogScannerStub{values: []any{
+			int64(5),
+			int64(14),
+			int64(24),
+			int64(34),
+			sql.NullString{Valid: true, String: "req-mixed"},
+			"gpt-5",
+			sql.NullString{Valid: true, String: "gpt-5"},
+			sql.NullString{},
+			sql.NullInt64{},
+			sql.NullInt64{},
+			1, 2, 3, 4, 5, 6,
+			0, 0.0,
+			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.4, 0.5,
+			1.0,
+			sql.NullFloat64{},
+			int16(service.BillingTypeMixed),
+			int16(service.RequestTypeSync),
+			false,
+			false,
+			sql.NullInt64{},
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullString{},
+			0,
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			false,
+			sql.NullInt64{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullString{},
+			sql.NullFloat64{},
+			now,
+		}})
+		require.NoError(t, err)
+		require.Equal(t, service.BillingTypeMixed, log.BillingType)
+		require.InDelta(t, 0.4, log.SubscriptionCost, 1e-12)
+		require.InDelta(t, 0.5, log.BalanceCost, 1e-12)
 	})
 
 }

@@ -43,6 +43,8 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 
 	// usage_logs: billing_type used by filters/stats
 	requireColumn(t, tx, "usage_logs", "billing_type", "smallint", 0, false)
+	requireColumn(t, tx, "usage_logs", "subscription_cost", "numeric", 0, false)
+	requireColumn(t, tx, "usage_logs", "balance_cost", "numeric", 0, false)
 	requireColumn(t, tx, "usage_logs", "request_type", "smallint", 0, false)
 	requireColumn(t, tx, "usage_logs", "openai_ws_mode", "boolean", 0, false)
 	requireColumn(t, tx, "usage_logs", "image_input_size", "character varying", 32, true)
@@ -119,6 +121,12 @@ func TestMigrationsRunner_IsIdempotent_AndSchemaIsUpToDate(t *testing.T) {
 
 	// user_allowed_groups: created_at should be timestamptz
 	requireColumn(t, tx, "user_allowed_groups", "created_at", "timestamp with time zone", 0, false)
+
+	// dashboard aggregation tables: split cost columns for mixed billing analytics
+	requireColumn(t, tx, "usage_dashboard_hourly", "subscription_cost", "numeric", 0, false)
+	requireColumn(t, tx, "usage_dashboard_hourly", "balance_cost", "numeric", 0, false)
+	requireColumn(t, tx, "usage_dashboard_daily", "subscription_cost", "numeric", 0, false)
+	requireColumn(t, tx, "usage_dashboard_daily", "balance_cost", "numeric", 0, false)
 }
 
 func TestMigrationsRunner_AuthIdentityAndPaymentSchemaStayAligned(t *testing.T) {

@@ -64,6 +64,10 @@ const (
 	FieldTotalCost = "total_cost"
 	// FieldActualCost holds the string denoting the actual_cost field in the database.
 	FieldActualCost = "actual_cost"
+	// FieldSubscriptionCost holds the string denoting the subscription_cost field in the database.
+	FieldSubscriptionCost = "subscription_cost"
+	// FieldBalanceCost holds the string denoting the balance_cost field in the database.
+	FieldBalanceCost = "balance_cost"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
 	// FieldAccountRateMultiplier holds the string denoting the account_rate_multiplier field in the database.
@@ -173,6 +177,8 @@ var Columns = []string{
 	FieldCacheReadCost,
 	FieldTotalCost,
 	FieldActualCost,
+	FieldSubscriptionCost,
+	FieldBalanceCost,
 	FieldRateMultiplier,
 	FieldAccountRateMultiplier,
 	FieldBillingType,
@@ -240,6 +246,10 @@ var (
 	DefaultTotalCost float64
 	// DefaultActualCost holds the default value on creation for the "actual_cost" field.
 	DefaultActualCost float64
+	// DefaultSubscriptionCost holds the default value on creation for the "subscription_cost" field.
+	DefaultSubscriptionCost float64
+	// DefaultBalanceCost holds the default value on creation for the "balance_cost" field.
+	DefaultBalanceCost float64
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
 	// DefaultBillingType holds the default value on creation for the "billing_type" field.
@@ -397,6 +407,16 @@ func ByTotalCost(opts ...sql.OrderTermOption) OrderOption {
 // ByActualCost orders the results by the actual_cost field.
 func ByActualCost(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldActualCost, opts...).ToFunc()
+}
+
+// BySubscriptionCost orders the results by the subscription_cost field.
+func BySubscriptionCost(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionCost, opts...).ToFunc()
+}
+
+// ByBalanceCost orders the results by the balance_cost field.
+func ByBalanceCost(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBalanceCost, opts...).ToFunc()
 }
 
 // ByRateMultiplier orders the results by the rate_multiplier field.

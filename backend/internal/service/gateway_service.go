@@ -8961,6 +8961,17 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 	}
 
 	cmd := buildUsageBillingCommand(requestID, usageLog, p)
+	if usageLog != nil && cmd != nil {
+		usageLog.SubscriptionCost = cmd.SubscriptionCost
+		usageLog.BalanceCost = cmd.BalanceCost
+		if cmd.SubscriptionCost > 0 && cmd.BalanceCost > 0 {
+			usageLog.BillingType = BillingTypeMixed
+		} else if cmd.SubscriptionCost > 0 {
+			usageLog.BillingType = BillingTypeSubscription
+		} else if cmd.BalanceCost > 0 {
+			usageLog.BillingType = BillingTypeBalance
+		}
+	}
 	if cmd == nil || cmd.RequestID == "" || repo == nil {
 		postUsageBilling(ctx, p, deps)
 		return true, nil

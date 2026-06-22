@@ -521,6 +521,48 @@ func (_u *UsageLogUpdate) AddActualCost(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetSubscriptionCost sets the "subscription_cost" field.
+func (_u *UsageLogUpdate) SetSubscriptionCost(v float64) *UsageLogUpdate {
+	_u.mutation.ResetSubscriptionCost()
+	_u.mutation.SetSubscriptionCost(v)
+	return _u
+}
+
+// SetNillableSubscriptionCost sets the "subscription_cost" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableSubscriptionCost(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetSubscriptionCost(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionCost adds value to the "subscription_cost" field.
+func (_u *UsageLogUpdate) AddSubscriptionCost(v float64) *UsageLogUpdate {
+	_u.mutation.AddSubscriptionCost(v)
+	return _u
+}
+
+// SetBalanceCost sets the "balance_cost" field.
+func (_u *UsageLogUpdate) SetBalanceCost(v float64) *UsageLogUpdate {
+	_u.mutation.ResetBalanceCost()
+	_u.mutation.SetBalanceCost(v)
+	return _u
+}
+
+// SetNillableBalanceCost sets the "balance_cost" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableBalanceCost(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetBalanceCost(*v)
+	}
+	return _u
+}
+
+// AddBalanceCost adds value to the "balance_cost" field.
+func (_u *UsageLogUpdate) AddBalanceCost(v float64) *UsageLogUpdate {
+	_u.mutation.AddBalanceCost(v)
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdate) SetRateMultiplier(v float64) *UsageLogUpdate {
 	_u.mutation.ResetRateMultiplier()
@@ -1119,6 +1161,18 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SubscriptionCost(); ok {
+		_spec.SetField(usagelog.FieldSubscriptionCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionCost(); ok {
+		_spec.AddField(usagelog.FieldSubscriptionCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BalanceCost(); ok {
+		_spec.SetField(usagelog.FieldBalanceCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBalanceCost(); ok {
+		_spec.AddField(usagelog.FieldBalanceCost, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
@@ -1867,6 +1921,48 @@ func (_u *UsageLogUpdateOne) AddActualCost(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetSubscriptionCost sets the "subscription_cost" field.
+func (_u *UsageLogUpdateOne) SetSubscriptionCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetSubscriptionCost()
+	_u.mutation.SetSubscriptionCost(v)
+	return _u
+}
+
+// SetNillableSubscriptionCost sets the "subscription_cost" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableSubscriptionCost(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionCost(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionCost adds value to the "subscription_cost" field.
+func (_u *UsageLogUpdateOne) AddSubscriptionCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddSubscriptionCost(v)
+	return _u
+}
+
+// SetBalanceCost sets the "balance_cost" field.
+func (_u *UsageLogUpdateOne) SetBalanceCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetBalanceCost()
+	_u.mutation.SetBalanceCost(v)
+	return _u
+}
+
+// SetNillableBalanceCost sets the "balance_cost" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableBalanceCost(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetBalanceCost(*v)
+	}
+	return _u
+}
+
+// AddBalanceCost adds value to the "balance_cost" field.
+func (_u *UsageLogUpdateOne) AddBalanceCost(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddBalanceCost(v)
+	return _u
+}
+
 // SetRateMultiplier sets the "rate_multiplier" field.
 func (_u *UsageLogUpdateOne) SetRateMultiplier(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetRateMultiplier()
@@ -2495,6 +2591,18 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.AddedActualCost(); ok {
 		_spec.AddField(usagelog.FieldActualCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SubscriptionCost(); ok {
+		_spec.SetField(usagelog.FieldSubscriptionCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionCost(); ok {
+		_spec.AddField(usagelog.FieldSubscriptionCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BalanceCost(); ok {
+		_spec.SetField(usagelog.FieldBalanceCost, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBalanceCost(); ok {
+		_spec.AddField(usagelog.FieldBalanceCost, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)

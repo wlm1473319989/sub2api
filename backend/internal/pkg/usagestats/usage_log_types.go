@@ -56,8 +56,10 @@ type DashboardStats struct {
 	TotalCacheCreationTokens int64   `json:"total_cache_creation_tokens"`
 	TotalCacheReadTokens     int64   `json:"total_cache_read_tokens"`
 	TotalTokens              int64   `json:"total_tokens"`
-	TotalCost                float64 `json:"total_cost"`         // 累计标准计费
-	TotalActualCost          float64 `json:"total_actual_cost"`  // 累计实际扣除
+	TotalCost                float64 `json:"total_cost"`        // 累计标准计费
+	TotalActualCost          float64 `json:"total_actual_cost"` // 累计实际扣除
+	TotalSubscriptionCost    float64 `json:"total_subscription_cost"`
+	TotalBalanceCost         float64 `json:"total_balance_cost"`
 	TotalAccountCost         float64 `json:"total_account_cost"` // 累计账号成本
 
 	// 今日 Token 使用统计
@@ -67,8 +69,10 @@ type DashboardStats struct {
 	TodayCacheCreationTokens int64   `json:"today_cache_creation_tokens"`
 	TodayCacheReadTokens     int64   `json:"today_cache_read_tokens"`
 	TodayTokens              int64   `json:"today_tokens"`
-	TodayCost                float64 `json:"today_cost"`         // 今日标准计费
-	TodayActualCost          float64 `json:"today_actual_cost"`  // 今日实际扣除
+	TodayCost                float64 `json:"today_cost"`        // 今日标准计费
+	TodayActualCost          float64 `json:"today_actual_cost"` // 今日实际扣除
+	TodaySubscriptionCost    float64 `json:"today_subscription_cost"`
+	TodayBalanceCost         float64 `json:"today_balance_cost"`
 	TodayAccountCost         float64 `json:"today_account_cost"` // 今日账号成本
 
 	// 系统运行统计
@@ -90,6 +94,8 @@ type TrendDataPoint struct {
 	TotalTokens         int64   `json:"total_tokens"`
 	Cost                float64 `json:"cost"`        // 标准计费
 	ActualCost          float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost    float64 `json:"subscription_cost"`
+	BalanceCost         float64 `json:"balance_cost"`
 }
 
 // ModelStat represents usage statistics for a single model
@@ -101,18 +107,22 @@ type ModelStat struct {
 	CacheCreationTokens int64   `json:"cache_creation_tokens"`
 	CacheReadTokens     int64   `json:"cache_read_tokens"`
 	TotalTokens         int64   `json:"total_tokens"`
-	Cost                float64 `json:"cost"`         // 标准计费
-	ActualCost          float64 `json:"actual_cost"`  // 实际扣除
+	Cost                float64 `json:"cost"`        // 标准计费
+	ActualCost          float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost    float64 `json:"subscription_cost"`
+	BalanceCost         float64 `json:"balance_cost"`
 	AccountCost         float64 `json:"account_cost"` // 账号成本
 }
 
 // EndpointStat represents usage statistics for a single request endpoint.
 type EndpointStat struct {
-	Endpoint    string  `json:"endpoint"`
-	Requests    int64   `json:"requests"`
-	TotalTokens int64   `json:"total_tokens"`
-	Cost        float64 `json:"cost"`        // 标准计费
-	ActualCost  float64 `json:"actual_cost"` // 实际扣除
+	Endpoint         string  `json:"endpoint"`
+	Requests         int64   `json:"requests"`
+	TotalTokens      int64   `json:"total_tokens"`
+	Cost             float64 `json:"cost"`        // 标准计费
+	ActualCost       float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost float64 `json:"subscription_cost"`
+	BalanceCost      float64 `json:"balance_cost"`
 }
 
 // GroupUsageSummary represents today's and cumulative cost for a single group.
@@ -124,34 +134,40 @@ type GroupUsageSummary struct {
 
 // GroupStat represents usage statistics for a single group
 type GroupStat struct {
-	GroupID     int64   `json:"group_id"`
-	GroupName   string  `json:"group_name"`
-	Requests    int64   `json:"requests"`
-	TotalTokens int64   `json:"total_tokens"`
-	Cost        float64 `json:"cost"`         // 标准计费
-	ActualCost  float64 `json:"actual_cost"`  // 实际扣除
-	AccountCost float64 `json:"account_cost"` // 账号成本
+	GroupID          int64   `json:"group_id"`
+	GroupName        string  `json:"group_name"`
+	Requests         int64   `json:"requests"`
+	TotalTokens      int64   `json:"total_tokens"`
+	Cost             float64 `json:"cost"`        // 标准计费
+	ActualCost       float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost float64 `json:"subscription_cost"`
+	BalanceCost      float64 `json:"balance_cost"`
+	AccountCost      float64 `json:"account_cost"` // 账号成本
 }
 
 // UserUsageTrendPoint represents user usage trend data point
 type UserUsageTrendPoint struct {
-	Date       string  `json:"date"`
-	UserID     int64   `json:"user_id"`
-	Email      string  `json:"email"`
-	Username   string  `json:"username"`
-	Requests   int64   `json:"requests"`
-	Tokens     int64   `json:"tokens"`
-	Cost       float64 `json:"cost"`        // 标准计费
-	ActualCost float64 `json:"actual_cost"` // 实际扣除
+	Date             string  `json:"date"`
+	UserID           int64   `json:"user_id"`
+	Email            string  `json:"email"`
+	Username         string  `json:"username"`
+	Requests         int64   `json:"requests"`
+	Tokens           int64   `json:"tokens"`
+	Cost             float64 `json:"cost"`        // 标准计费
+	ActualCost       float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost float64 `json:"subscription_cost"`
+	BalanceCost      float64 `json:"balance_cost"`
 }
 
 // UserSpendingRankingItem represents a user spending ranking row.
 type UserSpendingRankingItem struct {
-	UserID     int64   `json:"user_id"`
-	Email      string  `json:"email"`
-	ActualCost float64 `json:"actual_cost"` // 实际扣除
-	Requests   int64   `json:"requests"`
-	Tokens     int64   `json:"tokens"`
+	UserID           int64   `json:"user_id"`
+	Email            string  `json:"email"`
+	ActualCost       float64 `json:"actual_cost"` // 实际扣除
+	Requests         int64   `json:"requests"`
+	Tokens           int64   `json:"tokens"`
+	SubscriptionCost float64 `json:"subscription_cost"`
+	BalanceCost      float64 `json:"balance_cost"`
 }
 
 // UserSpendingRankingResponse represents ranking rows plus total spend for the time range.
@@ -164,13 +180,15 @@ type UserSpendingRankingResponse struct {
 
 // UserBreakdownItem represents per-user usage breakdown within a dimension (group, model, endpoint).
 type UserBreakdownItem struct {
-	UserID      int64   `json:"user_id"`
-	Email       string  `json:"email"`
-	Requests    int64   `json:"requests"`
-	TotalTokens int64   `json:"total_tokens"`
-	Cost        float64 `json:"cost"`         // 标准计费
-	ActualCost  float64 `json:"actual_cost"`  // 实际扣除
-	AccountCost float64 `json:"account_cost"` // 账号成本
+	UserID           int64   `json:"user_id"`
+	Email            string  `json:"email"`
+	Requests         int64   `json:"requests"`
+	TotalTokens      int64   `json:"total_tokens"`
+	Cost             float64 `json:"cost"`        // 标准计费
+	ActualCost       float64 `json:"actual_cost"` // 实际扣除
+	SubscriptionCost float64 `json:"subscription_cost"`
+	BalanceCost      float64 `json:"balance_cost"`
+	AccountCost      float64 `json:"account_cost"` // 账号成本
 }
 
 // UserBreakdownDimension specifies the dimension to filter for user breakdown.
@@ -287,6 +305,8 @@ type UsageStats struct {
 	TotalTokens              int64          `json:"total_tokens"`
 	TotalCost                float64        `json:"total_cost"`
 	TotalActualCost          float64        `json:"total_actual_cost"`
+	TotalSubscriptionCost    float64        `json:"total_subscription_cost"`
+	TotalBalanceCost         float64        `json:"total_balance_cost"`
 	TotalAccountCost         *float64       `json:"total_account_cost,omitempty"`
 	AverageDurationMs        float64        `json:"average_duration_ms"`
 	Endpoints                []EndpointStat `json:"endpoints,omitempty"`

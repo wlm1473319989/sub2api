@@ -207,6 +207,29 @@ func TestUsageLogFromService_PreservesHistoricalMissingImageSize(t *testing.T) {
 	require.NotContains(t, string(body), `"image_size":"2K"`)
 }
 
+func TestUsageLogFromService_IncludesSplitBillingCosts(t *testing.T) {
+	t.Parallel()
+
+	log := &service.UsageLog{
+		RequestID:        "req_split_costs",
+		Model:            "gpt-5",
+		ActualCost:       1.2,
+		SubscriptionCost: 0.7,
+		BalanceCost:      0.5,
+		BillingType:      service.BillingTypeMixed,
+	}
+
+	userDTO := UsageLogFromService(log)
+	adminDTO := UsageLogFromServiceAdmin(log)
+
+	for _, got := range []*UsageLog{userDTO, &adminDTO.UsageLog} {
+		require.InDelta(t, 1.2, got.ActualCost, 1e-12)
+		require.InDelta(t, 0.7, got.SubscriptionCost, 1e-12)
+		require.InDelta(t, 0.5, got.BalanceCost, 1e-12)
+		require.Equal(t, service.BillingTypeMixed, got.BillingType)
+	}
+}
+
 func f64Ptr(value float64) *float64 {
 	return &value
 }

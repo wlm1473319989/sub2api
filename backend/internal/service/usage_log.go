@@ -9,6 +9,7 @@ import (
 const (
 	BillingTypeBalance      int8 = 0 // 钱包余额
 	BillingTypeSubscription int8 = 1 // 订阅套餐
+	BillingTypeMixed        int8 = 2 // 订阅 + 钱包混合扣费
 )
 
 type RequestType int16
@@ -148,6 +149,8 @@ type UsageLog struct {
 	CacheReadCost     float64
 	TotalCost         float64
 	ActualCost        float64
+	SubscriptionCost  float64
+	BalanceCost       float64
 	RateMultiplier    float64
 	// AccountRateMultiplier 账号计费倍率快照（nil 表示历史数据，按 1.0 处理）
 	AccountRateMultiplier *float64
