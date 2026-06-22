@@ -177,11 +177,11 @@
                 <div class="space-y-2">
                   <div v-for="sub in activeSubscriptions" :key="sub.id"
                     class="flex items-center gap-3 rounded-xl border border-gray-100 bg-white px-3 py-2 dark:border-dark-700 dark:bg-dark-800">
-                    <div :class="['h-6 w-1 shrink-0 rounded-full', platformAccentBarClass(sub.group?.platform || '')]" />
+                    <div class="h-6 w-1 shrink-0 rounded-full bg-primary-500" />
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-1.5">
                         <span class="truncate text-xs font-semibold text-gray-900 dark:text-white">{{ subscriptionDisplayName(sub) }}</span>
-                        <span :class="['shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium', platformBadgeLightClass(sub.group?.platform || '')]">{{ platformLabel(sub.group?.platform || '') }}</span>
+                        <span class="shrink-0 rounded-full bg-primary-50 px-1.5 py-0.5 text-[9px] font-medium text-primary-700 dark:bg-primary-900/30 dark:text-primary-300">{{ t('payment.plan') }}</span>
                       </div>
                       <div class="flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500">
                         <span v-if="sub.daily_quota_knives == null && sub.weekly_quota_knives == null && sub.monthly_quota_knives == null">{{ t('payment.planCard.quota') }}: {{ t('payment.planCard.unlimited') }}</span>
@@ -261,7 +261,6 @@ import {
   type PaymentRecoverySnapshot,
   writePaymentRecoverySnapshot,
 } from '@/components/payment/paymentFlow'
-import { platformAccentBarClass, platformBadgeLightClass, platformLabel } from '@/utils/platformColors'
 import SubscriptionPlanCard from '@/components/payment/SubscriptionPlanCard.vue'
 import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
 import Icon from '@/components/icons/Icon.vue'
@@ -283,7 +282,10 @@ const user = computed(() => authStore.user)
 const activeSubscriptions = computed(() => subscriptionStore.activeSubscriptions)
 
 function subscriptionDisplayName(sub: { plan_name_snapshot?: string | null; id?: number }): string {
-  return sub.plan_name_snapshot || t('payment.groupFallback', { id: sub.id ?? 0 })
+  if (sub.plan_name_snapshot?.trim()) {
+    return sub.plan_name_snapshot
+  }
+  return `${t('payment.plan')} #${sub.id ?? 0}`
 }
 
 function getDaysRemaining(expiresAt: string): number {

@@ -387,21 +387,11 @@
               class="flex flex-wrap gap-1.5"
             >
               <template v-for="sub in row.subscriptions" :key="sub.id">
-                <GroupBadge
-                  v-if="sub.group"
-                  :name="sub.group.name || ''"
-                  :platform="sub.group.platform"
-                  :subscription-type="sub.group.subscription_type"
-                  :rate-multiplier="sub.group.rate_multiplier"
-                  :days-remaining="sub.expires_at ? getDaysRemaining(sub.expires_at) : null"
-                  :title="sub.expires_at ? formatDateTime(sub.expires_at) : ''"
-                />
                 <span
-                  v-else
                   class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 dark:border-dark-600 dark:bg-dark-700/50 dark:text-gray-200"
                   :title="sub.expires_at ? formatDateTime(sub.expires_at) : ''"
                 >
-                  {{ sub.plan_name_snapshot || `Subscription #${sub.id}` }}
+                  {{ subscriptionDisplayName(sub) }}
                 </span>
               </template>
             </div>
@@ -766,7 +756,7 @@ import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 import { adminAPI } from '@/api/admin'
-import type { AdminUser, AdminGroup, UserAttributeDefinition } from '@/types'
+import type { AdminUser, AdminGroup, UserAttributeDefinition, UserSubscription } from '@/types'
 import type { BatchUserUsageStats } from '@/api/admin/dashboard'
 import type { PlatformQuotaItem } from '@/api/admin/users'
 import type { Column } from '@/components/common/types'
@@ -777,7 +767,6 @@ import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
 import Select from '@/components/common/Select.vue'
 import { buildApiKeyGroupFilterOptions } from './apiKeyGroupFilterOptions'
 import UserAttributesConfigModal from '@/components/user/UserAttributesConfigModal.vue'
@@ -1052,7 +1041,7 @@ const getUserGroups = (user: AdminUser) => {
   const exclusive: AdminGroup[] = []
   const publicGroups: AdminGroup[] = []
   for (const g of allGroups.value) {
-    if (g.status !== 'active' || g.subscription_type !== 'standard') continue
+    if (g.status !== 'active') continue
     if (g.is_exclusive) {
       if (user.allowed_groups?.includes(g.id)) {
         exclusive.push(g)
@@ -1070,7 +1059,7 @@ const groupFilterOptions = computed(() => {
     { value: '', label: t('admin.users.allAuthorizedGroups') }
   ]
   for (const g of allGroups.value) {
-    if (g.status !== 'active' || !g.is_exclusive || g.subscription_type !== 'standard') continue
+    if (g.status !== 'active' || !g.is_exclusive) continue
     options.push({ value: g.name, label: g.name })
   }
   return options
@@ -1083,7 +1072,6 @@ const apiKeyGroupFilterOptions = computed(() =>
     all: t('admin.users.allApiKeyGroups'),
     exclusive: t('admin.users.apiKeyGroupExclusive'),
     public: t('admin.users.apiKeyGroupPublic'),
-    subscription: t('admin.users.apiKeyGroupSubscription'),
     disabled: t('admin.users.apiKeyGroupDisabled'),
   }) as SelectOption[]
 )
@@ -1495,13 +1483,8 @@ const balanceOperation = ref<'add' | 'subtract'>('add')
 const showBalanceHistoryModal = ref(false)
 const balanceHistoryUser = ref<AdminUser | null>(null)
 
-// 计算剩余天数
-const getDaysRemaining = (expiresAt: string): number => {
-  const now = new Date()
-  const expires = new Date(expiresAt)
-  const diffMs = expires.getTime() - now.getTime()
-  return Math.ceil(diffMs / (1000 * 60 * 60 * 24))
-}
+const subscriptionDisplayName = (subscription: Pick<UserSubscription, 'id' | 'plan_name_snapshot'>): string =>
+  subscription.plan_name_snapshot?.trim() || `${t('payment.plan')} #${subscription.id}`
 
 const loadAttributeDefinitions = async () => {
   try {

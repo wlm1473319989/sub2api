@@ -18,7 +18,6 @@ func TestAdminServiceAdminUpdateAPIKeyGroupID_PublicSubscriptionTypeGroupDoesNot
 			Name:             "Sub",
 			Status:           StatusActive,
 			IsExclusive:      false,
-			SubscriptionType: SubscriptionTypeSubscription,
 		},
 	}
 	userRepo := &userRepoStubForGroupUpdate{}
@@ -40,7 +39,6 @@ func TestAdminServiceAdminUpdateAPIKeyGroupID_ExclusiveSubscriptionTypeGroupAuto
 			Name:             "Sub",
 			Status:           StatusActive,
 			IsExclusive:      true,
-			SubscriptionType: SubscriptionTypeSubscription,
 		},
 	}
 	userRepo := &userRepoStubForGroupUpdate{}

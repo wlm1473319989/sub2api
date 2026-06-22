@@ -91,11 +91,6 @@ type Group struct {
 	IsExclusive    bool    `json:"is_exclusive"`
 	Status         string  `json:"status"`
 
-	SubscriptionType string   `json:"subscription_type"`
-	DailyLimitUSD    *float64 `json:"daily_limit_usd"`
-	WeeklyLimitUSD   *float64 `json:"weekly_limit_usd"`
-	MonthlyLimitUSD  *float64 `json:"monthly_limit_usd"`
-
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	AllowImageGeneration bool     `json:"allow_image_generation"`
 	ImageRateIndependent bool     `json:"image_rate_independent"`
@@ -571,7 +566,6 @@ type Setting struct {
 type UserSubscription struct {
 	ID                int64    `json:"id"`
 	UserID            int64    `json:"user_id"`
-	GroupID           *int64   `json:"group_id,omitempty"`
 	PlanID            *int64   `json:"plan_id,omitempty"`
 	PlanNameSnapshot  *string  `json:"plan_name_snapshot,omitempty"`
 	PlanPriceSnapshot *float64 `json:"plan_price_snapshot,omitempty"`
@@ -598,8 +592,7 @@ type UserSubscription struct {
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
-	User  *User  `json:"user,omitempty"`
-	Group *Group `json:"group,omitempty"`
+	User *User `json:"user,omitempty"`
 }
 
 // AdminUserSubscription 是管理员接口使用的订阅 DTO（包含分配信息/备注等字段）。

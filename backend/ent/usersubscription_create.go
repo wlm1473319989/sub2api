@@ -11,7 +11,6 @@ import (
 	"entgo.io/ent/dialect/sql"
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
-	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -70,20 +69,6 @@ func (_c *UserSubscriptionCreate) SetNillableDeletedAt(v *time.Time) *UserSubscr
 // SetUserID sets the "user_id" field.
 func (_c *UserSubscriptionCreate) SetUserID(v int64) *UserSubscriptionCreate {
 	_c.mutation.SetUserID(v)
-	return _c
-}
-
-// SetGroupID sets the "group_id" field.
-func (_c *UserSubscriptionCreate) SetGroupID(v int64) *UserSubscriptionCreate {
-	_c.mutation.SetGroupID(v)
-	return _c
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (_c *UserSubscriptionCreate) SetNillableGroupID(v *int64) *UserSubscriptionCreate {
-	if v != nil {
-		_c.SetGroupID(*v)
-	}
 	return _c
 }
 
@@ -382,11 +367,6 @@ func (_c *UserSubscriptionCreate) SetNillableNotes(v *string) *UserSubscriptionC
 // SetUser sets the "user" edge to the User entity.
 func (_c *UserSubscriptionCreate) SetUser(v *User) *UserSubscriptionCreate {
 	return _c.SetUserID(v.ID)
-}
-
-// SetGroup sets the "group" edge to the Group entity.
-func (_c *UserSubscriptionCreate) SetGroup(v *Group) *UserSubscriptionCreate {
-	return _c.SetGroupID(v.ID)
 }
 
 // SetAssignedByUserID sets the "assigned_by_user" edge to the User entity by ID.
@@ -706,23 +686,6 @@ func (_c *UserSubscriptionCreate) createSpec() (*UserSubscription, *sqlgraph.Cre
 		_node.UserID = nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
-	if nodes := _c.mutation.GroupIDs(); len(nodes) > 0 {
-		edge := &sqlgraph.EdgeSpec{
-			Rel:     sqlgraph.M2O,
-			Inverse: true,
-			Table:   usersubscription.GroupTable,
-			Columns: []string{usersubscription.GroupColumn},
-			Bidi:    false,
-			Target: &sqlgraph.EdgeTarget{
-				IDSpec: sqlgraph.NewFieldSpec(group.FieldID, field.TypeInt64),
-			},
-		}
-		for _, k := range nodes {
-			edge.Target.Nodes = append(edge.Target.Nodes, k)
-		}
-		_node.GroupID = &nodes[0]
-		_spec.Edges = append(_spec.Edges, edge)
-	}
 	if nodes := _c.mutation.AssignedByUserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.M2O,
@@ -847,24 +810,6 @@ func (u *UserSubscriptionUpsert) SetUserID(v int64) *UserSubscriptionUpsert {
 // UpdateUserID sets the "user_id" field to the value that was provided on create.
 func (u *UserSubscriptionUpsert) UpdateUserID() *UserSubscriptionUpsert {
 	u.SetExcluded(usersubscription.FieldUserID)
-	return u
-}
-
-// SetGroupID sets the "group_id" field.
-func (u *UserSubscriptionUpsert) SetGroupID(v int64) *UserSubscriptionUpsert {
-	u.Set(usersubscription.FieldGroupID, v)
-	return u
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *UserSubscriptionUpsert) UpdateGroupID() *UserSubscriptionUpsert {
-	u.SetExcluded(usersubscription.FieldGroupID)
-	return u
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *UserSubscriptionUpsert) ClearGroupID() *UserSubscriptionUpsert {
-	u.SetNull(usersubscription.FieldGroupID)
 	return u
 }
 
@@ -1367,27 +1312,6 @@ func (u *UserSubscriptionUpsertOne) SetUserID(v int64) *UserSubscriptionUpsertOn
 func (u *UserSubscriptionUpsertOne) UpdateUserID() *UserSubscriptionUpsertOne {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateUserID()
-	})
-}
-
-// SetGroupID sets the "group_id" field.
-func (u *UserSubscriptionUpsertOne) SetGroupID(v int64) *UserSubscriptionUpsertOne {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.SetGroupID(v)
-	})
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *UserSubscriptionUpsertOne) UpdateGroupID() *UserSubscriptionUpsertOne {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.UpdateGroupID()
-	})
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *UserSubscriptionUpsertOne) ClearGroupID() *UserSubscriptionUpsertOne {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.ClearGroupID()
 	})
 }
 
@@ -2124,27 +2048,6 @@ func (u *UserSubscriptionUpsertBulk) SetUserID(v int64) *UserSubscriptionUpsertB
 func (u *UserSubscriptionUpsertBulk) UpdateUserID() *UserSubscriptionUpsertBulk {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateUserID()
-	})
-}
-
-// SetGroupID sets the "group_id" field.
-func (u *UserSubscriptionUpsertBulk) SetGroupID(v int64) *UserSubscriptionUpsertBulk {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.SetGroupID(v)
-	})
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *UserSubscriptionUpsertBulk) UpdateGroupID() *UserSubscriptionUpsertBulk {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.UpdateGroupID()
-	})
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *UserSubscriptionUpsertBulk) ClearGroupID() *UserSubscriptionUpsertBulk {
-	return u.Update(func(s *UserSubscriptionUpsert) {
-		s.ClearGroupID()
 	})
 }
 

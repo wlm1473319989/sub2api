@@ -160,7 +160,7 @@ func (s *SubscriptionExpiryService) expiryReminderEnabled(ctx context.Context) b
 }
 
 func (s *SubscriptionExpiryService) sendExpiryReminderIfDue(ctx context.Context, sub *UserSubscription) {
-	if sub == nil || sub.User == nil || sub.Group == nil || sub.User.Email == "" {
+	if sub == nil || sub.User == nil || sub.User.Email == "" {
 		return
 	}
 	daysRemaining := sub.DaysRemaining()
@@ -176,7 +176,7 @@ func (s *SubscriptionExpiryService) sendExpiryReminderIfDue(ctx context.Context,
 		SourceID:       strconv.FormatInt(sub.ID, 10),
 		ReminderKey:    fmt.Sprintf("%dd", daysRemaining),
 		Variables: map[string]string{
-			"subscription_group": sub.Group.Name,
+			"subscription_group": resolveSubscriptionProgressDisplayName(sub),
 			"expiry_time":        sub.ExpiresAt.Format("2006-01-02 15:04"),
 			"days_remaining":     strconv.Itoa(daysRemaining),
 		},

@@ -38,7 +38,6 @@ func TestPrepareRefund_NewSubscriptionOrderCapturesActiveSnapshot(t *testing.T) 
 	group, err := client.Group.Create().
 		SetName("refund-user-level-group").
 		SetStatus(StatusActive).
-		SetSubscriptionType(SubscriptionTypeSubscription).
 		Save(ctx)
 	require.NoError(t, err)
 	groupRepo.byID[group.ID] = groupToService(group)
@@ -131,7 +130,6 @@ func TestExecuteRefund_UserLevelSubscriptionOrderMarksSubscriptionRefunded(t *te
 	group, err := client.Group.Create().
 		SetName("refund-exec-group").
 		SetStatus(StatusActive).
-		SetSubscriptionType(SubscriptionTypeSubscription).
 		Save(ctx)
 	require.NoError(t, err)
 	groupRepo.byID[group.ID] = groupToService(group)

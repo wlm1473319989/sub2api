@@ -2,7 +2,6 @@ package service
 
 import (
 	"context"
-	"strconv"
 	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -113,20 +112,16 @@ type subscriptionUserSubRepoStub struct {
 
 	nextID      int64
 	byID        map[int64]*UserSubscription
-	byUserGroup map[string]*UserSubscription
+	byUserID    map[int64]*UserSubscription
 	createCalls int
 }
 
 func newSubscriptionUserSubRepoStub() *subscriptionUserSubRepoStub {
 	return &subscriptionUserSubRepoStub{
-		nextID:      1,
-		byID:        make(map[int64]*UserSubscription),
-		byUserGroup: make(map[string]*UserSubscription),
+		nextID:   1,
+		byID:     make(map[int64]*UserSubscription),
+		byUserID: make(map[int64]*UserSubscription),
 	}
-}
-
-func (s *subscriptionUserSubRepoStub) key(userID, groupID int64) string {
-	return strconv.FormatInt(userID, 10) + ":" + strconv.FormatInt(groupID, 10)
 }
 
 func (s *subscriptionUserSubRepoStub) seed(sub *UserSubscription) {
@@ -139,7 +134,7 @@ func (s *subscriptionUserSubRepoStub) seed(sub *UserSubscription) {
 		s.nextID++
 	}
 	s.byID[cp.ID] = &cp
-	s.byUserGroup[s.key(cp.UserID, cp.GroupID)] = &cp
+	s.byUserID[cp.UserID] = &cp
 }
 
 func (s *subscriptionUserSubRepoStub) Create(_ context.Context, sub *UserSubscription) error {
@@ -154,7 +149,7 @@ func (s *subscriptionUserSubRepoStub) Create(_ context.Context, sub *UserSubscri
 	}
 	sub.ID = cp.ID
 	s.byID[cp.ID] = &cp
-	s.byUserGroup[s.key(cp.UserID, cp.GroupID)] = &cp
+	s.byUserID[cp.UserID] = &cp
 	return nil
 }
 
@@ -204,12 +199,12 @@ func (s *subscriptionUserSubRepoStub) Update(_ context.Context, sub *UserSubscri
 	if existing == nil {
 		return ErrSubscriptionNotFound
 	}
-	oldKey := s.key(existing.UserID, existing.GroupID)
+	oldUserID := existing.UserID
 	cp := *sub
 	s.byID[cp.ID] = &cp
-	if oldKey != s.key(cp.UserID, cp.GroupID) {
-		delete(s.byUserGroup, oldKey)
+	if oldUserID != cp.UserID {
+		delete(s.byUserID, oldUserID)
 	}
-	s.byUserGroup[s.key(cp.UserID, cp.GroupID)] = &cp
+	s.byUserID[cp.UserID] = &cp
 	return nil
 }

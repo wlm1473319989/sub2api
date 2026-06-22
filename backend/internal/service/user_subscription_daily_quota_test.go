@@ -103,7 +103,6 @@ func TestCheckAndResetWindows_DailyCardDoesNotResetDailyUsage(t *testing.T) {
 	sub := &UserSubscription{
 		ID:               1,
 		UserID:           10,
-		GroupID:          20,
 		StartsAt:         startsAt,
 		ExpiresAt:        startsAt.Add(24 * time.Hour),
 		DailyUsageUSD:    10,
@@ -126,7 +125,6 @@ func TestCheckAndResetWindows_MultiDaySubscriptionStillResetsDailyUsage(t *testi
 	sub := &UserSubscription{
 		ID:               1,
 		UserID:           10,
-		GroupID:          20,
 		StartsAt:         startsAt,
 		ExpiresAt:        startsAt.AddDate(0, 0, 2),
 		DailyUsageUSD:    10,
@@ -153,10 +151,7 @@ func TestValidateAndCheckLimits_DailyCardDoesNotAllowSecondQuotaAfterMidnight(t 
 		DailyUsedKnives:  dailyLimit + 0.01,
 		DailyQuotaKnives: &dailyLimit,
 	}
-	group := &Group{
-		SubscriptionType: SubscriptionTypeSubscription,
-		DailyLimitUSD:    &dailyLimit,
-	}
+	group := &Group{}
 	svc := NewSubscriptionService(groupRepoNoop{}, userSubRepoNoop{}, nil, nil, nil)
 
 	needsMaintenance, err := svc.ValidateAndCheckLimits(sub, group)

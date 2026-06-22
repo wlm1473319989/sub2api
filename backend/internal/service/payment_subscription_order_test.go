@@ -32,15 +32,11 @@ func groupToService(group *dbent.Group) *Group {
 		return nil
 	}
 	return &Group{
-		ID:               group.ID,
-		Name:             group.Name,
-		Status:           group.Status,
-		Platform:         group.Platform,
-		RateMultiplier:   group.RateMultiplier,
-		SubscriptionType: group.SubscriptionType,
-		DailyLimitUSD:    copyFloat64Pointer(group.DailyLimitUsd),
-		WeeklyLimitUSD:   copyFloat64Pointer(group.WeeklyLimitUsd),
-		MonthlyLimitUSD:  copyFloat64Pointer(group.MonthlyLimitUsd),
+		ID:             group.ID,
+		Name:           group.Name,
+		Status:         group.Status,
+		Platform:       group.Platform,
+		RateMultiplier: group.RateMultiplier,
 	}
 }
 
@@ -110,19 +106,12 @@ func (h *paymentSubscriptionHarness) createUser(t *testing.T, email string) *dbe
 
 func (h *paymentSubscriptionHarness) createGroup(t *testing.T, name string, daily, weekly, monthly *float64) *dbent.Group {
 	t.Helper()
+	_ = daily
+	_ = weekly
+	_ = monthly
 	builder := h.client.Group.Create().
 		SetName(name).
-		SetStatus(StatusActive).
-		SetSubscriptionType(SubscriptionTypeSubscription)
-	if daily != nil {
-		builder.SetDailyLimitUsd(*daily)
-	}
-	if weekly != nil {
-		builder.SetWeeklyLimitUsd(*weekly)
-	}
-	if monthly != nil {
-		builder.SetMonthlyLimitUsd(*monthly)
-	}
+		SetStatus(StatusActive)
 	group, err := builder.Save(h.ctx)
 	require.NoError(t, err)
 	h.groupRepo.byID[group.ID] = groupToService(group)
@@ -157,9 +146,9 @@ func (h *paymentSubscriptionHarness) createPlan(t *testing.T, name string, price
 
 func (h *paymentSubscriptionHarness) seedLegacyActiveSubscription(t *testing.T, user *dbent.User, group *dbent.Group, startsAt, expiresAt time.Time) *UserSubscription {
 	t.Helper()
+	_ = group
 	sub := &UserSubscription{
 		UserID:     user.ID,
-		GroupID:    group.ID,
 		StartsAt:   startsAt,
 		ExpiresAt:  expiresAt,
 		Status:     SubscriptionStatusActive,
@@ -167,7 +156,6 @@ func (h *paymentSubscriptionHarness) seedLegacyActiveSubscription(t *testing.T, 
 		Notes:      "legacy",
 		CreatedAt:  startsAt,
 		UpdatedAt:  startsAt,
-		Group:      groupToService(group),
 		User:       userToService(user),
 	}
 	require.NoError(t, h.subscriptionSvc.userSubRepo.Create(h.ctx, sub))

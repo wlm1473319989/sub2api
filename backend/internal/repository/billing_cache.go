@@ -55,7 +55,6 @@ const (
 	subFieldWeeklyUsage  = "weekly_usage"
 	subFieldMonthlyUsage = "monthly_usage"
 	subFieldVersion      = "version"
-	subFieldGroupID      = "group_id"
 )
 
 // billingRateLimitKey generates the Redis key for API key rate limit cache.
@@ -215,9 +214,6 @@ func (c *billingCache) parseSubscriptionCache(data map[string]string) (*service.
 	if versionStr, ok := data[subFieldVersion]; ok {
 		result.Version, _ = strconv.ParseInt(versionStr, 10, 64)
 	}
-	if groupIDStr, ok := data[subFieldGroupID]; ok {
-		result.GroupID, _ = strconv.ParseInt(groupIDStr, 10, 64)
-	}
 
 	return result, nil
 }
@@ -236,7 +232,6 @@ func (c *billingCache) SetSubscriptionCache(ctx context.Context, userID int64, d
 		subFieldWeeklyUsage:  data.WeeklyUsage,
 		subFieldMonthlyUsage: data.MonthlyUsage,
 		subFieldVersion:      data.Version,
-		subFieldGroupID:      data.GroupID,
 	}
 
 	pipe := c.rdb.Pipeline()

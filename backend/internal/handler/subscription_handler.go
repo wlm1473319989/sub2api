@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
@@ -165,9 +166,8 @@ func (h *SubscriptionHandler) GetSummary(c *gin.Context) {
 			item.DisplayName = strings.TrimSpace(*sub.PlanNameSnapshot)
 		}
 
-		// Fallback to legacy group name during the final compatibility window.
-		if item.DisplayName == "" && sub.Group != nil {
-			item.DisplayName = sub.Group.Name
+		if item.DisplayName == "" {
+			item.DisplayName = fmt.Sprintf("Subscription #%d", sub.ID)
 		}
 
 		// Format expiration time

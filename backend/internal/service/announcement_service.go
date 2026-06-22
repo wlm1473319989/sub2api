@@ -397,13 +397,10 @@ func isValidAnnouncementNotifyMode(mode string) bool {
 }
 
 func collectAnnouncementSubscriptionIDs(subs []UserSubscription) map[int64]struct{} {
-	ids := make(map[int64]struct{}, len(subs)*2)
+	ids := make(map[int64]struct{}, len(subs))
 	for i := range subs {
 		if subs[i].PlanID != nil && *subs[i].PlanID > 0 {
 			ids[*subs[i].PlanID] = struct{}{}
-		}
-		if subs[i].GroupID > 0 {
-			ids[subs[i].GroupID] = struct{}{}
 		}
 	}
 	return ids

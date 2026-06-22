@@ -319,7 +319,6 @@ func TestAPIContracts(t *testing.T) {
 						RateMultiplier:      1.5,
 						IsExclusive:         false,
 						Status:              service.StatusActive,
-						SubscriptionType:    service.SubscriptionTypeStandard,
 						ModelRoutingEnabled: true,
 						ModelRouting: map[string][]int64{
 							"claude-3-*": []int64{101, 102},
@@ -346,10 +345,6 @@ func TestAPIContracts(t *testing.T) {
 						"rate_multiplier": 1.5,
 						"is_exclusive": false,
 						"status": "active",
-						"subscription_type": "standard",
-						"daily_limit_usd": null,
-						"weekly_limit_usd": null,
-						"monthly_limit_usd": null,
 						"image_price_1k": null,
 						"image_price_2k": null,
 						"image_price_4k": null,
@@ -376,20 +371,22 @@ func TestAPIContracts(t *testing.T) {
 				// 普通用户订阅接口不应包含 assigned_* / notes 等管理员字段。
 				deps.userSubRepo.SetByUserID(1, []service.UserSubscription{
 					{
-						ID:              501,
-						UserID:          1,
-						GroupID:         10,
-						StartsAt:        deps.now,
-						ExpiresAt:       time.Date(2099, 1, 2, 3, 4, 5, 0, time.UTC), // 使用未来日期避免 normalizeSubscriptionStatus 标记为过期
-						Status:          service.SubscriptionStatusActive,
-						DailyUsageUSD:   1.23,
-						WeeklyUsageUSD:  2.34,
-						MonthlyUsageUSD: 3.45,
-						AssignedBy:      ptr(int64(999)),
-						AssignedAt:      deps.now,
-						Notes:           "admin-note",
-						CreatedAt:       deps.now,
-						UpdatedAt:       deps.now,
+						ID:                501,
+						UserID:            1,
+						PlanID:            ptr(int64(77)),
+						PlanNameSnapshot:  ptr("Starter Plan"),
+						PlanPriceSnapshot: ptr(19.9),
+						StartsAt:          deps.now,
+						ExpiresAt:         time.Date(2099, 1, 2, 3, 4, 5, 0, time.UTC), // 使用未来日期避免 normalizeSubscriptionStatus 标记为过期
+						Status:            service.SubscriptionStatusActive,
+						DailyUsageUSD:     1.23,
+						WeeklyUsageUSD:    2.34,
+						MonthlyUsageUSD:   3.45,
+						AssignedBy:        ptr(int64(999)),
+						AssignedAt:        deps.now,
+						Notes:             "admin-note",
+						CreatedAt:         deps.now,
+						UpdatedAt:         deps.now,
 					},
 				})
 			},
@@ -403,7 +400,9 @@ func TestAPIContracts(t *testing.T) {
 					{
 						"id": 501,
 						"user_id": 1,
-						"group_id": 10,
+						"plan_id": 77,
+						"plan_name_snapshot": "Starter Plan",
+						"plan_price_snapshot": 19.9,
 						"starts_at": "2025-01-02T03:04:05Z",
 						"expires_at": "2099-01-02T03:04:05Z",
 						"status": "active",
@@ -413,6 +412,9 @@ func TestAPIContracts(t *testing.T) {
 						"daily_usage_usd": 1.23,
 						"weekly_usage_usd": 2.34,
 						"monthly_usage_usd": 3.45,
+						"daily_used_knives": 0,
+						"weekly_used_knives": 0,
+						"monthly_used_knives": 0,
 						"created_at": "2025-01-02T03:04:05Z",
 						"updated_at": "2025-01-02T03:04:05Z"
 					}
@@ -455,6 +457,7 @@ func TestAPIContracts(t *testing.T) {
 						"used_at": "2025-01-02T03:04:05Z",
 						"created_at": "2025-01-02T03:04:05Z",
 						"group_id": null,
+						"plan_id": null,
 						"validity_days": 0
 					}
 				]
@@ -574,6 +577,8 @@ func TestAPIContracts(t *testing.T) {
 							"cache_read_cost": 0,
 						"total_cost": 0.5,
 						"actual_cost": 0.5,
+						"subscription_cost": 0,
+						"balance_cost": 0,
 						"rate_multiplier": 1,
 						"billing_type": 0,
 							"stream": true,

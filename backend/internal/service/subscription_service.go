@@ -28,7 +28,7 @@ var (
 	ErrSubscriptionNotFound        = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
 	ErrSubscriptionExpired         = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
 	ErrSubscriptionSuspended       = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
-	ErrSubscriptionAlreadyExists   = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user and group")
+	ErrSubscriptionAlreadyExists   = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user")
 	ErrMultipleActiveSubscriptions = infraerrors.Conflict("MULTIPLE_ACTIVE_SUBSCRIPTIONS", "multiple active subscriptions found for user")
 	ErrInvalidInput                = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
 	ErrDailyLimitExceeded          = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
@@ -705,22 +705,14 @@ func (s *SubscriptionService) GetSubscriptionProgress(ctx context.Context, subsc
 		return nil, ErrSubscriptionNotFound
 	}
 
-	group := sub.Group
-	if group == nil && resolveSubscriptionProgressDisplayName(sub, nil) == "" && sub.GroupID > 0 {
-		group, err = s.groupRepo.GetByID(ctx, sub.GroupID)
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return s.calculateProgress(sub, group), nil
+	return s.calculateProgress(sub), nil
 }
 
 // calculateProgress 根据已加载的订阅和分组数据计算使用进度（纯内存计算，无 DB 查询）
-func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Group) *SubscriptionProgress {
+func (s *SubscriptionService) calculateProgress(sub *UserSubscription) *SubscriptionProgress {
 	progress := &SubscriptionProgress{
 		ID:            sub.ID,
-		DisplayName:   resolveSubscriptionProgressDisplayName(sub, group),
+		DisplayName:   resolveSubscriptionProgressDisplayName(sub),
 		ExpiresAt:     sub.ExpiresAt,
 		ExpiresInDays: sub.DaysRemaining(),
 	}
@@ -803,19 +795,19 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	return progress
 }
 
-func resolveSubscriptionProgressDisplayName(sub *UserSubscription, group *Group) string {
+func resolveSubscriptionProgressDisplayName(sub *UserSubscription) string {
 	if sub != nil && sub.PlanNameSnapshot != nil && strings.TrimSpace(*sub.PlanNameSnapshot) != "" {
 		return strings.TrimSpace(*sub.PlanNameSnapshot)
 	}
-	if group != nil {
-		return group.Name
+	if sub == nil {
+		return ""
 	}
-	return ""
+	return fmt.Sprintf("Subscription #%d", sub.ID)
 }
 
 // GetUserSubscriptionsWithProgress 获取用户所有订阅及进度
 func (s *SubscriptionService) GetUserSubscriptionsWithProgress(ctx context.Context, userID int64) ([]SubscriptionProgress, error) {
-	// ListActiveByUserID 已使用 .WithGroup() eager-load Group 关联，1 次查询获取所有数据
+	// ListActiveByUserID 1 次查询获取所有数据，进度展示仅依赖订阅快照
 	subs, err := s.userSubRepo.ListActiveByUserID(ctx, userID)
 	if err != nil {
 		return nil, err
@@ -824,14 +816,7 @@ func (s *SubscriptionService) GetUserSubscriptionsWithProgress(ctx context.Conte
 	progresses := make([]SubscriptionProgress, 0, len(subs))
 	for i := range subs {
 		sub := &subs[i]
-		group := sub.Group
-		if group == nil && resolveSubscriptionProgressDisplayName(sub, nil) == "" && sub.GroupID > 0 {
-			group, err = s.groupRepo.GetByID(ctx, sub.GroupID)
-			if err != nil {
-				return nil, err
-			}
-		}
-		progresses = append(progresses, *s.calculateProgress(sub, group))
+		progresses = append(progresses, *s.calculateProgress(sub))
 	}
 
 	return progresses, nil

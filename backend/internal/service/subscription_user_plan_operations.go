@@ -75,7 +75,7 @@ func (s *SubscriptionService) PurchaseNewPlan(ctx context.Context, input *Purcha
 	if err != nil {
 		return nil, err
 	}
-	s.invalidateSubscriptionCaches(input.UserID, sub.GroupID)
+	s.invalidateSubscriptionCaches(input.UserID)
 	return sub, nil
 }
 
@@ -106,7 +106,7 @@ func (s *SubscriptionService) RenewActivePlan(ctx context.Context, input *RenewA
 	if err := s.userSubRepo.Update(ctx, &renewed); err != nil {
 		return nil, err
 	}
-	s.invalidateSubscriptionCaches(input.UserID, active.GroupID)
+	s.invalidateSubscriptionCaches(input.UserID)
 	return s.userSubRepo.GetByID(ctx, active.ID)
 }
 
@@ -148,7 +148,7 @@ func (s *SubscriptionService) UpgradeActivePlan(ctx context.Context, input *Upgr
 		return nil, err
 	}
 
-	s.invalidateSubscriptionCaches(input.UserID, active.GroupID)
+	s.invalidateSubscriptionCaches(input.UserID)
 	current, err := s.userSubRepo.GetByID(ctx, newSubscriptionID)
 	if err != nil {
 		return nil, err
@@ -194,7 +194,7 @@ func (s *SubscriptionService) RefundActivePlan(ctx context.Context, input *Refun
 	if err := s.userSubRepo.Update(ctx, &refunded); err != nil {
 		return nil, err
 	}
-	s.invalidateSubscriptionCaches(input.UserID, active.GroupID)
+	s.invalidateSubscriptionCaches(input.UserID)
 	sub, err := s.userSubRepo.GetByID(ctx, active.ID)
 	if err != nil {
 		return nil, err

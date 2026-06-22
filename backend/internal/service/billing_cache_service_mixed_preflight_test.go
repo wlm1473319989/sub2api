@@ -59,12 +59,9 @@ func newMixedPreflightService(t *testing.T, cache BillingCache) *BillingCacheSer
 func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 	t.Parallel()
 
-	limit := 5.0
 	group := &Group{
-		ID:               10,
-		SubscriptionType: SubscriptionTypeSubscription,
-		Status:           StatusActive,
-		DailyLimitUSD:    &limit,
+		ID:     10,
+		Status: StatusActive,
 	}
 	user := &User{ID: 42}
 
@@ -149,12 +146,9 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 func TestCheckBillingEligibility_BalanceFallbackStillAppliesPlatformQuota(t *testing.T) {
 	t.Parallel()
 
-	limit := 5.0
 	group := &Group{
-		ID:               10,
-		SubscriptionType: SubscriptionTypeSubscription,
-		Status:           StatusActive,
-		DailyLimitUSD:    &limit,
+		ID:     10,
+		Status: StatusActive,
 	}
 	subscription := &UserSubscription{
 		ID:        88,

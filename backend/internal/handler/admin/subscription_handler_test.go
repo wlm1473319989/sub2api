@@ -101,7 +101,6 @@ func (h *subscriptionHandlerHarness) createGroup(t *testing.T, name string) *dbe
 	group, err := h.client.Group.Create().
 		SetName(name).
 		SetStatus(service.StatusActive).
-		SetSubscriptionType(service.SubscriptionTypeSubscription).
 		Save(h.ctx)
 	require.NoError(t, err)
 	return group

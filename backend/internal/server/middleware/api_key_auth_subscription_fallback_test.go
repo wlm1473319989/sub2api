@@ -25,8 +25,6 @@ func TestAPIKeyAuth_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		Name:             "sub",
 		Status:           service.StatusActive,
 		Hydrated:         true,
-		SubscriptionType: service.SubscriptionTypeSubscription,
-		DailyLimitUSD:    &limit,
 	}
 	user := &service.User{
 		ID:          7,
@@ -59,7 +57,6 @@ func TestAPIKeyAuth_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 	sub := &service.UserSubscription{
 		ID:               55,
 		UserID:           user.ID,
-		GroupID:          group.ID,
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
@@ -98,8 +95,6 @@ func TestAPIKeyAuthGoogle_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		Status:           service.StatusActive,
 		Platform:         service.PlatformGemini,
 		Hydrated:         true,
-		SubscriptionType: service.SubscriptionTypeSubscription,
-		DailyLimitUSD:    &limit,
 	}
 	user := &service.User{
 		ID:          999,
@@ -132,7 +127,6 @@ func TestAPIKeyAuthGoogle_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 	sub := &service.UserSubscription{
 		ID:               601,
 		UserID:           user.ID,
-		GroupID:          group.ID,
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
@@ -174,8 +168,6 @@ func TestAPIKeyAuthGoogle_PreservesSubscriptionErrorWhenNeitherQuotaNorBalanceAv
 		Status:           service.StatusActive,
 		Platform:         service.PlatformGemini,
 		Hydrated:         true,
-		SubscriptionType: service.SubscriptionTypeSubscription,
-		DailyLimitUSD:    &limit,
 	}
 	user := &service.User{
 		ID:          999,
@@ -208,7 +200,6 @@ func TestAPIKeyAuthGoogle_PreservesSubscriptionErrorWhenNeitherQuotaNorBalanceAv
 	sub := &service.UserSubscription{
 		ID:               601,
 		UserID:           user.ID,
-		GroupID:          group.ID,
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,

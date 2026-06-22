@@ -76,7 +76,6 @@ func (h *subscriptionOpsHarness) createGroup(t *testing.T, name string) *dbent.G
 	group, err := h.client.Group.Create().
 		SetName(name).
 		SetStatus(service.StatusActive).
-		SetSubscriptionType(service.SubscriptionTypeSubscription).
 		Save(h.ctx)
 	require.NoError(t, err)
 	return group
@@ -154,7 +153,6 @@ func TestPurchaseNewPlanCreatesSnapshotSubscription(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sub.PlanID)
 	require.Equal(t, plan.ID, *sub.PlanID)
-	require.Zero(t, sub.GroupID)
 	require.Equal(t, service.SubscriptionStatusActive, sub.Status)
 	require.NotNil(t, sub.PlanNameSnapshot)
 	require.Equal(t, plan.Name, *sub.PlanNameSnapshot)
@@ -179,7 +177,6 @@ func TestPurchaseNewPlanAllowsUserLevelPlanWithoutGroupBinding(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sub.PlanID)
 	require.Equal(t, plan.ID, *sub.PlanID)
-	require.Zero(t, sub.GroupID)
 	require.NotNil(t, sub.DailyQuotaKnives)
 	require.Equal(t, daily, *sub.DailyQuotaKnives)
 }
@@ -276,7 +273,6 @@ func TestUpgradeActivePlanSupersedesActiveSubscription(t *testing.T) {
 	require.Equal(t, service.SubscriptionStatusActive, result.Current.Status)
 	require.NotNil(t, result.Current.PlanID)
 	require.Equal(t, targetPlan.ID, *result.Current.PlanID)
-	require.Zero(t, result.Current.GroupID)
 	require.NotNil(t, result.Current.DailyQuotaKnives)
 	require.Equal(t, targetDaily, *result.Current.DailyQuotaKnives)
 

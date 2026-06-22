@@ -184,15 +184,9 @@
           </template>
 
           <template #cell-group="{ row }">
-            <GroupBadge
-              v-if="row.group"
-              :name="subscriptionDisplayName(row)"
-              :platform="row.group.platform"
-              :subscription-type="row.group.subscription_type"
-              :rate-multiplier="row.group.rate_multiplier"
-              :show-rate="false"
-            />
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{ subscriptionDisplayName(row) }}</span>
+            <span class="inline-flex items-center rounded-md border border-gray-200 bg-gray-50 px-2.5 py-1 text-xs font-medium text-gray-700 dark:border-dark-600 dark:bg-dark-700/50 dark:text-gray-200">
+              {{ subscriptionDisplayName(row) }}
+            </span>
           </template>
 
           <template #cell-usage="{ row }">
@@ -711,7 +705,6 @@ import BaseDialog from '@/components/common/BaseDialog.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Select from '@/components/common/Select.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
 
@@ -1240,7 +1233,7 @@ const getProgressWidth = (used: number | null | undefined, limit: number | null)
 }
 
 const subscriptionDisplayName = (subscription: UserSubscription): string =>
-  subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}`
+  subscription.plan_name_snapshot?.trim() || `${t('payment.plan')} #${subscription.id}`
 
 const displayDailyLimit = (subscription: UserSubscription): number | null =>
   subscription.daily_quota_knives ?? null

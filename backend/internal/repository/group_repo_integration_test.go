@@ -55,7 +55,6 @@ func (s *GroupRepoSuite) TestCreate() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 
 	err := s.repo.Create(s.ctx, group)
@@ -80,7 +79,6 @@ func (s *GroupRepoSuite) TestGetByIDLite_DoesNotUseAccountCount() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -100,7 +98,6 @@ func (s *GroupRepoSuite) TestUpdate() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -120,7 +117,6 @@ func (s *GroupRepoSuite) TestGetByID_PreservesMessagesDispatchModelConfig() {
 		RateMultiplier:        1.0,
 		IsExclusive:           false,
 		Status:                service.StatusActive,
-		SubscriptionType:      service.SubscriptionTypeStandard,
 		AllowMessagesDispatch: true,
 		DefaultMappedModel:    "gpt-5.4",
 		MessagesDispatchModelConfig: service.OpenAIMessagesDispatchModelConfig{
@@ -147,7 +143,6 @@ func (s *GroupRepoSuite) TestDelete() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -171,7 +166,6 @@ func (s *GroupRepoSuite) TestList() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g2",
@@ -179,7 +173,6 @@ func (s *GroupRepoSuite) TestList() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	groups, page, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10})
@@ -205,7 +198,6 @@ func (s *GroupRepoSuite) TestListWithFilters_Platform() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g2",
@@ -213,7 +205,6 @@ func (s *GroupRepoSuite) TestListWithFilters_Platform() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	groups, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, service.PlatformOpenAI, "", "", nil)
@@ -232,7 +223,6 @@ func (s *GroupRepoSuite) TestListWithFilters_Status() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g2",
@@ -240,7 +230,6 @@ func (s *GroupRepoSuite) TestListWithFilters_Status() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusDisabled,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	groups, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", service.StatusDisabled, "", nil)
@@ -256,7 +245,6 @@ func (s *GroupRepoSuite) TestListWithFilters_IsExclusive() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g2",
@@ -264,7 +252,6 @@ func (s *GroupRepoSuite) TestListWithFilters_IsExclusive() {
 		RateMultiplier:   1.0,
 		IsExclusive:      true,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	isExclusive := true
@@ -302,7 +289,6 @@ func (s *GroupRepoSuite) TestListWithFilters_Search() {
 			RateMultiplier:   1.0,
 			IsExclusive:      false,
 			Status:           service.StatusActive,
-			SubscriptionType: service.SubscriptionTypeStandard,
 		}
 	}
 
@@ -386,7 +372,6 @@ func (s *GroupRepoSuite) TestUpdateSortOrders_BatchCaseWhen() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	g2 := &service.Group{
 		Name:             "sort-g2",
@@ -394,7 +379,6 @@ func (s *GroupRepoSuite) TestUpdateSortOrders_BatchCaseWhen() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	g3 := &service.Group{
 		Name:             "sort-g3",
@@ -402,7 +386,6 @@ func (s *GroupRepoSuite) TestUpdateSortOrders_BatchCaseWhen() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g1))
 	s.Require().NoError(s.repo.Create(s.ctx, g2))
@@ -434,7 +417,6 @@ func (s *GroupRepoSuite) TestUpdateSortOrders_MissingGroupNoPartialUpdate() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g1))
 
@@ -461,7 +443,6 @@ func (s *GroupRepoSuite) TestListWithFilters_AccountCount() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	g2 := &service.Group{
 		Name:             "g2",
@@ -469,7 +450,6 @@ func (s *GroupRepoSuite) TestListWithFilters_AccountCount() {
 		RateMultiplier:   1.0,
 		IsExclusive:      true,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g1))
 	s.Require().NoError(s.repo.Create(s.ctx, g2))
@@ -508,7 +488,6 @@ func (s *GroupRepoSuite) TestListActive() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "inactive1",
@@ -516,7 +495,6 @@ func (s *GroupRepoSuite) TestListActive() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusDisabled,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	groups, err := s.repo.ListActive(s.ctx)
@@ -540,7 +518,6 @@ func (s *GroupRepoSuite) TestListActiveByPlatform() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g2",
@@ -548,7 +525,6 @@ func (s *GroupRepoSuite) TestListActiveByPlatform() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 	s.Require().NoError(s.repo.Create(s.ctx, &service.Group{
 		Name:             "g3",
@@ -556,7 +532,6 @@ func (s *GroupRepoSuite) TestListActiveByPlatform() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusDisabled,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	groups, err := s.repo.ListActiveByPlatform(s.ctx, service.PlatformAnthropic)
@@ -583,7 +558,6 @@ func (s *GroupRepoSuite) TestExistsByName() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}))
 
 	exists, err := s.repo.ExistsByName(s.ctx, "existing-group")
@@ -604,7 +578,6 @@ func (s *GroupRepoSuite) TestGetAccountCount() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -642,7 +615,6 @@ func (s *GroupRepoSuite) TestGetAccountCount_Empty() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -661,7 +633,6 @@ func (s *GroupRepoSuite) TestListWithFilters_ActiveAccountCount_LessThanTotal() 
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g))
 
@@ -724,7 +695,6 @@ func (s *GroupRepoSuite) TestListWithFilters_RateLimitedAccountCount() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g))
 
@@ -818,7 +788,6 @@ func (s *GroupRepoSuite) TestDeleteAccountGroupsByGroupID() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g))
 	var accountID int64
@@ -848,7 +817,6 @@ func (s *GroupRepoSuite) TestDeleteAccountGroupsByGroupID_MultipleAccounts() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, g))
 
@@ -890,7 +858,6 @@ func (s *GroupRepoSuite) TestDelete_SoftDelete_NotVisibleInList() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 
@@ -921,7 +888,6 @@ func (s *GroupRepoSuite) TestDelete_SoftDeletedGroup_lockForUpdate() {
 		RateMultiplier:   1.0,
 		IsExclusive:      false,
 		Status:           service.StatusActive,
-		SubscriptionType: service.SubscriptionTypeStandard,
 	}
 	s.Require().NoError(s.repo.Create(s.ctx, group))
 

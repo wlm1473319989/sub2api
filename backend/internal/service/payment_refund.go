@@ -418,7 +418,7 @@ func (s *PaymentService) RollbackRefund(ctx context.Context, p *RefundPlan, gErr
 			s.writeAuditLog(ctx, p.OrderID, "REFUND_ROLLBACK_FAILED", "admin", map[string]any{"gatewayError": psErrMsg(gErr), "rollbackError": psErrMsg(err), "subscriptionId": p.SubscriptionID})
 			return false
 		}
-		s.subscriptionSvc.invalidateSubscriptionCaches(p.Order.UserID, p.SubscriptionSnapshot.GroupID)
+		s.subscriptionSvc.invalidateSubscriptionCaches(p.Order.UserID)
 	}
 	if p.DeductionType == payment.DeductionTypeSubscription && p.SubDaysToDeduct > 0 && p.SubscriptionID > 0 {
 		if _, err := s.subscriptionSvc.ExtendSubscription(ctx, p.SubscriptionID, p.SubDaysToDeduct); err != nil {

@@ -3,9 +3,8 @@ package service
 import "time"
 
 type UserSubscription struct {
-	ID      int64
-	UserID  int64
-	GroupID int64
+	ID     int64
+	UserID int64
 
 	PlanID            *int64
 	PlanNameSnapshot  *string
@@ -40,7 +39,6 @@ type UserSubscription struct {
 	UpdatedAt time.Time
 
 	User           *User
-	Group          *Group
 	AssignedByUser *User
 }
 

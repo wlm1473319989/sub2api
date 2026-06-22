@@ -46,7 +46,7 @@
           >
             <div class="mb-2 flex items-center justify-between">
               <span class="text-sm font-medium text-gray-900 dark:text-white">
-                {{ subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}` }}
+                {{ subscriptionDisplayName(subscription) }}
               </span>
               <span
                 v-if="subscription.expires_at"
@@ -216,6 +216,13 @@ function getMaxUsagePercentage(sub: UserSubscription): number {
     percentages.push((displayMonthlyUsed(sub) / monthlyLimit) * 100)
   }
   return percentages.length > 0 ? Math.max(...percentages) : 0
+}
+
+function subscriptionDisplayName(subscription: UserSubscription): string {
+  if (subscription.plan_name_snapshot?.trim()) {
+    return subscription.plan_name_snapshot
+  }
+  return `${t('payment.plan')} #${subscription.id}`
 }
 
 function isUnlimited(sub: UserSubscription): boolean {

@@ -43,13 +43,6 @@ vi.mock('@/utils/format', () => ({
   formatDateOnly: () => '2099-01-31',
 }))
 
-vi.mock('@/utils/platformColors', () => ({
-  platformBorderClass: () => 'platform-border',
-  platformBadgeClass: () => 'platform-badge',
-  platformButtonClass: () => 'platform-button',
-  platformLabel: (platform: string) => platform || 'API',
-}))
-
 vi.mock('@/utils/subscriptionQuota', () => ({
   getRemainingDurationParts: () => ({ days: 1, hours: 2, minutes: 3 }),
   isOneTimeDailyQuota: () => false,
@@ -70,7 +63,6 @@ describe('user SubscriptionsView', () => {
       {
         id: 9,
         user_id: 1,
-        group_id: 3,
         plan_id: 7,
         plan_name_snapshot: 'Starter Plan',
         status: 'active',
@@ -88,29 +80,6 @@ describe('user SubscriptionsView', () => {
         monthly_window_start: null,
         created_at: '2099-01-01T00:00:00Z',
         updated_at: '2099-01-01T00:00:00Z',
-        group: {
-          id: 3,
-          name: 'Legacy Group',
-          description: 'legacy description',
-          platform: 'openai',
-          rate_multiplier: 1,
-          is_exclusive: false,
-          status: 'active',
-          subscription_type: 'subscription',
-          allow_image_generation: false,
-          image_rate_independent: false,
-          image_rate_multiplier: 1,
-          image_price_1k: null,
-          image_price_2k: null,
-          image_price_4k: null,
-          claude_code_only: false,
-          fallback_group_id: null,
-          fallback_group_id_on_invalid_request: null,
-          require_oauth_only: false,
-          require_privacy_set: false,
-          created_at: '2099-01-01T00:00:00Z',
-          updated_at: '2099-01-01T00:00:00Z',
-        },
       },
     ])
 
@@ -129,7 +98,11 @@ describe('user SubscriptionsView', () => {
     expect(wrapper.text()).toContain('12.50 / 100.00')
     expect(wrapper.text()).not.toContain('$9.00 / $20.00')
 
-    await wrapper.get('button.platform-button').trigger('click')
+    const renewButton = wrapper
+      .findAll('button')
+      .find((node) => node.text() === 'payment.renewNow')
+    expect(renewButton).toBeDefined()
+    await renewButton!.trigger('click')
 
     expect(push).toHaveBeenCalledWith({
       path: '/purchase',
@@ -142,7 +115,6 @@ describe('user SubscriptionsView', () => {
       {
         id: 11,
         user_id: 1,
-        group_id: 8,
         plan_id: null,
         plan_name_snapshot: null,
         status: 'active',
@@ -159,29 +131,6 @@ describe('user SubscriptionsView', () => {
         monthly_window_start: null,
         created_at: '2099-01-01T00:00:00Z',
         updated_at: '2099-01-01T00:00:00Z',
-        group: {
-          id: 8,
-          name: 'Legacy Group',
-          description: null,
-          platform: 'anthropic',
-          rate_multiplier: 1,
-          is_exclusive: false,
-          status: 'active',
-          subscription_type: 'subscription',
-          allow_image_generation: false,
-          image_rate_independent: false,
-          image_rate_multiplier: 1,
-          image_price_1k: null,
-          image_price_2k: null,
-          image_price_4k: null,
-          claude_code_only: false,
-          fallback_group_id: null,
-          fallback_group_id_on_invalid_request: null,
-          require_oauth_only: false,
-          require_privacy_set: false,
-          created_at: '2099-01-01T00:00:00Z',
-          updated_at: '2099-01-01T00:00:00Z',
-        },
       },
     ])
 
@@ -195,8 +144,8 @@ describe('user SubscriptionsView', () => {
     })
 
     await flushPromises()
-    expect(wrapper.text()).toContain('Legacy Group')
-    expect(wrapper.find('button.platform-button').exists()).toBe(false)
+    expect(wrapper.text()).toContain('payment.plan #11')
+    expect(wrapper.findAll('button').some((node) => node.text() === 'payment.renewNow')).toBe(false)
     expect(push).not.toHaveBeenCalled()
   })
 })

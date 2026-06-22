@@ -56,7 +56,7 @@ type AnnouncementCondition struct {
 	// - balance: gt/gte/lt/lte/eq
 	Operator string `json:"operator"`
 
-	// subscription 条件：兼容期内匹配订阅套餐 ID（新）或 legacy group_id（旧）
+	// subscription 条件：匹配生效订阅的套餐 ID
 	GroupIDs []int64 `json:"group_ids,omitempty"`
 
 	// balance 条件：比较阈值

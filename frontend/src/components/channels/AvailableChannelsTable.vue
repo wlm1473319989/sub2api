@@ -90,10 +90,8 @@
                   :key="`ex-${g.id}`"
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
-                  :subscription-type="(g.subscription_type || 'standard') as SubscriptionType"
                   :rate-multiplier="g.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
-                  always-show-rate
                 />
               </div>
               <div
@@ -112,10 +110,8 @@
                   :key="`pub-${g.id}`"
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
-                  :subscription-type="(g.subscription_type || 'standard') as SubscriptionType"
                   :rate-multiplier="g.rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
-                  always-show-rate
                 />
               </div>
               <span v-if="section.groups.length === 0" class="text-xs text-gray-400">-</span>
@@ -152,7 +148,7 @@ import PlatformIcon from '@/components/common/PlatformIcon.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
 import SupportedModelChip from './SupportedModelChip.vue'
 import type { UserAvailableChannel, UserAvailableGroup, UserChannelPlatformSection } from '@/api/channels'
-import type { GroupPlatform, SubscriptionType } from '@/types'
+import type { GroupPlatform } from '@/types'
 import { platformBadgeClass } from '@/utils/platformColors'
 
 const props = defineProps<{

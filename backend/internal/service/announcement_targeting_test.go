@@ -80,14 +80,13 @@ func TestAnnouncementTargeting_Matches_WithPlanIDSemantics(t *testing.T) {
 	require.True(t, targeting.Matches(0, map[int64]struct{}{88: {}}))
 }
 
-func TestCollectAnnouncementSubscriptionIDs_IncludesPlanAndLegacyGroupIDs(t *testing.T) {
+func TestCollectAnnouncementSubscriptionIDs_UsesPlanIDsOnly(t *testing.T) {
 	planID := int64(88)
 	subs := []UserSubscription{
 		{PlanID: &planID},
-		{GroupID: 7},
 	}
 
 	ids := collectAnnouncementSubscriptionIDs(subs)
 	require.Contains(t, ids, planID)
-	require.Contains(t, ids, int64(7))
+	require.NotContains(t, ids, int64(7))
 }

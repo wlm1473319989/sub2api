@@ -47,7 +47,6 @@ type subscriptionCacheData struct {
 	WeeklyUsage  float64
 	MonthlyUsage float64
 	Version      int64
-	GroupID      int64
 }
 
 // 缓存写入任务类型
@@ -442,7 +441,6 @@ func (s *BillingCacheService) convertFromPortsData(data *SubscriptionCacheData) 
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
 		Version:      data.Version,
-		GroupID:      data.GroupID,
 	}
 }
 
@@ -454,7 +452,6 @@ func (s *BillingCacheService) convertToPortsData(data *subscriptionCacheData) *S
 		WeeklyUsage:  data.WeeklyUsage,
 		MonthlyUsage: data.MonthlyUsage,
 		Version:      data.Version,
-		GroupID:      data.GroupID,
 	}
 }
 
@@ -472,7 +469,6 @@ func (s *BillingCacheService) getSubscriptionFromDB(ctx context.Context, userID 
 		WeeklyUsage:  sub.WeeklyUsageUSD,
 		MonthlyUsage: sub.MonthlyUsageUSD,
 		Version:      sub.UpdatedAt.Unix(),
-		GroupID:      sub.GroupID,
 	}, nil
 }
 

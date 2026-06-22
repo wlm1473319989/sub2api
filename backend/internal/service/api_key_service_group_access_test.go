@@ -56,7 +56,6 @@ func TestAPIKeyServiceCreate_AllowsExclusiveSubscriptionTypeGroupWhenUserIsAutho
 			Name:             "exclusive-sub",
 			IsExclusive:      true,
 			Status:           StatusActive,
-			SubscriptionType: SubscriptionTypeSubscription,
 		},
 	}
 	svc := NewAPIKeyService(repo, userRepo, groupRepo, userSubRepoNoop{}, nil, nil, &config.Config{})
@@ -85,7 +84,6 @@ func TestAPIKeyServiceCreate_RejectsExclusiveGroupWithoutAuthorization(t *testin
 			Name:             "exclusive-sub",
 			IsExclusive:      true,
 			Status:           StatusActive,
-			SubscriptionType: SubscriptionTypeSubscription,
 		},
 	}
 	svc := NewAPIKeyService(repo, userRepo, groupRepo, userSubRepoNoop{}, nil, nil, &config.Config{})
@@ -106,9 +104,9 @@ func TestAPIKeyServiceGetAvailableGroups_IgnoresSubscriptionType(t *testing.T) {
 	}
 	groupRepo := &apiKeyGroupRepoStub{
 		listActiveGroups: []Group{
-			{ID: 1, Name: "public-sub", IsExclusive: false, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription},
-			{ID: 2, Name: "exclusive-sub", IsExclusive: true, Status: StatusActive, SubscriptionType: SubscriptionTypeSubscription},
-			{ID: 3, Name: "exclusive-standard", IsExclusive: true, Status: StatusActive, SubscriptionType: SubscriptionTypeStandard},
+			{ID: 1, Name: "public-sub", IsExclusive: false, Status: StatusActive},
+			{ID: 2, Name: "exclusive-sub", IsExclusive: true, Status: StatusActive},
+			{ID: 3, Name: "exclusive-standard", IsExclusive: true, Status: StatusActive},
 		},
 	}
 	svc := NewAPIKeyService(repo, userRepo, groupRepo, nil, nil, nil, &config.Config{})
