@@ -63,10 +63,11 @@ func TestAPIKeyAuth_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
-		DailyUsageUSD:    10,
+		DailyQuotaKnives: &limit,
+		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, &stubUserSubscriptionRepo{
-		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
+		getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 			clone := *sub
 			return &clone, nil
 		},
@@ -135,10 +136,11 @@ func TestAPIKeyAuthGoogle_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
-		DailyUsageUSD:    10,
+		DailyQuotaKnives: &limit,
+		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
-		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
+		getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 			clone := *sub
 			return &clone, nil
 		},
@@ -210,10 +212,11 @@ func TestAPIKeyAuthGoogle_PreservesSubscriptionErrorWhenNeitherQuotaNorBalanceAv
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
-		DailyUsageUSD:    10,
+		DailyQuotaKnives: &limit,
+		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
-		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
+		getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 			clone := *sub
 			return &clone, nil
 		},

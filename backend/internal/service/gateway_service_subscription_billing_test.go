@@ -28,7 +28,6 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 		actualCost     float64
 		isSubscription bool
 		subscription   *UserSubscription
-		group          *Group
 		wantSub        float64
 		wantBalance    float64
 		wantType       int8
@@ -106,7 +105,7 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 			wantType:    BillingTypeMixed,
 		},
 		{
-			name:           "legacy group limit fallback drives mixed split",
+			name:           "legacy subscription without snapshot quota falls back to balance billing",
 			totalCost:      1.0,
 			actualCost:     2.0,
 			isSubscription: true,
@@ -115,10 +114,9 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 				StartsAt:  now.Add(-time.Hour),
 				ExpiresAt: now.Add(24 * time.Hour),
 			},
-			group:       &Group{DailyLimitUSD: &dailyQuota},
-			wantSub:     2.0,
-			wantBalance: 0,
-			wantType:    BillingTypeSubscription,
+			wantSub:     0,
+			wantBalance: 2.0,
+			wantType:    BillingTypeBalance,
 		},
 	}
 
@@ -126,13 +124,11 @@ func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
 			p := &postUsageBillingParams{
-				Cost:               &CostBreakdown{TotalCost: tt.totalCost, ActualCost: tt.actualCost},
-				User:               &User{ID: 1},
-				APIKey:             &APIKey{ID: 2, GroupID: &groupID},
-				Account:            &Account{ID: 3},
-				Subscription:       tt.subscription,
-				SubscriptionGroup:  tt.group,
-				IsSubscriptionBill: tt.isSubscription,
+				Cost:         &CostBreakdown{TotalCost: tt.totalCost, ActualCost: tt.actualCost},
+				User:         &User{ID: 1},
+				APIKey:       &APIKey{ID: 2, GroupID: &groupID},
+				Account:      &Account{ID: 3},
+				Subscription: tt.subscription,
 			}
 
 			cmd := buildUsageBillingCommand("req-1", nil, p)
@@ -171,7 +167,6 @@ func TestApplyUsageBilling_SyncsSplitCostsBackToUsageLog(t *testing.T) {
 			ExpiresAt:        time.Now().Add(24 * time.Hour),
 			DailyQuotaKnives: func() *float64 { v := 10.0; return &v }(),
 		},
-		IsSubscriptionBill: true,
 	}
 
 	_, err := applyUsageBilling(context.Background(), "req-mixed-sync", log, p, &billingDeps{}, nil)
@@ -215,7 +210,6 @@ func TestApplyUsageBilling_LegacyFallbackAllowsNegativeBalancePortion(t *testing
 			DailyQuotaKnives: &dailyQuota,
 			DailyWindowStart: &startsAt,
 		},
-		IsSubscriptionBill: true,
 	}
 	deps := &billingDeps{
 		userRepo:            userRepo,

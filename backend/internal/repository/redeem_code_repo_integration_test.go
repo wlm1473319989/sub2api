@@ -253,8 +253,7 @@ func (s *RedeemCodeRepoSuite) TestUpdate() {
 }
 
 func (s *RedeemCodeRepoSuite) TestBatchUpdate_PartialFieldsAndClear() {
-	group := s.createGroup(uniqueTestValue(s.T(), "batch-update-group"))
-	groupID := group.ID
+	planID := int64(701)
 	expiresAt := time.Now().UTC().Add(2 * time.Hour)
 	status := service.StatusDisabled
 	notes := "batch note"
@@ -288,7 +287,7 @@ func (s *RedeemCodeRepoSuite) TestBatchUpdate_PartialFieldsAndClear() {
 		Status:    &status,
 		ExpiresAt: service.NullableTimeUpdate{Set: true, Value: &expiresAt},
 		Notes:     &notes,
-		GroupID:   service.NullableInt64Update{Set: true, Value: &groupID},
+		PlanID:    service.NullableInt64Update{Set: true, Value: &planID},
 	})
 	s.Require().NoError(err)
 	s.Require().Equal(int64(2), updated)
@@ -302,8 +301,8 @@ func (s *RedeemCodeRepoSuite) TestBatchUpdate_PartialFieldsAndClear() {
 	s.Require().Equal(notes, gotA.Notes)
 	s.Require().NotNil(gotA.ExpiresAt)
 	s.Require().WithinDuration(expiresAt, *gotA.ExpiresAt, time.Second)
-	s.Require().NotNil(gotA.GroupID)
-	s.Require().Equal(groupID, *gotA.GroupID)
+	s.Require().NotNil(gotA.PlanID)
+	s.Require().Equal(planID, *gotA.PlanID)
 
 	gotB, err := s.repo.GetByID(s.ctx, codeB.ID)
 	s.Require().NoError(err)
@@ -315,11 +314,11 @@ func (s *RedeemCodeRepoSuite) TestBatchUpdate_PartialFieldsAndClear() {
 	s.Require().Equal(service.StatusUnused, gotUntouched.Status)
 	s.Require().Equal("keep", gotUntouched.Notes)
 	s.Require().Nil(gotUntouched.ExpiresAt)
-	s.Require().Nil(gotUntouched.GroupID)
+	s.Require().Nil(gotUntouched.PlanID)
 
 	updated, err = s.repo.BatchUpdate(s.ctx, []int64{codeA.ID}, service.RedeemCodeBatchUpdateFields{
 		ExpiresAt: service.NullableTimeUpdate{Set: true},
-		GroupID:   service.NullableInt64Update{Set: true},
+		PlanID:    service.NullableInt64Update{Set: true},
 	})
 	s.Require().NoError(err)
 	s.Require().Equal(int64(1), updated)
@@ -327,7 +326,7 @@ func (s *RedeemCodeRepoSuite) TestBatchUpdate_PartialFieldsAndClear() {
 	gotA, err = s.repo.GetByID(s.ctx, codeA.ID)
 	s.Require().NoError(err)
 	s.Require().Nil(gotA.ExpiresAt)
-	s.Require().Nil(gotA.GroupID)
+	s.Require().Nil(gotA.PlanID)
 }
 
 func (s *RedeemCodeRepoSuite) TestBatchUpdate_InvalidIDRollsBack() {

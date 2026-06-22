@@ -445,20 +445,20 @@ func (s *billingCacheStub) InvalidateUserBalance(ctx context.Context, userID int
 	panic("unexpected InvalidateUserBalance call")
 }
 
-func (s *billingCacheStub) GetSubscriptionCache(ctx context.Context, userID, groupID int64) (*SubscriptionCacheData, error) {
+func (s *billingCacheStub) GetSubscriptionCache(ctx context.Context, userID int64) (*SubscriptionCacheData, error) {
 	panic("unexpected GetSubscriptionCache call")
 }
 
-func (s *billingCacheStub) SetSubscriptionCache(ctx context.Context, userID, groupID int64, data *SubscriptionCacheData) error {
+func (s *billingCacheStub) SetSubscriptionCache(ctx context.Context, userID int64, data *SubscriptionCacheData) error {
 	panic("unexpected SetSubscriptionCache call")
 }
 
-func (s *billingCacheStub) UpdateSubscriptionUsage(ctx context.Context, userID, groupID int64, cost float64) error {
+func (s *billingCacheStub) UpdateSubscriptionUsage(ctx context.Context, userID int64, cost float64) error {
 	panic("unexpected UpdateSubscriptionUsage call")
 }
 
-func (s *billingCacheStub) InvalidateSubscriptionCache(ctx context.Context, userID, groupID int64) error {
-	s.invalidations <- subscriptionInvalidateCall{userID: userID, groupID: groupID}
+func (s *billingCacheStub) InvalidateSubscriptionCache(ctx context.Context, userID int64) error {
+	s.invalidations <- subscriptionInvalidateCall{userID: userID, groupID: 0}
 	return nil
 }
 
@@ -598,8 +598,8 @@ func TestAdminService_DeleteGroup_Success_WithCacheInvalidation(t *testing.T) {
 
 	calls := waitForInvalidations(t, cache.invalidations, 2)
 	require.ElementsMatch(t, []subscriptionInvalidateCall{
-		{userID: 11, groupID: 5},
-		{userID: 12, groupID: 5},
+		{userID: 11, groupID: 0},
+		{userID: 12, groupID: 0},
 	}, calls)
 }
 

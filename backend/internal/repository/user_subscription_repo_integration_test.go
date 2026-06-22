@@ -205,25 +205,7 @@ func (s *UserSubscriptionRepoSuite) TestDelete_Idempotent() {
 	s.Require().NoError(s.repo.Delete(s.ctx, 42424242), "Delete should be idempotent")
 }
 
-// --- GetByUserIDAndGroupID / GetActiveByUserIDAndGroupID ---
-
-func (s *UserSubscriptionRepoSuite) TestGetByUserIDAndGroupID() {
-	user := s.mustCreateUser("byuser@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-byuser")
-	sub := s.mustCreateSubscription(user.ID, group.ID, nil)
-
-	got, err := s.repo.GetByUserIDAndGroupID(s.ctx, user.ID, group.ID)
-	s.Require().NoError(err, "GetByUserIDAndGroupID")
-	s.Require().Equal(sub.ID, got.ID)
-	s.Require().NotNil(got.Group, "expected Group preload")
-}
-
-func (s *UserSubscriptionRepoSuite) TestGetByUserIDAndGroupID_NotFound() {
-	_, err := s.repo.GetByUserIDAndGroupID(s.ctx, 999999, 999999)
-	s.Require().Error(err, "expected error for non-existent pair")
-}
-
-func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID() {
+func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID_UserLevelSemantics() {
 	user := s.mustCreateUser("active@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-active")
 
@@ -231,12 +213,12 @@ func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID() {
 		c.SetExpiresAt(time.Now().Add(2 * time.Hour))
 	})
 
-	got, err := s.repo.GetActiveByUserIDAndGroupID(s.ctx, user.ID, group.ID)
-	s.Require().NoError(err, "GetActiveByUserIDAndGroupID")
+	got, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
+	s.Require().NoError(err, "GetActiveByUserID")
 	s.Require().Equal(active.ID, got.ID)
 }
 
-func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID_ExpiredIgnored() {
+func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID_ExpiredIgnored() {
 	user := s.mustCreateUser("expired@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-expired")
 
@@ -244,7 +226,7 @@ func (s *UserSubscriptionRepoSuite) TestGetActiveByUserIDAndGroupID_ExpiredIgnor
 		c.SetExpiresAt(time.Now().Add(-2 * time.Hour))
 	})
 
-	_, err := s.repo.GetActiveByUserIDAndGroupID(s.ctx, user.ID, group.ID)
+	_, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
 	s.Require().Error(err, "expected error for expired subscription")
 }
 
@@ -352,26 +334,6 @@ func (s *UserSubscriptionRepoSuite) TestHasActiveByUserID_MultipleActiveConflict
 	s.Require().ErrorIs(err, service.ErrMultipleActiveSubscriptions)
 }
 
-// --- ListByGroupID ---
-
-func (s *UserSubscriptionRepoSuite) TestListByGroupID() {
-	user1 := s.mustCreateUser("u1@test.com", service.RoleUser)
-	user2 := s.mustCreateUser("u2@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-listgrp")
-
-	s.mustCreateSubscription(user1.ID, group.ID, nil)
-	s.mustCreateSubscription(user2.ID, group.ID, nil)
-
-	subs, page, err := s.repo.ListByGroupID(s.ctx, group.ID, pagination.PaginationParams{Page: 1, PageSize: 10})
-	s.Require().NoError(err, "ListByGroupID")
-	s.Require().Len(subs, 2)
-	s.Require().Equal(int64(2), page.Total)
-	for _, sub := range subs {
-		s.Require().NotNil(sub.User, "expected User preload")
-		s.Require().NotNil(sub.Group, "expected Group preload")
-	}
-}
-
 // --- List with filters ---
 
 func (s *UserSubscriptionRepoSuite) TestList_NoFilters() {
@@ -379,7 +341,7 @@ func (s *UserSubscriptionRepoSuite) TestList_NoFilters() {
 	group := s.mustCreateGroup("g-list")
 	s.mustCreateSubscription(user.ID, group.ID, nil)
 
-	subs, page, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, "", "", "", "")
+	subs, page, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, "", "", "")
 	s.Require().NoError(err, "List")
 	s.Require().Len(subs, 1)
 	s.Require().Equal(int64(1), page.Total)
@@ -393,13 +355,13 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByUserID() {
 	s.mustCreateSubscription(user1.ID, group.ID, nil)
 	s.mustCreateSubscription(user2.ID, group.ID, nil)
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, &user1.ID, nil, "", "", "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, &user1.ID, "", "", "")
 	s.Require().NoError(err)
 	s.Require().Len(subs, 1)
 	s.Require().Equal(user1.ID, subs[0].UserID)
 }
 
-func (s *UserSubscriptionRepoSuite) TestList_FilterByGroupID() {
+func (s *UserSubscriptionRepoSuite) TestList_UserLevelSemanticsIncludesLegacyGroupRows() {
 	user := s.mustCreateUser("grpfilter@test.com", service.RoleUser)
 	g1 := s.mustCreateGroup("g-f1")
 	g2 := s.mustCreateGroup("g-f2")
@@ -407,10 +369,9 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByGroupID() {
 	s.mustCreateSubscription(user.ID, g1.ID, nil)
 	s.mustCreateSubscription(user.ID, g2.ID, nil)
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, &g1.ID, "", "", "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, &user.ID, "", "", "")
 	s.Require().NoError(err)
-	s.Require().Len(subs, 1)
-	s.Require().Equal(g1.ID, subs[0].GroupID)
+	s.Require().Len(subs, 2)
 }
 
 func (s *UserSubscriptionRepoSuite) TestList_FilterByStatus() {
@@ -428,7 +389,7 @@ func (s *UserSubscriptionRepoSuite) TestList_FilterByStatus() {
 		c.SetExpiresAt(time.Now().Add(-24 * time.Hour))
 	})
 
-	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, nil, service.SubscriptionStatusExpired, "", "", "")
+	subs, _, err := s.repo.List(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, nil, service.SubscriptionStatusExpired, "", "")
 	s.Require().NoError(err)
 	s.Require().Len(subs, 1)
 	s.Require().Equal(service.SubscriptionStatusExpired, subs[0].Status)
@@ -623,23 +584,6 @@ func (s *UserSubscriptionRepoSuite) TestBatchUpdateExpiredStatus() {
 	s.Require().Equal(service.SubscriptionStatusExpired, gotExpired.Status)
 }
 
-// --- ExistsByUserIDAndGroupID ---
-
-func (s *UserSubscriptionRepoSuite) TestExistsByUserIDAndGroupID() {
-	user := s.mustCreateUser("exists@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-exists")
-
-	s.mustCreateSubscription(user.ID, group.ID, nil)
-
-	exists, err := s.repo.ExistsByUserIDAndGroupID(s.ctx, user.ID, group.ID)
-	s.Require().NoError(err, "ExistsByUserIDAndGroupID")
-	s.Require().True(exists)
-
-	notExists, err := s.repo.ExistsByUserIDAndGroupID(s.ctx, user.ID, 999999)
-	s.Require().NoError(err)
-	s.Require().False(notExists)
-}
-
 // --- CountByGroupID / CountActiveByGroupID ---
 
 func (s *UserSubscriptionRepoSuite) TestCountByGroupID() {
@@ -707,8 +651,8 @@ func (s *UserSubscriptionRepoSuite) TestActiveExpiredBoundaries_UsageAndReset_Ba
 		c.SetExpiresAt(time.Now().Add(-2 * time.Hour))
 	})
 
-	got, err := s.repo.GetActiveByUserIDAndGroupID(s.ctx, user.ID, groupActive.ID)
-	s.Require().NoError(err, "GetActiveByUserIDAndGroupID")
+	got, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
+	s.Require().NoError(err, "GetActiveByUserID")
 	s.Require().Equal(active.ID, got.ID, "expected active subscription")
 
 	activateAt := time.Now().Add(-25 * time.Hour)

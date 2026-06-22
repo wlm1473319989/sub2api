@@ -305,11 +305,11 @@ func (r *redeemCodeRepository) batchUpdate(ctx context.Context, client *dbent.Cl
 			up.ClearExpiresAt()
 		}
 	}
-	if fields.GroupID.Set {
-		if fields.GroupID.Value != nil {
-			up.SetGroupID(*fields.GroupID.Value)
+	if fields.PlanID.Set {
+		if fields.PlanID.Value != nil {
+			up.SetPlanID(*fields.PlanID.Value)
 		} else {
-			up.ClearGroupID()
+			up.ClearPlanID()
 		}
 	}
 

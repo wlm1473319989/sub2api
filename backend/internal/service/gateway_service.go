@@ -8755,9 +8755,7 @@ type postUsageBillingParams struct {
 	APIKey                *APIKey
 	Account               *Account
 	Subscription          *UserSubscription
-	SubscriptionGroup     *Group
 	RequestPayloadHash    string
-	IsSubscriptionBill    bool
 	AccountRateMultiplier float64
 	APIKeyService         APIKeyQuotaUpdater
 	Platform              string // 来自 APIKey 关联 Group 的平台标识
@@ -8832,8 +8830,8 @@ func resolveUsageBillingSplit(p *postUsageBillingParams) usageBillingSplit {
 
 	actualCost := p.Cost.ActualCost
 	subscriptionCost := 0.0
-	if p.IsSubscriptionBill && p.Subscription != nil {
-		remaining := resolveSubscriptionRemainingQuota(p.Subscription, p.SubscriptionGroup)
+	if p.Subscription != nil {
+		remaining := resolveSubscriptionRemainingQuota(p.Subscription)
 		if remaining > 0 {
 			subscriptionCost = minFloat64(actualCost, remaining)
 		}
@@ -8850,14 +8848,14 @@ func resolveUsageBillingSplit(p *postUsageBillingParams) usageBillingSplit {
 	}
 }
 
-func resolveSubscriptionRemainingQuota(sub *UserSubscription, group *Group) float64 {
+func resolveSubscriptionRemainingQuota(sub *UserSubscription) float64 {
 	if sub == nil {
 		return 0
 	}
 
-	dailyQuota := quotaWithGroupFallback(sub.DailyQuotaKnives, group, quotaFamilyDaily)
-	weeklyQuota := quotaWithGroupFallback(sub.WeeklyQuotaKnives, group, quotaFamilyWeekly)
-	monthlyQuota := quotaWithGroupFallback(sub.MonthlyQuotaKnives, group, quotaFamilyMonthly)
+	dailyQuota := sub.DailyQuotaKnives
+	weeklyQuota := sub.WeeklyQuotaKnives
+	monthlyQuota := sub.MonthlyQuotaKnives
 	if dailyQuota == nil && weeklyQuota == nil && monthlyQuota == nil {
 		return 0
 	}
@@ -8865,7 +8863,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription, group *Group) floa
 	now := time.Now()
 	residualDaily := calculateQuotaFamilyCapacity(
 		dailyQuota,
-		resolveSubscriptionUsedQuota(sub.DailyUsedKnives, sub.DailyUsageUSD),
+		sub.DailyUsedKnives,
 		sub.DailyWindowStart,
 		now,
 		sub.StartsAt,
@@ -8875,7 +8873,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription, group *Group) floa
 	)
 	residualWeekly := calculateQuotaFamilyCapacity(
 		weeklyQuota,
-		resolveSubscriptionUsedQuota(sub.WeeklyUsedKnives, sub.WeeklyUsageUSD),
+		sub.WeeklyUsedKnives,
 		sub.WeeklyWindowStart,
 		now,
 		sub.StartsAt,
@@ -8885,7 +8883,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription, group *Group) floa
 	)
 	residualMonthly := calculateQuotaFamilyCapacity(
 		monthlyQuota,
-		resolveSubscriptionUsedQuota(sub.MonthlyUsedKnives, sub.MonthlyUsageUSD),
+		sub.MonthlyUsedKnives,
 		sub.MonthlyWindowStart,
 		now,
 		sub.StartsAt,
@@ -8915,10 +8913,6 @@ func maxFloat64(a, b float64) float64 {
 	return b
 }
 
-func resolveSubscriptionUsedQuota(snapshotUsed, legacyUsed float64) float64 {
-	return maxFloat64(snapshotUsed, legacyUsed)
-}
-
 // postUsageBilling is the legacy fallback billing path used when the unified
 // billing repo is unavailable (nil). Production uses applyUsageBilling → repo.Apply
 // for atomic billing. This path only runs in tests or degraded mode.
@@ -8932,13 +8926,17 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 	if split.hasSubscriptionCost() {
 		// Subscription usage tracked by ActualCost so group rate multiplier
 		// consumes the quota at the expected speed.
-		if err := deps.userSubRepo.IncrementUsage(billingCtx, p.Subscription.ID, split.SubscriptionCost); err != nil {
-			slog.Error("increment subscription usage failed", "subscription_id", p.Subscription.ID, "error", err)
+		if deps.userSubRepo != nil {
+			if err := deps.userSubRepo.IncrementUsage(billingCtx, p.Subscription.ID, split.SubscriptionCost); err != nil {
+				slog.Error("increment subscription usage failed", "subscription_id", p.Subscription.ID, "error", err)
+			}
 		}
 	}
 	if split.hasBalanceCost() {
-		if err := deps.userRepo.DeductBalance(billingCtx, p.User.ID, split.BalanceCost); err != nil {
-			slog.Error("deduct balance failed", "user_id", p.User.ID, "error", err)
+		if p.User != nil && deps.userRepo != nil {
+			if err := deps.userRepo.DeductBalance(billingCtx, p.User.ID, split.BalanceCost); err != nil {
+				slog.Error("deduct balance failed", "user_id", p.User.ID, "error", err)
+			}
 		}
 	}
 
@@ -8956,8 +8954,10 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 
 	if p.shouldUpdateAccountQuota() {
 		accountCost := cost.TotalCost * p.AccountRateMultiplier
-		if err := deps.accountRepo.IncrementQuotaUsed(billingCtx, p.Account.ID, accountCost); err != nil {
-			slog.Error("increment account quota used failed", "account_id", p.Account.ID, "cost", accountCost, "error", err)
+		if deps.accountRepo != nil {
+			if err := deps.accountRepo.IncrementQuotaUsed(billingCtx, p.Account.ID, accountCost); err != nil {
+				slog.Error("increment account quota used failed", "account_id", p.Account.ID, "cost", accountCost, "error", err)
+			}
 		}
 	}
 
@@ -8967,7 +8967,7 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 	//   - flusher_enabled=false（降级）:保留原有同步直写 DB
 	//   - flusher_enabled=true:跳过直写 DB，由 flusher 异步批量刷（markDirty 在 IncrementUserPlatformQuotaUsage 内部完成）
 	//   - 失败仅记 ALERT log + counter，不阻断主扣费流程
-	if split.hasBalanceCost() && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil {
+	if split.hasBalanceCost() && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil && deps.billingCacheService != nil {
 		if deps.billingCacheService.HasUserPlatformQuotaLimit(billingCtx, p.User.ID, p.Platform) {
 			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, split.BalanceCost)
 			if deps.cfg == nil || !deps.cfg.Database.UserPlatformQuotaFlusherEnabled {
@@ -9109,7 +9109,9 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 	}
 
 	if result == nil || !result.Applied {
-		deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
+		if deps.deferredService != nil && p.Account != nil {
+			deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
+		}
 		return false, nil
 	}
 
@@ -9130,18 +9132,17 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 
 	split := resolveUsageBillingSplit(p)
 
-	if split.hasSubscriptionCost() && p.User != nil && p.APIKey != nil && p.APIKey.GroupID != nil {
-		deps.billingCacheService.QueueUpdateSubscriptionUsage(p.User.ID, *p.APIKey.GroupID, split.SubscriptionCost)
-	}
-	if split.hasBalanceCost() && p.User != nil {
+	if split.hasBalanceCost() && p.User != nil && deps.billingCacheService != nil {
 		deps.billingCacheService.QueueDeductBalance(p.User.ID, split.BalanceCost)
 	}
 
-	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() {
+	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() && deps.billingCacheService != nil {
 		deps.billingCacheService.QueueUpdateAPIKeyRateLimitUsage(p.APIKey.ID, p.Cost.ActualCost)
 	}
 
-	deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
+	if deps.deferredService != nil && p.Account != nil {
+		deps.deferredService.ScheduleLastUsedUpdate(p.Account.ID)
+	}
 
 	// Platform quota 累加：仅对余额部分生效；仅对有 limit 的用户写
 	// Redis 同步写 + DB 异步持久化（flag=false 降级）或 flusher 异步刷（flag=true）:
@@ -9150,7 +9151,7 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 	//     限制在并发 in-flight 请求数量内（旧实现的异步入队会让超支无限累积直到 worker 处理）
 	//   - DB 异步(flusher_enabled=false):在独立 goroutine 中走 detached context,失败用 ALERT log 触发 oncall 对账
 	//   - flusher_enabled=true:不直写 DB,由 flusher 异步批量刷（markDirty 已在 IncrementUserPlatformQuotaUsage 内部完成）
-	if split.hasBalanceCost() && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil {
+	if split.hasBalanceCost() && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil && deps.billingCacheService != nil {
 		if deps.billingCacheService.HasUserPlatformQuotaLimit(ctx, p.User.ID, p.Platform) {
 			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, split.BalanceCost)
 			if deps.cfg == nil || !deps.cfg.Database.UserPlatformQuotaFlusherEnabled {
@@ -9195,7 +9196,7 @@ func notifyBalanceLow(p *postUsageBillingParams, deps *billingDeps, result *Usag
 	split := resolveUsageBillingSplit(p)
 	if !split.hasBalanceCost() || p.User == nil || deps.balanceNotifyService == nil {
 		slog.Debug("notifyBalanceLow: skipped",
-			"is_subscription", p.IsSubscriptionBill,
+			"has_subscription_cost", split.hasSubscriptionCost(),
 			"balance_cost", split.BalanceCost,
 			"user_nil", p.User == nil,
 			"service_nil", deps.balanceNotifyService == nil,
@@ -9478,9 +9479,8 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	cost := s.calculateRecordUsageCost(ctx, result, apiKey, billingModel, multiplier, imageMultiplier, opts)
 
 	// 判断计费方式：订阅模式 vs 余额模式
-	isSubscriptionBilling := subscription != nil && apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
 	billingType := BillingTypeBalance
-	if isSubscriptionBilling {
+	if subscription != nil {
 		billingType = BillingTypeSubscription
 	}
 
@@ -9527,9 +9527,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		APIKey:                apiKey,
 		Account:               account,
 		Subscription:          subscription,
-		SubscriptionGroup:     apiKey.Group,
 		RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-		IsSubscriptionBill:    isSubscriptionBilling,
 		AccountRateMultiplier: accountRateMultiplier,
 		APIKeyService:         input.APIKeyService,
 		Platform:              quotaPlatform,

@@ -13,25 +13,16 @@ import (
 
 type mixedPreflightCache struct {
 	BillingCache
-	balance                float64
-	subscriptionStatus     string
-	subscriptionExpiresAt  time.Time
-	subscriptionDailyUsage float64
-	quotaCalled            bool
+	balance     float64
+	quotaCalled bool
 }
 
 func (m *mixedPreflightCache) GetUserBalance(_ context.Context, _ int64) (float64, error) {
 	return m.balance, nil
 }
 
-func (m *mixedPreflightCache) GetSubscriptionCache(_ context.Context, _ int64, _ int64) (*SubscriptionCacheData, error) {
-	return &SubscriptionCacheData{
-		Status:       m.subscriptionStatus,
-		ExpiresAt:    m.subscriptionExpiresAt,
-		DailyUsage:   m.subscriptionDailyUsage,
-		WeeklyUsage:  0,
-		MonthlyUsage: 0,
-	}, nil
+func (m *mixedPreflightCache) GetSubscriptionCache(_ context.Context, _ int64) (*SubscriptionCacheData, error) {
+	return nil, errors.New("cache miss")
 }
 
 func (m *mixedPreflightCache) GetUserPlatformQuotaCache(_ context.Context, _ int64, _ string) (*UserPlatformQuotaCacheEntry, bool, error) {
@@ -75,55 +66,61 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 		Status:           StatusActive,
 		DailyLimitUSD:    &limit,
 	}
-	subscription := &UserSubscription{
-		ID:      88,
-		UserID:  42,
-		GroupID: group.ID,
-		Status:  SubscriptionStatusActive,
-	}
 	user := &User{ID: 42}
 
 	cases := []struct {
 		name            string
 		cache           *mixedPreflightCache
+		subscription    *UserSubscription
 		wantErr         error
 		wantSubResolved bool
 		wantQuotaCalled bool
 	}{
 		{
-			name: "subscription_only_allows_subscription_path",
-			cache: &mixedPreflightCache{
-				balance:               0,
-				subscriptionStatus:    SubscriptionStatusActive,
-				subscriptionExpiresAt: time.Now().Add(24 * time.Hour),
+			name:  "subscription_only_allows_subscription_path",
+			cache: &mixedPreflightCache{balance: 0},
+			subscription: &UserSubscription{
+				ID:        88,
+				UserID:    42,
+				GroupID:   group.ID,
+				Status:    SubscriptionStatusActive,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
 			wantSubResolved: true,
 		},
 		{
-			name: "balance_only_allows_balance_fallback",
-			cache: &mixedPreflightCache{
-				balance:               12,
-				subscriptionStatus:    SubscriptionStatusExpired,
-				subscriptionExpiresAt: time.Now().Add(24 * time.Hour),
+			name:  "balance_only_allows_balance_fallback",
+			cache: &mixedPreflightCache{balance: 12},
+			subscription: &UserSubscription{
+				ID:        88,
+				UserID:    42,
+				GroupID:   group.ID,
+				Status:    SubscriptionStatusExpired,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
 			wantSubResolved: false,
-			wantQuotaCalled: true,
 		},
 		{
-			name: "both_available_prefers_subscription_path",
-			cache: &mixedPreflightCache{
-				balance:               12,
-				subscriptionStatus:    SubscriptionStatusActive,
-				subscriptionExpiresAt: time.Now().Add(24 * time.Hour),
+			name:  "both_available_prefers_subscription_path",
+			cache: &mixedPreflightCache{balance: 12},
+			subscription: &UserSubscription{
+				ID:        88,
+				UserID:    42,
+				GroupID:   group.ID,
+				Status:    SubscriptionStatusActive,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
 			wantSubResolved: true,
 		},
 		{
-			name: "neither_available_rejects",
-			cache: &mixedPreflightCache{
-				balance:               0,
-				subscriptionStatus:    SubscriptionStatusExpired,
-				subscriptionExpiresAt: time.Now().Add(24 * time.Hour),
+			name:  "neither_available_rejects",
+			cache: &mixedPreflightCache{balance: 0},
+			subscription: &UserSubscription{
+				ID:        88,
+				UserID:    42,
+				GroupID:   group.ID,
+				Status:    SubscriptionStatusExpired,
+				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
 			wantErr: ErrSubscriptionInvalid,
 		},
@@ -135,7 +132,7 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			t.Parallel()
 
 			svc := newMixedPreflightService(t, tc.cache)
-			resolvedSub, err := svc.CheckBillingEligibility(context.Background(), user, nil, group, subscription, "")
+			resolvedSub, err := svc.CheckBillingEligibility(context.Background(), user, nil, group, tc.subscription, "")
 			if !errors.Is(err, tc.wantErr) {
 				t.Fatalf("CheckBillingEligibility error = %v, want %v", err, tc.wantErr)
 			}
@@ -160,17 +157,14 @@ func TestCheckBillingEligibility_BalanceFallbackStillAppliesPlatformQuota(t *tes
 		DailyLimitUSD:    &limit,
 	}
 	subscription := &UserSubscription{
-		ID:      88,
-		UserID:  42,
-		GroupID: group.ID,
-		Status:  SubscriptionStatusActive,
+		ID:        88,
+		UserID:    42,
+		GroupID:   group.ID,
+		Status:    SubscriptionStatusExpired,
+		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}
 	user := &User{ID: 42}
-	cache := &mixedPreflightCache{
-		balance:               5,
-		subscriptionStatus:    SubscriptionStatusExpired,
-		subscriptionExpiresAt: time.Now().Add(24 * time.Hour),
-	}
+	cache := &mixedPreflightCache{balance: 5}
 	svc := newMixedPreflightService(t, cache)
 
 	resolvedSub, err := svc.CheckBillingEligibility(context.Background(), user, nil, group, subscription, "anthropic")
