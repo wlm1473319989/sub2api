@@ -12,7 +12,8 @@ import type {
 } from "@/types";
 
 export interface DefaultSubscriptionSetting {
-  group_id: number;
+  plan_id?: number | null;
+  group_id?: number | null;
   validity_days: number;
 }
 
@@ -198,13 +199,36 @@ export function normalizeDefaultSubscriptionSettings(
   if (!Array.isArray(subscriptions)) return [];
 
   return subscriptions
-    .filter((item) => item.group_id > 0 && item.validity_days > 0)
+    .filter(
+      (item) =>
+        ((typeof item.plan_id === "number" && item.plan_id > 0) ||
+          (typeof item.group_id === "number" && item.group_id > 0)) &&
+        item.validity_days > 0,
+    )
     .map((item) => ({
-      group_id: Math.floor(item.group_id),
+      plan_id:
+        typeof item.plan_id === "number" && item.plan_id > 0
+          ? Math.floor(item.plan_id)
+          : undefined,
+      group_id:
+        typeof item.group_id === "number" && item.group_id > 0
+          ? Math.floor(item.group_id)
+          : undefined,
       validity_days: Math.min(
         36500,
         Math.max(1, Math.floor(item.validity_days)),
       ),
+    }));
+}
+
+export function serializeDefaultSubscriptionSettings(
+  subscriptions: DefaultSubscriptionSetting[] | null | undefined,
+): DefaultSubscriptionSetting[] {
+  return normalizeDefaultSubscriptionSettings(subscriptions)
+    .filter((item) => typeof item.plan_id === "number" && item.plan_id > 0)
+    .map((item) => ({
+      plan_id: item.plan_id ?? undefined,
+      validity_days: item.validity_days,
     }));
 }
 
@@ -259,7 +283,7 @@ export function appendAuthSourceDefaultsToUpdateRequest(
       ),
     );
     target[`auth_source_default_${source}_subscriptions`] =
-      normalizeDefaultSubscriptionSettings(current.subscriptions);
+      serializeDefaultSubscriptionSettings(current.subscriptions);
     target[`auth_source_default_${source}_grant_on_signup`] =
       current.grant_on_signup;
     target[`auth_source_default_${source}_grant_on_first_bind`] =

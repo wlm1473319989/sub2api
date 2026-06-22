@@ -17,6 +17,7 @@ const {
   getRectifierSettings,
   getBetaPolicySettings,
   getGroups,
+  getPlans,
   listProxies,
   getProviders,
   updateProvider,
@@ -39,6 +40,7 @@ const {
   getRectifierSettings: vi.fn(),
   getBetaPolicySettings: vi.fn(),
   getGroups: vi.fn(),
+  getPlans: vi.fn(),
   listProxies: vi.fn(),
   getProviders: vi.fn(),
   updateProvider: vi.fn(),
@@ -74,6 +76,7 @@ vi.mock("@/api", () => ({
       list: listProxies,
     },
     payment: {
+      getPlans,
       getProviders,
       updateProvider,
       createProvider,
@@ -490,6 +493,7 @@ describe("admin SettingsView payment visible method controls", () => {
     getRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
     getGroups.mockReset();
+    getPlans.mockReset();
     listProxies.mockReset();
     getProviders.mockReset();
     updateProvider.mockReset();
@@ -545,6 +549,7 @@ describe("admin SettingsView payment visible method controls", () => {
       rules: [],
     });
     getGroups.mockResolvedValue([]);
+    getPlans.mockResolvedValue({ data: [] });
     listProxies.mockResolvedValue({
       items: [],
     });
@@ -809,6 +814,7 @@ describe("admin SettingsView wechat connect controls", () => {
     getRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
     getGroups.mockReset();
+    getPlans.mockReset();
     listProxies.mockReset();
     getProviders.mockReset();
     updateProvider.mockReset();
@@ -867,6 +873,7 @@ describe("admin SettingsView wechat connect controls", () => {
       rules: [],
     });
     getGroups.mockResolvedValue([]);
+    getPlans.mockResolvedValue({ data: [] });
     listProxies.mockResolvedValue({
       items: [],
     });
@@ -1055,6 +1062,7 @@ describe("admin SettingsView platform quota matrix", () => {
     getRectifierSettings.mockReset();
     getBetaPolicySettings.mockReset();
     getGroups.mockReset();
+    getPlans.mockReset();
     listProxies.mockReset();
     getProviders.mockReset();
     updateProvider.mockReset();
@@ -1081,6 +1089,7 @@ describe("admin SettingsView platform quota matrix", () => {
     getRectifierSettings.mockResolvedValue({});
     getBetaPolicySettings.mockResolvedValue({});
     getGroups.mockResolvedValue([]);
+    getPlans.mockResolvedValue({ data: [] });
     listProxies.mockResolvedValue({ items: [] });
     getProviders.mockResolvedValue({ data: [] });
   });

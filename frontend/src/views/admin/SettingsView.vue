@@ -3141,7 +3141,7 @@
                     type="button"
                     class="btn btn-secondary btn-sm"
                     @click="addDefaultSubscription"
-                    :disabled="subscriptionGroups.length === 0"
+                    :disabled="subscriptionPlans.length === 0"
                   >
                     {{ t("admin.settings.defaults.addDefaultSubscription") }}
                   </button>
@@ -3164,14 +3164,14 @@
                       <label
                         class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
                       >
-                        {{ t("admin.settings.defaults.subscriptionGroup") }}
+                        {{ t("payment.selectPlan") }}
                       </label>
                       <Select
-                        v-model="item.group_id"
+                        v-model="item.plan_id"
                         class="default-sub-group-select"
-                        :options="defaultSubscriptionGroupOptions"
+                        :options="defaultSubscriptionPlanOptions"
                         :placeholder="
-                          t('admin.settings.defaults.subscriptionGroup')
+                          t('payment.selectPlan')
                         "
                       >
                         <template #selected="{ option }">
@@ -3179,57 +3179,49 @@
                             v-if="option"
                             :name="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).label
                             "
                             :platform="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).platform
-                            "
-                            :subscription-type="
-                              (
-                                option as unknown as DefaultSubscriptionGroupOption
-                              ).subscriptionType
                             "
                             :rate-multiplier="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).rate
                             "
+                            subscription-type="subscription"
                           />
                           <span v-else class="text-gray-400">
-                            {{ t("admin.settings.defaults.subscriptionGroup") }}
+                            {{ t("payment.selectPlan") }}
                           </span>
                         </template>
                         <template #option="{ option, selected }">
                           <GroupOptionItem
                             :name="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).label
                             "
                             :platform="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).platform
-                            "
-                            :subscription-type="
-                              (
-                                option as unknown as DefaultSubscriptionGroupOption
-                              ).subscriptionType
                             "
                             :rate-multiplier="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).rate
                             "
                             :description="
                               (
-                                option as unknown as DefaultSubscriptionGroupOption
+                                option as unknown as DefaultSubscriptionPlanOption
                               ).description
                             "
                             :selected="selected"
+                            subscription-type="subscription"
                           />
                         </template>
                       </Select>
@@ -3464,7 +3456,7 @@
                         @click="
                           addAuthSourceDefaultSubscription(authSource.source)
                         "
-                        :disabled="subscriptionGroups.length === 0"
+                        :disabled="subscriptionPlans.length === 0"
                       >
                         {{
                           t("admin.settings.defaults.addDefaultSubscription")
@@ -3494,14 +3486,14 @@
                           <label
                             class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
                           >
-                            {{ t("admin.settings.defaults.subscriptionGroup") }}
+                            {{ t("payment.selectPlan") }}
                           </label>
                           <Select
-                            v-model="item.group_id"
+                            v-model="item.plan_id"
                             class="default-sub-group-select"
-                            :options="defaultSubscriptionGroupOptions"
+                            :options="defaultSubscriptionPlanOptions"
                             :placeholder="
-                              t('admin.settings.defaults.subscriptionGroup')
+                              t('payment.selectPlan')
                             "
                           >
                             <template #selected="{ option }">
@@ -3509,28 +3501,24 @@
                                 v-if="option"
                                 :name="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).label
                                 "
                                 :platform="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).platform
-                                "
-                                :subscription-type="
-                                  (
-                                    option as unknown as DefaultSubscriptionGroupOption
-                                  ).subscriptionType
                                 "
                                 :rate-multiplier="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).rate
                                 "
+                                subscription-type="subscription"
                               />
                               <span v-else class="text-gray-400">
                                 {{
-                                  t("admin.settings.defaults.subscriptionGroup")
+                                  t("payment.selectPlan")
                                 }}
                               </span>
                             </template>
@@ -3538,30 +3526,26 @@
                               <GroupOptionItem
                                 :name="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).label
                                 "
                                 :platform="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).platform
-                                "
-                                :subscription-type="
-                                  (
-                                    option as unknown as DefaultSubscriptionGroupOption
-                                  ).subscriptionType
                                 "
                                 :rate-multiplier="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).rate
                                 "
                                 :description="
                                   (
-                                    option as unknown as DefaultSubscriptionGroupOption
+                                    option as unknown as DefaultSubscriptionPlanOption
                                   ).description
                                 "
                                 :selected="selected"
+                                subscription-type="subscription"
                               />
                             </template>
                           </Select>
@@ -6960,6 +6944,7 @@ import {
   defaultWeChatConnectScopesForMode,
   deriveWeChatConnectStoredMode,
   normalizeDefaultSubscriptionSettings,
+  serializeDefaultSubscriptionSettings,
   resolveWeChatConnectModeCapabilities,
 } from "@/api/admin/settings";
 import type {
@@ -6975,13 +6960,8 @@ import type {
   WebSearchProviderConfig,
   WebSearchTestResult,
 } from "@/api/admin/settings";
-import type {
-  AdminGroup,
-  LoginAgreementDocument,
-  NotifyEmailEntry,
-  Proxy,
-} from "@/types";
-import type { ProviderInstance } from "@/types/payment";
+import type { LoginAgreementDocument, NotifyEmailEntry, Proxy } from "@/types";
+import type { ProviderInstance, SubscriptionPlan } from "@/types/payment";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import Icon from "@/components/icons/Icon.vue";
 import Select from "@/components/common/Select.vue";
@@ -7121,7 +7101,7 @@ const adminApiKeyExists = ref(false);
 const adminApiKeyMasked = ref("");
 const adminApiKeyOperating = ref(false);
 const newAdminApiKey = ref("");
-const subscriptionGroups = ref<AdminGroup[]>([]);
+const subscriptionPlans = ref<SubscriptionPlan[]>([]);
 
 // Overload Cooldown (529) 状态
 const overloadCooldownLoading = ref(true);
@@ -7603,13 +7583,13 @@ function resetClaudeOAuthSystemPromptBlocks(): void {
 }
 
 
-interface DefaultSubscriptionGroupOption {
+interface DefaultSubscriptionPlanOption {
   value: number;
   label: string;
-  description: string | null;
-  platform: AdminGroup["platform"];
-  subscriptionType: AdminGroup["subscription_type"];
-  rate: number;
+  description: string;
+  platform: "anthropic" | "openai" | "gemini" | "antigravity";
+  groupName: string | null;
+  rate?: number;
   [key: string]: unknown;
 }
 
@@ -8084,16 +8064,22 @@ async function saveWebSearchConfig(): Promise<boolean> {
   }
 }
 
-const defaultSubscriptionGroupOptions = computed<
-  DefaultSubscriptionGroupOption[]
+const defaultSubscriptionPlanOptions = computed<
+  DefaultSubscriptionPlanOption[]
 >(() =>
-  subscriptionGroups.value.map((group) => ({
-    value: group.id,
-    label: group.name,
-    description: group.description,
-    platform: group.platform,
-    subscriptionType: group.subscription_type,
-    rate: group.rate_multiplier,
+  subscriptionPlans.value.map((plan) => ({
+    value: plan.id,
+    label: plan.name,
+    description: plan.description || "",
+    platform: plan.group_platform
+      ? (plan.group_platform as
+          | "anthropic"
+          | "openai"
+          | "gemini"
+          | "antigravity")
+      : "openai",
+    groupName: plan.group_name ?? null,
+    rate: plan.rate_multiplier ?? undefined,
   })),
 );
 
@@ -8587,33 +8573,34 @@ async function loadSettings() {
   }
 }
 
-async function loadSubscriptionGroups() {
+async function loadSubscriptionPlans() {
   try {
-    const groups = await adminAPI.groups.getAll();
-    subscriptionGroups.value = groups.filter(
-      (group) =>
-        group.subscription_type === "subscription" && group.status === "active",
+    const response = await adminAPI.payment.getPlans();
+    subscriptionPlans.value = (response.data || []).filter(
+      (plan) => plan.for_sale !== false,
     );
   } catch (_error: unknown) {
-    subscriptionGroups.value = [];
+    subscriptionPlans.value = [];
   }
 }
 
-function findNextAvailableSubscriptionGroup(
-  existingGroupIDs: number[],
-): AdminGroup | undefined {
-  const existing = new Set(existingGroupIDs);
-  return subscriptionGroups.value.find((group) => !existing.has(group.id));
+function findNextAvailableSubscriptionPlan(
+  existingPlanIDs: number[],
+): SubscriptionPlan | undefined {
+  const existing = new Set(existingPlanIDs);
+  return subscriptionPlans.value.find((plan) => !existing.has(plan.id));
 }
 
 function addDefaultSubscription() {
-  if (subscriptionGroups.value.length === 0) return;
-  const candidate = findNextAvailableSubscriptionGroup(
-    form.default_subscriptions.map((item) => item.group_id),
+  if (subscriptionPlans.value.length === 0) return;
+  const candidate = findNextAvailableSubscriptionPlan(
+    form.default_subscriptions
+      .map((item) => item.plan_id ?? 0)
+      .filter((planID) => planID > 0),
   );
   if (!candidate) return;
   form.default_subscriptions.push({
-    group_id: candidate.id,
+    plan_id: candidate.id,
     validity_days: 30,
   });
 }
@@ -8623,13 +8610,15 @@ function removeDefaultSubscription(index: number) {
 }
 
 function addAuthSourceDefaultSubscription(source: AuthSourceType) {
-  if (subscriptionGroups.value.length === 0) return;
-  const candidate = findNextAvailableSubscriptionGroup(
-    authSourceDefaults[source].subscriptions.map((item) => item.group_id),
+  if (subscriptionPlans.value.length === 0) return;
+  const candidate = findNextAvailableSubscriptionPlan(
+    authSourceDefaults[source].subscriptions
+      .map((item) => item.plan_id ?? 0)
+      .filter((planID) => planID > 0),
   );
   if (!candidate) return;
   authSourceDefaults[source].subscriptions.push({
-    group_id: candidate.id,
+    plan_id: candidate.id,
     validity_days: 30,
   });
 }
@@ -8644,13 +8633,15 @@ function removeAuthSourceDefaultSubscription(
 function findDuplicateDefaultSubscription(
   subscriptions: DefaultSubscriptionSetting[],
 ): DefaultSubscriptionSetting | undefined {
-  const seenGroupIDs = new Set<number>();
+  const seenPlanIDs = new Set<number>();
 
   return subscriptions.find((item) => {
-    if (seenGroupIDs.has(item.group_id)) {
+    const planID = item.plan_id ?? 0;
+    if (planID <= 0) return true;
+    if (seenPlanIDs.has(planID)) {
       return true;
     }
-    seenGroupIDs.add(item.group_id);
+    seenPlanIDs.add(planID);
     return false;
   });
 }
@@ -8732,37 +8723,44 @@ async function saveSettings() {
     const normalizedDefaultSubscriptions = normalizeDefaultSubscriptionSettings(
       form.default_subscriptions,
     );
+    const serializedDefaultSubscriptions = serializeDefaultSubscriptionSettings(
+      normalizedDefaultSubscriptions,
+    );
     const duplicateDefaultSubscription = findDuplicateDefaultSubscription(
       normalizedDefaultSubscriptions,
     );
     if (duplicateDefaultSubscription) {
       appStore.showError(
         t("admin.settings.defaults.defaultSubscriptionsDuplicate", {
-          groupId: duplicateDefaultSubscription.group_id,
+          groupId:
+            duplicateDefaultSubscription.plan_id ??
+            duplicateDefaultSubscription.group_id,
         }),
       );
       return;
     }
 
     for (const authSource of authSourceDefaultsMeta.value) {
-      authSourceDefaults[authSource.source].subscriptions =
+      const normalizedAuthSourceSubscriptions =
         normalizeDefaultSubscriptionSettings(
           authSourceDefaults[authSource.source].subscriptions,
         );
       const duplicate = findDuplicateDefaultSubscription(
-        authSourceDefaults[authSource.source].subscriptions,
+        normalizedAuthSourceSubscriptions,
       );
       if (duplicate) {
         appStore.showError(
           `${authSource.title}: ${t(
             "admin.settings.defaults.defaultSubscriptionsDuplicate",
             {
-              groupId: duplicate.group_id,
+              groupId: duplicate.plan_id ?? duplicate.group_id,
             },
           )}`,
         );
         return;
       }
+      authSourceDefaults[authSource.source].subscriptions =
+        serializeDefaultSubscriptionSettings(normalizedAuthSourceSubscriptions);
     }
 
     if (form.wechat_connect_mp_enabled && form.wechat_connect_mobile_enabled) {
@@ -8825,7 +8823,7 @@ async function saveSettings() {
       affiliate_rebate_duration_days: Math.max(0, Math.min(3650, Math.floor(Number(form.affiliate_rebate_duration_days) || 0))),
       affiliate_rebate_per_invitee_cap: Math.max(0, Number(form.affiliate_rebate_per_invitee_cap) || 0),
       default_concurrency: form.default_concurrency,
-      default_subscriptions: normalizedDefaultSubscriptions,
+      default_subscriptions: serializedDefaultSubscriptions,
       force_email_on_third_party_signup: form.force_email_on_third_party_signup,
       default_user_rpm_limit: form.default_user_rpm_limit,
       site_name: form.site_name,
@@ -9932,7 +9930,7 @@ async function handleDeleteProvider() {
 
 onMounted(() => {
   loadSettings();
-  loadSubscriptionGroups();
+  loadSubscriptionPlans();
   loadAdminApiKey();
   loadOverloadCooldownSettings();
   loadRateLimit429CooldownSettings();
