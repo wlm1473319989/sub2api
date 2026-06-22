@@ -137,7 +137,7 @@ describe('user SubscriptionsView', () => {
     })
   })
 
-  it('falls back to group renew query when plan_id is absent', async () => {
+  it('does not show renew button when plan_id is absent', async () => {
     getMySubscriptions.mockResolvedValue([
       {
         id: 11,
@@ -195,11 +195,8 @@ describe('user SubscriptionsView', () => {
     })
 
     await flushPromises()
-    await wrapper.get('button.platform-button').trigger('click')
-
-    expect(push).toHaveBeenCalledWith({
-      path: '/purchase',
-      query: { tab: 'subscription', group: '8' },
-    })
+    expect(wrapper.text()).toContain('Legacy Group')
+    expect(wrapper.find('button.platform-button').exists()).toBe(false)
+    expect(push).not.toHaveBeenCalled()
   })
 })

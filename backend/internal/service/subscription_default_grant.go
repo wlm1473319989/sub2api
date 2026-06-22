@@ -57,14 +57,7 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 		return active, true, nil
 	}
 
-	sub, reused, err := s.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-		UserID:       userID,
-		GroupID:      item.GroupID,
-		ValidityDays: item.ValidityDays,
-		AssignedBy:   0,
-		Notes:        notes,
-	})
-	return sub, reused, err
+	return nil, false, infraerrors.BadRequest("PLAN_ID_REQUIRED", "plan_id is required")
 }
 
 func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
@@ -142,6 +135,9 @@ func (s *SubscriptionService) resolveActiveGrantReference(ctx context.Context, a
 	if active.PlanID != nil && active.PlanPriceSnapshot != nil {
 		return active.PlanID, active.PlanPriceSnapshot, nil
 	}
+	if active.PlanID == nil {
+		return nil, active.PlanPriceSnapshot, nil
+	}
 	if s == nil || s.entClient == nil {
 		return active.PlanID, active.PlanPriceSnapshot, nil
 	}
@@ -162,8 +158,6 @@ func (s *SubscriptionService) resolveActiveGrantReference(ctx context.Context, a
 		Order(dbent.Desc(paymentorder.FieldCreatedAt))
 	if active.PlanID != nil {
 		query = query.Where(paymentorder.PlanIDEQ(*active.PlanID))
-	} else {
-		query = query.Where(paymentorder.SubscriptionGroupIDEQ(active.GroupID))
 	}
 
 	order, err := query.First(ctx)

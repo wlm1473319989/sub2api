@@ -739,10 +739,15 @@ func UserSubscriptionFromServiceAdmin(sub *service.UserSubscription) *AdminUserS
 }
 
 func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscription {
+	var groupID *int64
+	if sub.GroupID > 0 {
+		groupID = &sub.GroupID
+	}
+
 	return UserSubscription{
 		ID:                 sub.ID,
 		UserID:             sub.UserID,
-		GroupID:            sub.GroupID,
+		GroupID:            groupID,
 		PlanID:             sub.PlanID,
 		PlanNameSnapshot:   sub.PlanNameSnapshot,
 		PlanPriceSnapshot:  sub.PlanPriceSnapshot,

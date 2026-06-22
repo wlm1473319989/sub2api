@@ -386,16 +386,24 @@
               v-if="row.subscriptions && row.subscriptions.length > 0"
               class="flex flex-wrap gap-1.5"
             >
-              <GroupBadge
-                v-for="sub in row.subscriptions"
-                :key="sub.id"
-                :name="sub.group?.name || ''"
-                :platform="sub.group?.platform"
-                :subscription-type="sub.group?.subscription_type"
-                :rate-multiplier="sub.group?.rate_multiplier"
-                :days-remaining="sub.expires_at ? getDaysRemaining(sub.expires_at) : null"
-                :title="sub.expires_at ? formatDateTime(sub.expires_at) : ''"
-              />
+              <template v-for="sub in row.subscriptions" :key="sub.id">
+                <GroupBadge
+                  v-if="sub.group"
+                  :name="sub.group.name || ''"
+                  :platform="sub.group.platform"
+                  :subscription-type="sub.group.subscription_type"
+                  :rate-multiplier="sub.group.rate_multiplier"
+                  :days-remaining="sub.expires_at ? getDaysRemaining(sub.expires_at) : null"
+                  :title="sub.expires_at ? formatDateTime(sub.expires_at) : ''"
+                />
+                <span
+                  v-else
+                  class="inline-flex items-center gap-1.5 rounded-md border border-gray-200 bg-gray-50 px-2 py-1 text-xs text-gray-700 dark:border-dark-600 dark:bg-dark-700/50 dark:text-gray-200"
+                  :title="sub.expires_at ? formatDateTime(sub.expires_at) : ''"
+                >
+                  {{ sub.plan_name_snapshot || `Subscription #${sub.id}` }}
+                </span>
+              </template>
             </div>
             <span
               v-else

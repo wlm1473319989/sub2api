@@ -1,7 +1,6 @@
 package handler
 
 import (
-	"context"
 	"fmt"
 	"strconv"
 	"strings"
@@ -53,7 +52,7 @@ func (h *PaymentHandler) GetPlans(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	response.Success(c, buildPublicCheckoutPlans(c.Request.Context(), h.configService, plans))
+	response.Success(c, buildPublicCheckoutPlans(plans))
 }
 
 // GetChannels returns enabled payment channels.
@@ -87,9 +86,9 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 		return
 	}
 
-	// Fetch plans with group info
+	// Fetch plans
 	plans, _ := h.configService.ListPlansForSale(ctx)
-	planList := buildPublicCheckoutPlans(ctx, h.configService, plans)
+	planList := buildPublicCheckoutPlans(plans)
 
 	response.Success(c, checkoutInfoResponse{
 		Methods:                   limitsResp.Methods,
@@ -122,17 +121,9 @@ type checkoutInfoResponse struct {
 
 type checkoutPlan struct {
 	ID                 int64    `json:"id"`
-	GroupID            *int64   `json:"group_id,omitempty"`
-	GroupPlatform      string   `json:"group_platform,omitempty"`
-	GroupName          string   `json:"group_name,omitempty"`
-	RateMultiplier     *float64 `json:"rate_multiplier,omitempty"`
-	DailyLimitUSD      *float64 `json:"daily_limit_usd,omitempty"`
-	WeeklyLimitUSD     *float64 `json:"weekly_limit_usd,omitempty"`
-	MonthlyLimitUSD    *float64 `json:"monthly_limit_usd,omitempty"`
 	DailyQuotaKnives   *float64 `json:"daily_quota_knives,omitempty"`
 	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives,omitempty"`
 	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
-	ModelScopes        []string `json:"supported_model_scopes,omitempty"`
 	Name               string   `json:"name"`
 	Description        string   `json:"description"`
 	Price              float64  `json:"price"`
@@ -145,32 +136,14 @@ type checkoutPlan struct {
 	SortOrder          int      `json:"sort_order"`
 }
 
-func buildPublicCheckoutPlans(ctx context.Context, configService *service.PaymentConfigService, plans []*dbent.SubscriptionPlan) []checkoutPlan {
-	groupInfo := configService.GetGroupInfoMap(ctx, plans)
+func buildPublicCheckoutPlans(plans []*dbent.SubscriptionPlan) []checkoutPlan {
 	planList := make([]checkoutPlan, 0, len(plans))
 	for _, p := range plans {
-		// Old purchase flow still depends on legacy group-backed plans.
-		if p.GroupID == nil {
-			continue
-		}
-		gi, ok := groupInfo[*p.GroupID]
-		if !ok {
-			continue
-		}
-		rateMultiplier := gi.RateMultiplier
 		planList = append(planList, checkoutPlan{
 			ID:                 int64(p.ID),
-			GroupID:            p.GroupID,
-			GroupPlatform:      gi.Platform,
-			GroupName:          gi.Name,
-			RateMultiplier:     &rateMultiplier,
-			DailyLimitUSD:      gi.DailyLimitUSD,
-			WeeklyLimitUSD:     gi.WeeklyLimitUSD,
-			MonthlyLimitUSD:    gi.MonthlyLimitUSD,
 			DailyQuotaKnives:   p.DailyQuotaKnives,
 			WeeklyQuotaKnives:  p.WeeklyQuotaKnives,
 			MonthlyQuotaKnives: p.MonthlyQuotaKnives,
-			ModelScopes:        gi.ModelScopes,
 			Name:               p.Name,
 			Description:        p.Description,
 			Price:              p.Price,

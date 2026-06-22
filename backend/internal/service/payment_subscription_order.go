@@ -44,9 +44,6 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 	active, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
 	if err != nil {
 		if errorsIsSubscriptionNotFound(err) {
-			if plan.GroupID == nil {
-				return nil, infraerrors.BadRequest("PLAN_NOT_PURCHASABLE_YET", "plan is not yet available in the legacy purchase flow")
-			}
 			return &subscriptionOrderDecision{
 				Plan:        plan,
 				Action:      subscriptionActionPurchase,
@@ -107,10 +104,7 @@ func subscriptionOrderMatchesRenewPlan(active *UserSubscription, currentPlanID *
 	if active.PlanID != nil {
 		return *active.PlanID == plan.ID
 	}
-	if currentPlanID != nil {
-		return *currentPlanID == plan.ID
-	}
-	return plan.GroupID != nil && active.GroupID == *plan.GroupID
+	return currentPlanID != nil && *currentPlanID == plan.ID
 }
 
 func (s *PaymentService) resolveActiveSubscriptionReference(ctx context.Context, active *UserSubscription) (*int64, *float64, error) {
@@ -136,7 +130,7 @@ func (s *PaymentService) resolveActiveSubscriptionReference(ctx context.Context,
 	if active.PlanID != nil {
 		query = query.Where(paymentorder.PlanIDEQ(*active.PlanID))
 	} else {
-		query = query.Where(paymentorder.SubscriptionGroupIDEQ(active.GroupID))
+		return planID, price, nil
 	}
 	order, err := query.First(ctx)
 	if err != nil {
@@ -163,14 +157,12 @@ func (s *PaymentService) resolveActiveSubscriptionReference(ctx context.Context,
 }
 
 func (s *PaymentService) calculateUpgradeOrderDelta(ctx context.Context, active *UserSubscription, currentPrice float64, targetPlan *dbent.SubscriptionPlan) (*UpgradeResidualBreakdown, error) {
+	_ = ctx
 	if active == nil || targetPlan == nil {
 		return nil, ErrActiveSubscriptionPlanUnresolved
 	}
-	group := active.Group
-	if group == nil && s.groupRepo != nil && active.GroupID > 0 {
-		if loaded, err := s.groupRepo.GetByID(ctx, active.GroupID); err == nil {
-			group = loaded
-		}
+	if active.DailyQuotaKnives == nil && active.WeeklyQuotaKnives == nil && active.MonthlyQuotaKnives == nil {
+		return nil, ErrActiveSubscriptionPlanUnresolved
 	}
 
 	input := UpgradeResidualInput{
@@ -179,12 +171,12 @@ func (s *PaymentService) calculateUpgradeOrderDelta(ctx context.Context, active 
 		ExpiresAt:          active.ExpiresAt,
 		PlanPrice:          currentPrice,
 		TargetPlanPrice:    targetPlan.Price,
-		DailyQuotaKnives:   quotaWithGroupFallback(active.DailyQuotaKnives, group, quotaFamilyDaily),
-		WeeklyQuotaKnives:  quotaWithGroupFallback(active.WeeklyQuotaKnives, group, quotaFamilyWeekly),
-		MonthlyQuotaKnives: quotaWithGroupFallback(active.MonthlyQuotaKnives, group, quotaFamilyMonthly),
-		DailyUsedKnives:    usedWithLegacyFallback(active.DailyQuotaKnives, active.DailyUsedKnives, active.DailyUsageUSD),
-		WeeklyUsedKnives:   usedWithLegacyFallback(active.WeeklyQuotaKnives, active.WeeklyUsedKnives, active.WeeklyUsageUSD),
-		MonthlyUsedKnives:  usedWithLegacyFallback(active.MonthlyQuotaKnives, active.MonthlyUsedKnives, active.MonthlyUsageUSD),
+		DailyQuotaKnives:   active.DailyQuotaKnives,
+		WeeklyQuotaKnives:  active.WeeklyQuotaKnives,
+		MonthlyQuotaKnives: active.MonthlyQuotaKnives,
+		DailyUsedKnives:    active.DailyUsedKnives,
+		WeeklyUsedKnives:   active.WeeklyUsedKnives,
+		MonthlyUsedKnives:  active.MonthlyUsedKnives,
 		DailyWindowStart:   active.DailyWindowStart,
 		WeeklyWindowStart:  active.WeeklyWindowStart,
 		MonthlyWindowStart: active.MonthlyWindowStart,
@@ -194,38 +186,4 @@ func (s *PaymentService) calculateUpgradeOrderDelta(ctx context.Context, active 
 		return nil, err
 	}
 	return breakdown, nil
-}
-
-type quotaFamily string
-
-const (
-	quotaFamilyDaily   quotaFamily = "daily"
-	quotaFamilyWeekly  quotaFamily = "weekly"
-	quotaFamilyMonthly quotaFamily = "monthly"
-)
-
-func quotaWithGroupFallback(snapshot *float64, group *Group, family quotaFamily) *float64 {
-	if snapshot != nil {
-		return snapshot
-	}
-	if group == nil {
-		return nil
-	}
-	switch family {
-	case quotaFamilyDaily:
-		return copyFloat64Pointer(group.DailyLimitUSD)
-	case quotaFamilyWeekly:
-		return copyFloat64Pointer(group.WeeklyLimitUSD)
-	case quotaFamilyMonthly:
-		return copyFloat64Pointer(group.MonthlyLimitUSD)
-	default:
-		return nil
-	}
-}
-
-func usedWithLegacyFallback(snapshotQuota *float64, snapshotUsed float64, legacyUsed float64) float64 {
-	if snapshotQuota != nil {
-		return snapshotUsed
-	}
-	return legacyUsed
 }

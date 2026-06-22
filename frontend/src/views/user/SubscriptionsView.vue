@@ -42,7 +42,10 @@
                   <h3 class="font-semibold text-gray-900 dark:text-white">
                     {{ subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}` }}
                   </h3>
-                  <span :class="['rounded-md border px-2 py-0.5 text-[11px] font-medium', platformBadgeClass(subscription.group?.platform || '')]">
+                  <span
+                    v-if="subscription.group?.platform"
+                    :class="['rounded-md border px-2 py-0.5 text-[11px] font-medium', platformBadgeClass(subscription.group?.platform || '')]"
+                  >
                     {{ platformLabel(subscription.group?.platform || '') }}
                   </span>
                 </div>
@@ -65,9 +68,9 @@
                 {{ t(`userSubscriptions.status.${subscription.status}`) }}
               </span>
               <button
-                v-if="subscription.status === 'active'"
+                v-if="subscription.status === 'active' && subscription.plan_id"
                 :class="['rounded-lg px-3 py-1.5 text-xs font-semibold text-white transition-colors', platformButtonClass(subscription.group?.platform || '')]"
-                @click="router.push({ path: '/purchase', query: subscription.plan_id ? { tab: 'subscription', plan: String(subscription.plan_id) } : { tab: 'subscription', group: String(subscription.group_id) } })"
+                @click="router.push({ path: '/purchase', query: { tab: 'subscription', plan: String(subscription.plan_id) } })"
               >
                 {{ t('payment.renewNow') }}
               </button>

@@ -465,16 +465,18 @@
             <div class="space-y-2">
               <label class="flex items-center gap-2 text-sm font-medium text-gray-700 dark:text-gray-300">
                 <input
-                  v-model="batchUpdateForm.update_group_id"
+                  data-test="batch-field-plan"
+                  v-model="batchUpdateForm.update_plan_id"
                   type="checkbox"
                   class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
                 />
                 {{ t('admin.redeem.batchFields.group') }}
               </label>
               <Select
-                v-if="batchUpdateForm.update_group_id"
-                v-model="batchUpdateForm.group_id"
-                :options="batchGroupOptions"
+                v-if="batchUpdateForm.update_plan_id"
+                data-test="batch-plan-select"
+                v-model="batchUpdateForm.plan_id"
+                :options="batchPlanOptions"
                 :placeholder="t('admin.redeem.selectGroupPlaceholder')"
               />
             </div>
@@ -627,7 +629,7 @@ const subscriptionPlanOptions = computed(() => {
     }))
 })
 
-const batchGroupOptions = computed(() => [
+const batchPlanOptions = computed(() => [
   { value: null, label: t('admin.redeem.clearGroup') },
   ...subscriptionPlanOptions.value
 ])
@@ -773,8 +775,8 @@ const batchUpdateForm = reactive({
   expires_at_local: '',
   update_notes: false,
   notes: '',
-  update_group_id: false,
-  group_id: null as number | null
+  update_plan_id: false,
+  plan_id: null as number | null
 })
 
 type RedeemCodeExpiryOption = 'never' | '1' | '3' | '7' | 'custom'
@@ -931,8 +933,8 @@ const resetBatchUpdateForm = () => {
   )
   batchUpdateForm.update_notes = false
   batchUpdateForm.notes = ''
-  batchUpdateForm.update_group_id = false
-  batchUpdateForm.group_id = null
+  batchUpdateForm.update_plan_id = false
+  batchUpdateForm.plan_id = null
 }
 
 const openBatchUpdateDialog = () => {
@@ -969,9 +971,9 @@ const buildBatchUpdateFields = (): BatchUpdateRedeemCodeFields | null => {
   if (batchUpdateForm.update_notes) {
     fields.notes = batchUpdateForm.notes
   }
-  if (batchUpdateForm.update_group_id) {
-    fields.group_id =
-      batchUpdateForm.group_id == null ? null : Number(batchUpdateForm.group_id)
+  if (batchUpdateForm.update_plan_id) {
+    fields.plan_id =
+      batchUpdateForm.plan_id == null ? null : Number(batchUpdateForm.plan_id)
   }
 
   return Object.keys(fields).length > 0 ? fields : null
@@ -1101,7 +1103,7 @@ const handleBatchUpdate = async () => {
     batchUpdateForm.update_status ||
     batchUpdateForm.update_expires_at ||
     batchUpdateForm.update_notes ||
-    batchUpdateForm.update_group_id
+    batchUpdateForm.update_plan_id
   if (!hasSelectedFields) {
     appStore.showError(t('admin.redeem.noBatchFieldsSelected'))
     return
@@ -1128,7 +1130,7 @@ const handleBatchUpdate = async () => {
 }
 
 // 加载订阅计划
-const loadSubscriptionGroups = async () => {
+const loadSubscriptionPlans = async () => {
   try {
     const response = await adminAPI.payment.getPlans()
     subscriptionPlans.value = response.data || []
@@ -1139,7 +1141,7 @@ const loadSubscriptionGroups = async () => {
 
 onMounted(() => {
   loadCodes()
-  loadSubscriptionGroups()
+  loadSubscriptionPlans()
 })
 
 onUnmounted(() => {

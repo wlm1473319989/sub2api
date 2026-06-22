@@ -184,4 +184,50 @@ describe('admin RedeemView batch update', () => {
     })
     expect(showSuccess).toHaveBeenCalledWith('admin.redeem.batchUpdateSuccess')
   })
+
+  it('submits selected subscription plan updates with plan_id', async () => {
+    getPlans.mockResolvedValue({
+      data: [
+        {
+          id: 88,
+          name: 'Starter Plan',
+          description: 'starter'
+        }
+      ]
+    })
+
+    const wrapper = mount(RedeemView, {
+      attachTo: document.body,
+      global: {
+        stubs: {
+          AppLayout: { template: '<div><slot /></div>' },
+          TablePageLayout: {
+            template: '<div><slot name="filters" /><slot name="table" /><slot name="pagination" /></div>'
+          },
+          DataTable: DataTableStub,
+          Pagination: true,
+          ConfirmDialog: true,
+          Select: SelectStub,
+          GroupBadge: true,
+          GroupOptionItem: true,
+          Icon: true,
+          Teleport: true
+        }
+      }
+    })
+
+    await flushPromises()
+    await wrapper.findAll('[data-test="select-code"]')[0].setValue(true)
+    await wrapper.get('[data-test="batch-update-open"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.get('[data-test="batch-field-plan"]').setValue(true)
+    await wrapper.get('[data-test="batch-plan-select"]').setValue('88')
+    await wrapper.get('[data-test="batch-update-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(batchUpdateRedeemCodes).toHaveBeenCalledWith([1], {
+      plan_id: 88
+    })
+  })
 })

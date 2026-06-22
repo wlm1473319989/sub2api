@@ -413,7 +413,8 @@ type BatchUpdateRedeemCodeFields struct {
 	Status    *string            `json:"status,omitempty"`
 	ExpiresAt NullableTimeField  `json:"expires_at,omitempty"`
 	Notes     *string            `json:"notes,omitempty"`
-	GroupID   NullableInt64Field `json:"group_id,omitempty"`
+	PlanID    NullableInt64Field `json:"plan_id,omitempty"`
+	GroupID   NullableInt64Field `json:"group_id,omitempty"` // legacy alias, mapped to plan_id
 
 	Type  *string  `json:"type,omitempty"`
 	Value *float64 `json:"value,omitempty"`
@@ -568,10 +569,10 @@ type Setting struct {
 }
 
 type UserSubscription struct {
-	ID      int64  `json:"id"`
-	UserID  int64  `json:"user_id"`
-	GroupID int64  `json:"group_id"`
-	PlanID  *int64 `json:"plan_id,omitempty"`
+	ID                int64    `json:"id"`
+	UserID            int64    `json:"user_id"`
+	GroupID           *int64   `json:"group_id,omitempty"`
+	PlanID            *int64   `json:"plan_id,omitempty"`
 	PlanNameSnapshot  *string  `json:"plan_name_snapshot,omitempty"`
 	PlanPriceSnapshot *float64 `json:"plan_price_snapshot,omitempty"`
 

@@ -338,8 +338,10 @@ func redeemBatchUpdateFieldsFromDTO(in dto.BatchUpdateRedeemCodeFields) service.
 	if in.ExpiresAt.Set {
 		out.ExpiresAt = service.NullableTimeUpdate{Set: true, Value: in.ExpiresAt.Value}
 	}
-	if in.GroupID.Set {
-		out.GroupID = service.NullableInt64Update{Set: true, Value: in.GroupID.Value}
+	if in.PlanID.Set {
+		out.PlanID = service.NullableInt64Update{Set: true, Value: in.PlanID.Value}
+	} else if in.GroupID.Set {
+		out.PlanID = service.NullableInt64Update{Set: true, Value: in.GroupID.Value}
 	}
 	return out
 }

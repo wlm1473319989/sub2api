@@ -209,11 +209,6 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		if plan.MonthlyQuotaKnives != nil {
 			b.SetSubscriptionMonthlyQuotaKnivesSnapshot(*plan.MonthlyQuotaKnives)
 		}
-	} else if plan != nil {
-		b.SetPlanID(plan.ID).SetSubscriptionDays(psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit))
-		if plan.GroupID != nil {
-			b.SetSubscriptionGroupID(*plan.GroupID)
-		}
 	}
 	order, err := b.Save(ctx)
 	if err != nil {
