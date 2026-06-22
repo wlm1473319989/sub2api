@@ -109,6 +109,7 @@ func (h *subscriptionHandlerHarness) createGroup(t *testing.T, name string) *dbe
 
 func (h *subscriptionHandlerHarness) createPlan(t *testing.T, name string, groupID int64) *dbent.SubscriptionPlan {
 	t.Helper()
+	_ = groupID
 	plan, err := h.client.SubscriptionPlan.Create().
 		SetName(name).
 		SetDescription(name).
@@ -118,7 +119,6 @@ func (h *subscriptionHandlerHarness) createPlan(t *testing.T, name string, group
 		SetFeatures("").
 		SetProductName(name).
 		SetForSale(true).
-		SetGroupID(groupID).
 		Save(h.ctx)
 	require.NoError(t, err)
 	return plan

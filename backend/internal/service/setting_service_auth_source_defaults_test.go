@@ -63,7 +63,7 @@ func TestSettingService_GetAuthSourceDefaultSettings_ParsesValuesAndDefaults(t *
 		values: map[string]string{
 			SettingKeyAuthSourceDefaultEmailBalance:            "12.5",
 			SettingKeyAuthSourceDefaultEmailConcurrency:        "7",
-			SettingKeyAuthSourceDefaultEmailSubscriptions:      `[{"group_id":11,"validity_days":30}]`,
+			SettingKeyAuthSourceDefaultEmailSubscriptions:      `[{"plan_id":11}]`,
 			SettingKeyAuthSourceDefaultEmailGrantOnSignup:      "false",
 			SettingKeyAuthSourceDefaultLinuxDoGrantOnFirstBind: "true",
 			SettingKeyForceEmailOnThirdPartySignup:             "true",
@@ -75,7 +75,7 @@ func TestSettingService_GetAuthSourceDefaultSettings_ParsesValuesAndDefaults(t *
 	require.NoError(t, err)
 	require.Equal(t, 12.5, got.Email.Balance)
 	require.Equal(t, 7, got.Email.Concurrency)
-	require.Equal(t, []DefaultSubscriptionSetting{{GroupID: 11, ValidityDays: 30}}, got.Email.Subscriptions)
+	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 11}}, got.Email.Subscriptions)
 	require.False(t, got.Email.GrantOnSignup)
 	require.False(t, got.Email.GrantOnFirstBind)
 	require.Equal(t, 0.0, got.LinuxDo.Balance)

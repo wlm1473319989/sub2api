@@ -44,7 +44,6 @@ func TestPrepareRefund_NewSubscriptionOrderCapturesActiveSnapshot(t *testing.T) 
 	groupRepo.byID[group.ID] = groupToService(group)
 
 	plan, err := client.SubscriptionPlan.Create().
-		SetGroupID(group.ID).
 		SetName("User Level").
 		SetDescription("plan").
 		SetPrice(88).
@@ -138,7 +137,6 @@ func TestExecuteRefund_UserLevelSubscriptionOrderMarksSubscriptionRefunded(t *te
 	groupRepo.byID[group.ID] = groupToService(group)
 
 	plan, err := client.SubscriptionPlan.Create().
-		SetGroupID(group.ID).
 		SetName("Refundable").
 		SetDescription("plan").
 		SetPrice(88).

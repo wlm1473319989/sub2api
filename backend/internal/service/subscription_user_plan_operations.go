@@ -220,7 +220,6 @@ func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context
 	planPrice := plan.Price
 	sub := &UserSubscription{
 		UserID:             userID,
-		GroupID:            resolveSubscriptionPersistenceGroupID(plan),
 		PlanID:             &planID,
 		PlanNameSnapshot:   copyStringPointer(&planName),
 		PlanPriceSnapshot:  copyFloat64Pointer(&planPrice),
@@ -285,13 +284,6 @@ func clipSubscriptionExpiry(expiresAt time.Time) time.Time {
 		return MaxExpiresAt
 	}
 	return expiresAt
-}
-
-func resolveSubscriptionPersistenceGroupID(plan *dbent.SubscriptionPlan) int64 {
-	if plan != nil && plan.GroupID != nil && *plan.GroupID > 0 {
-		return *plan.GroupID
-	}
-	return 0
 }
 
 func copyFloat64Pointer(value *float64) *float64 {

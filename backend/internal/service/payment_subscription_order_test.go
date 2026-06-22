@@ -64,39 +64,10 @@ func newPaymentSubscriptionGroupRepoStub() *paymentSubscriptionGroupRepoStub {
 func (s *paymentSubscriptionGroupRepoStub) GetByID(_ context.Context, id int64) (*Group, error) {
 	group := s.byID[id]
 	if group == nil {
-		return nil, ErrGroupNotSubscriptionType
+		return nil, ErrGroupNotFound
 	}
 	cp := *group
 	return &cp, nil
-}
-
-func (s *subscriptionUserSubRepoStub) GetActiveByUserID(_ context.Context, userID int64) (*UserSubscription, error) {
-	var active *UserSubscription
-	for _, sub := range s.byID {
-		if sub == nil || sub.UserID != userID || sub.Status != SubscriptionStatusActive || !sub.ExpiresAt.After(time.Now()) {
-			continue
-		}
-		if active != nil {
-			return nil, ErrMultipleActiveSubscriptions
-		}
-		cp := *sub
-		active = &cp
-	}
-	if active == nil {
-		return nil, ErrSubscriptionNotFound
-	}
-	return active, nil
-}
-
-func (s *subscriptionUserSubRepoStub) HasActiveByUserID(_ context.Context, userID int64) (bool, error) {
-	sub, err := s.GetActiveByUserID(context.Background(), userID)
-	if err != nil {
-		if errorsIsSubscriptionNotFound(err) {
-			return false, nil
-		}
-		return false, err
-	}
-	return sub != nil, nil
 }
 
 func newPaymentSubscriptionHarness(t *testing.T) *paymentSubscriptionHarness {
@@ -160,6 +131,7 @@ func (h *paymentSubscriptionHarness) createGroup(t *testing.T, name string, dail
 
 func (h *paymentSubscriptionHarness) createPlan(t *testing.T, name string, price float64, validityDays int, validityUnit string, groupID *int64, daily, weekly, monthly *float64) *dbent.SubscriptionPlan {
 	t.Helper()
+	_ = groupID
 	builder := h.client.SubscriptionPlan.Create().
 		SetName(name).
 		SetDescription(name).
@@ -169,9 +141,6 @@ func (h *paymentSubscriptionHarness) createPlan(t *testing.T, name string, price
 		SetFeatures("").
 		SetProductName(name).
 		SetForSale(true)
-	if groupID != nil {
-		builder.SetGroupID(*groupID)
-	}
 	if daily != nil {
 		builder.SetDailyQuotaKnives(*daily)
 	}
@@ -231,9 +200,6 @@ func (h *paymentSubscriptionHarness) createSubscriptionOrder(t *testing.T, user 
 		SetSubscriptionValidityDaysSnapshot(psComputeValidityDays(plan.ValidityDays, plan.ValidityUnit)).
 		SetCreatedAt(createdAt).
 		SetUpdatedAt(createdAt)
-	if plan.GroupID != nil {
-		builder.SetSubscriptionGroupID(*plan.GroupID)
-	}
 	if plan.DailyQuotaKnives != nil {
 		builder.SetSubscriptionDailyQuotaKnivesSnapshot(*plan.DailyQuotaKnives)
 	}
@@ -305,7 +271,7 @@ func TestPrepareSubscriptionOrderDecision_UpgradeUsesResidualDelta(t *testing.T)
 	require.InDelta(t, 100, decision.OrderAmount, 1e-9)
 }
 
-func TestPrepareSubscriptionOrderDecision_LegacyActiveUsesLatestOrderForRenew(t *testing.T) {
+func TestPrepareSubscriptionOrderDecision_LegacyActiveWithoutPlanFallsBackToUpgrade(t *testing.T) {
 	h := newPaymentSubscriptionHarness(t)
 	user := h.createUser(t, "legacy-renew@example.com")
 	group := h.createGroup(t, "legacy-group", floatPtr(10), nil, nil)
@@ -320,7 +286,9 @@ func TestPrepareSubscriptionOrderDecision_LegacyActiveUsesLatestOrderForRenew(t 
 
 	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID)
 	require.NoError(t, err)
-	require.Equal(t, subscriptionActionRenew, decision.Action)
+	require.Equal(t, subscriptionActionUpgrade, decision.Action)
+	require.Nil(t, decision.UpgradeBreakdown)
+	require.InDelta(t, plan.Price, decision.OrderAmount, 1e-9)
 }
 
 func TestPrepareSubscriptionOrderDecision_LowerPriceRejected(t *testing.T) {
@@ -382,8 +350,6 @@ func TestCreateOrderInTx_WritesSubscriptionActionSnapshot(t *testing.T) {
 	require.Equal(t, 10.0, *order.SubscriptionDailyQuotaKnivesSnapshot)
 	require.NotNil(t, order.SubscriptionMonthlyQuotaKnivesSnapshot)
 	require.Equal(t, 100.0, *order.SubscriptionMonthlyQuotaKnivesSnapshot)
-	require.Nil(t, order.SubscriptionGroupID)
-	require.Nil(t, order.SubscriptionDays)
 }
 
 func TestExecuteSubscriptionFulfillment_PurchaseAction(t *testing.T) {

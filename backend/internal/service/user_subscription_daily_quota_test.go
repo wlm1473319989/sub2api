@@ -6,6 +6,7 @@ import (
 	"testing"
 	"time"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/stretchr/testify/require"
 )
 
@@ -20,49 +21,35 @@ func (r *dailyResetTrackingUserSubRepo) ResetDailyUsage(context.Context, int64, 
 	return nil
 }
 
-func TestAssignOrExtendSubscription_ExpiredDailyCardStartsNewOneTimeQuota(t *testing.T) {
-	groupRepo := &subscriptionGroupRepoStub{
-		group: &Group{ID: 1, SubscriptionType: SubscriptionTypeSubscription},
-	}
+func TestPurchaseNewPlan_DailyCardStartsWithOneTimeQuota(t *testing.T) {
 	subRepo := newSubscriptionUserSubRepoStub()
-	oldStart := time.Now().AddDate(0, 0, -3)
-	oldWindowStart := startOfDay(oldStart)
-	subRepo.seed(&UserSubscription{
-		ID:                 100,
-		UserID:             200,
-		GroupID:            1,
-		StartsAt:           oldStart,
-		ExpiresAt:          oldStart.AddDate(0, 0, 1),
-		Status:             SubscriptionStatusExpired,
-		DailyWindowStart:   &oldWindowStart,
-		WeeklyWindowStart:  &oldWindowStart,
-		MonthlyWindowStart: &oldWindowStart,
-		DailyUsageUSD:      10,
-		WeeklyUsageUSD:     20,
-		MonthlyUsageUSD:    30,
-		Notes:              "old",
-	})
-	svc := NewSubscriptionService(groupRepo, subRepo, nil, nil, nil)
+	svc := NewSubscriptionService(groupRepoNoop{}, subRepo, nil, nil, nil)
 
-	renewed, reused, err := svc.AssignOrExtendSubscription(context.Background(), &AssignSubscriptionInput{
-		UserID:       200,
-		GroupID:      1,
-		ValidityDays: 1,
-		Notes:        "new",
+	dailyQuota := 10.0
+	plan := &dbent.SubscriptionPlan{
+		ID:               101,
+		Name:             "Daily Card",
+		Price:            9.9,
+		ValidityDays:     1,
+		ValidityUnit:     "day",
+		DailyQuotaKnives: &dailyQuota,
+	}
+
+	sub, err := svc.PurchaseNewPlan(context.Background(), &PurchaseNewPlanInput{
+		UserID: 200,
+		Plan:   plan,
+		Notes:  "new",
 	})
 
 	require.NoError(t, err)
-	require.True(t, reused)
-	require.True(t, renewed.HasOneTimeDailyQuota(), "过期后重新购买 1 日卡仍应被识别为一次性日额度")
-	require.Equal(t, SubscriptionStatusActive, renewed.Status)
-	require.True(t, renewed.StartsAt.After(oldStart), "重新购买过期订阅时应重置当前周期 StartsAt")
-	require.False(t, renewed.ExpiresAt.After(renewed.StartsAt.AddDate(0, 0, 1)))
-	require.NotNil(t, renewed.DailyWindowStart)
-	require.Equal(t, startOfDay(renewed.StartsAt), *renewed.DailyWindowStart)
-	require.Equal(t, 0.0, renewed.DailyUsageUSD)
-	require.Equal(t, 0.0, renewed.WeeklyUsageUSD)
-	require.Equal(t, 0.0, renewed.MonthlyUsageUSD)
-	require.Equal(t, "old\nnew", renewed.Notes)
+	require.True(t, sub.HasOneTimeDailyQuota(), "1 day plan should still be treated as a one-time daily quota")
+	require.Equal(t, SubscriptionStatusActive, sub.Status)
+	require.False(t, sub.ExpiresAt.After(sub.StartsAt.AddDate(0, 0, 1)))
+	require.Nil(t, sub.DailyWindowStart)
+	require.Equal(t, 0.0, sub.DailyUsageUSD)
+	require.Equal(t, 0.0, sub.WeeklyUsageUSD)
+	require.Equal(t, 0.0, sub.MonthlyUsageUSD)
+	require.Equal(t, "new", sub.Notes)
 }
 
 func TestUserSubscriptionNeedsDailyReset_DailyCardKeepsOneTimeQuota(t *testing.T) {
@@ -76,7 +63,7 @@ func TestUserSubscriptionNeedsDailyReset_DailyCardKeepsOneTimeQuota(t *testing.T
 	}
 
 	require.True(t, sub.HasOneTimeDailyQuota())
-	require.False(t, sub.NeedsDailyResetAt(dailyWindowStart.Add(25*time.Hour)), "日卡应作为一次性配额，跨 0 点后不再刷新日额度")
+	require.False(t, sub.NeedsDailyResetAt(dailyWindowStart.Add(25*time.Hour)), "daily card should not refresh after midnight")
 }
 
 func TestUserSubscriptionNeedsDailyReset_MultiDaySubscriptionStillRefreshes(t *testing.T) {
@@ -89,7 +76,7 @@ func TestUserSubscriptionNeedsDailyReset_MultiDaySubscriptionStillRefreshes(t *t
 	}
 
 	require.False(t, sub.HasOneTimeDailyQuota())
-	require.True(t, sub.NeedsDailyResetAt(dailyWindowStart.Add(24*time.Hour)), "多日订阅仍应按 24 小时日窗口刷新")
+	require.True(t, sub.NeedsDailyResetAt(dailyWindowStart.Add(24*time.Hour)), "multi-day subscription should still refresh every 24h")
 }
 
 func TestUserSubscriptionDailyResetTime_DailyCardReturnsExpiry(t *testing.T) {
@@ -104,7 +91,7 @@ func TestUserSubscriptionDailyResetTime_DailyCardReturnsExpiry(t *testing.T) {
 
 	resetAt := sub.DailyResetTime()
 	require.NotNil(t, resetAt)
-	require.Equal(t, expiresAt, *resetAt, "日卡展示的日额度结束时间应为订阅过期时间")
+	require.Equal(t, expiresAt, *resetAt, "daily card should display expiry as the daily reset time")
 }
 
 func TestCheckAndResetWindows_DailyCardDoesNotResetDailyUsage(t *testing.T) {
@@ -126,7 +113,7 @@ func TestCheckAndResetWindows_DailyCardDoesNotResetDailyUsage(t *testing.T) {
 	err := svc.CheckAndResetWindows(context.Background(), sub)
 
 	require.NoError(t, err)
-	require.False(t, repo.resetDailyCalled, "日卡作为一次性配额，过了 24 小时日窗口也不应重置 daily usage")
+	require.False(t, repo.resetDailyCalled, "daily card should not reset usage after the day window rolls over")
 	require.Equal(t, 10.0, sub.DailyUsageUSD)
 }
 
@@ -149,7 +136,7 @@ func TestCheckAndResetWindows_MultiDaySubscriptionStillResetsDailyUsage(t *testi
 	err := svc.CheckAndResetWindows(context.Background(), sub)
 
 	require.NoError(t, err)
-	require.True(t, repo.resetDailyCalled, "多日订阅仍应重置过期 daily window")
+	require.True(t, repo.resetDailyCalled, "multi-day subscription should still reset expired daily window")
 	require.Equal(t, 0.0, sub.DailyUsageUSD)
 }
 
@@ -174,7 +161,7 @@ func TestValidateAndCheckLimits_DailyCardDoesNotAllowSecondQuotaAfterMidnight(t 
 
 	needsMaintenance, err := svc.ValidateAndCheckLimits(sub, group)
 
-	require.False(t, needsMaintenance, "日卡跨过日窗口后不应触发 daily reset 维护")
+	require.False(t, needsMaintenance, "daily card should not trigger daily reset maintenance after midnight")
 	require.True(t, errors.Is(err, ErrDailyLimitExceeded))
-	require.Equal(t, dailyLimit+0.01, sub.DailyUsageUSD, "热路径不应清零日卡已用额度")
+	require.Equal(t, dailyLimit+0.01, sub.DailyUsageUSD, "hot path should not clear already-used daily card quota")
 }

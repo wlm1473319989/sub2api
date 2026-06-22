@@ -6,7 +6,6 @@ import (
 	"strings"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
@@ -23,12 +22,9 @@ var validPlanValidityUnits = map[string]string{
 }
 
 // validatePlanRequired checks that all required fields for a plan are provided.
-func validatePlanRequired(name string, groupID *int64, price float64, validityDays int, validityUnit string, originalPrice, dailyQuotaKnives, weeklyQuotaKnives, monthlyQuotaKnives *float64) error {
+func validatePlanRequired(name string, price float64, validityDays int, validityUnit string, originalPrice, dailyQuotaKnives, weeklyQuotaKnives, monthlyQuotaKnives *float64) error {
 	if strings.TrimSpace(name) == "" {
 		return infraerrors.BadRequest("PLAN_NAME_REQUIRED", "plan name is required")
-	}
-	if groupID != nil && *groupID <= 0 {
-		return infraerrors.BadRequest("PLAN_GROUP_REQUIRED", "group is required")
 	}
 	if price <= 0 {
 		return infraerrors.BadRequest("PLAN_PRICE_INVALID", "price must be > 0")
@@ -50,11 +46,10 @@ func validatePlanRequired(name string, groupID *int64, price float64, validityDa
 			return infraerrors.BadRequest("PLAN_QUOTA_INVALID", "quota knives must be >= 0")
 		}
 	}
-	if groupID == nil &&
-		normalizeOptionalQuotaKnives(dailyQuotaKnives) == nil &&
+	if normalizeOptionalQuotaKnives(dailyQuotaKnives) == nil &&
 		normalizeOptionalQuotaKnives(weeklyQuotaKnives) == nil &&
 		normalizeOptionalQuotaKnives(monthlyQuotaKnives) == nil {
-		return infraerrors.BadRequest("PLAN_QUOTA_REQUIRED", "user-level plan requires at least one quota")
+		return infraerrors.BadRequest("PLAN_QUOTA_REQUIRED", "plan requires at least one quota")
 	}
 	return nil
 }
@@ -63,12 +58,6 @@ func validatePlanRequired(name string, groupID *int64, price float64, validityDa
 func validatePlanPatch(req UpdatePlanRequest) error {
 	if req.Name != nil && strings.TrimSpace(*req.Name) == "" {
 		return infraerrors.BadRequest("PLAN_NAME_REQUIRED", "plan name is required")
-	}
-	if req.ClearGroupID && req.GroupID != nil {
-		return infraerrors.BadRequest("PLAN_GROUP_CONFLICT", "group_id and clear_group_id cannot be set together")
-	}
-	if req.GroupID != nil && *req.GroupID <= 0 {
-		return infraerrors.BadRequest("PLAN_GROUP_REQUIRED", "group is required")
 	}
 	if req.Price != nil && *req.Price <= 0 {
 		return infraerrors.BadRequest("PLAN_PRICE_INVALID", "price must be > 0")
@@ -144,64 +133,6 @@ func normalizePlanEntities(plans []*dbent.SubscriptionPlan) []*dbent.Subscriptio
 	return plans
 }
 
-// --- Plan CRUD ---
-
-// PlanGroupInfo holds the group details needed for subscription plan display.
-type PlanGroupInfo struct {
-	Platform        string   `json:"platform"`
-	Name            string   `json:"name"`
-	RateMultiplier  float64  `json:"rate_multiplier"`
-	DailyLimitUSD   *float64 `json:"daily_limit_usd"`
-	WeeklyLimitUSD  *float64 `json:"weekly_limit_usd"`
-	MonthlyLimitUSD *float64 `json:"monthly_limit_usd"`
-	ModelScopes     []string `json:"supported_model_scopes"`
-}
-
-// GetGroupPlatformMap returns a map of group_id → platform for the given plans.
-func (s *PaymentConfigService) GetGroupPlatformMap(ctx context.Context, plans []*dbent.SubscriptionPlan) map[int64]string {
-	info := s.GetGroupInfoMap(ctx, plans)
-	m := make(map[int64]string, len(info))
-	for id, gi := range info {
-		m[id] = gi.Platform
-	}
-	return m
-}
-
-// GetGroupInfoMap returns a map of group_id → PlanGroupInfo for the given plans.
-func (s *PaymentConfigService) GetGroupInfoMap(ctx context.Context, plans []*dbent.SubscriptionPlan) map[int64]PlanGroupInfo {
-	ids := make([]int64, 0, len(plans))
-	seen := make(map[int64]bool)
-	for _, p := range plans {
-		if p.GroupID == nil {
-			continue
-		}
-		if !seen[*p.GroupID] {
-			seen[*p.GroupID] = true
-			ids = append(ids, *p.GroupID)
-		}
-	}
-	if len(ids) == 0 {
-		return nil
-	}
-	groups, err := s.entClient.Group.Query().Where(group.IDIn(ids...)).All(ctx)
-	if err != nil {
-		return nil
-	}
-	m := make(map[int64]PlanGroupInfo, len(groups))
-	for _, g := range groups {
-		m[int64(g.ID)] = PlanGroupInfo{
-			Platform:        g.Platform,
-			Name:            g.Name,
-			RateMultiplier:  g.RateMultiplier,
-			DailyLimitUSD:   g.DailyLimitUsd,
-			WeeklyLimitUSD:  g.WeeklyLimitUsd,
-			MonthlyLimitUSD: g.MonthlyLimitUsd,
-			ModelScopes:     g.SupportedModelScopes,
-		}
-	}
-	return m
-}
-
 func (s *PaymentConfigService) ListPlans(ctx context.Context) ([]*dbent.SubscriptionPlan, error) {
 	plans, err := s.entClient.SubscriptionPlan.Query().Order(subscriptionplan.BySortOrder()).All(ctx)
 	if err != nil {
@@ -219,7 +150,7 @@ func (s *PaymentConfigService) ListPlansForSale(ctx context.Context) ([]*dbent.S
 }
 
 func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanRequest) (*dbent.SubscriptionPlan, error) {
-	if err := validatePlanRequired(req.Name, req.GroupID, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice, req.DailyQuotaKnives, req.WeeklyQuotaKnives, req.MonthlyQuotaKnives); err != nil {
+	if err := validatePlanRequired(req.Name, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice, req.DailyQuotaKnives, req.WeeklyQuotaKnives, req.MonthlyQuotaKnives); err != nil {
 		return nil, err
 	}
 	validityUnit, _ := normalizePlanValidityUnit(req.ValidityUnit)
@@ -227,7 +158,7 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 	weeklyQuota := normalizeOptionalQuotaKnives(req.WeeklyQuotaKnives)
 	monthlyQuota := normalizeOptionalQuotaKnives(req.MonthlyQuotaKnives)
 	b := s.entClient.SubscriptionPlan.Create().
-		SetNillableGroupID(req.GroupID).SetName(req.Name).SetDescription(req.Description).
+		SetName(req.Name).SetDescription(req.Description).
 		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(validityUnit).
 		SetNillableDailyQuotaKnives(dailyQuota).
 		SetNillableWeeklyQuotaKnives(weeklyQuota).
@@ -255,25 +186,12 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	if err != nil {
 		return nil, infraerrors.NotFound("PLAN_NOT_FOUND", "subscription plan not found")
 	}
-	effectiveGroupID := current.GroupID
-	if req.ClearGroupID {
-		effectiveGroupID = nil
-	} else if req.GroupID != nil {
-		value := *req.GroupID
-		effectiveGroupID = &value
-	}
-	if effectiveGroupID == nil &&
-		effectiveQuotaKnives(current.DailyQuotaKnives, req.DailyQuotaKnives) == nil &&
+	if effectiveQuotaKnives(current.DailyQuotaKnives, req.DailyQuotaKnives) == nil &&
 		effectiveQuotaKnives(current.WeeklyQuotaKnives, req.WeeklyQuotaKnives) == nil &&
 		effectiveQuotaKnives(current.MonthlyQuotaKnives, req.MonthlyQuotaKnives) == nil {
-		return nil, infraerrors.BadRequest("PLAN_QUOTA_REQUIRED", "user-level plan requires at least one quota")
+		return nil, infraerrors.BadRequest("PLAN_QUOTA_REQUIRED", "plan requires at least one quota")
 	}
 	u := s.entClient.SubscriptionPlan.UpdateOneID(id)
-	if req.ClearGroupID {
-		u.ClearGroupID()
-	} else if req.GroupID != nil {
-		u.SetGroupID(*req.GroupID)
-	}
 	if req.Name != nil {
 		u.SetName(*req.Name)
 	}

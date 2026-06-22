@@ -84,6 +84,7 @@ func (h *subscriptionOpsHarness) createGroup(t *testing.T, name string) *dbent.G
 
 func (h *subscriptionOpsHarness) createPlan(t *testing.T, name string, price float64, validityDays int, validityUnit string, groupID *int64, daily, weekly, monthly *float64) *dbent.SubscriptionPlan {
 	t.Helper()
+	_ = groupID
 	builder := h.client.SubscriptionPlan.Create().
 		SetName(name).
 		SetDescription(name).
@@ -93,9 +94,6 @@ func (h *subscriptionOpsHarness) createPlan(t *testing.T, name string, price flo
 		SetFeatures("").
 		SetProductName(name).
 		SetForSale(true)
-	if groupID != nil {
-		builder.SetGroupID(*groupID)
-	}
 	if daily != nil {
 		builder.SetDailyQuotaKnives(*daily)
 	}
@@ -134,9 +132,6 @@ func (h *subscriptionOpsHarness) createSubscriptionOrder(t *testing.T, userID in
 	if planID != nil {
 		builder.SetPlanID(*planID)
 	}
-	if groupID != nil {
-		builder.SetSubscriptionGroupID(*groupID)
-	}
 	order, err := builder.Save(h.ctx)
 	require.NoError(t, err)
 	return order
@@ -159,7 +154,7 @@ func TestPurchaseNewPlanCreatesSnapshotSubscription(t *testing.T) {
 	require.NoError(t, err)
 	require.NotNil(t, sub.PlanID)
 	require.Equal(t, plan.ID, *sub.PlanID)
-	require.Equal(t, group.ID, sub.GroupID)
+	require.Zero(t, sub.GroupID)
 	require.Equal(t, service.SubscriptionStatusActive, sub.Status)
 	require.NotNil(t, sub.PlanNameSnapshot)
 	require.Equal(t, plan.Name, *sub.PlanNameSnapshot)
@@ -169,6 +164,24 @@ func TestPurchaseNewPlanCreatesSnapshotSubscription(t *testing.T) {
 	require.Equal(t, daily, *sub.DailyQuotaKnives)
 	require.NotNil(t, sub.MonthlyQuotaKnives)
 	require.Equal(t, monthly, *sub.MonthlyQuotaKnives)
+}
+
+func TestPurchaseNewPlanAllowsUserLevelPlanWithoutGroupBinding(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	user := h.createUser(t, "purchase-nil-group@test.com")
+	daily := 10.0
+	plan := h.createPlan(t, "User Level Starter", 19.99, 30, "days", nil, &daily, nil, nil)
+
+	sub, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   plan,
+	})
+	require.NoError(t, err)
+	require.NotNil(t, sub.PlanID)
+	require.Equal(t, plan.ID, *sub.PlanID)
+	require.Zero(t, sub.GroupID)
+	require.NotNil(t, sub.DailyQuotaKnives)
+	require.Equal(t, daily, *sub.DailyQuotaKnives)
 }
 
 func TestPurchaseNewPlanRejectsExistingActiveSubscription(t *testing.T) {
@@ -248,7 +261,7 @@ func TestUpgradeActivePlanSupersedesActiveSubscription(t *testing.T) {
 	targetDaily := 30.0
 	targetPlan := h.createPlan(t, "Pro", 49.99, 30, "month", nil, &targetDaily, nil, nil)
 
-	active, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{UserID: user.ID, Plan: plan})
+	_, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{UserID: user.ID, Plan: plan})
 	require.NoError(t, err)
 
 	result, err := h.svc.UpgradeActivePlan(h.ctx, &service.UpgradeActivePlanInput{
@@ -263,7 +276,7 @@ func TestUpgradeActivePlanSupersedesActiveSubscription(t *testing.T) {
 	require.Equal(t, service.SubscriptionStatusActive, result.Current.Status)
 	require.NotNil(t, result.Current.PlanID)
 	require.Equal(t, targetPlan.ID, *result.Current.PlanID)
-	require.Equal(t, active.GroupID, result.Current.GroupID, "nil-group target should reuse active group for legacy persistence")
+	require.Zero(t, result.Current.GroupID)
 	require.NotNil(t, result.Current.DailyQuotaKnives)
 	require.Equal(t, targetDaily, *result.Current.DailyQuotaKnives)
 
