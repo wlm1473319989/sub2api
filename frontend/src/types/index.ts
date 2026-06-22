@@ -1558,6 +1558,8 @@ export interface UserSubscription {
   user_id: number
   group_id: number
   plan_id?: number | null
+  plan_name_snapshot?: string | null
+  plan_price_snapshot?: number | null
   status: 'active' | 'expired' | 'revoked' | 'superseded' | 'refunded'
   starts_at: string
   daily_usage_usd: number
@@ -1605,13 +1607,15 @@ export interface SubscriptionProgress {
 
 export interface AssignSubscriptionRequest {
   user_id: number
-  group_id: number
+  group_id?: number
+  plan_id?: number
   validity_days?: number
 }
 
 export interface BulkAssignSubscriptionRequest {
   user_ids: number[]
-  group_id: number
+  group_id?: number
+  plan_id?: number
   validity_days?: number
 }
 

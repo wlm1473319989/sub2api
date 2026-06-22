@@ -2958,6 +2958,7 @@ export default {
       },
       selectUser: 'Select a user',
       selectGroup: 'Select a subscription group',
+      planHint: 'Choose the subscription plan to assign to the user',
       groupHint: 'Only groups with subscription billing type are shown',
       validityHint: 'Number of days the subscription will be valid',
       adjustingFor: 'Adjusting subscription for',
@@ -2987,6 +2988,7 @@ export default {
       adjustOutOfRange: 'Adjustment days must be between -36500 and 36500',
       pleaseSelectUser: 'Please select a user',
       pleaseSelectGroup: 'Please select a group',
+      pleaseSelectPlan: 'Please select a plan',
       validityDaysRequired: 'Please enter a valid number of days (at least 1)',
       revokeConfirm:
         "Are you sure you want to revoke the subscription for '{user}'? This action cannot be undone.",
@@ -5693,7 +5695,7 @@ export default {
         addDefaultSubscription: 'Add Default Subscription',
         defaultSubscriptionsEmpty: 'No default subscriptions configured.',
         defaultSubscriptionsDuplicate:
-          'Duplicate subscription group: {groupId}. Each group can only appear once.',
+          'Duplicate subscription plan: {planId}. Each plan can only appear once.',
         subscriptionGroup: 'Subscription Group',
         subscriptionValidityDays: 'Validity (days)',
         defaultPlatformQuotas: 'Default Platform Quotas (on signup)',
@@ -7044,6 +7046,7 @@ export default {
     },
     subscribeNow: 'Subscribe Now',
     renewNow: 'Renew',
+    plan: 'Plan',
     selectPlan: 'Select Plan',
     planFeatures: 'Features',
     planCard: {
@@ -7147,6 +7150,10 @@ export default {
       onSale: 'On Sale',
       offSale: 'Off Sale',
       group: 'Group',
+      planScope: 'Plan Scope',
+      userLevelPlan: 'User-level plan',
+      legacyGroupBinding: 'Legacy group binding',
+      legacyGroupBindingHint: 'This plan comes from the old group-subscription model. Saving will keep it as a user-level plan and clear the legacy group binding.',
       groupId: 'Group ID',
       features: 'Features',
       featuresHint: 'One feature per line',

@@ -46,7 +46,7 @@
           >
             <div class="mb-2 flex items-center justify-between">
               <span class="text-sm font-medium text-gray-900 dark:text-white">
-                {{ subscription.group?.name || `Group #${subscription.group_id}` }}
+                {{ subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}` }}
               </span>
               <span
                 v-if="subscription.expires_at"
@@ -72,7 +72,7 @@
 
               <!-- Progress bars for limited subscriptions -->
               <template v-else>
-                <div v-if="subscription.group?.daily_limit_usd" class="flex items-center gap-2">
+                <div v-if="displayDailyLimit(subscription) != null" class="flex items-center gap-2">
                   <span class="w-8 flex-shrink-0 text-[10px] text-gray-500">{{
                     t('subscriptionProgress.daily')
                   }}</span>
@@ -81,26 +81,26 @@
                       class="h-1.5 rounded-full transition-all"
                       :class="
                         getProgressBarClass(
-                          subscription.daily_usage_usd,
-                          subscription.group?.daily_limit_usd
+                          displayDailyUsed(subscription),
+                          displayDailyLimit(subscription)
                         )
                       "
                       :style="{
                         width: getProgressWidth(
-                          subscription.daily_usage_usd,
-                          subscription.group?.daily_limit_usd
+                          displayDailyUsed(subscription),
+                          displayDailyLimit(subscription)
                         )
                       }"
                     ></div>
                   </div>
                   <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
                     {{
-                      formatUsage(subscription.daily_usage_usd, subscription.group?.daily_limit_usd)
+                      formatUsage(subscription.daily_used_knives, displayDailyLimit(subscription), subscription.daily_usage_usd)
                     }}
                   </span>
                 </div>
 
-                <div v-if="subscription.group?.weekly_limit_usd" class="flex items-center gap-2">
+                <div v-if="displayWeeklyLimit(subscription) != null" class="flex items-center gap-2">
                   <span class="w-8 flex-shrink-0 text-[10px] text-gray-500">{{
                     t('subscriptionProgress.weekly')
                   }}</span>
@@ -109,26 +109,26 @@
                       class="h-1.5 rounded-full transition-all"
                       :class="
                         getProgressBarClass(
-                          subscription.weekly_usage_usd,
-                          subscription.group?.weekly_limit_usd
+                          displayWeeklyUsed(subscription),
+                          displayWeeklyLimit(subscription)
                         )
                       "
                       :style="{
                         width: getProgressWidth(
-                          subscription.weekly_usage_usd,
-                          subscription.group?.weekly_limit_usd
+                          displayWeeklyUsed(subscription),
+                          displayWeeklyLimit(subscription)
                         )
                       }"
                     ></div>
                   </div>
                   <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
                     {{
-                      formatUsage(subscription.weekly_usage_usd, subscription.group?.weekly_limit_usd)
+                      formatUsage(subscription.weekly_used_knives, displayWeeklyLimit(subscription), subscription.weekly_usage_usd)
                     }}
                   </span>
                 </div>
 
-                <div v-if="subscription.group?.monthly_limit_usd" class="flex items-center gap-2">
+                <div v-if="displayMonthlyLimit(subscription) != null" class="flex items-center gap-2">
                   <span class="w-8 flex-shrink-0 text-[10px] text-gray-500">{{
                     t('subscriptionProgress.monthly')
                   }}</span>
@@ -137,24 +137,21 @@
                       class="h-1.5 rounded-full transition-all"
                       :class="
                         getProgressBarClass(
-                          subscription.monthly_usage_usd,
-                          subscription.group?.monthly_limit_usd
+                          displayMonthlyUsed(subscription),
+                          displayMonthlyLimit(subscription)
                         )
                       "
                       :style="{
                         width: getProgressWidth(
-                          subscription.monthly_usage_usd,
-                          subscription.group?.monthly_limit_usd
+                          displayMonthlyUsed(subscription),
+                          displayMonthlyLimit(subscription)
                         )
                       }"
                     ></div>
                   </div>
                   <span class="w-24 flex-shrink-0 text-right text-[10px] text-gray-500">
                     {{
-                      formatUsage(
-                        subscription.monthly_usage_usd,
-                        subscription.group?.monthly_limit_usd
-                      )
+                      formatUsage(subscription.monthly_used_knives, displayMonthlyLimit(subscription), subscription.monthly_usage_usd)
                     }}
                   </span>
                 </div>
@@ -206,23 +203,26 @@ const displaySubscriptions = computed(() => {
 
 function getMaxUsagePercentage(sub: UserSubscription): number {
   const percentages: number[] = []
-  if (sub.group?.daily_limit_usd) {
-    percentages.push(((sub.daily_usage_usd || 0) / sub.group.daily_limit_usd) * 100)
+  const dailyLimit = displayDailyLimit(sub)
+  const weeklyLimit = displayWeeklyLimit(sub)
+  const monthlyLimit = displayMonthlyLimit(sub)
+  if (dailyLimit) {
+    percentages.push((displayDailyUsed(sub) / dailyLimit) * 100)
   }
-  if (sub.group?.weekly_limit_usd) {
-    percentages.push(((sub.weekly_usage_usd || 0) / sub.group.weekly_limit_usd) * 100)
+  if (weeklyLimit) {
+    percentages.push((displayWeeklyUsed(sub) / weeklyLimit) * 100)
   }
-  if (sub.group?.monthly_limit_usd) {
-    percentages.push(((sub.monthly_usage_usd || 0) / sub.group.monthly_limit_usd) * 100)
+  if (monthlyLimit) {
+    percentages.push((displayMonthlyUsed(sub) / monthlyLimit) * 100)
   }
   return percentages.length > 0 ? Math.max(...percentages) : 0
 }
 
 function isUnlimited(sub: UserSubscription): boolean {
   return (
-    !sub.group?.daily_limit_usd &&
-    !sub.group?.weekly_limit_usd &&
-    !sub.group?.monthly_limit_usd
+    displayDailyLimit(sub) == null &&
+    displayWeeklyLimit(sub) == null &&
+    displayMonthlyLimit(sub) == null
   )
 }
 
@@ -251,10 +251,36 @@ function getProgressWidth(used: number | undefined, limit: number | null | undef
   return `${percentage}%`
 }
 
-function formatUsage(used: number | undefined, limit: number | null | undefined): string {
-  const usedValue = (used || 0).toFixed(2)
+function displayDailyLimit(sub: UserSubscription): number | null {
+  return sub.daily_quota_knives ?? sub.group?.daily_limit_usd ?? null
+}
+
+function displayWeeklyLimit(sub: UserSubscription): number | null {
+  return sub.weekly_quota_knives ?? sub.group?.weekly_limit_usd ?? null
+}
+
+function displayMonthlyLimit(sub: UserSubscription): number | null {
+  return sub.monthly_quota_knives ?? sub.group?.monthly_limit_usd ?? null
+}
+
+function displayDailyUsed(sub: UserSubscription): number {
+  return sub.daily_quota_knives != null ? (sub.daily_used_knives || 0) : (sub.daily_usage_usd || 0)
+}
+
+function displayWeeklyUsed(sub: UserSubscription): number {
+  return sub.weekly_quota_knives != null ? (sub.weekly_used_knives || 0) : (sub.weekly_usage_usd || 0)
+}
+
+function displayMonthlyUsed(sub: UserSubscription): number {
+  return sub.monthly_quota_knives != null ? (sub.monthly_used_knives || 0) : (sub.monthly_usage_usd || 0)
+}
+
+function formatUsage(knivesUsed: number | undefined, limit: number | null | undefined, usdUsed: number | undefined): string {
   const limitValue = limit?.toFixed(2) || '∞'
-  return `$${usedValue}/$${limitValue}`
+  if (typeof knivesUsed === 'number' && Number.isFinite(knivesUsed) && limit != null) {
+    return `${knivesUsed.toFixed(2)}/${limitValue}`
+  }
+  return `$${(usdUsed || 0).toFixed(2)}/$${limitValue}`
 }
 
 function formatDaysRemaining(expiresAt: string): string {

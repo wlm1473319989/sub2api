@@ -189,7 +189,7 @@
                     <div :class="['h-6 w-1 shrink-0 rounded-full', platformAccentBarClass(sub.group?.platform || '')]" />
                     <div class="min-w-0 flex-1">
                       <div class="flex items-center gap-1.5">
-                        <span class="truncate text-xs font-semibold text-gray-900 dark:text-white">{{ sub.group?.name || t('payment.groupFallback', { id: sub.group_id }) }}</span>
+                        <span class="truncate text-xs font-semibold text-gray-900 dark:text-white">{{ subscriptionDisplayName(sub) }}</span>
                         <span :class="['shrink-0 rounded-full px-1.5 py-0.5 text-[9px] font-medium', platformBadgeLightClass(sub.group?.platform || '')]">{{ platformLabel(sub.group?.platform || '') }}</span>
                       </div>
                       <div class="flex flex-wrap gap-x-3 text-[11px] text-gray-400 dark:text-gray-500">
@@ -291,6 +291,10 @@ const appStore = useAppStore()
 
 const user = computed(() => authStore.user)
 const activeSubscriptions = computed(() => subscriptionStore.activeSubscriptions)
+
+function subscriptionDisplayName(sub: { plan_name_snapshot?: string | null; group?: { name?: string | null } | null; group_id?: number; id?: number }): string {
+  return sub.plan_name_snapshot || sub.group?.name || t('payment.groupFallback', { id: sub.group_id ?? sub.id ?? 0 })
+}
 
 function getDaysRemaining(expiresAt: string): number {
   const diff = new Date(expiresAt).getTime() - Date.now()
@@ -644,7 +648,11 @@ const planTextClass = computed(() => platformTextClass(selectedPlan.value?.group
 // Renewal modal state
 const showRenewalModal = ref(false)
 const renewGroupId = ref<number | null>(null)
+const renewPlanId = ref<number | null>(null)
 const renewalPlans = computed(() => {
+  if (renewPlanId.value != null) {
+    return checkout.value.plans.filter((plan) => plan.id === renewPlanId.value)
+  }
   if (renewGroupId.value == null) return []
   return checkout.value.plans.filter((plan) => plan.group_id === renewGroupId.value)
 })
@@ -666,6 +674,7 @@ function selectPlan(plan: SubscriptionPlan) {
 function selectPlanFromModal(plan: SubscriptionPlan) {
   showRenewalModal.value = false
   renewGroupId.value = null
+  renewPlanId.value = null
   selectedPlan.value = plan
   errorMessage.value = ''
 }
@@ -673,6 +682,7 @@ function selectPlanFromModal(plan: SubscriptionPlan) {
 function closeRenewalModal() {
   showRenewalModal.value = false
   renewGroupId.value = null
+  renewPlanId.value = null
 }
 
 async function handleSubmitRecharge() {
@@ -1056,10 +1066,17 @@ onMounted(async () => {
     if (checkout.value.balance_disabled) {
       activeTab.value = 'subscription'
     }
-    // Handle renewal navigation: ?tab=subscription&group=123
+    // Handle renewal navigation: ?tab=subscription&plan=123 or legacy ?group=123
     if (route.query.tab === 'subscription') {
       activeTab.value = 'subscription'
-      if (route.query.group) {
+      if (route.query.plan) {
+        const planId = Number(route.query.plan)
+        const targetPlan = checkout.value.plans.find(p => p.id === planId)
+        if (targetPlan) {
+          renewPlanId.value = planId
+          selectedPlan.value = targetPlan
+        }
+      } else if (route.query.group) {
         const groupId = Number(route.query.group)
         const groupPlans = checkout.value.plans.filter(p => p.group_id === groupId)
         if (groupPlans.length === 1) {

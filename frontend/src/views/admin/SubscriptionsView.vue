@@ -202,34 +202,32 @@
           <template #cell-group="{ row }">
             <GroupBadge
               v-if="row.group"
-              :name="row.group.name"
+              :name="subscriptionDisplayName(row)"
               :platform="row.group.platform"
               :subscription-type="row.group.subscription_type"
               :rate-multiplier="row.group.rate_multiplier"
               :show-rate="false"
             />
-            <span v-else class="text-sm text-gray-400 dark:text-dark-500">-</span>
+            <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{ subscriptionDisplayName(row) }}</span>
           </template>
 
           <template #cell-usage="{ row }">
             <div class="min-w-[280px] space-y-2">
               <!-- Daily Usage -->
-              <div v-if="row.group?.daily_limit_usd" class="usage-row">
+              <div v-if="displayDailyLimit(row) != null" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.daily') }}</span>
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.daily_usage_usd, row.group?.daily_limit_usd)"
+                      :class="getProgressClass(displayDailyUsed(row), displayDailyLimit(row))"
                       :style="{
-                        width: getProgressWidth(row.daily_usage_usd, row.group?.daily_limit_usd)
+                        width: getProgressWidth(displayDailyUsed(row), displayDailyLimit(row))
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
-                    ${{ row.daily_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
-                    ${{ row.group?.daily_limit_usd?.toFixed(2) }}
+                    {{ formatQuotaUsage(row.daily_used_knives, displayDailyLimit(row), row.daily_usage_usd) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.daily_window_start">
@@ -251,22 +249,20 @@
               </div>
 
               <!-- Weekly Usage -->
-              <div v-if="row.group?.weekly_limit_usd" class="usage-row">
+              <div v-if="displayWeeklyLimit(row) != null" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.weekly') }}</span>
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.weekly_usage_usd, row.group?.weekly_limit_usd)"
+                      :class="getProgressClass(displayWeeklyUsed(row), displayWeeklyLimit(row))"
                       :style="{
-                        width: getProgressWidth(row.weekly_usage_usd, row.group?.weekly_limit_usd)
+                        width: getProgressWidth(displayWeeklyUsed(row), displayWeeklyLimit(row))
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
-                    ${{ row.weekly_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
-                    ${{ row.group?.weekly_limit_usd?.toFixed(2) }}
+                    {{ formatQuotaUsage(row.weekly_used_knives, displayWeeklyLimit(row), row.weekly_usage_usd) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.weekly_window_start">
@@ -288,22 +284,20 @@
               </div>
 
               <!-- Monthly Usage -->
-              <div v-if="row.group?.monthly_limit_usd" class="usage-row">
+              <div v-if="displayMonthlyLimit(row) != null" class="usage-row">
                 <div class="flex items-center gap-2">
                   <span class="usage-label">{{ t('admin.subscriptions.monthly') }}</span>
                   <div class="h-1.5 flex-1 rounded-full bg-gray-200 dark:bg-dark-600">
                     <div
                       class="h-1.5 rounded-full transition-all"
-                      :class="getProgressClass(row.monthly_usage_usd, row.group?.monthly_limit_usd)"
+                      :class="getProgressClass(displayMonthlyUsed(row), displayMonthlyLimit(row))"
                       :style="{
-                        width: getProgressWidth(row.monthly_usage_usd, row.group?.monthly_limit_usd)
+                        width: getProgressWidth(displayMonthlyUsed(row), displayMonthlyLimit(row))
                       }"
                     ></div>
                   </div>
                   <span class="usage-amount">
-                    ${{ row.monthly_usage_usd?.toFixed(2) || '0.00' }}
-                    <span class="text-gray-400">/</span>
-                    ${{ row.group?.monthly_limit_usd?.toFixed(2) }}
+                    {{ formatQuotaUsage(row.monthly_used_knives, displayMonthlyLimit(row), row.monthly_usage_usd) }}
                   </span>
                 </div>
                 <div class="reset-info" v-if="row.monthly_window_start">
@@ -327,9 +321,9 @@
               <!-- No Limits - Unlimited badge -->
               <div
                 v-if="
-                  !row.group?.daily_limit_usd &&
-                  !row.group?.weekly_limit_usd &&
-                  !row.group?.monthly_limit_usd
+                  displayDailyLimit(row) == null &&
+                  displayWeeklyLimit(row) == null &&
+                  displayMonthlyLimit(row) == null
                 "
                 class="flex items-center gap-2 rounded-lg bg-gradient-to-r from-emerald-50 to-teal-50 px-3 py-2 dark:from-emerald-900/20 dark:to-teal-900/20"
               >
@@ -493,40 +487,38 @@
           </div>
         </div>
         <div>
-          <label class="input-label">{{ t('admin.subscriptions.form.group') }}</label>
+          <label class="input-label">{{ t('payment.plan') }}</label>
           <Select
-            v-model="assignForm.group_id"
-            :options="subscriptionGroupOptions"
-            :placeholder="t('admin.subscriptions.selectGroup')"
+            v-model="assignForm.plan_id"
+            :options="subscriptionPlanOptions"
+            :placeholder="t('payment.selectPlan')"
           >
             <template #selected="{ option }">
               <GroupBadge
                 v-if="option"
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="(option as unknown as GroupOption).rate"
+                :name="(option as unknown as PlanOption).label"
+                :platform="(option as unknown as PlanOption).platform"
+                :subscription-type="(option as unknown as PlanOption).subscriptionType"
+                :rate-multiplier="(option as unknown as PlanOption).rate"
               />
-              <span v-else class="text-gray-400">{{ t('admin.subscriptions.selectGroup') }}</span>
+              <span v-else class="text-gray-400">{{ t('payment.selectPlan') }}</span>
             </template>
             <template #option="{ option, selected }">
               <GroupOptionItem
-                :name="(option as unknown as GroupOption).label"
-                :platform="(option as unknown as GroupOption).platform"
-                :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                :rate-multiplier="(option as unknown as GroupOption).rate"
-                :description="(option as unknown as GroupOption).description"
+                :name="(option as unknown as PlanOption).label"
+                :platform="(option as unknown as PlanOption).platform"
+                :subscription-type="(option as unknown as PlanOption).subscriptionType"
+                :rate-multiplier="(option as unknown as PlanOption).rate"
+                :description="(option as unknown as PlanOption).description"
                 :selected="selected"
               />
             </template>
           </Select>
-          <p class="input-hint">{{ t('admin.subscriptions.groupHint') }}</p>
+          <p class="input-hint">
+            {{ selectedAssignPlan ? formatPlanValidity(selectedAssignPlan) : t('admin.subscriptions.planHint') }}
+          </p>
         </div>
-        <div>
-          <label class="input-label">{{ t('admin.subscriptions.form.validityDays') }}</label>
-          <input v-model.number="assignForm.validity_days" type="number" min="1" class="input" />
-          <p class="input-hint">{{ t('admin.subscriptions.validityHint') }}</p>
-        </div>
+        <p v-if="selectedAssignPlan" class="input-hint">{{ t('admin.subscriptions.validityHint') }}</p>
       </form>
       <template #footer>
         <div class="flex justify-end gap-3">
@@ -745,6 +737,7 @@ import { adminAPI } from '@/api/admin'
 import type { UserSubscription, Group, GroupPlatform, SubscriptionType } from '@/types'
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
+import type { SubscriptionPlan } from '@/types/payment'
 import { formatDateOnly } from '@/utils/format'
 import { getPersistedPageSize } from '@/composables/usePersistedPageSize'
 import AppLayout from '@/components/layout/AppLayout.vue'
@@ -763,10 +756,10 @@ import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationP
 const { t } = useI18n()
 const appStore = useAppStore()
 
-interface GroupOption {
+interface PlanOption extends Record<string, unknown> {
   value: number
   label: string
-  description: string | null
+  description: string
   platform: GroupPlatform
   subscriptionType: SubscriptionType
   rate: number
@@ -818,7 +811,7 @@ const allColumns = computed<Column[]>(() => [
       : t('admin.users.columns.username'),
     sortable: false
   },
-  { key: 'group', label: t('admin.subscriptions.columns.group'), sortable: false },
+  { key: 'group', label: t('payment.plan'), sortable: false },
   { key: 'usage', label: t('admin.subscriptions.columns.usage'), sortable: false },
   { key: 'expires_at', label: t('admin.subscriptions.columns.expires'), sortable: true },
   { key: 'status', label: t('admin.subscriptions.columns.status'), sortable: true },
@@ -898,6 +891,7 @@ const statusOptions = computed(() => [
 
 const subscriptions = ref<UserSubscription[]>([])
 const groups = ref<Group[]>([])
+const subscriptionPlans = ref<SubscriptionPlan[]>([])
 const loading = ref(false)
 let abortController: AbortController | null = null
 
@@ -949,7 +943,7 @@ const revokingSubscription = ref<UserSubscription | null>(null)
 
 const assignForm = reactive({
   user_id: null as number | null,
-  group_id: null as number | null,
+  plan_id: null as number | null,
   validity_days: 30
 })
 
@@ -971,18 +965,19 @@ const platformFilterOptions = computed(() => [
   { value: 'antigravity', label: 'Antigravity' }
 ])
 
-// Group options for assign (only subscription type groups)
-const subscriptionGroupOptions = computed(() =>
-  groups.value
-    .filter((g) => g.subscription_type === 'subscription' && g.status === 'active')
-    .map((g) => ({
-      value: g.id,
-      label: g.name,
-      description: g.description,
-      platform: g.platform,
-      subscriptionType: g.subscription_type,
-      rate: g.rate_multiplier
-    }))
+const subscriptionPlanOptions = computed<PlanOption[]>(() =>
+  subscriptionPlans.value.map((plan) => ({
+    value: plan.id,
+    label: plan.name,
+    description: plan.description,
+    platform: (plan.group_platform || '') as GroupPlatform,
+    subscriptionType: 'subscription',
+    rate: plan.rate_multiplier ?? 1,
+  }))
+)
+
+const selectedAssignPlan = computed(() =>
+  subscriptionPlans.value.find((plan) => plan.id === assignForm.plan_id) ?? null
 )
 
 const applyFilters = () => {
@@ -1038,6 +1033,16 @@ const loadGroups = async () => {
     groups.value = await adminAPI.groups.getAll()
   } catch (error) {
     console.error('Error loading groups:', error)
+  }
+}
+
+const loadSubscriptionPlans = async () => {
+  try {
+    const response = await adminAPI.payment.getPlans()
+    subscriptionPlans.value = (response.data || []).filter((plan) => plan.for_sale !== false)
+  } catch (error) {
+    subscriptionPlans.value = []
+    console.error('Error loading subscription plans:', error)
   }
 }
 
@@ -1160,7 +1165,7 @@ const handleSort = (key: string, order: 'asc' | 'desc') => {
 const closeAssignModal = () => {
   showAssignModal.value = false
   assignForm.user_id = null
-  assignForm.group_id = null
+  assignForm.plan_id = null
   assignForm.validity_days = 30
   // Clear user search state
   selectedUser.value = null
@@ -1174,12 +1179,12 @@ const handleAssignSubscription = async () => {
     appStore.showError(t('admin.subscriptions.pleaseSelectUser'))
     return
   }
-  if (!assignForm.group_id) {
-    appStore.showError(t('admin.subscriptions.pleaseSelectGroup'))
+  if (!assignForm.plan_id) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectPlan'))
     return
   }
-  if (!assignForm.validity_days || assignForm.validity_days < 1) {
-    appStore.showError(t('admin.subscriptions.validityDaysRequired'))
+  if (!selectedAssignPlan.value) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectPlan'))
     return
   }
 
@@ -1187,8 +1192,8 @@ const handleAssignSubscription = async () => {
   try {
     await adminAPI.subscriptions.assign({
       user_id: assignForm.user_id,
-      group_id: assignForm.group_id,
-      validity_days: assignForm.validity_days
+      plan_id: assignForm.plan_id,
+      validity_days: selectedAssignPlan.value.validity_days
     })
     appStore.showSuccess(t('admin.subscriptions.subscriptionAssigned'))
     closeAssignModal()
@@ -1305,6 +1310,43 @@ const getProgressWidth = (used: number | null | undefined, limit: number | null)
   return `${percentage}%`
 }
 
+const subscriptionDisplayName = (subscription: UserSubscription): string =>
+  subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}`
+
+const displayDailyLimit = (subscription: UserSubscription): number | null =>
+  subscription.daily_quota_knives ?? subscription.group?.daily_limit_usd ?? null
+
+const displayWeeklyLimit = (subscription: UserSubscription): number | null =>
+  subscription.weekly_quota_knives ?? subscription.group?.weekly_limit_usd ?? null
+
+const displayMonthlyLimit = (subscription: UserSubscription): number | null =>
+  subscription.monthly_quota_knives ?? subscription.group?.monthly_limit_usd ?? null
+
+const displayDailyUsed = (subscription: UserSubscription): number =>
+  subscription.daily_quota_knives != null ? (subscription.daily_used_knives ?? 0) : (subscription.daily_usage_usd ?? 0)
+
+const displayWeeklyUsed = (subscription: UserSubscription): number =>
+  subscription.weekly_quota_knives != null ? (subscription.weekly_used_knives ?? 0) : (subscription.weekly_usage_usd ?? 0)
+
+const displayMonthlyUsed = (subscription: UserSubscription): number =>
+  subscription.monthly_quota_knives != null ? (subscription.monthly_used_knives ?? 0) : (subscription.monthly_usage_usd ?? 0)
+
+const formatQuotaUsage = (knivesUsed: number | null | undefined, limit: number | null, usdUsed: number | null | undefined): string => {
+  if (limit == null) return t('admin.subscriptions.unlimited')
+  if (typeof knivesUsed === 'number' && Number.isFinite(knivesUsed) && limit >= 0) {
+    return `${knivesUsed.toFixed(2)} / ${limit.toFixed(2)}`
+  }
+  return `$${(usdUsed ?? 0).toFixed(2)} / ${limit.toFixed(2)}`
+}
+
+const formatPlanValidity = (plan: SubscriptionPlan): string => {
+  const unit = plan.validity_unit || 'day'
+  if (unit === 'month') return `${plan.validity_days} ${t('payment.perMonth')}`
+  if (unit === 'year') return `${plan.validity_days} ${t('payment.perYear')}`
+  if (unit === 'week') return `${plan.validity_days} ${t('payment.admin.weeks')}`
+  return `${plan.validity_days}${t('payment.days')}`
+}
+
 const getProgressClass = (used: number | null | undefined, limit: number | null): string => {
   if (!limit || limit === 0) return 'bg-gray-400'
   const usedValue = used ?? 0
@@ -1388,6 +1430,7 @@ onMounted(() => {
   loadSavedColumns()
   loadSubscriptions()
   loadGroups()
+  loadSubscriptionPlans()
   document.addEventListener('click', handleClickOutside)
 })
 

@@ -70,7 +70,7 @@ export async function getProgress(id: number): Promise<SubscriptionProgress> {
 }
 
 /**
- * Assign subscription to user
+ * Assign subscription plan to user
  * @param request - Assignment request
  * @returns Created subscription
  */
@@ -80,7 +80,7 @@ export async function assign(request: AssignSubscriptionRequest): Promise<UserSu
 }
 
 /**
- * Bulk assign subscriptions to multiple users
+ * Bulk assign subscription plan to multiple users
  * @param request - Bulk assignment request
  * @returns Created subscriptions
  */

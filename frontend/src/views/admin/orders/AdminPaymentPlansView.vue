@@ -14,10 +14,10 @@
         </template>
 
         <template #cell-group_id="{ row }">
-          <span v-if="row.group_id == null" class="text-sm text-gray-400">-</span>
+          <span v-if="row.group_id == null" class="text-sm text-gray-400">{{ t('payment.admin.userLevelPlan') }}</span>
           <span v-else-if="isGroupMissing(row.group_id)" class="text-sm">
             <span class="text-gray-400">#{{ row.group_id }}</span>
-            <span class="ml-1 badge badge-danger">{{ t('payment.admin.groupMissing') }}</span>
+            <span class="ml-1 badge badge-warning">{{ t('payment.admin.legacyGroupBinding') }}</span>
           </span>
           <GroupBadge
             v-else-if="getGroup(row.group_id)"
@@ -129,7 +129,7 @@ const deletingPlanId = ref<number | null>(null)
 const planColumns = computed((): Column[] => [
   { key: 'id', label: 'ID' },
   { key: 'name', label: t('payment.admin.planName') },
-  { key: 'group_id', label: t('payment.admin.group') },
+  { key: 'group_id', label: t('payment.admin.planScope') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'quotas', label: t('payment.planCard.quota') },
   { key: 'validity_days', label: t('payment.admin.validityDays') },

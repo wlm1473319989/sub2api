@@ -1023,6 +1023,96 @@ describe("admin SettingsView wechat connect controls", () => {
     expect(wrapper.text()).toContain("首次绑定时授权");
   });
 
+  it("submits default subscriptions with plan semantics only", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      default_subscriptions: [
+        { plan_id: 11, validity_days: 30 },
+        { group_id: 99, validity_days: 15 },
+      ],
+    });
+    getPlans.mockResolvedValueOnce({
+      data: [
+        {
+          id: 11,
+          group_id: 201,
+          group_platform: "openai",
+          group_name: "OpenAI",
+          rate_multiplier: 1,
+          daily_limit_usd: null,
+          weekly_limit_usd: null,
+          monthly_limit_usd: null,
+          daily_quota_knives: null,
+          weekly_quota_knives: null,
+          monthly_quota_knives: null,
+          supported_model_scopes: [],
+          name: "Starter Plan",
+          description: "starter",
+          price: 9.9,
+          validity_days: 30,
+          validity_unit: "day",
+          features: [],
+          for_sale: true,
+          sort_order: 1,
+        },
+        {
+          id: 12,
+          group_id: 99,
+          group_platform: "anthropic",
+          group_name: "Anthropic",
+          rate_multiplier: 1,
+          daily_limit_usd: null,
+          weekly_limit_usd: null,
+          monthly_limit_usd: null,
+          daily_quota_knives: null,
+          weekly_quota_knives: null,
+          monthly_quota_knives: null,
+          supported_model_scopes: [],
+          name: "Legacy Mapped Plan",
+          description: "legacy",
+          price: 19.9,
+          validity_days: 15,
+          validity_unit: "day",
+          features: [],
+          for_sale: true,
+          sort_order: 2,
+        },
+      ],
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await openUsersTab(wrapper);
+
+    expect(wrapper.text()).toContain("admin.settings.defaults.defaultSubscriptions");
+    expect(wrapper.text()).toContain("payment.selectPlan");
+
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledTimes(1);
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        default_subscriptions: [
+          { plan_id: 11, validity_days: 30 },
+          { plan_id: 12, validity_days: 15 },
+        ],
+      }),
+    );
+
+    const payload = updateSettings.mock.calls[0]?.[0] as {
+      default_subscriptions?: Array<Record<string, unknown>>;
+    };
+    expect(payload.default_subscriptions).toEqual([
+      { plan_id: 11, validity_days: 30 },
+      { plan_id: 12, validity_days: 15 },
+    ]);
+    expect(
+      payload.default_subscriptions?.some((item) => "group_id" in item),
+    ).toBe(false);
+  });
+
   it("preserves optional OIDC compatibility flags instead of forcing them on save", async () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,

@@ -8470,6 +8470,7 @@ async function loadSettings() {
     form.default_subscriptions = normalizeDefaultSubscriptionSettings(
       settings.default_subscriptions,
     );
+    reconcileDefaultSubscriptionSettingsWithPlans();
     registrationEmailSuffixWhitelistTags.value =
       normalizeRegistrationEmailSuffixDomains(
         settings.registration_email_suffix_whitelist,
@@ -8579,8 +8580,70 @@ async function loadSubscriptionPlans() {
     subscriptionPlans.value = (response.data || []).filter(
       (plan) => plan.for_sale !== false,
     );
+    reconcileDefaultSubscriptionSettingsWithPlans();
   } catch (_error: unknown) {
     subscriptionPlans.value = [];
+  }
+}
+
+function resolveLegacyDefaultSubscriptionPlan(
+  item: DefaultSubscriptionSetting,
+): DefaultSubscriptionSetting {
+  if ((item.plan_id ?? 0) > 0) {
+    return {
+      plan_id: item.plan_id,
+      validity_days: item.validity_days,
+    };
+  }
+  if ((item.group_id ?? 0) <= 0) {
+    return item;
+  }
+
+  const exactMatches = subscriptionPlans.value.filter(
+    (plan) =>
+      plan.group_id === item.group_id &&
+      plan.validity_days === item.validity_days,
+  );
+  if (exactMatches.length === 1) {
+    return {
+      plan_id: exactMatches[0].id,
+      validity_days: exactMatches[0].validity_days,
+    };
+  }
+
+  const groupMatches = subscriptionPlans.value.filter(
+    (plan) => plan.group_id === item.group_id,
+  );
+  if (groupMatches.length === 1) {
+    return {
+      plan_id: groupMatches[0].id,
+      validity_days: groupMatches[0].validity_days,
+    };
+  }
+
+  return item;
+}
+
+function normalizeDefaultSubscriptionsForPlanUI(
+  subscriptions: DefaultSubscriptionSetting[],
+): DefaultSubscriptionSetting[] {
+  return normalizeDefaultSubscriptionSettings(subscriptions).map((item) =>
+    resolveLegacyDefaultSubscriptionPlan(item),
+  );
+}
+
+function reconcileDefaultSubscriptionSettingsWithPlans() {
+  if (subscriptionPlans.value.length === 0) return;
+
+  form.default_subscriptions = normalizeDefaultSubscriptionsForPlanUI(
+    form.default_subscriptions,
+  );
+
+  for (const authSource of authSourceDefaultsMeta.value) {
+    authSourceDefaults[authSource.source].subscriptions =
+      normalizeDefaultSubscriptionsForPlanUI(
+        authSourceDefaults[authSource.source].subscriptions,
+      );
   }
 }
 
@@ -8719,6 +8782,7 @@ async function saveSettings() {
     form.login_agreement_mode =
       form.login_agreement_mode === "checkbox" ? "checkbox" : "modal";
     form.login_agreement_documents = normalizedLoginAgreementDocuments;
+    reconcileDefaultSubscriptionSettingsWithPlans();
 
     const normalizedDefaultSubscriptions = normalizeDefaultSubscriptionSettings(
       form.default_subscriptions,
@@ -8732,7 +8796,7 @@ async function saveSettings() {
     if (duplicateDefaultSubscription) {
       appStore.showError(
         t("admin.settings.defaults.defaultSubscriptionsDuplicate", {
-          groupId:
+          planId:
             duplicateDefaultSubscription.plan_id ??
             duplicateDefaultSubscription.group_id,
         }),
@@ -8753,7 +8817,7 @@ async function saveSettings() {
           `${authSource.title}: ${t(
             "admin.settings.defaults.defaultSubscriptionsDuplicate",
             {
-              groupId: duplicate.plan_id ?? duplicate.group_id,
+              planId: duplicate.plan_id ?? duplicate.group_id,
             },
           )}`,
         );

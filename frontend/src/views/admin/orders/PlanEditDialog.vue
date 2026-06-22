@@ -7,54 +7,38 @@
           <input v-model="planForm.name" type="text" class="input" required />
         </div>
         <div>
-          <div class="mb-2 flex items-center justify-between gap-3">
-            <label class="input-label !mb-0">{{ t('payment.admin.group') }}</label>
-            <label class="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400">
-              <input v-model="planForm.user_level" type="checkbox" class="rounded border-gray-300 text-primary-600 focus:ring-primary-500" />
-              <span>{{ t('payment.planCard.quota') }}</span>
-            </label>
+          <label class="input-label">{{ t('payment.planCard.quota') }}</label>
+          <div class="flex h-[42px] items-center rounded-xl border border-gray-200 bg-gray-50 px-3 text-sm text-gray-600 dark:border-dark-600 dark:bg-dark-800 dark:text-gray-300">
+            {{ t('payment.admin.userLevelPlan') }}
           </div>
-          <Select
-            v-model="planForm.group_id"
-            :options="groupOptions"
-            :placeholder="t('payment.admin.selectGroup')"
-            :disabled="planForm.user_level"
-            clearable
-            class="w-full"
-          >
-            <template #selected="{ option }">
-              <span v-if="option?.platform" :class="platformTextClass(String(option.platform))">{{ option.label }}</span>
-              <span v-else>{{ option?.label || t('payment.admin.selectGroup') }}</span>
-            </template>
-            <template #option="{ option, selected }">
-              <span class="flex-1 truncate text-left" :class="option.platform ? platformTextClass(String(option.platform)) : ''">{{ option.label }}</span>
-              <Icon v-if="selected" name="check" size="sm" class="text-primary-500" :stroke-width="2" />
-            </template>
-          </Select>
         </div>
       </div>
 
-      <div v-if="selectedGroupInfo" class="rounded-lg border border-gray-200 bg-gray-50 p-3 dark:border-dark-600 dark:bg-dark-800">
+      <div v-if="legacyGroupInfo" class="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/50 dark:bg-amber-950/20">
         <div class="mb-2 flex items-center gap-2">
-          <GroupBadge :name="selectedGroupInfo.name" :platform="selectedGroupInfo.platform" :rate-multiplier="selectedGroupInfo.rate_multiplier" />
+          <span class="badge badge-warning">{{ t('payment.admin.legacyGroupBinding') }}</span>
+          <GroupBadge :name="legacyGroupInfo.name" :platform="legacyGroupInfo.platform" :rate-multiplier="legacyGroupInfo.rate_multiplier" />
         </div>
+        <p class="mb-3 text-xs text-amber-800 dark:text-amber-200">
+          {{ t('payment.admin.legacyGroupBindingHint') }}
+        </p>
         <div class="grid grid-cols-2 gap-2 text-xs">
           <div>
             <span class="text-gray-500">{{ t('payment.admin.dailyLimit') }}:</span>
             <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ selectedGroupInfo.daily_limit_usd != null ? '$' + selectedGroupInfo.daily_limit_usd : t('payment.admin.unlimited') }}
+              {{ legacyGroupInfo.daily_limit_usd != null ? '$' + legacyGroupInfo.daily_limit_usd : t('payment.admin.unlimited') }}
             </span>
           </div>
           <div>
             <span class="text-gray-500">{{ t('payment.admin.weeklyLimit') }}:</span>
             <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ selectedGroupInfo.weekly_limit_usd != null ? '$' + selectedGroupInfo.weekly_limit_usd : t('payment.admin.unlimited') }}
+              {{ legacyGroupInfo.weekly_limit_usd != null ? '$' + legacyGroupInfo.weekly_limit_usd : t('payment.admin.unlimited') }}
             </span>
           </div>
           <div>
             <span class="text-gray-500">{{ t('payment.admin.monthlyLimit') }}:</span>
             <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ selectedGroupInfo.monthly_limit_usd != null ? '$' + selectedGroupInfo.monthly_limit_usd : t('payment.admin.unlimited') }}
+              {{ legacyGroupInfo.monthly_limit_usd != null ? '$' + legacyGroupInfo.monthly_limit_usd : t('payment.admin.unlimited') }}
             </span>
           </div>
         </div>
@@ -150,13 +134,10 @@ import { useI18n } from 'vue-i18n'
 import { adminPaymentAPI, type PlanPayload } from '@/api/admin/payment'
 import { useAppStore } from '@/stores/app'
 import { extractApiErrorMessage } from '@/utils/apiError'
-import { platformTextClass } from '@/utils/platformColors'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
-import Icon from '@/components/icons/Icon.vue'
-import Select from '@/components/common/Select.vue'
 
 const props = defineProps<{
   show: boolean
@@ -176,8 +157,6 @@ const saving = ref(false)
 const planFeaturesText = ref('')
 const planForm = reactive({
   name: '',
-  group_id: null as number | null,
-  user_level: false,
   description: '',
   price: 0,
   original_price: 0,
@@ -196,25 +175,10 @@ const validityUnitOptions = computed(() => [
   { value: 'month', label: t('payment.admin.months') },
 ])
 
-const groupOptions = computed(() =>
-  props.groups
-    .filter((g) => g.subscription_type === 'subscription')
-    .map((g) => ({
-      value: g.id,
-      label: `${g.name} - ${g.platform} (${g.rate_multiplier}x)`,
-      platform: g.platform,
-    })),
-)
-
-const selectedGroupInfo = computed(() => {
-  if (!planForm.group_id) return null
-  return props.groups.find((g) => g.id === planForm.group_id) || null
-})
-
-watch(() => planForm.user_level, (enabled) => {
-  if (enabled) {
-    planForm.group_id = null
-  }
+const legacyGroupInfo = computed(() => {
+  const groupID = props.plan?.group_id
+  if (!groupID) return null
+  return props.groups.find((g) => g.id === groupID) || null
 })
 
 watch(
@@ -224,8 +188,6 @@ watch(
     if (props.plan) {
       Object.assign(planForm, {
         name: props.plan.name,
-        group_id: props.plan.group_id ?? null,
-        user_level: !props.plan.group_id,
         description: props.plan.description,
         price: props.plan.price,
         original_price: props.plan.original_price || 0,
@@ -243,8 +205,6 @@ watch(
 
     Object.assign(planForm, {
       name: '',
-      group_id: null,
-      user_level: false,
       description: '',
       price: 0,
       original_price: 0,
@@ -273,8 +233,8 @@ function buildPlanPayload(): PlanPayload {
     .join('\n')
 
   return {
-    group_id: planForm.user_level ? null : planForm.group_id,
-    clear_group_id: planForm.user_level && !!props.plan?.group_id,
+    group_id: null,
+    clear_group_id: !!props.plan?.group_id,
     name: planForm.name,
     description: planForm.description,
     price: planForm.price,
@@ -291,12 +251,7 @@ function buildPlanPayload(): PlanPayload {
 }
 
 async function handleSavePlan() {
-  if (!planForm.user_level && !planForm.group_id) {
-    appStore.showError(t('payment.admin.groupRequired'))
-    return
-  }
   if (
-    planForm.user_level &&
     !normalizedQuota(planForm.daily_quota_knives) &&
     !normalizedQuota(planForm.weekly_quota_knives) &&
     !normalizedQuota(planForm.monthly_quota_knives)
