@@ -1344,7 +1344,13 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
-	subscription := &UserSubscription{ID: 99}
+	dailyQuota := 10.0
+	subscription := &UserSubscription{
+		ID:               99,
+		StartsAt:         time.Now().Add(-time.Hour),
+		ExpiresAt:        time.Now().Add(24 * time.Hour),
+		DailyQuotaKnives: &dailyQuota,
+	}
 
 	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
 		Result: &OpenAIForwardResult{
@@ -1368,6 +1374,98 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	require.Equal(t, subscription.ID, *usageRepo.lastLog.SubscriptionID)
 	require.Equal(t, 1, subRepo.incrementCalls)
 	require.Equal(t, 0, userRepo.deductCalls)
+}
+
+func TestOpenAIGatewayServiceRecordUsage_MixedBillingSplitsSubscriptionAndBalance(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	usage := OpenAIUsage{InputTokens: 200000, OutputTokens: 100000}
+	expectedCost := expectedOpenAICost(t, svc, "gpt-5.1", usage, 1.0)
+	require.Greater(t, expectedCost.ActualCost, 0.5)
+
+	dailyQuota := expectedCost.ActualCost + 1.0
+	subscriptionRemaining := expectedCost.ActualCost / 2
+	startsAt := time.Now().Add(-time.Hour)
+	expiresAt := startsAt.Add(24 * time.Hour)
+	subscription := &UserSubscription{
+		ID:               77,
+		StartsAt:         startsAt,
+		ExpiresAt:        expiresAt,
+		DailyQuotaKnives: &dailyQuota,
+		DailyUsedKnives:  dailyQuota - subscriptionRemaining,
+		DailyWindowStart: &startsAt,
+	}
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_mixed_billing",
+			Usage:     usage,
+			Model:     "gpt-5.1",
+			Duration:  time.Second,
+		},
+		APIKey:       &APIKey{ID: 100, GroupID: i64p(88), Group: &Group{ID: 88, SubscriptionType: SubscriptionTypeSubscription, RateMultiplier: 1.0}},
+		User:         &User{ID: 200, Balance: 0.2},
+		Account:      &Account{ID: 300},
+		Subscription: subscription,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeMixed, usageRepo.lastLog.BillingType)
+	require.InDelta(t, expectedCost.ActualCost, usageRepo.lastLog.ActualCost, 1e-12)
+	require.InDelta(t, subscriptionRemaining, usageRepo.lastLog.SubscriptionCost, 1e-12)
+	require.InDelta(t, expectedCost.ActualCost-subscriptionRemaining, usageRepo.lastLog.BalanceCost, 1e-12)
+	require.Equal(t, 1, subRepo.incrementCalls)
+	require.Equal(t, 1, userRepo.deductCalls)
+	require.InDelta(t, usageRepo.lastLog.BalanceCost, userRepo.lastAmount, 1e-12)
+}
+
+func TestOpenAIGatewayServiceRecordUsage_BalancePortionCanDriveNegativeBalance(t *testing.T) {
+	usageRepo := &openAIRecordUsageLogRepoStub{inserted: true}
+	userRepo := &openAIRecordUsageUserRepoStub{}
+	subRepo := &openAIRecordUsageSubRepoStub{}
+	svc := newOpenAIRecordUsageServiceForTest(usageRepo, userRepo, subRepo, nil)
+	usage := OpenAIUsage{InputTokens: 200000, OutputTokens: 100000}
+	expectedCost := expectedOpenAICost(t, svc, "gpt-5.1", usage, 1.0)
+	require.Greater(t, expectedCost.ActualCost, 0.0)
+
+	dailyQuota := expectedCost.ActualCost + 1.0
+	subscriptionRemaining := expectedCost.ActualCost / 4
+	startsAt := time.Now().Add(-time.Hour)
+	expiresAt := startsAt.Add(24 * time.Hour)
+	subscription := &UserSubscription{
+		ID:               78,
+		StartsAt:         startsAt,
+		ExpiresAt:        expiresAt,
+		DailyQuotaKnives: &dailyQuota,
+		DailyUsedKnives:  dailyQuota - subscriptionRemaining,
+		DailyWindowStart: &startsAt,
+	}
+
+	err := svc.RecordUsage(context.Background(), &OpenAIRecordUsageInput{
+		Result: &OpenAIForwardResult{
+			RequestID: "resp_negative_balance_mixed_billing",
+			Usage:     usage,
+			Model:     "gpt-5.1",
+			Duration:  time.Second,
+		},
+		APIKey:       &APIKey{ID: 101, GroupID: i64p(89), Group: &Group{ID: 89, SubscriptionType: SubscriptionTypeSubscription, RateMultiplier: 1.0}},
+		User:         &User{ID: 201, Balance: 0.01},
+		Account:      &Account{ID: 301},
+		Subscription: subscription,
+	})
+
+	require.NoError(t, err)
+	require.NotNil(t, usageRepo.lastLog)
+	require.Equal(t, BillingTypeMixed, usageRepo.lastLog.BillingType)
+	require.InDelta(t, subscriptionRemaining, usageRepo.lastLog.SubscriptionCost, 1e-12)
+	require.Greater(t, usageRepo.lastLog.BalanceCost, 0.01)
+	require.InDelta(t, expectedCost.ActualCost-subscriptionRemaining, usageRepo.lastLog.BalanceCost, 1e-12)
+	require.Equal(t, 1, subRepo.incrementCalls)
+	require.Equal(t, 1, userRepo.deductCalls)
+	require.InDelta(t, usageRepo.lastLog.BalanceCost, userRepo.lastAmount, 1e-12)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_SimpleModeSkipsBillingAfterPersist(t *testing.T) {
