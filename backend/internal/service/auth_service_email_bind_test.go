@@ -37,6 +37,21 @@ func (s *emailBindDefaultSubAssignerStub) AssignOrExtendSubscription(
 	return &service.UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, false, nil
 }
 
+func (s *emailBindDefaultSubAssignerStub) GrantConfiguredSubscription(
+	_ context.Context,
+	userID int64,
+	item service.DefaultSubscriptionSetting,
+	notes string,
+) (*service.UserSubscription, bool, error) {
+	input := &service.AssignSubscriptionInput{
+		UserID:       userID,
+		GroupID:      item.GroupID,
+		ValidityDays: item.ValidityDays,
+		Notes:        notes,
+	}
+	return s.AssignOrExtendSubscription(context.Background(), input)
+}
+
 type flakyEmailBindDefaultSubAssignerStub struct {
 	err   error
 	calls []*service.AssignSubscriptionInput
@@ -49,6 +64,21 @@ func (s *flakyEmailBindDefaultSubAssignerStub) AssignOrExtendSubscription(
 	cloned := *input
 	s.calls = append(s.calls, &cloned)
 	return nil, false, s.err
+}
+
+func (s *flakyEmailBindDefaultSubAssignerStub) GrantConfiguredSubscription(
+	_ context.Context,
+	userID int64,
+	item service.DefaultSubscriptionSetting,
+	notes string,
+) (*service.UserSubscription, bool, error) {
+	input := &service.AssignSubscriptionInput{
+		UserID:       userID,
+		GroupID:      item.GroupID,
+		ValidityDays: item.ValidityDays,
+		Notes:        notes,
+	}
+	return s.AssignOrExtendSubscription(context.Background(), input)
 }
 
 func newAuthServiceForEmailBind(

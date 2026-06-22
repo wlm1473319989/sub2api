@@ -7,6 +7,7 @@ import (
 	"encoding/json"
 	"testing"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -90,6 +91,12 @@ type defaultSubGroupReaderStub struct {
 	calls []int64
 }
 
+type defaultSubPlanReaderStub struct {
+	byID  map[int64]*dbent.SubscriptionPlan
+	errBy map[int64]error
+	calls []int64
+}
+
 func (s *defaultSubGroupReaderStub) GetByID(ctx context.Context, id int64) (*Group, error) {
 	s.calls = append(s.calls, id)
 	if err, ok := s.errBy[id]; ok {
@@ -101,63 +108,44 @@ func (s *defaultSubGroupReaderStub) GetByID(ctx context.Context, id int64) (*Gro
 	return nil, ErrGroupNotFound
 }
 
-func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidGroup(t *testing.T) {
+func (s *defaultSubPlanReaderStub) GetPlan(ctx context.Context, id int64) (*dbent.SubscriptionPlan, error) {
+	s.calls = append(s.calls, id)
+	if err, ok := s.errBy[id]; ok {
+		return nil, err
+	}
+	if p, ok := s.byID[id]; ok {
+		return p, nil
+	}
+	return nil, ErrSubscriptionPlanRequired
+}
+
+func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidPlan(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
-	groupReader := &defaultSubGroupReaderStub{
-		byID: map[int64]*Group{
-			11: {ID: 11, SubscriptionType: SubscriptionTypeSubscription},
+	planReader := &defaultSubPlanReaderStub{
+		byID: map[int64]*dbent.SubscriptionPlan{
+			21: {ID: 21, Name: "starter"},
 		},
 	}
 	svc := NewSettingService(repo, &config.Config{})
-	svc.SetDefaultSubscriptionGroupReader(groupReader)
+	svc.SetDefaultSubscriptionPlanReader(planReader)
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
-			{GroupID: 11, ValidityDays: 30},
+			{PlanID: 21},
 		},
 	})
 	require.NoError(t, err)
-	require.Equal(t, []int64{11}, groupReader.calls)
+	require.Equal(t, []int64{21}, planReader.calls)
 
-	raw, ok := repo.updates[SettingKeyDefaultSubscriptions]
-	require.True(t, ok)
-
+	raw := repo.updates[SettingKeyDefaultSubscriptions]
 	var got []DefaultSubscriptionSetting
 	require.NoError(t, json.Unmarshal([]byte(raw), &got))
-	require.Equal(t, []DefaultSubscriptionSetting{
-		{GroupID: 11, ValidityDays: 30},
-	}, got)
+	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 21}}, got)
 }
 
-func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNonSubscriptionGroup(t *testing.T) {
+func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsLegacyGroupWrite(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
-	groupReader := &defaultSubGroupReaderStub{
-		byID: map[int64]*Group{
-			12: {ID: 12, SubscriptionType: SubscriptionTypeStandard},
-		},
-	}
 	svc := NewSettingService(repo, &config.Config{})
-	svc.SetDefaultSubscriptionGroupReader(groupReader)
-
-	err := svc.UpdateSettings(context.Background(), &SystemSettings{
-		DefaultSubscriptions: []DefaultSubscriptionSetting{
-			{GroupID: 12, ValidityDays: 7},
-		},
-	})
-	require.Error(t, err)
-	require.Equal(t, "DEFAULT_SUBSCRIPTION_GROUP_INVALID", infraerrors.Reason(err))
-	require.Nil(t, repo.updates)
-}
-
-func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNotFoundGroup(t *testing.T) {
-	repo := &settingUpdateRepoStub{}
-	groupReader := &defaultSubGroupReaderStub{
-		errBy: map[int64]error{
-			13: ErrGroupNotFound,
-		},
-	}
-	svc := NewSettingService(repo, &config.Config{})
-	svc.SetDefaultSubscriptionGroupReader(groupReader)
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
@@ -165,47 +153,46 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsNotFoundGroup
 		},
 	})
 	require.Error(t, err)
-	require.Equal(t, "DEFAULT_SUBSCRIPTION_GROUP_INVALID", infraerrors.Reason(err))
+	require.Equal(t, "DEFAULT_SUBSCRIPTION_PLAN_INVALID", infraerrors.Reason(err))
 	require.Equal(t, "13", infraerrors.FromError(err).Metadata["group_id"])
 	require.Nil(t, repo.updates)
 }
 
-func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsDuplicateGroup(t *testing.T) {
+func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsDuplicatePlan(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
-	groupReader := &defaultSubGroupReaderStub{
-		byID: map[int64]*Group{
-			11: {ID: 11, SubscriptionType: SubscriptionTypeSubscription},
+	planReader := &defaultSubPlanReaderStub{
+		byID: map[int64]*dbent.SubscriptionPlan{
+			31: {ID: 31, Name: "starter"},
 		},
 	}
 	svc := NewSettingService(repo, &config.Config{})
-	svc.SetDefaultSubscriptionGroupReader(groupReader)
+	svc.SetDefaultSubscriptionPlanReader(planReader)
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
-			{GroupID: 11, ValidityDays: 30},
-			{GroupID: 11, ValidityDays: 60},
+			{PlanID: 31},
+			{PlanID: 31},
 		},
 	})
 	require.Error(t, err)
-	require.Equal(t, "DEFAULT_SUBSCRIPTION_GROUP_DUPLICATE", infraerrors.Reason(err))
-	require.Equal(t, "11", infraerrors.FromError(err).Metadata["group_id"])
-	require.Nil(t, repo.updates)
+	require.Equal(t, "DEFAULT_SUBSCRIPTION_PLAN_DUPLICATE", infraerrors.Reason(err))
+	require.Equal(t, "31", infraerrors.FromError(err).Metadata["plan_id"])
 }
 
-func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsDuplicateGroupWithoutGroupReader(t *testing.T) {
+func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsMissingPlan(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
+	planReader := &defaultSubPlanReaderStub{}
 	svc := NewSettingService(repo, &config.Config{})
+	svc.SetDefaultSubscriptionPlanReader(planReader)
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
-			{GroupID: 11, ValidityDays: 30},
-			{GroupID: 11, ValidityDays: 60},
+			{PlanID: 41},
 		},
 	})
 	require.Error(t, err)
-	require.Equal(t, "DEFAULT_SUBSCRIPTION_GROUP_DUPLICATE", infraerrors.Reason(err))
-	require.Equal(t, "11", infraerrors.FromError(err).Metadata["group_id"])
-	require.Nil(t, repo.updates)
+	require.Equal(t, "DEFAULT_SUBSCRIPTION_PLAN_INVALID", infraerrors.Reason(err))
+	require.Equal(t, "41", infraerrors.FromError(err).Metadata["plan_id"])
 }
 
 func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Normalized(t *testing.T) {
@@ -231,8 +218,9 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 }
 
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {
-	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"group_id":11,"validity_days":60},{"group_id":0,"validity_days":10},{"group_id":12,"validity_days":99999}]`)
+	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"plan_id":91},{"group_id":11,"validity_days":60},{"group_id":0,"validity_days":10},{"group_id":12,"validity_days":99999}]`)
 	require.Equal(t, []DefaultSubscriptionSetting{
+		{PlanID: 91},
 		{GroupID: 11, ValidityDays: 30},
 		{GroupID: 11, ValidityDays: 60},
 		{GroupID: 12, ValidityDays: MaxValidityDays},

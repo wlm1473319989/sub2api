@@ -79,6 +79,7 @@ type AuthService struct {
 
 type DefaultSubscriptionAssigner interface {
 	AssignOrExtendSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error)
+	GrantConfiguredSubscription(ctx context.Context, userID int64, item DefaultSubscriptionSetting, notes string) (*UserSubscription, bool, error)
 }
 
 type signupGrantPlan struct {
@@ -790,13 +791,8 @@ func (s *AuthService) assignSubscriptions(ctx context.Context, userID int64, ite
 		return
 	}
 	for _, item := range items {
-		if _, _, err := s.defaultSubAssigner.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-			UserID:       userID,
-			GroupID:      item.GroupID,
-			ValidityDays: item.ValidityDays,
-			Notes:        notes,
-		}); err != nil {
-			logger.LegacyPrintf("service.auth", "[Auth] Failed to assign default subscription: user_id=%d group_id=%d err=%v", userID, item.GroupID, err)
+		if _, _, err := s.defaultSubAssigner.GrantConfiguredSubscription(ctx, userID, item, notes); err != nil {
+			logger.LegacyPrintf("service.auth", "[Auth] Failed to assign default subscription: user_id=%d group_id=%d plan_id=%d err=%v", userID, item.GroupID, item.PlanID, err)
 		}
 	}
 }

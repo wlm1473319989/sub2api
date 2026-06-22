@@ -1981,7 +1981,7 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 		settingValues: map[string]string{
 			service.SettingKeyAuthSourceDefaultOIDCBalance:          "12.5",
 			service.SettingKeyAuthSourceDefaultOIDCConcurrency:      "3",
-			service.SettingKeyAuthSourceDefaultOIDCSubscriptions:    `[{"group_id":101,"validity_days":30}]`,
+			service.SettingKeyAuthSourceDefaultOIDCSubscriptions:    `[{"plan_id":101,"validity_days":30}]`,
 			service.SettingKeyAuthSourceDefaultOIDCGrantOnFirstBind: "true",
 		},
 		defaultSubAssigner: defaultSubAssigner,
@@ -2040,7 +2040,8 @@ func TestBindOIDCOAuthLoginAppliesFirstBindGrantOnce(t *testing.T) {
 	require.Zero(t, storedUser.TotalRecharged)
 	require.Len(t, defaultSubAssigner.calls, 1)
 	require.Equal(t, int64(existingUser.ID), defaultSubAssigner.calls[0].UserID)
-	require.Equal(t, int64(101), defaultSubAssigner.calls[0].GroupID)
+	require.Equal(t, int64(101), defaultSubAssigner.calls[0].PlanID)
+	require.Zero(t, defaultSubAssigner.calls[0].GroupID)
 	require.Equal(t, 30, defaultSubAssigner.calls[0].ValidityDays)
 	require.Equal(t, 1, countProviderGrantRecords(t, client, existingUser.ID, "oidc", "first_bind"))
 
@@ -3281,7 +3282,15 @@ func oauthPendingFlowServiceUser(entity *dbent.User) *service.User {
 }
 
 type oauthPendingFlowDefaultSubAssignerStub struct {
-	calls []service.AssignSubscriptionInput
+	calls []oauthPendingFlowDefaultSubAssignerCall
+}
+
+type oauthPendingFlowDefaultSubAssignerCall struct {
+	UserID       int64
+	GroupID      int64
+	PlanID       int64
+	ValidityDays int
+	Notes        string
 }
 
 func (s *oauthPendingFlowDefaultSubAssignerStub) AssignOrExtendSubscription(
@@ -3289,8 +3298,30 @@ func (s *oauthPendingFlowDefaultSubAssignerStub) AssignOrExtendSubscription(
 	input *service.AssignSubscriptionInput,
 ) (*service.UserSubscription, bool, error) {
 	if input != nil {
-		s.calls = append(s.calls, *input)
+		s.calls = append(s.calls, oauthPendingFlowDefaultSubAssignerCall{
+			UserID:       input.UserID,
+			GroupID:      input.GroupID,
+			ValidityDays: input.ValidityDays,
+			Notes:        input.Notes,
+		})
 	}
+	return nil, false, nil
+}
+
+func (s *oauthPendingFlowDefaultSubAssignerStub) GrantConfiguredSubscription(
+	_ context.Context,
+	userID int64,
+	item service.DefaultSubscriptionSetting,
+	notes string,
+) (*service.UserSubscription, bool, error) {
+	call := oauthPendingFlowDefaultSubAssignerCall{
+		UserID:       userID,
+		GroupID:      item.GroupID,
+		PlanID:       item.PlanID,
+		ValidityDays: item.ValidityDays,
+		Notes:        notes,
+	}
+	s.calls = append(s.calls, call)
 	return nil, false, nil
 }
 

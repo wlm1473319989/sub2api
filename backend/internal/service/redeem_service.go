@@ -407,9 +407,9 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 		return nil, ErrRedeemCodeUsed
 	}
 
-	// 验证兑换码类型的前置条件
-	if redeemCode.Type == RedeemTypeSubscription && redeemCode.GroupID == nil {
-		return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription redeem code: missing group_id")
+	// 订阅兑换码兼容旧 group_id 数据，但新路径允许 plan_id。
+	if redeemCode.Type == RedeemTypeSubscription && redeemCode.PlanID == nil && redeemCode.GroupID == nil {
+		return nil, infraerrors.BadRequest("REDEEM_CODE_INVALID", "invalid subscription redeem code: missing plan_id")
 	}
 
 	// 获取用户信息
@@ -461,7 +461,14 @@ func (s *RedeemService) Redeem(ctx context.Context, userID int64, code string) (
 
 	case RedeemTypeSubscription:
 		validityDays := redeemCode.ValidityDays
-		if validityDays < 0 {
+		if redeemCode.PlanID != nil && *redeemCode.PlanID > 0 {
+			_, _, err := s.subscriptionService.GrantConfiguredSubscription(txCtx, userID, DefaultSubscriptionSetting{
+				PlanID: *redeemCode.PlanID,
+			}, fmt.Sprintf("通过兑换码 %s 兑换", redeemCode.Code))
+			if err != nil {
+				return nil, fmt.Errorf("grant plan subscription: %w", err)
+			}
+		} else if validityDays < 0 {
 			// 负数天数：缩短订阅，减到 0 则取消订阅
 			if err := s.reduceOrCancelSubscription(txCtx, userID, *redeemCode.GroupID, -validityDays, redeemCode.Code); err != nil {
 				return nil, fmt.Errorf("reduce or cancel subscription: %w", err)
@@ -537,14 +544,15 @@ func (s *RedeemService) invalidateRedeemCaches(ctx context.Context, userID int64
 		if s.billingCacheService == nil {
 			return
 		}
-		if redeemCode.GroupID != nil {
-			groupID := *redeemCode.GroupID
-			go func() {
-				cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID, groupID)
-			}()
+		if redeemCode.GroupID == nil {
+			return
 		}
+		groupID := *redeemCode.GroupID
+		go func() {
+			cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID, groupID)
+		}()
 	}
 }
 

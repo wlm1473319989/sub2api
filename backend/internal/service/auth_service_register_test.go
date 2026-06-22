@@ -67,8 +67,9 @@ type emailCacheStub struct {
 }
 
 type defaultSubscriptionAssignerStub struct {
-	calls []AssignSubscriptionInput
-	err   error
+	calls      []AssignSubscriptionInput
+	grantItems []DefaultSubscriptionSetting
+	err        error
 }
 
 type refreshTokenCacheStub struct{}
@@ -117,6 +118,28 @@ func (s *defaultSubscriptionAssignerStub) AssignOrExtendSubscription(_ context.C
 		return nil, false, s.err
 	}
 	return &UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, false, nil
+}
+
+func (s *defaultSubscriptionAssignerStub) GrantConfiguredSubscription(_ context.Context, userID int64, item DefaultSubscriptionSetting, notes string) (*UserSubscription, bool, error) {
+	s.grantItems = append(s.grantItems, item)
+	call := AssignSubscriptionInput{
+		UserID:       userID,
+		GroupID:      item.GroupID,
+		ValidityDays: item.ValidityDays,
+		Notes:        notes,
+	}
+	s.calls = append(s.calls, call)
+	if s.err != nil {
+		return nil, false, s.err
+	}
+	return &UserSubscription{UserID: userID, GroupID: item.GroupID, PlanID: nullablePlanID(item.PlanID)}, false, nil
+}
+
+func nullablePlanID(planID int64) *int64 {
+	if planID <= 0 {
+		return nil
+	}
+	return &planID
 }
 
 func (s *refreshTokenCacheStub) StoreRefreshToken(context.Context, string, *RefreshTokenData, time.Duration) error {
@@ -686,6 +709,22 @@ func TestAuthService_Register_GrantOnSignupMergesSourceOverridesWithGlobalDefaul
 	require.Len(t, assigner.calls, 1)
 	require.Equal(t, int64(31), assigner.calls[0].GroupID)
 	require.Equal(t, 5, assigner.calls[0].ValidityDays)
+}
+
+func TestAuthService_Register_DefaultPlanSubscriptionGrantUsesPlanID(t *testing.T) {
+	repo := &userRepoStub{nextID: 1001}
+	assigner := &defaultSubscriptionAssignerStub{}
+	service := newAuthService(repo, map[string]string{
+		SettingKeyRegistrationEnabled:  "true",
+		SettingKeyDefaultSubscriptions: `[{"plan_id":81}]`,
+	}, nil, nil)
+	service.defaultSubAssigner = assigner
+
+	_, _, err := service.Register(context.Background(), "plan-grant@example.com", "password")
+	require.NoError(t, err)
+	require.Len(t, assigner.grantItems, 1)
+	require.Equal(t, int64(81), assigner.grantItems[0].PlanID)
+	require.Zero(t, assigner.grantItems[0].GroupID)
 }
 
 func TestAuthService_LoginOrRegisterOAuthWithTokenPair_UsesLinuxDoAuthSourceDefaultsOnSignup(t *testing.T) {

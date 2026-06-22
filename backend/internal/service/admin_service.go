@@ -420,8 +420,9 @@ type GenerateRedeemCodesInput struct {
 	Count        int
 	Type         string
 	Value        float64
-	GroupID      *int64 // 订阅类型专用：关联的分组ID
-	ValidityDays int    // 订阅类型专用：有效天数
+	GroupID      *int64 // legacy subscription fallback during migration
+	PlanID       *int64
+	ValidityDays int // legacy subscription fallback during migration
 	ExpiresAt    *time.Time
 }
 
@@ -728,13 +729,8 @@ func (s *adminServiceImpl) assignDefaultSubscriptions(ctx context.Context, userI
 	}
 	items := s.settingService.GetDefaultSubscriptions(ctx)
 	for _, item := range items {
-		if _, _, err := s.defaultSubAssigner.AssignOrExtendSubscription(ctx, &AssignSubscriptionInput{
-			UserID:       userID,
-			GroupID:      item.GroupID,
-			ValidityDays: item.ValidityDays,
-			Notes:        "auto assigned by default user subscriptions setting",
-		}); err != nil {
-			logger.LegacyPrintf("service.admin", "failed to assign default subscription: user_id=%d group_id=%d err=%v", userID, item.GroupID, err)
+		if _, _, err := s.defaultSubAssigner.GrantConfiguredSubscription(ctx, userID, item, "auto assigned by default user subscriptions setting"); err != nil {
+			logger.LegacyPrintf("service.admin", "failed to assign default subscription: user_id=%d group_id=%d plan_id=%d err=%v", userID, item.GroupID, item.PlanID, err)
 		}
 	}
 }
@@ -3236,18 +3232,20 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		return nil, ErrRedeemCodeExpired
 	}
 
-	// 如果是订阅类型，验证必须有 GroupID
+	// 新写入的订阅兑换码只允许 plan_id。group_id 保留给兼容期的旧数据读取。
 	if input.Type == RedeemTypeSubscription {
-		if input.GroupID == nil {
-			return nil, errors.New("group_id is required for subscription type")
+		if input.PlanID == nil || *input.PlanID <= 0 {
+			return nil, errors.New("plan_id is required for subscription type")
 		}
-		// 验证分组存在且为订阅类型
-		group, err := s.groupRepo.GetByID(ctx, *input.GroupID)
+		if s.entClient == nil {
+			return nil, ErrSubscriptionPlanRequired
+		}
+		plan, err := s.entClient.SubscriptionPlan.Get(ctx, *input.PlanID)
 		if err != nil {
-			return nil, fmt.Errorf("group not found: %w", err)
+			return nil, fmt.Errorf("subscription plan not found: %w", err)
 		}
-		if !group.IsSubscriptionType() {
-			return nil, errors.New("group must be subscription type")
+		if !plan.ForSale {
+			return nil, errors.New("subscription plan must be for sale")
 		}
 	}
 
@@ -3266,11 +3264,7 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		}
 		// 订阅类型专用字段
 		if input.Type == RedeemTypeSubscription {
-			code.GroupID = input.GroupID
-			code.ValidityDays = input.ValidityDays
-			if code.ValidityDays <= 0 {
-				code.ValidityDays = 30 // 默认30天
-			}
+			code.PlanID = input.PlanID
 		}
 		if err := s.redeemCodeRepo.Create(ctx, &code); err != nil {
 			return nil, err

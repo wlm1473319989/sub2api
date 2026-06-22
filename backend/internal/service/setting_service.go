@@ -17,6 +17,7 @@ import (
 	"sync/atomic"
 	"time"
 
+	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/antigravity"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
@@ -53,6 +54,14 @@ var (
 	ErrDefaultSubGroupDuplicate = infraerrors.BadRequest(
 		"DEFAULT_SUBSCRIPTION_GROUP_DUPLICATE",
 		"default subscription group cannot be duplicated",
+	)
+	ErrDefaultSubPlanInvalid = infraerrors.BadRequest(
+		"DEFAULT_SUBSCRIPTION_PLAN_INVALID",
+		"default subscription plan must exist",
+	)
+	ErrDefaultSubPlanDuplicate = infraerrors.BadRequest(
+		"DEFAULT_SUBSCRIPTION_PLAN_DUPLICATE",
+		"default subscription plan cannot be duplicated",
 	)
 )
 
@@ -183,6 +192,21 @@ type DefaultSubscriptionGroupReader interface {
 	GetByID(ctx context.Context, id int64) (*Group, error)
 }
 
+type DefaultSubscriptionPlanReader interface {
+	GetPlan(ctx context.Context, id int64) (*dbent.SubscriptionPlan, error)
+}
+
+type entDefaultSubscriptionPlanReader struct {
+	client *dbent.Client
+}
+
+func (r entDefaultSubscriptionPlanReader) GetPlan(ctx context.Context, id int64) (*dbent.SubscriptionPlan, error) {
+	if r.client == nil {
+		return nil, ErrSettingNotFound
+	}
+	return r.client.SubscriptionPlan.Get(ctx, id)
+}
+
 // WebSearchManagerBuilder creates a websearch.Manager from config (injected by infra layer).
 // proxyURLs maps proxy ID to resolved URL for provider-level proxy support.
 type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[int64]string)
@@ -191,6 +215,7 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 type SettingService struct {
 	settingRepo                 SettingRepository
 	defaultSubGroupReader       DefaultSubscriptionGroupReader
+	defaultSubPlanReader        DefaultSubscriptionPlanReader
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
 	onUpdate                    func() // Callback when settings are updated (for cache invalidation)
@@ -667,6 +692,10 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 // SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
 func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
 	s.defaultSubGroupReader = reader
+}
+
+func (s *SettingService) SetDefaultSubscriptionPlanReader(reader DefaultSubscriptionPlanReader) {
+	s.defaultSubPlanReader = reader
 }
 
 // SetProxyRepository injects a proxy repo for resolving websearch provider proxy URLs.
@@ -1685,7 +1714,7 @@ func (s *SettingService) UpdateSettingsWithAuthSourceDefaults(ctx context.Contex
 }
 
 func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, settings *SystemSettings) (map[string]string, error) {
-	if err := s.validateDefaultSubscriptionGroups(ctx, settings.DefaultSubscriptions); err != nil {
+	if err := s.validateDefaultSubscriptions(ctx, settings.DefaultSubscriptions); err != nil {
 		return nil, err
 	}
 	normalizedWhitelist, err := NormalizeRegistrationEmailSuffixWhitelist(settings.RegistrationEmailSuffixWhitelist)
@@ -2065,7 +2094,7 @@ func (s *SettingService) buildAuthSourceDefaultUpdates(ctx context.Context, sett
 		settings.Google.Subscriptions,
 		settings.DingTalk.Subscriptions,
 	} {
-		if err := s.validateDefaultSubscriptionGroups(ctx, subscriptions); err != nil {
+		if err := s.validateDefaultSubscriptions(ctx, subscriptions); err != nil {
 			return nil, err
 		}
 	}
@@ -2182,39 +2211,36 @@ func (s *SettingService) defaultRewriteMessageCacheControl() bool {
 	return false
 }
 
-func (s *SettingService) validateDefaultSubscriptionGroups(ctx context.Context, items []DefaultSubscriptionSetting) error {
+func (s *SettingService) validateDefaultSubscriptions(ctx context.Context, items []DefaultSubscriptionSetting) error {
 	if len(items) == 0 {
 		return nil
 	}
 
-	checked := make(map[int64]struct{}, len(items))
+	checked := make(map[string]struct{}, len(items))
 	for _, item := range items {
-		if item.GroupID <= 0 {
-			continue
-		}
-		if _, ok := checked[item.GroupID]; ok {
-			return ErrDefaultSubGroupDuplicate.WithMetadata(map[string]string{
-				"group_id": strconv.FormatInt(item.GroupID, 10),
-			})
-		}
-		checked[item.GroupID] = struct{}{}
-		if s.defaultSubGroupReader == nil {
-			continue
-		}
-
-		group, err := s.defaultSubGroupReader.GetByID(ctx, item.GroupID)
-		if err != nil {
-			if errors.Is(err, ErrGroupNotFound) {
-				return ErrDefaultSubGroupInvalid.WithMetadata(map[string]string{
+		if item.PlanID <= 0 {
+			if item.GroupID > 0 {
+				return ErrDefaultSubPlanInvalid.WithMetadata(map[string]string{
 					"group_id": strconv.FormatInt(item.GroupID, 10),
 				})
 			}
-			return fmt.Errorf("get default subscription group %d: %w", item.GroupID, err)
+			continue
 		}
-		if !group.IsSubscriptionType() {
-			return ErrDefaultSubGroupInvalid.WithMetadata(map[string]string{
-				"group_id": strconv.FormatInt(item.GroupID, 10),
+
+		key := "plan:" + strconv.FormatInt(item.PlanID, 10)
+		if _, ok := checked[key]; ok {
+			return ErrDefaultSubPlanDuplicate.WithMetadata(map[string]string{
+				"plan_id": strconv.FormatInt(item.PlanID, 10),
 			})
+		}
+		checked[key] = struct{}{}
+		if s.defaultSubPlanReader == nil {
+			continue
+		}
+		if _, err := s.defaultSubPlanReader.GetPlan(ctx, item.PlanID); err != nil {
+			return ErrDefaultSubPlanInvalid.WithMetadata(map[string]string{
+				"plan_id": strconv.FormatInt(item.PlanID, 10),
+			}).WithCause(err)
 		}
 	}
 
@@ -3590,13 +3616,22 @@ func parseDefaultSubscriptions(raw string) []DefaultSubscriptionSetting {
 
 	normalized := make([]DefaultSubscriptionSetting, 0, len(items))
 	for _, item := range items {
-		if item.GroupID <= 0 || item.ValidityDays <= 0 {
+		switch {
+		case item.PlanID > 0:
+			item.GroupID = 0
+			if item.ValidityDays < 0 {
+				item.ValidityDays = 0
+			}
+			normalized = append(normalized, item)
+		case item.GroupID > 0 && item.ValidityDays > 0:
+			if item.ValidityDays > MaxValidityDays {
+				item.ValidityDays = MaxValidityDays
+			}
+			item.PlanID = 0
+			normalized = append(normalized, item)
+		default:
 			continue
 		}
-		if item.ValidityDays > MaxValidityDays {
-			item.ValidityDays = MaxValidityDays
-		}
-		normalized = append(normalized, item)
 	}
 
 	return normalized

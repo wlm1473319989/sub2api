@@ -90,6 +90,19 @@ func TestSettingService_GetAuthSourceDefaultSettings_ParsesValuesAndDefaults(t *
 	require.True(t, got.ForceEmailOnThirdPartySignup)
 }
 
+func TestSettingService_GetAuthSourceDefaultSettings_ParsesPlanSubscriptions(t *testing.T) {
+	repo := &authSourceDefaultsRepoStub{
+		values: map[string]string{
+			SettingKeyAuthSourceDefaultEmailSubscriptions: `[{"plan_id":77}]`,
+		},
+	}
+	svc := NewSettingService(repo, &config.Config{})
+
+	got, err := svc.GetAuthSourceDefaultSettings(context.Background())
+	require.NoError(t, err)
+	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 77}}, got.Email.Subscriptions)
+}
+
 func TestSettingService_UpdateAuthSourceDefaultSettings_PersistsAllKeys(t *testing.T) {
 	repo := &authSourceDefaultsRepoStub{}
 	svc := NewSettingService(repo, &config.Config{})
@@ -98,28 +111,28 @@ func TestSettingService_UpdateAuthSourceDefaultSettings_PersistsAllKeys(t *testi
 		Email: ProviderDefaultGrantSettings{
 			Balance:          1.25,
 			Concurrency:      3,
-			Subscriptions:    []DefaultSubscriptionSetting{{GroupID: 21, ValidityDays: 14}},
+			Subscriptions:    []DefaultSubscriptionSetting{{PlanID: 21}},
 			GrantOnSignup:    false,
 			GrantOnFirstBind: true,
 		},
 		LinuxDo: ProviderDefaultGrantSettings{
 			Balance:          2,
 			Concurrency:      4,
-			Subscriptions:    []DefaultSubscriptionSetting{{GroupID: 22, ValidityDays: 30}},
+			Subscriptions:    []DefaultSubscriptionSetting{{PlanID: 22}},
 			GrantOnSignup:    true,
 			GrantOnFirstBind: false,
 		},
 		OIDC: ProviderDefaultGrantSettings{
 			Balance:          3,
 			Concurrency:      5,
-			Subscriptions:    []DefaultSubscriptionSetting{{GroupID: 23, ValidityDays: 60}},
+			Subscriptions:    []DefaultSubscriptionSetting{{PlanID: 23}},
 			GrantOnSignup:    true,
 			GrantOnFirstBind: true,
 		},
 		WeChat: ProviderDefaultGrantSettings{
 			Balance:          4,
 			Concurrency:      6,
-			Subscriptions:    []DefaultSubscriptionSetting{{GroupID: 24, ValidityDays: 90}},
+			Subscriptions:    []DefaultSubscriptionSetting{{PlanID: 24}},
 			GrantOnSignup:    false,
 			GrantOnFirstBind: false,
 		},
@@ -134,5 +147,25 @@ func TestSettingService_UpdateAuthSourceDefaultSettings_PersistsAllKeys(t *testi
 
 	var got []DefaultSubscriptionSetting
 	require.NoError(t, json.Unmarshal([]byte(repo.updates[SettingKeyAuthSourceDefaultWeChatSubscriptions]), &got))
-	require.Equal(t, []DefaultSubscriptionSetting{{GroupID: 24, ValidityDays: 90}}, got)
+	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 24}}, got)
+}
+
+func TestSettingService_UpdateAuthSourceDefaultSettings_PersistsPlanSubscriptions(t *testing.T) {
+	repo := &authSourceDefaultsRepoStub{}
+	svc := NewSettingService(repo, &config.Config{})
+
+	err := svc.UpdateAuthSourceDefaultSettings(context.Background(), &AuthSourceDefaultSettings{
+		Email: ProviderDefaultGrantSettings{
+			Balance:          1,
+			Concurrency:      3,
+			Subscriptions:    []DefaultSubscriptionSetting{{PlanID: 88}},
+			GrantOnSignup:    true,
+			GrantOnFirstBind: false,
+		},
+	})
+	require.NoError(t, err)
+
+	var got []DefaultSubscriptionSetting
+	require.NoError(t, json.Unmarshal([]byte(repo.updates[SettingKeyAuthSourceDefaultEmailSubscriptions]), &got))
+	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 88}}, got)
 }

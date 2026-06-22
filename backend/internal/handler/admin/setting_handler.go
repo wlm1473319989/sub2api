@@ -105,6 +105,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 	for _, sub := range settings.DefaultSubscriptions {
 		defaultSubscriptions = append(defaultSubscriptions, dto.DefaultSubscriptionSetting{
 			GroupID:      sub.GroupID,
+			PlanID:       sub.PlanID,
 			ValidityDays: sub.ValidityDays,
 		})
 	}
@@ -1429,6 +1430,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	for _, sub := range req.DefaultSubscriptions {
 		defaultSubscriptions = append(defaultSubscriptions, service.DefaultSubscriptionSetting{
 			GroupID:      sub.GroupID,
+			PlanID:       sub.PlanID,
 			ValidityDays: sub.ValidityDays,
 		})
 	}
@@ -1947,6 +1949,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	for _, sub := range updatedSettings.DefaultSubscriptions {
 		updatedDefaultSubscriptions = append(updatedDefaultSubscriptions, dto.DefaultSubscriptionSetting{
 			GroupID:      sub.GroupID,
+			PlanID:       sub.PlanID,
 			ValidityDays: sub.ValidityDays,
 		})
 	}
@@ -2704,13 +2707,22 @@ func normalizeDefaultSubscriptions(input []dto.DefaultSubscriptionSetting) []dto
 	}
 	normalized := make([]dto.DefaultSubscriptionSetting, 0, len(input))
 	for _, item := range input {
-		if item.GroupID <= 0 || item.ValidityDays <= 0 {
+		switch {
+		case item.PlanID > 0:
+			item.GroupID = 0
+			if item.ValidityDays < 0 {
+				item.ValidityDays = 0
+			}
+			normalized = append(normalized, item)
+		case item.GroupID > 0 && item.ValidityDays > 0:
+			item.PlanID = 0
+			if item.ValidityDays > service.MaxValidityDays {
+				item.ValidityDays = service.MaxValidityDays
+			}
+			normalized = append(normalized, item)
+		default:
 			continue
 		}
-		if item.ValidityDays > service.MaxValidityDays {
-			item.ValidityDays = service.MaxValidityDays
-		}
-		normalized = append(normalized, item)
 	}
 	return normalized
 }
@@ -2752,6 +2764,7 @@ func defaultSubscriptionsValueOrDefault(input *[]dto.DefaultSubscriptionSetting,
 	for _, item := range *input {
 		result = append(result, service.DefaultSubscriptionSetting{
 			GroupID:      item.GroupID,
+			PlanID:       item.PlanID,
 			ValidityDays: item.ValidityDays,
 		})
 	}
@@ -2843,7 +2856,7 @@ func equalDefaultSubscriptions(a, b []service.DefaultSubscriptionSetting) bool {
 		return false
 	}
 	for i := range a {
-		if a[i].GroupID != b[i].GroupID || a[i].ValidityDays != b[i].ValidityDays {
+		if a[i].GroupID != b[i].GroupID || a[i].PlanID != b[i].PlanID || a[i].ValidityDays != b[i].ValidityDays {
 			return false
 		}
 	}

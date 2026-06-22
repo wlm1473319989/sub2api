@@ -543,6 +543,7 @@ func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 		CreatedAt:    rc.CreatedAt,
 		ExpiresAt:    rc.ExpiresAt,
 		GroupID:      rc.GroupID,
+		PlanID:       rc.PlanID,
 		ValidityDays: rc.ValidityDays,
 		User:         UserFromServiceShallow(rc.User),
 		Group:        GroupFromServiceShallow(rc.Group),

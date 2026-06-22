@@ -63,46 +63,45 @@ func TestCreateAndRedeem_TypeDefaultsToBalance(t *testing.T) {
 		"omitting type should default to balance and pass validation")
 }
 
-func TestCreateAndRedeem_SubscriptionRequiresGroupID(t *testing.T) {
+func TestCreateAndRedeem_SubscriptionRequiresPlanID(t *testing.T) {
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
-		"code":          "test-sub-no-group",
+		"code":          "test-sub-no-plan",
 		"type":          "subscription",
 		"value":         29.9,
 		"user_id":       1,
 		"validity_days": 30,
-		// group_id 缺失
+		// plan_id 缺失
 	})
 
 	assert.Equal(t, http.StatusBadRequest, code)
 }
 
-func TestCreateAndRedeem_SubscriptionRequiresNonZeroValidityDays(t *testing.T) {
-	groupID := int64(5)
+func TestCreateAndRedeem_SubscriptionValidityDaysValuesPassValidation(t *testing.T) {
+	planID := int64(5)
 	h := newCreateAndRedeemHandler()
 
-	// zero should be rejected
-	t.Run("zero", func(t *testing.T) {
+	t.Run("zero_uses_plan_default", func(t *testing.T) {
 		code := postCreateAndRedeemValidation(t, h, map[string]any{
 			"code":          "test-sub-bad-days-zero",
 			"type":          "subscription",
 			"value":         29.9,
 			"user_id":       1,
-			"group_id":      groupID,
+			"plan_id":       planID,
 			"validity_days": 0,
 		})
 
-		assert.Equal(t, http.StatusBadRequest, code)
+		assert.NotEqual(t, http.StatusBadRequest, code,
+			"zero validity_days should pass validation for plan-based subscriptions")
 	})
 
-	// negative should pass validation (used for refund/reduction)
 	t.Run("negative_passes_validation", func(t *testing.T) {
 		code := postCreateAndRedeemValidation(t, h, map[string]any{
 			"code":          "test-sub-negative-days",
 			"type":          "subscription",
 			"value":         29.9,
 			"user_id":       1,
-			"group_id":      groupID,
+			"plan_id":       planID,
 			"validity_days": -7,
 		})
 
@@ -112,14 +111,14 @@ func TestCreateAndRedeem_SubscriptionRequiresNonZeroValidityDays(t *testing.T) {
 }
 
 func TestCreateAndRedeem_SubscriptionValidParamsPassValidation(t *testing.T) {
-	groupID := int64(5)
+	planID := int64(5)
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
 		"code":          "test-sub-valid",
 		"type":          "subscription",
 		"value":         29.9,
 		"user_id":       1,
-		"group_id":      groupID,
+		"plan_id":       planID,
 		"validity_days": 31,
 	})
 
