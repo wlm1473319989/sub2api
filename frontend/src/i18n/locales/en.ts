@@ -4397,10 +4397,10 @@ export default {
         status: 'Status',
         expiresAt: 'Expires At',
         notes: 'Notes',
-        group: 'Group'
+        group: 'Plan'
       },
       batchNotesPlaceholder: 'Enter the new note, or leave blank to clear it',
-      clearGroup: 'Clear group',
+      clearGroup: 'Clear plan',
       deleteAllUnused: 'Delete All Unused Codes',
       deleteCode: 'Delete Redeem Code',
       deleteCodeConfirm:
@@ -4440,7 +4440,7 @@ export default {
         admin_concurrency: 'Concurrency (Admin)'
       },
       selectGroup: 'Select Group',
-      selectGroupPlaceholder: 'Choose a subscription group',
+      selectGroupPlaceholder: 'Choose a subscription plan',
       validityDays: 'Validity Days',
       codeExpiry: 'Code Expiry',
       neverExpires: 'Never expires',
@@ -4448,7 +4448,7 @@ export default {
       customExpiry: 'Custom',
       customExpiryDays: 'Custom days',
       expiryDaysRequired: 'Please enter a valid expiry day count',
-      groupRequired: 'Please select a subscription group',
+      groupRequired: 'Please select a subscription plan',
       days: ' days',
       status: {
         unused: 'Unused',

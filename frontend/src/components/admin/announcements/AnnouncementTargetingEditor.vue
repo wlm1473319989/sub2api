@@ -103,10 +103,34 @@
 
               <div v-if="cond.type === 'subscription'" class="flex-1">
                 <label class="input-label">{{ t('admin.announcements.form.selectPackages') }}</label>
-                <GroupSelector
-                  v-model="subscriptionSelections[groupIndex][condIndex]"
-                  :groups="groups"
-                />
+                <div class="grid max-h-40 grid-cols-1 gap-2 overflow-y-auto rounded-lg border border-gray-200 bg-gray-50 p-2 dark:border-dark-600 dark:bg-dark-800">
+                  <label
+                    v-for="plan in plans"
+                    :key="plan.id"
+                    class="flex cursor-pointer items-start gap-3 rounded-lg border border-transparent bg-white px-3 py-2 transition-colors hover:border-primary-200 dark:bg-dark-700/70 dark:hover:border-primary-800"
+                  >
+                    <input
+                      type="checkbox"
+                      :checked="(subscriptionSelections[groupIndex]?.[condIndex] ?? []).includes(plan.id)"
+                      class="mt-0.5 h-3.5 w-3.5 shrink-0 rounded border-gray-300 text-primary-500 focus:ring-primary-500 dark:border-dark-500"
+                      @change="toggleSubscriptionSelection(groupIndex, condIndex, plan.id, ($event.target as HTMLInputElement).checked)"
+                    />
+                    <div class="min-w-0 flex-1">
+                      <div class="truncate text-sm font-medium text-gray-900 dark:text-white">
+                        {{ plan.name }}
+                      </div>
+                      <div class="mt-0.5 text-xs text-gray-500 dark:text-dark-400">
+                        {{ formatPlanMeta(plan) }}
+                      </div>
+                    </div>
+                  </label>
+                  <div
+                    v-if="plans.length === 0"
+                    class="py-2 text-center text-sm text-gray-500 dark:text-gray-400"
+                  >
+                    {{ t('common.noOptionsFound') }}
+                  </div>
+                </div>
               </div>
 
               <div v-else class="flex flex-1 flex-col gap-3 sm:flex-row">
@@ -168,23 +192,22 @@
 import { computed, reactive, watch } from 'vue'
 import { useI18n } from 'vue-i18n'
 import type {
-  AdminGroup,
   AnnouncementTargeting,
   AnnouncementCondition,
   AnnouncementConditionGroup,
   AnnouncementConditionType,
   AnnouncementOperator
 } from '@/types'
+import type { SubscriptionPlan } from '@/types/payment'
 
 import Select from '@/components/common/Select.vue'
-import GroupSelector from '@/components/common/GroupSelector.vue'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 
 const props = defineProps<{
   modelValue: AnnouncementTargeting
-  groups: AdminGroup[]
+  plans: SubscriptionPlan[]
 }>()
 
 const emit = defineEmits<{
@@ -314,8 +337,26 @@ function setBalanceValue(groupIndex: number, condIndex: number, raw: string) {
   })
 }
 
-// We keep group_ids selection in a parallel reactive map because GroupSelector is numeric list.
-// Then we mirror it back to targeting.group_ids via a watcher.
+function toggleSubscriptionSelection(groupIndex: number, condIndex: number, planID: number, checked: boolean) {
+  ensureSelectionPath(groupIndex, condIndex)
+  const current = subscriptionSelections[groupIndex]?.[condIndex] ?? []
+  subscriptionSelections[groupIndex][condIndex] = checked
+    ? Array.from(new Set([...current, planID]))
+    : current.filter((id) => id !== planID)
+}
+
+function formatPlanMeta(plan: SubscriptionPlan): string {
+  const unit = plan.validity_unit || 'day'
+  const quotaParts: string[] = []
+  if (plan.daily_quota_knives != null) quotaParts.push(`D ${Number(plan.daily_quota_knives).toFixed(2)}`)
+  if (plan.weekly_quota_knives != null) quotaParts.push(`W ${Number(plan.weekly_quota_knives).toFixed(2)}`)
+  if (plan.monthly_quota_knives != null) quotaParts.push(`M ${Number(plan.monthly_quota_knives).toFixed(2)}`)
+  const quotaText = quotaParts.length > 0 ? quotaParts.join(' / ') : 'No quota'
+  return `${plan.price.toFixed(2)} · ${plan.validity_days} ${unit} · ${quotaText}`
+}
+
+// Keep selected subscription IDs in a parallel reactive map and mirror them
+// back to targeting.group_ids for backward-compatible payload shape.
 const subscriptionSelections = reactive<Record<number, Record<number, number[]>>>({})
 
 function ensureSelectionPath(groupIndex: number, condIndex: number) {

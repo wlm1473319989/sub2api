@@ -225,10 +225,7 @@ func (s *AnnouncementService) ListForUser(ctx context.Context, userID int64, unr
 	if err != nil {
 		return nil, fmt.Errorf("list active subscriptions: %w", err)
 	}
-	activeGroupIDs := make(map[int64]struct{}, len(activeSubs))
-	for i := range activeSubs {
-		activeGroupIDs[activeSubs[i].GroupID] = struct{}{}
-	}
+	activeSubscriptionIDs := collectAnnouncementSubscriptionIDs(activeSubs)
 
 	now := time.Now()
 	anns, err := s.announcementRepo.ListActive(ctx, now)
@@ -243,7 +240,7 @@ func (s *AnnouncementService) ListForUser(ctx context.Context, userID int64, unr
 		if !a.IsActiveAt(now) {
 			continue
 		}
-		if !a.Targeting.Matches(user.Balance, activeGroupIDs) {
+		if !a.Targeting.Matches(user.Balance, activeSubscriptionIDs) {
 			continue
 		}
 		visible = append(visible, a)
@@ -310,12 +307,9 @@ func (s *AnnouncementService) MarkRead(ctx context.Context, userID, announcement
 	if err != nil {
 		return fmt.Errorf("list active subscriptions: %w", err)
 	}
-	activeGroupIDs := make(map[int64]struct{}, len(activeSubs))
-	for i := range activeSubs {
-		activeGroupIDs[activeSubs[i].GroupID] = struct{}{}
-	}
+	activeSubscriptionIDs := collectAnnouncementSubscriptionIDs(activeSubs)
 
-	if !a.Targeting.Matches(user.Balance, activeGroupIDs) {
+	if !a.Targeting.Matches(user.Balance, activeSubscriptionIDs) {
 		return ErrAnnouncementNotFound
 	}
 
@@ -362,10 +356,7 @@ func (s *AnnouncementService) ListUserReadStatus(
 		if err != nil {
 			return nil, nil, fmt.Errorf("list active subscriptions: %w", err)
 		}
-		activeGroupIDs := make(map[int64]struct{}, len(subs))
-		for j := range subs {
-			activeGroupIDs[subs[j].GroupID] = struct{}{}
-		}
+		activeSubscriptionIDs := collectAnnouncementSubscriptionIDs(subs)
 
 		readAt, ok := readMap[u.ID]
 		var ptr *time.Time
@@ -379,7 +370,7 @@ func (s *AnnouncementService) ListUserReadStatus(
 			Email:    u.Email,
 			Username: u.Username,
 			Balance:  u.Balance,
-			Eligible: domain.AnnouncementTargeting(ann.Targeting).Matches(u.Balance, activeGroupIDs),
+			Eligible: domain.AnnouncementTargeting(ann.Targeting).Matches(u.Balance, activeSubscriptionIDs),
 			ReadAt:   ptr,
 		})
 	}
@@ -403,4 +394,17 @@ func isValidAnnouncementNotifyMode(mode string) bool {
 	default:
 		return false
 	}
+}
+
+func collectAnnouncementSubscriptionIDs(subs []UserSubscription) map[int64]struct{} {
+	ids := make(map[int64]struct{}, len(subs)*2)
+	for i := range subs {
+		if subs[i].PlanID != nil && *subs[i].PlanID > 0 {
+			ids[*subs[i].PlanID] = struct{}{}
+		}
+		if subs[i].GroupID > 0 {
+			ids[subs[i].GroupID] = struct{}{}
+		}
+	}
+	return ids
 }

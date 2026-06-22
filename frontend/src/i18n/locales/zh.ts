@@ -4528,10 +4528,10 @@ export default {
         status: '状态',
         expiresAt: '过期时间',
         notes: '备注',
-        group: '分组'
+        group: '套餐'
       },
       batchNotesPlaceholder: '输入新的备注，留空可清空备注',
-      clearGroup: '清空分组',
+      clearGroup: '清空套餐',
       deleteAllUnused: '删除全部未使用',
       deleteCodeConfirm: '确定要删除此兑换码吗？此操作无法撤销。',
       deleteAllUnusedConfirm: '确定要删除全部未使用的兑换码吗？此操作无法撤销。',
@@ -4555,7 +4555,7 @@ export default {
       failedToDeleteUnused: '删除未使用的兑换码失败',
       failedToCopy: '复制失败',
       selectGroup: '选择分组',
-      selectGroupPlaceholder: '选择订阅分组',
+      selectGroupPlaceholder: '选择订阅套餐',
       validityDays: '有效天数',
       codeExpiry: '兑换码过期',
       neverExpires: '永不过期',
@@ -4563,7 +4563,7 @@ export default {
       customExpiry: '自定义',
       customExpiryDays: '自定义天数',
       expiryDaysRequired: '请输入有效的过期天数',
-      groupRequired: '请选择订阅分组',
+      groupRequired: '请选择订阅套餐',
       days: '天',
       status: {
         unused: '未使用',

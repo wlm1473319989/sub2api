@@ -64,3 +64,30 @@ func TestAnnouncementTargeting_Matches_AndOrSemantics(t *testing.T) {
 	require.False(t, targeting.Matches(99.9, map[int64]struct{}{10: {}}))
 	require.True(t, targeting.Matches(100, map[int64]struct{}{10: {}}))
 }
+
+func TestAnnouncementTargeting_Matches_WithPlanIDSemantics(t *testing.T) {
+	targeting := AnnouncementTargeting{
+		AnyOf: []AnnouncementConditionGroup{
+			{
+				AllOf: []AnnouncementCondition{
+					{Type: AnnouncementConditionTypeSubscription, Operator: AnnouncementOperatorIn, GroupIDs: []int64{88}},
+				},
+			},
+		},
+	}
+
+	require.False(t, targeting.Matches(0, map[int64]struct{}{7: {}}))
+	require.True(t, targeting.Matches(0, map[int64]struct{}{88: {}}))
+}
+
+func TestCollectAnnouncementSubscriptionIDs_IncludesPlanAndLegacyGroupIDs(t *testing.T) {
+	planID := int64(88)
+	subs := []UserSubscription{
+		{PlanID: &planID},
+		{GroupID: 7},
+	}
+
+	ids := collectAnnouncementSubscriptionIDs(subs)
+	require.Contains(t, ids, planID)
+	require.Contains(t, ids, int64(7))
+}

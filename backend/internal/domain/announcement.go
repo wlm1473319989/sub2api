@@ -56,14 +56,14 @@ type AnnouncementCondition struct {
 	// - balance: gt/gte/lt/lte/eq
 	Operator string `json:"operator"`
 
-	// subscription 条件：匹配的订阅套餐（group_id）
+	// subscription 条件：兼容期内匹配订阅套餐 ID（新）或 legacy group_id（旧）
 	GroupIDs []int64 `json:"group_ids,omitempty"`
 
 	// balance 条件：比较阈值
 	Value float64 `json:"value,omitempty"`
 }
 
-func (t AnnouncementTargeting) Matches(balance float64, activeSubscriptionGroupIDs map[int64]struct{}) bool {
+func (t AnnouncementTargeting) Matches(balance float64, activeSubscriptionIDs map[int64]struct{}) bool {
 	// 空规则：展示给所有用户
 	if len(t.AnyOf) == 0 {
 		return true
@@ -76,7 +76,7 @@ func (t AnnouncementTargeting) Matches(balance float64, activeSubscriptionGroupI
 		}
 		allMatched := true
 		for _, cond := range group.AllOf {
-			if !cond.Matches(balance, activeSubscriptionGroupIDs) {
+			if !cond.Matches(balance, activeSubscriptionIDs) {
 				allMatched = false
 				break
 			}
@@ -89,7 +89,7 @@ func (t AnnouncementTargeting) Matches(balance float64, activeSubscriptionGroupI
 	return false
 }
 
-func (c AnnouncementCondition) Matches(balance float64, activeSubscriptionGroupIDs map[int64]struct{}) bool {
+func (c AnnouncementCondition) Matches(balance float64, activeSubscriptionIDs map[int64]struct{}) bool {
 	switch c.Type {
 	case AnnouncementConditionTypeSubscription:
 		if c.Operator != AnnouncementOperatorIn {
@@ -98,11 +98,11 @@ func (c AnnouncementCondition) Matches(balance float64, activeSubscriptionGroupI
 		if len(c.GroupIDs) == 0 {
 			return false
 		}
-		if len(activeSubscriptionGroupIDs) == 0 {
+		if len(activeSubscriptionIDs) == 0 {
 			return false
 		}
 		for _, gid := range c.GroupIDs {
-			if _, ok := activeSubscriptionGroupIDs[gid]; ok {
+			if _, ok := activeSubscriptionIDs[gid]; ok {
 				return true
 			}
 		}
