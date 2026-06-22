@@ -21,7 +21,6 @@ var (
 	ErrUpgradePlanPriceInvalid           = infraerrors.BadRequest("UPGRADE_PLAN_PRICE_INVALID", "upgrade target plan price must be higher than the active subscription")
 	ErrRefundOrderRequired               = infraerrors.BadRequest("REFUND_ORDER_REQUIRED", "refund requires a subscription order id")
 	ErrRefundOrderNotLatest              = infraerrors.Conflict("REFUND_ORDER_NOT_LATEST", "refund order must be the latest order for the active subscription")
-	ErrPlanPersistenceGroupRequired      = infraerrors.BadRequest("PLAN_PERSISTENCE_GROUP_REQUIRED", "subscription plan cannot be persisted without a legacy group during migration")
 )
 
 type PurchaseNewPlanInput struct {
@@ -72,7 +71,7 @@ func (s *SubscriptionService) PurchaseNewPlan(ctx context.Context, input *Purcha
 		return nil, err
 	}
 
-	sub, err := s.createPlanSnapshotSubscription(ctx, input.UserID, input.Plan, nil, input.AssignedBy, input.Notes, time.Now())
+	sub, err := s.createPlanSnapshotSubscription(ctx, input.UserID, input.Plan, input.AssignedBy, input.Notes, time.Now())
 	if err != nil {
 		return nil, err
 	}
@@ -134,7 +133,7 @@ func (s *SubscriptionService) UpgradeActivePlan(ctx context.Context, input *Upgr
 	now := time.Now()
 	var newSubscriptionID int64
 	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
-		newSub, createErr := s.createPlanSnapshotSubscription(txCtx, input.UserID, input.TargetPlan, active, input.AssignedBy, input.Notes, now)
+		newSub, createErr := s.createPlanSnapshotSubscription(txCtx, input.UserID, input.TargetPlan, input.AssignedBy, input.Notes, now)
 		if createErr != nil {
 			return createErr
 		}
@@ -149,7 +148,7 @@ func (s *SubscriptionService) UpgradeActivePlan(ctx context.Context, input *Upgr
 		return nil, err
 	}
 
-	s.invalidateSubscriptionCaches(input.UserID, active.GroupID, resolveSubscriptionGroupID(input.TargetPlan, active))
+	s.invalidateSubscriptionCaches(input.UserID, active.GroupID)
 	current, err := s.userSubRepo.GetByID(ctx, newSubscriptionID)
 	if err != nil {
 		return nil, err
@@ -206,15 +205,11 @@ func (s *SubscriptionService) RefundActivePlan(ctx context.Context, input *Refun
 	}, nil
 }
 
-func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan, fallbackSub *UserSubscription, assignedBy int64, notes string, now time.Time) (*UserSubscription, error) {
+func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan, assignedBy int64, notes string, now time.Time) (*UserSubscription, error) {
 	if plan == nil {
 		return nil, ErrSubscriptionPlanRequired
 	}
 	validityDays, err := subscriptionPlanTotalValidityDays(plan)
-	if err != nil {
-		return nil, err
-	}
-	groupID, err := resolvePlanPersistenceGroupID(plan, fallbackSub)
 	if err != nil {
 		return nil, err
 	}
@@ -225,7 +220,7 @@ func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context
 	planPrice := plan.Price
 	sub := &UserSubscription{
 		UserID:             userID,
-		GroupID:            groupID,
+		GroupID:            resolveSubscriptionPersistenceGroupID(plan),
 		PlanID:             &planID,
 		PlanNameSnapshot:   copyStringPointer(&planName),
 		PlanPriceSnapshot:  copyFloat64Pointer(&planPrice),
@@ -253,13 +248,7 @@ func subscriptionMatchesRenewalPlan(active *UserSubscription, plan *dbent.Subscr
 	if active == nil || plan == nil {
 		return false
 	}
-	if active.PlanID != nil {
-		return *active.PlanID == plan.ID
-	}
-	if active.PlanPriceSnapshot == nil || plan.GroupID == nil {
-		return false
-	}
-	return active.GroupID == *plan.GroupID && *active.PlanPriceSnapshot == plan.Price
+	return active.PlanID != nil && *active.PlanID == plan.ID
 }
 
 func activeSubscriptionPrice(active *UserSubscription) (float64, error) {
@@ -298,22 +287,11 @@ func clipSubscriptionExpiry(expiresAt time.Time) time.Time {
 	return expiresAt
 }
 
-func resolvePlanPersistenceGroupID(plan *dbent.SubscriptionPlan, fallbackSub *UserSubscription) (int64, error) {
+func resolveSubscriptionPersistenceGroupID(plan *dbent.SubscriptionPlan) int64 {
 	if plan != nil && plan.GroupID != nil && *plan.GroupID > 0 {
-		return *plan.GroupID, nil
+		return *plan.GroupID
 	}
-	if fallbackSub != nil && fallbackSub.GroupID > 0 {
-		return fallbackSub.GroupID, nil
-	}
-	return 0, ErrPlanPersistenceGroupRequired
-}
-
-func resolveSubscriptionGroupID(plan *dbent.SubscriptionPlan, fallbackSub *UserSubscription) int64 {
-	groupID, err := resolvePlanPersistenceGroupID(plan, fallbackSub)
-	if err != nil {
-		return 0
-	}
-	return groupID
+	return 0
 }
 
 func copyFloat64Pointer(value *float64) *float64 {
@@ -332,25 +310,14 @@ func copyStringPointer(value *string) *string {
 	return &v
 }
 
-func (s *SubscriptionService) invalidateSubscriptionCaches(userID int64, groupIDs ...int64) {
-	seen := make(map[int64]struct{}, len(groupIDs))
-	for _, groupID := range groupIDs {
-		if groupID <= 0 {
-			continue
-		}
-		if _, ok := seen[groupID]; ok {
-			continue
-		}
-		seen[groupID] = struct{}{}
-		s.InvalidateSubCache(userID, groupID)
-		if s.billingCacheService != nil {
-			gid := groupID
-			go func() {
-				cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-				defer cancel()
-				_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID, gid)
-			}()
-		}
+func (s *SubscriptionService) invalidateSubscriptionCaches(userID int64, _ ...int64) {
+	s.InvalidateSubCache(userID)
+	if s.billingCacheService != nil {
+		go func() {
+			cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+			defer cancel()
+			_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID)
+		}()
 	}
 }
 
@@ -375,8 +342,6 @@ func (s *SubscriptionService) latestSubscriptionOrderForActive(ctx context.Conte
 
 	if active != nil && active.PlanID != nil {
 		query = query.Where(paymentorder.PlanIDEQ(*active.PlanID))
-	} else if active != nil {
-		query = query.Where(paymentorder.SubscriptionGroupIDEQ(active.GroupID))
 	} else {
 		return nil, ErrRefundOrderNotLatest
 	}

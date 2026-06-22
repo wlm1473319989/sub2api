@@ -124,7 +124,7 @@ func (h *subscriptionHandlerHarness) createPlan(t *testing.T, name string, group
 	return plan
 }
 
-func TestSubscriptionAssignRequiresGroupOrPlanID(t *testing.T) {
+func TestSubscriptionAssignRequiresPlanID(t *testing.T) {
 	h := &SubscriptionHandler{}
 	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/assign", map[string]any{
 		"user_id":       1,
@@ -148,7 +148,7 @@ func TestSubscriptionAssignAcceptsPlanIDWithoutGroupID(t *testing.T) {
 	assert.Equal(t, http.StatusOK, code)
 }
 
-func TestSubscriptionBulkAssignRequiresGroupOrPlanID(t *testing.T) {
+func TestSubscriptionBulkAssignRequiresPlanID(t *testing.T) {
 	h := &SubscriptionHandler{}
 	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/bulk-assign", map[string]any{
 		"user_ids":      []int64{1, 2},

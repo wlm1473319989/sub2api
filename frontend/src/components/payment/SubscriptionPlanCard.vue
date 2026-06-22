@@ -158,9 +158,9 @@ const modelScopeLabels = computed(() => {
   return scopes.map((scope) => MODEL_SCOPE_LABELS[scope] || scope)
 })
 
-const displayDailyQuota = computed(() => props.plan.daily_quota_knives ?? props.plan.daily_limit_usd ?? null)
-const displayWeeklyQuota = computed(() => props.plan.weekly_quota_knives ?? props.plan.weekly_limit_usd ?? null)
-const displayMonthlyQuota = computed(() => props.plan.monthly_quota_knives ?? props.plan.monthly_limit_usd ?? null)
+const displayDailyQuota = computed(() => props.plan.daily_quota_knives ?? null)
+const displayWeeklyQuota = computed(() => props.plan.weekly_quota_knives ?? null)
+const displayMonthlyQuota = computed(() => props.plan.monthly_quota_knives ?? null)
 
 const validitySuffix = computed(() => {
   const unit = props.plan.validity_unit || 'day'

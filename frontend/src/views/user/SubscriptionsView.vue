@@ -292,15 +292,15 @@ function getProgressBarClass(used: number | undefined, limit: number | null | un
 }
 
 function displayDailyLimit(subscription: UserSubscription): number | null {
-  return subscription.daily_quota_knives ?? subscription.group?.daily_limit_usd ?? null
+  return subscription.daily_quota_knives ?? null
 }
 
 function displayWeeklyLimit(subscription: UserSubscription): number | null {
-  return subscription.weekly_quota_knives ?? subscription.group?.weekly_limit_usd ?? null
+  return subscription.weekly_quota_knives ?? null
 }
 
 function displayMonthlyLimit(subscription: UserSubscription): number | null {
-  return subscription.monthly_quota_knives ?? subscription.group?.monthly_limit_usd ?? null
+  return subscription.monthly_quota_knives ?? null
 }
 
 function displayDailyUsed(subscription: UserSubscription): number {

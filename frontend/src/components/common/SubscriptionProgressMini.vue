@@ -252,15 +252,15 @@ function getProgressWidth(used: number | undefined, limit: number | null | undef
 }
 
 function displayDailyLimit(sub: UserSubscription): number | null {
-  return sub.daily_quota_knives ?? sub.group?.daily_limit_usd ?? null
+  return sub.daily_quota_knives ?? null
 }
 
 function displayWeeklyLimit(sub: UserSubscription): number | null {
-  return sub.weekly_quota_knives ?? sub.group?.weekly_limit_usd ?? null
+  return sub.weekly_quota_knives ?? null
 }
 
 function displayMonthlyLimit(sub: UserSubscription): number | null {
-  return sub.monthly_quota_knives ?? sub.group?.monthly_limit_usd ?? null
+  return sub.monthly_quota_knives ?? null
 }
 
 function displayDailyUsed(sub: UserSubscription): number {

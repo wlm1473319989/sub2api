@@ -41,8 +41,7 @@ func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *S
 // AssignSubscriptionRequest represents assign subscription request
 type AssignSubscriptionRequest struct {
 	UserID       int64  `json:"user_id" binding:"required"`
-	GroupID      int64  `json:"group_id"`
-	PlanID       int64  `json:"plan_id"`
+	PlanID       int64  `json:"plan_id" binding:"required"`
 	ValidityDays int    `json:"validity_days" binding:"omitempty,max=36500"` // max 100 years
 	Notes        string `json:"notes"`
 }
@@ -50,8 +49,7 @@ type AssignSubscriptionRequest struct {
 // BulkAssignSubscriptionRequest represents bulk assign subscription request
 type BulkAssignSubscriptionRequest struct {
 	UserIDs      []int64 `json:"user_ids" binding:"required,min=1"`
-	GroupID      int64   `json:"group_id"`
-	PlanID       int64   `json:"plan_id"`
+	PlanID       int64   `json:"plan_id" binding:"required"`
 	ValidityDays int     `json:"validity_days" binding:"omitempty,max=36500"` // max 100 years
 	Notes        string  `json:"notes"`
 }
@@ -142,8 +140,8 @@ func (h *SubscriptionHandler) Assign(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
-	if !hasSubscriptionAssignTarget(req.GroupID, req.PlanID) {
-		response.BadRequest(c, "group_id or plan_id is required")
+	if req.PlanID <= 0 {
+		response.BadRequest(c, "plan_id is required")
 		return
 	}
 
@@ -152,7 +150,6 @@ func (h *SubscriptionHandler) Assign(c *gin.Context) {
 
 	subscription, err := h.subscriptionService.AssignSubscription(c.Request.Context(), &service.AssignSubscriptionInput{
 		UserID:       req.UserID,
-		GroupID:      req.GroupID,
 		PlanID:       req.PlanID,
 		ValidityDays: req.ValidityDays,
 		AssignedBy:   adminID,
@@ -174,8 +171,8 @@ func (h *SubscriptionHandler) BulkAssign(c *gin.Context) {
 		response.BadRequest(c, "Invalid request: "+err.Error())
 		return
 	}
-	if !hasSubscriptionAssignTarget(req.GroupID, req.PlanID) {
-		response.BadRequest(c, "group_id or plan_id is required")
+	if req.PlanID <= 0 {
+		response.BadRequest(c, "plan_id is required")
 		return
 	}
 
@@ -184,7 +181,6 @@ func (h *SubscriptionHandler) BulkAssign(c *gin.Context) {
 
 	result, err := h.subscriptionService.BulkAssignSubscription(c.Request.Context(), &service.BulkAssignSubscriptionInput{
 		UserIDs:      req.UserIDs,
-		GroupID:      req.GroupID,
 		PlanID:       req.PlanID,
 		ValidityDays: req.ValidityDays,
 		AssignedBy:   adminID,
@@ -279,30 +275,6 @@ func (h *SubscriptionHandler) Revoke(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Subscription revoked successfully"})
 }
 
-// ListByGroup handles listing subscriptions for a specific group
-// GET /api/v1/admin/groups/:id/subscriptions
-func (h *SubscriptionHandler) ListByGroup(c *gin.Context) {
-	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
-	if err != nil {
-		response.BadRequest(c, "Invalid group ID")
-		return
-	}
-
-	page, pageSize := response.ParsePagination(c)
-
-	subscriptions, pagination, err := h.subscriptionService.ListGroupSubscriptions(c.Request.Context(), groupID, page, pageSize)
-	if err != nil {
-		response.ErrorFrom(c, err)
-		return
-	}
-
-	out := make([]dto.AdminUserSubscription, 0, len(subscriptions))
-	for i := range subscriptions {
-		out = append(out, *dto.UserSubscriptionFromServiceAdmin(&subscriptions[i]))
-	}
-	response.PaginatedWithResult(c, out, toResponsePagination(pagination))
-}
-
 // ListByUser handles listing subscriptions for a specific user
 // GET /api/v1/admin/users/:id/subscriptions
 func (h *SubscriptionHandler) ListByUser(c *gin.Context) {
@@ -332,8 +304,4 @@ func getAdminIDFromContext(c *gin.Context) int64 {
 		return 0
 	}
 	return subject.UserID
-}
-
-func hasSubscriptionAssignTarget(groupID int64, planID int64) bool {
-	return groupID > 0 || planID > 0
 }

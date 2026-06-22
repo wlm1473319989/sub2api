@@ -1314,13 +1314,13 @@ const subscriptionDisplayName = (subscription: UserSubscription): string =>
   subscription.plan_name_snapshot || subscription.group?.name || `Subscription #${subscription.id}`
 
 const displayDailyLimit = (subscription: UserSubscription): number | null =>
-  subscription.daily_quota_knives ?? subscription.group?.daily_limit_usd ?? null
+  subscription.daily_quota_knives ?? null
 
 const displayWeeklyLimit = (subscription: UserSubscription): number | null =>
-  subscription.weekly_quota_knives ?? subscription.group?.weekly_limit_usd ?? null
+  subscription.weekly_quota_knives ?? null
 
 const displayMonthlyLimit = (subscription: UserSubscription): number | null =>
-  subscription.monthly_quota_knives ?? subscription.group?.monthly_limit_usd ?? null
+  subscription.monthly_quota_knives ?? null
 
 const displayDailyUsed = (subscription: UserSubscription): number =>
   subscription.daily_quota_knives != null ? (subscription.daily_used_knives ?? 0) : (subscription.daily_usage_usd ?? 0)

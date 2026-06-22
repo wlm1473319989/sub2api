@@ -11,17 +11,22 @@ import (
 
 // SubscriptionSummaryItem represents a subscription item in summary
 type SubscriptionSummaryItem struct {
-	ID              int64   `json:"id"`
-	GroupID         int64   `json:"group_id"`
-	GroupName       string  `json:"group_name"`
-	Status          string  `json:"status"`
-	DailyUsedUSD    float64 `json:"daily_used_usd,omitempty"`
-	DailyLimitUSD   float64 `json:"daily_limit_usd,omitempty"`
-	WeeklyUsedUSD   float64 `json:"weekly_used_usd,omitempty"`
-	WeeklyLimitUSD  float64 `json:"weekly_limit_usd,omitempty"`
-	MonthlyUsedUSD  float64 `json:"monthly_used_usd,omitempty"`
-	MonthlyLimitUSD float64 `json:"monthly_limit_usd,omitempty"`
-	ExpiresAt       *string `json:"expires_at,omitempty"`
+	ID                 int64    `json:"id"`
+	GroupID            int64    `json:"group_id"`
+	GroupName          string   `json:"group_name"`
+	PlanID             *int64   `json:"plan_id,omitempty"`
+	PlanNameSnapshot   *string  `json:"plan_name_snapshot,omitempty"`
+	Status             string   `json:"status"`
+	DailyUsedUSD       float64  `json:"daily_used_usd,omitempty"`
+	DailyQuotaKnives   *float64 `json:"daily_quota_knives,omitempty"`
+	DailyUsedKnives    float64  `json:"daily_used_knives,omitempty"`
+	WeeklyUsedUSD      float64  `json:"weekly_used_usd,omitempty"`
+	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives,omitempty"`
+	WeeklyUsedKnives   float64  `json:"weekly_used_knives,omitempty"`
+	MonthlyUsedUSD     float64  `json:"monthly_used_usd,omitempty"`
+	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
+	MonthlyUsedKnives  float64  `json:"monthly_used_knives,omitempty"`
+	ExpiresAt          *string  `json:"expires_at,omitempty"`
 }
 
 // SubscriptionProgressInfo represents subscription with progress info
@@ -140,26 +145,25 @@ func (h *SubscriptionHandler) GetSummary(c *gin.Context) {
 
 	for _, sub := range subscriptions {
 		item := SubscriptionSummaryItem{
-			ID:             sub.ID,
-			GroupID:        sub.GroupID,
-			Status:         sub.Status,
-			DailyUsedUSD:   sub.DailyUsageUSD,
-			WeeklyUsedUSD:  sub.WeeklyUsageUSD,
-			MonthlyUsedUSD: sub.MonthlyUsageUSD,
+			ID:                 sub.ID,
+			GroupID:            sub.GroupID,
+			PlanID:             sub.PlanID,
+			PlanNameSnapshot:   sub.PlanNameSnapshot,
+			Status:             sub.Status,
+			DailyUsedUSD:       sub.DailyUsageUSD,
+			DailyQuotaKnives:   sub.DailyQuotaKnives,
+			DailyUsedKnives:    sub.DailyUsedKnives,
+			WeeklyUsedUSD:      sub.WeeklyUsageUSD,
+			WeeklyQuotaKnives:  sub.WeeklyQuotaKnives,
+			WeeklyUsedKnives:   sub.WeeklyUsedKnives,
+			MonthlyUsedUSD:     sub.MonthlyUsageUSD,
+			MonthlyQuotaKnives: sub.MonthlyQuotaKnives,
+			MonthlyUsedKnives:  sub.MonthlyUsedKnives,
 		}
 
 		// Add group info if preloaded
 		if sub.Group != nil {
 			item.GroupName = sub.Group.Name
-			if sub.Group.DailyLimitUSD != nil {
-				item.DailyLimitUSD = *sub.Group.DailyLimitUSD
-			}
-			if sub.Group.WeeklyLimitUSD != nil {
-				item.WeeklyLimitUSD = *sub.Group.WeeklyLimitUSD
-			}
-			if sub.Group.MonthlyLimitUSD != nil {
-				item.MonthlyLimitUSD = *sub.Group.MonthlyLimitUSD
-			}
 		}
 
 		// Format expiration time
