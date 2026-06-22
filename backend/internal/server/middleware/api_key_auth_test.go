@@ -139,6 +139,10 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 
 	t.Run("standard_mode_enforces_quota_check", func(t *testing.T) {
 		cfg := &config.Config{RunMode: config.RunModeStandard}
+		quotaBlockedUser := *user
+		quotaBlockedUser.Balance = 0
+		quotaBlockedAPIKey := *apiKey
+		quotaBlockedAPIKey.User = &quotaBlockedUser
 		apiKeyService := service.NewAPIKeyService(apiKeyRepo, nil, nil, nil, nil, nil, cfg)
 
 		now := time.Now()
@@ -165,6 +169,15 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			resetWeekly:    func(ctx context.Context, id int64, start time.Time) error { return nil },
 			resetMonthly:   func(ctx context.Context, id int64, start time.Time) error { return nil },
 		}
+		apiKeyService = service.NewAPIKeyService(&stubApiKeyRepo{
+			getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+				if key != quotaBlockedAPIKey.Key {
+					return nil, service.ErrAPIKeyNotFound
+				}
+				clone := quotaBlockedAPIKey
+				return &clone, nil
+			},
+		}, nil, nil, nil, nil, nil, cfg)
 		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
 		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)
 
@@ -1125,6 +1138,7 @@ func (r *stubApiKeyRepo) GetRateLimitData(ctx context.Context, id int64) (*servi
 
 type stubUserSubscriptionRepo struct {
 	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
+	activeByUser   map[int64][]service.UserSubscription
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
 	activateWindow func(ctx context.Context, id int64, start time.Time) error
 	resetDaily     func(ctx context.Context, id int64, start time.Time) error

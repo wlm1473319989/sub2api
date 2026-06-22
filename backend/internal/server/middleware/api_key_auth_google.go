@@ -86,29 +86,40 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 				apiKey.Group.ID,
 			)
 			if err != nil {
-				abortWithGoogleError(c, 403, "No active subscription found for this group")
-				return
+				subscription = nil
 			}
 
-			needsMaintenance, err := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
-			if err != nil {
-				status := 403
-				if errors.Is(err, service.ErrDailyLimitExceeded) ||
-					errors.Is(err, service.ErrWeeklyLimitExceeded) ||
-					errors.Is(err, service.ErrMonthlyLimitExceeded) {
-					status = 429
+			if subscription != nil {
+				needsMaintenance, err := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
+				if err != nil {
+					if apiKey.User.Balance > 0 {
+						subscription = nil
+					} else {
+						status := 403
+						if errors.Is(err, service.ErrDailyLimitExceeded) ||
+							errors.Is(err, service.ErrWeeklyLimitExceeded) ||
+							errors.Is(err, service.ErrMonthlyLimitExceeded) {
+							status = 429
+						}
+						abortWithGoogleError(c, status, err.Error())
+						return
+					}
 				}
-				abortWithGoogleError(c, status, err.Error())
-				return
-			}
 
-			c.Set(string(ContextKeySubscription), subscription)
+				if subscription != nil {
+					c.Set(string(ContextKeySubscription), subscription)
 
-			if needsMaintenance {
-				maintenanceCopy := *subscription
-				subscriptionService.DoWindowMaintenance(&maintenanceCopy)
+					if needsMaintenance {
+						maintenanceCopy := *subscription
+						subscriptionService.DoWindowMaintenance(&maintenanceCopy)
+					}
+				}
 			}
-		} else {
+		}
+		if !isSubscriptionType || subscriptionService == nil || func() bool {
+			_, exists := c.Get(string(ContextKeySubscription))
+			return !exists
+		}() {
 			if apiKey.User.Balance <= 0 {
 				abortWithGoogleError(c, 403, "Insufficient account balance")
 				return

@@ -581,12 +581,15 @@ func TestCheckBillingEligibility_SubscriptionMode_BypassesPlatformQuota(t *testi
 	sub := &UserSubscription{Status: "active"}
 	user := &User{ID: 42}
 
-	err := s.CheckBillingEligibility(context.Background(), user, nil, subGroup, sub, "anthropic")
+	resolvedSub, err := s.CheckBillingEligibility(context.Background(), user, nil, subGroup, sub, "anthropic")
 	// 订阅模式下不应收到任何 user×platform quota 错误
 	if errors.Is(err, ErrUserPlatformDailyQuotaExhausted) ||
 		errors.Is(err, ErrUserPlatformWeeklyQuotaExhausted) ||
 		errors.Is(err, ErrUserPlatformMonthlyQuotaExhausted) {
 		t.Errorf("subscription mode should bypass user×platform quota, got: %v", err)
+	}
+	if resolvedSub == nil {
+		t.Fatal("expected subscription billing path to be preserved")
 	}
 	// GetUserPlatformQuotaCache 不应被调用
 	if fake.called {
@@ -769,9 +772,9 @@ func TestHasUserPlatformQuotaLimit(t *testing.T) {
 	daily := 5.0
 
 	tests := []struct {
-		name    string
-		setup   func() *BillingCacheService
-		want    bool
+		name  string
+		setup func() *BillingCacheService
+		want  bool
 	}{
 		{
 			name: "has_limit",

@@ -2,6 +2,7 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strconv"
 	"sync"
@@ -701,52 +702,70 @@ func (s *BillingCacheService) IncrementUserPlatformQuotaUsage(userID int64, plat
 // 统一检查方法
 // ============================================
 
-// CheckBillingEligibility 检查用户是否有资格发起请求
-// 余额模式：检查缓存余额 > 0
-// 订阅模式：检查缓存用量未超过限额（Group限额从参数传入）
+// CheckBillingEligibility 检查用户是否有资格发起请求，并返回本次请求应使用的订阅上下文。
+// 返回 nil 订阅表示当前请求应走余额模式；返回非 nil 订阅表示继续沿用现有纯订阅后扣分支。
 // platform 为请求的目标平台（如 "anthropic"），传空串 "" 时跳过 user × platform quota 检查。
-func (s *BillingCacheService) CheckBillingEligibility(ctx context.Context, user *User, apiKey *APIKey, group *Group, subscription *UserSubscription, platform string) error {
+func (s *BillingCacheService) CheckBillingEligibility(ctx context.Context, user *User, apiKey *APIKey, group *Group, subscription *UserSubscription, platform string) (*UserSubscription, error) {
 	// 简易模式：跳过所有计费检查
 	if s.cfg.RunMode == config.RunModeSimple {
-		return nil
+		return subscription, nil
 	}
 	if s.circuitBreaker != nil && !s.circuitBreaker.Allow() {
-		return ErrBillingServiceUnavailable
+		return nil, ErrBillingServiceUnavailable
 	}
 
 	// 判断计费模式
 	isSubscriptionMode := group != nil && group.IsSubscriptionType() && subscription != nil
 
 	if isSubscriptionMode {
-		if err := s.checkSubscriptionEligibility(ctx, user.ID, group, subscription); err != nil {
-			return err
+		if subErr := s.checkSubscriptionEligibility(ctx, user.ID, group, subscription); subErr != nil {
+			balanceErr := s.checkBalanceEligibility(ctx, user.ID)
+			if balanceErr == nil {
+				subscription = nil
+				isSubscriptionMode = false
+			} else {
+				return nil, combineBillingEligibilityErrors(subErr, balanceErr)
+			}
 		}
 	} else {
 		if err := s.checkBalanceEligibility(ctx, user.ID); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
-	// user × platform quota 仅在 standard（余额）模式生效；订阅模式豁免
+	// user × platform quota 仅在最终走余额模式时生效；纯订阅模式豁免
 	if !isSubscriptionMode {
 		if err := s.checkUserPlatformQuotaEligibility(ctx, user.ID, platform); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	// Check API Key rate limits (applies to both billing modes)
 	if apiKey != nil && apiKey.HasRateLimits() {
 		if err := s.checkAPIKeyRateLimits(ctx, apiKey); err != nil {
-			return err
+			return nil, err
 		}
 	}
 
 	// RPM 限流：级联回落（Override → Group → User），放在最后以避免为注定失败的请求增加计数。
 	if err := s.checkRPM(ctx, user, group); err != nil {
-		return err
+		return nil, err
 	}
 
-	return nil
+	return subscription, nil
+}
+
+func combineBillingEligibilityErrors(subscriptionErr, balanceErr error) error {
+	if balanceErr != nil && errors.Is(balanceErr, ErrBillingServiceUnavailable) {
+		return balanceErr
+	}
+	if subscriptionErr != nil && errors.Is(subscriptionErr, ErrBillingServiceUnavailable) {
+		return subscriptionErr
+	}
+	if subscriptionErr != nil {
+		return subscriptionErr
+	}
+	return balanceErr
 }
 
 // checkRPM 执行并行 RPM 限流，所有适用的限制同时生效，任一超限即拒绝：
