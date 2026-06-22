@@ -6,6 +6,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
 func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, userID int64, item DefaultSubscriptionSetting, notes string) (*UserSubscription, bool, error) {
@@ -64,6 +65,63 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 		Notes:        notes,
 	})
 	return sub, reused, err
+}
+
+func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
+	if input == nil {
+		return nil, false, ErrSubscriptionNilInput
+	}
+	if input.PlanID <= 0 {
+		return nil, false, infraerrors.BadRequest("PLAN_ID_REQUIRED", "plan_id is required")
+	}
+
+	plan, err := s.resolveDefaultGrantPlan(ctx, input.PlanID)
+	if err != nil {
+		return nil, false, err
+	}
+
+	active, err := s.userSubRepo.GetActiveByUserID(ctx, input.UserID)
+	if err != nil {
+		if errorsIsSubscriptionNotFound(err) {
+			sub, purchaseErr := s.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
+				UserID:     input.UserID,
+				Plan:       plan,
+				AssignedBy: input.AssignedBy,
+				Notes:      input.Notes,
+			})
+			return sub, false, purchaseErr
+		}
+		return nil, false, err
+	}
+
+	currentPlanID, currentPrice, resolveErr := s.resolveActiveGrantReference(ctx, active)
+	if resolveErr != nil {
+		return nil, false, resolveErr
+	}
+
+	if currentPlanID != nil && *currentPlanID == plan.ID {
+		sub, renewErr := s.RenewActivePlan(ctx, &RenewActivePlanInput{
+			UserID: input.UserID,
+			Plan:   plan,
+			Notes:  input.Notes,
+		})
+		return sub, true, renewErr
+	}
+
+	if currentPrice != nil && plan.Price > *currentPrice {
+		result, upgradeErr := s.UpgradeActivePlan(ctx, &UpgradeActivePlanInput{
+			UserID:     input.UserID,
+			TargetPlan: plan,
+			AssignedBy: input.AssignedBy,
+			Notes:      input.Notes,
+		})
+		if upgradeErr != nil {
+			return nil, false, upgradeErr
+		}
+		return result.Current, false, nil
+	}
+
+	return nil, false, ErrSubscriptionPlanActionInvalid
 }
 
 func (s *SubscriptionService) resolveDefaultGrantPlan(ctx context.Context, planID int64) (*dbent.SubscriptionPlan, error) {

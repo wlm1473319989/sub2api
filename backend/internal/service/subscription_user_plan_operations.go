@@ -16,6 +16,7 @@ var (
 	ErrActiveSubscriptionExists          = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_EXISTS", "user already has an active subscription")
 	ErrActiveSubscriptionRequired        = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_REQUIRED", "user must have an active subscription")
 	ErrActiveSubscriptionSnapshotMissing = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_SNAPSHOT_MISSING", "active subscription snapshot is incomplete")
+	ErrSubscriptionPlanActionInvalid     = infraerrors.BadRequest("SUBSCRIPTION_PLAN_ACTION_INVALID", "active subscription only supports renewal or upgrade")
 	ErrRenewPlanMismatch                 = infraerrors.BadRequest("RENEW_PLAN_MISMATCH", "renewal plan must match the active subscription")
 	ErrUpgradePlanPriceInvalid           = infraerrors.BadRequest("UPGRADE_PLAN_PRICE_INVALID", "upgrade target plan price must be higher than the active subscription")
 	ErrRefundOrderRequired               = infraerrors.BadRequest("REFUND_ORDER_REQUIRED", "refund requires a subscription order id")

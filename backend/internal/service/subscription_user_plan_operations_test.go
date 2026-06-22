@@ -330,3 +330,106 @@ func TestRefundActivePlanMarksSubscriptionRefunded(t *testing.T) {
 	require.Error(t, err)
 	require.Equal(t, infraerrors.Reason(service.ErrSubscriptionNotFound), infraerrors.Reason(err))
 }
+
+func TestAssignUserLevelSubscriptionPurchasesWhenNoActiveSubscription(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	user := h.createUser(t, "assign-plan-new@test.com")
+	group := h.createGroup(t, "assign-plan-group")
+	groupID := group.ID
+	daily := 12.0
+	plan := h.createPlan(t, "Assign Starter", 29.9, 30, "day", &groupID, &daily, nil, nil)
+
+	sub, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: plan.ID,
+		Notes:  "admin assign",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+	require.NotNil(t, sub.PlanID)
+	require.Equal(t, plan.ID, *sub.PlanID)
+	require.Equal(t, service.SubscriptionStatusActive, sub.Status)
+	require.NotNil(t, sub.PlanNameSnapshot)
+	require.Equal(t, plan.Name, *sub.PlanNameSnapshot)
+}
+
+func TestAssignUserLevelSubscriptionRenewsMatchingActivePlan(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	user := h.createUser(t, "assign-plan-renew@test.com")
+	group := h.createGroup(t, "assign-plan-renew-group")
+	groupID := group.ID
+	plan := h.createPlan(t, "Assign Renew", 19.9, 30, "day", &groupID, nil, nil, nil)
+
+	seed, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   plan,
+		Notes:  "seed",
+	})
+	require.NoError(t, err)
+
+	sub, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: plan.ID,
+		Notes:  "renew via assign",
+	})
+	require.NoError(t, err)
+	require.True(t, reused)
+	require.Equal(t, seed.ID, sub.ID)
+	require.True(t, sub.ExpiresAt.After(seed.ExpiresAt))
+}
+
+func TestAssignUserLevelSubscriptionUpgradesHigherPricedPlan(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	user := h.createUser(t, "assign-plan-upgrade@test.com")
+	group := h.createGroup(t, "assign-plan-upgrade-group")
+	groupID := group.ID
+	basePlan := h.createPlan(t, "Assign Base", 19.9, 30, "day", &groupID, nil, nil, nil)
+	targetPlan := h.createPlan(t, "Assign Pro", 49.9, 30, "day", &groupID, nil, nil, nil)
+
+	active, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   basePlan,
+		Notes:  "seed",
+	})
+	require.NoError(t, err)
+
+	sub, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: targetPlan.ID,
+		Notes:  "upgrade via assign",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+	require.NotEqual(t, active.ID, sub.ID)
+	require.NotNil(t, sub.PlanID)
+	require.Equal(t, targetPlan.ID, *sub.PlanID)
+
+	previous, err := h.svc.GetByID(h.ctx, active.ID)
+	require.NoError(t, err)
+	require.Equal(t, service.SubscriptionStatusSuperseded, previous.Status)
+}
+
+func TestAssignUserLevelSubscriptionRejectsDifferentPlanWithoutUpgrade(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	user := h.createUser(t, "assign-plan-invalid@test.com")
+	group := h.createGroup(t, "assign-plan-invalid-group")
+	groupID := group.ID
+	activePlan := h.createPlan(t, "Assign Active", 49.9, 30, "day", &groupID, nil, nil, nil)
+	targetPlan := h.createPlan(t, "Assign Lower", 29.9, 30, "day", &groupID, nil, nil, nil)
+
+	_, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   activePlan,
+		Notes:  "seed",
+	})
+	require.NoError(t, err)
+
+	sub, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: targetPlan.ID,
+		Notes:  "invalid via assign",
+	})
+	require.ErrorIs(t, err, service.ErrSubscriptionPlanActionInvalid)
+	require.False(t, reused)
+	require.Nil(t, sub)
+}

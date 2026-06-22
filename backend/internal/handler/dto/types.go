@@ -572,6 +572,8 @@ type UserSubscription struct {
 	UserID  int64  `json:"user_id"`
 	GroupID int64  `json:"group_id"`
 	PlanID  *int64 `json:"plan_id,omitempty"`
+	PlanNameSnapshot  *string  `json:"plan_name_snapshot,omitempty"`
+	PlanPriceSnapshot *float64 `json:"plan_price_snapshot,omitempty"`
 
 	StartsAt  time.Time `json:"starts_at"`
 	ExpiresAt time.Time `json:"expires_at"`

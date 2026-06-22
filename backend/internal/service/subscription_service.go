@@ -147,6 +147,7 @@ func (s *SubscriptionService) InvalidateSubCache(userID, groupID int64) {
 type AssignSubscriptionInput struct {
 	UserID       int64
 	GroupID      int64
+	PlanID       int64
 	ValidityDays int
 	AssignedBy   int64
 	Notes        string
@@ -154,6 +155,13 @@ type AssignSubscriptionInput struct {
 
 // AssignSubscription 分配订阅给用户（不允许重复分配）
 func (s *SubscriptionService) AssignSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, error) {
+	if input != nil && input.PlanID > 0 {
+		sub, _, err := s.AssignUserLevelSubscription(ctx, input)
+		if err != nil {
+			return nil, err
+		}
+		return sub, nil
+	}
 	sub, _, err := s.assignSubscriptionWithReuse(ctx, input)
 	if err != nil {
 		return nil, err
@@ -383,6 +391,7 @@ func (s *SubscriptionService) createSubscription(ctx context.Context, input *Ass
 type BulkAssignSubscriptionInput struct {
 	UserIDs      []int64
 	GroupID      int64
+	PlanID       int64
 	ValidityDays int
 	AssignedBy   int64
 	Notes        string
@@ -408,13 +417,24 @@ func (s *SubscriptionService) BulkAssignSubscription(ctx context.Context, input 
 	}
 
 	for _, userID := range input.UserIDs {
-		sub, reused, err := s.assignSubscriptionWithReuse(ctx, &AssignSubscriptionInput{
+		assignInput := &AssignSubscriptionInput{
 			UserID:       userID,
 			GroupID:      input.GroupID,
+			PlanID:       input.PlanID,
 			ValidityDays: input.ValidityDays,
 			AssignedBy:   input.AssignedBy,
 			Notes:        input.Notes,
-		})
+		}
+		var (
+			sub    *UserSubscription
+			reused bool
+			err    error
+		)
+		if input.PlanID > 0 {
+			sub, reused, err = s.AssignUserLevelSubscription(ctx, assignInput)
+		} else {
+			sub, reused, err = s.assignSubscriptionWithReuse(ctx, assignInput)
+		}
 		if err != nil {
 			result.FailedCount++
 			result.Errors = append(result.Errors, fmt.Sprintf("user %d: %v", userID, err))
