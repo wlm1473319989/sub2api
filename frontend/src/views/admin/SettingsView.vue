@@ -3168,7 +3168,7 @@
                       </label>
                       <Select
                         v-model="item.plan_id"
-                        class="default-sub-group-select"
+                        class="default-sub-plan-select"
                         :options="defaultSubscriptionPlanOptions"
                         :placeholder="
                           t('payment.selectPlan')
@@ -3423,7 +3423,7 @@
                           </label>
                           <Select
                             v-model="item.plan_id"
-                            class="default-sub-group-select"
+                            class="default-sub-plan-select"
                             :options="defaultSubscriptionPlanOptions"
                             :placeholder="
                               t('payment.selectPlan')
@@ -10178,7 +10178,7 @@ watch(
 </script>
 
 <style scoped>
-.default-sub-group-select :deep(.select-trigger) {
+.default-sub-plan-select :deep(.select-trigger) {
   @apply h-[42px];
 }
 

@@ -79,7 +79,6 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			subscription: &UserSubscription{
 				ID:        88,
 				UserID:    42,
-				GroupID:   group.ID,
 				Status:    SubscriptionStatusActive,
 				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
@@ -91,7 +90,6 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			subscription: &UserSubscription{
 				ID:        88,
 				UserID:    42,
-				GroupID:   group.ID,
 				Status:    SubscriptionStatusExpired,
 				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
@@ -103,7 +101,6 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			subscription: &UserSubscription{
 				ID:        88,
 				UserID:    42,
-				GroupID:   group.ID,
 				Status:    SubscriptionStatusActive,
 				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
@@ -115,7 +112,6 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			subscription: &UserSubscription{
 				ID:        88,
 				UserID:    42,
-				GroupID:   group.ID,
 				Status:    SubscriptionStatusExpired,
 				ExpiresAt: time.Now().Add(24 * time.Hour),
 			},
@@ -153,7 +149,6 @@ func TestCheckBillingEligibility_BalanceFallbackStillAppliesPlatformQuota(t *tes
 	subscription := &UserSubscription{
 		ID:        88,
 		UserID:    42,
-		GroupID:   group.ID,
 		Status:    SubscriptionStatusExpired,
 		ExpiresAt: time.Now().Add(24 * time.Hour),
 	}

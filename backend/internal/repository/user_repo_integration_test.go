@@ -73,13 +73,12 @@ func (s *UserRepoSuite) mustCreateGroup(name string) *service.Group {
 	return groupEntityToService(g)
 }
 
-func (s *UserRepoSuite) mustCreateSubscription(userID, groupID int64, mutate func(*dbent.UserSubscriptionCreate)) *dbent.UserSubscription {
+func (s *UserRepoSuite) mustCreateSubscription(userID, _ int64, mutate func(*dbent.UserSubscriptionCreate)) *dbent.UserSubscription {
 	s.T().Helper()
 
 	now := time.Now()
 	create := s.client.UserSubscription.Create().
 		SetUserID(userID).
-		SetGroupID(groupID).
 		SetStartsAt(now.Add(-1 * time.Hour)).
 		SetExpiresAt(now.Add(24 * time.Hour)).
 		SetStatus(service.SubscriptionStatusActive).
@@ -297,8 +296,7 @@ func (s *UserRepoSuite) TestListWithFilters_LoadsActiveSubscriptions() {
 	s.Require().NoError(err, "ListWithFilters")
 	s.Require().Len(users, 1, "expected 1 user")
 	s.Require().Len(users[0].Subscriptions, 1, "expected 1 active subscription")
-	s.Require().NotNil(users[0].Subscriptions[0].Group, "expected subscription group preload")
-	s.Require().Equal(groupActive.ID, users[0].Subscriptions[0].Group.ID, "group ID mismatch")
+	s.Require().Equal(service.SubscriptionStatusActive, users[0].Subscriptions[0].Status)
 }
 
 func (s *UserRepoSuite) TestListWithFilters_CombinedFilters() {

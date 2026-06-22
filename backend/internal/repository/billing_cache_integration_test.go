@@ -160,7 +160,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 			name: "set_and_get_with_ttl",
 			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
 				userID := int64(12)
-				groupID := int64(22)
 				subKey := fmt.Sprintf("%s%d", billingSubKeyPrefix, userID)
 
 				data := &service.SubscriptionCacheData{
@@ -170,7 +169,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 					WeeklyUsage:  2.0,
 					MonthlyUsage: 3.0,
 					Version:      7,
-					GroupID:      groupID,
 				}
 				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, data), "SetSubscriptionCache")
 
@@ -179,7 +177,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 				require.Equal(s.T(), "active", gotSub.Status)
 				require.Equal(s.T(), int64(7), gotSub.Version)
 				require.Equal(s.T(), 1.0, gotSub.DailyUsage)
-				require.Equal(s.T(), groupID, gotSub.GroupID)
 
 				ttl, err := rdb.TTL(ctx, subKey).Result()
 				require.NoError(s.T(), err, "TTL subKey")
@@ -190,7 +187,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 			name: "update_usage_increments_all_fields",
 			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
 				userID := int64(13)
-				groupID := int64(23)
 
 				data := &service.SubscriptionCacheData{
 					Status:       "active",
@@ -199,7 +195,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 					WeeklyUsage:  2.0,
 					MonthlyUsage: 3.0,
 					Version:      1,
-					GroupID:      groupID,
 				}
 				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, data), "SetSubscriptionCache")
 
@@ -216,7 +211,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 			name: "invalidate_removes_key",
 			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
 				userID := int64(101)
-				groupID := int64(10)
 				subKey := fmt.Sprintf("%s%d", billingSubKeyPrefix, userID)
 
 				data := &service.SubscriptionCacheData{
@@ -226,7 +220,6 @@ func (s *BillingCacheSuite) TestSubscriptionCache() {
 					WeeklyUsage:  2.0,
 					MonthlyUsage: 3.0,
 					Version:      1,
-					GroupID:      groupID,
 				}
 				require.NoError(s.T(), cache.SetSubscriptionCache(ctx, userID, data), "SetSubscriptionCache")
 
@@ -351,7 +344,6 @@ func (s *BillingCacheSuite) TestUpdateSubscriptionUsage_ErrorPropagation() {
 			Status:    "active",
 			ExpiresAt: time.Now().Add(1 * time.Hour),
 			Version:   1,
-			GroupID:   401,
 		}
 		require.NoError(s.T(), cache.SetSubscriptionCache(ctx, 301, data))
 

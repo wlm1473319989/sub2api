@@ -60,13 +60,12 @@ func (s *UserSubscriptionRepoSuite) mustCreateGroup(name string) *service.Group 
 	return groupEntityToService(g)
 }
 
-func (s *UserSubscriptionRepoSuite) mustCreateSubscription(userID, groupID int64, mutate func(*dbent.UserSubscriptionCreate)) *dbent.UserSubscription {
+func (s *UserSubscriptionRepoSuite) mustCreateSubscription(userID, _ int64, mutate func(*dbent.UserSubscriptionCreate)) *dbent.UserSubscription {
 	s.T().Helper()
 
 	now := time.Now()
 	create := s.client.UserSubscription.Create().
 		SetUserID(userID).
-		SetGroupID(groupID).
 		SetStartsAt(now.Add(-1 * time.Hour)).
 		SetExpiresAt(now.Add(24 * time.Hour)).
 		SetStatus(service.SubscriptionStatusActive).
@@ -86,7 +85,6 @@ func (s *UserSubscriptionRepoSuite) mustCreateSubscription(userID, groupID int64
 
 func (s *UserSubscriptionRepoSuite) TestCreate() {
 	user := s.mustCreateUser("sub-create@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-create")
 	planID := int64(501)
 	planName := "Starter"
 	planPrice := 19.9
@@ -97,7 +95,6 @@ func (s *UserSubscriptionRepoSuite) TestCreate() {
 
 	sub := &service.UserSubscription{
 		UserID:             user.ID,
-		GroupID:            group.ID,
 		PlanID:             &planID,
 		PlanNameSnapshot:   &planName,
 		PlanPriceSnapshot:  &planPrice,
@@ -119,7 +116,6 @@ func (s *UserSubscriptionRepoSuite) TestCreate() {
 	got, err := s.repo.GetByID(s.ctx, sub.ID)
 	s.Require().NoError(err, "GetByID")
 	s.Require().Equal(sub.UserID, got.UserID)
-	s.Require().Equal(sub.GroupID, got.GroupID)
 	s.Require().Equal(planID, *got.PlanID)
 	s.Require().Equal(planName, *got.PlanNameSnapshot)
 	s.Require().Equal(planPrice, *got.PlanPriceSnapshot)
@@ -145,10 +141,8 @@ func (s *UserSubscriptionRepoSuite) TestGetByID_WithPreloads() {
 	got, err := s.repo.GetByID(s.ctx, sub.ID)
 	s.Require().NoError(err, "GetByID")
 	s.Require().NotNil(got.User, "expected User preload")
-	s.Require().NotNil(got.Group, "expected Group preload")
 	s.Require().NotNil(got.AssignedByUser, "expected AssignedByUser preload")
 	s.Require().Equal(user.ID, got.User.ID)
-	s.Require().Equal(group.ID, got.Group.ID)
 	s.Require().Equal(admin.ID, got.AssignedByUser.ID)
 }
 
@@ -242,7 +236,6 @@ func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID() {
 	got, err := s.repo.GetActiveByUserID(s.ctx, user.ID)
 	s.Require().NoError(err, "GetActiveByUserID")
 	s.Require().Equal(active.ID, got.ID)
-	s.Require().NotNil(got.Group, "expected Group preload")
 }
 
 func (s *UserSubscriptionRepoSuite) TestGetActiveByUserID_MultipleActiveConflict() {
@@ -277,9 +270,6 @@ func (s *UserSubscriptionRepoSuite) TestListByUserID() {
 	subs, err := s.repo.ListByUserID(s.ctx, user.ID)
 	s.Require().NoError(err, "ListByUserID")
 	s.Require().Len(subs, 2)
-	for _, sub := range subs {
-		s.Require().NotNil(sub.Group, "expected Group preload")
-	}
 }
 
 func (s *UserSubscriptionRepoSuite) TestListActiveByUserID() {
@@ -584,59 +574,6 @@ func (s *UserSubscriptionRepoSuite) TestBatchUpdateExpiredStatus() {
 	s.Require().Equal(service.SubscriptionStatusExpired, gotExpired.Status)
 }
 
-// --- CountByGroupID / CountActiveByGroupID ---
-
-func (s *UserSubscriptionRepoSuite) TestCountByGroupID() {
-	user1 := s.mustCreateUser("cnt1@test.com", service.RoleUser)
-	user2 := s.mustCreateUser("cnt2@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-count")
-
-	s.mustCreateSubscription(user1.ID, group.ID, nil)
-	s.mustCreateSubscription(user2.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
-		c.SetStatus(service.SubscriptionStatusExpired)
-		c.SetExpiresAt(time.Now().Add(-24 * time.Hour))
-	})
-
-	count, err := s.repo.CountByGroupID(s.ctx, group.ID)
-	s.Require().NoError(err, "CountByGroupID")
-	s.Require().Equal(int64(2), count)
-}
-
-func (s *UserSubscriptionRepoSuite) TestCountActiveByGroupID() {
-	user1 := s.mustCreateUser("cntact1@test.com", service.RoleUser)
-	user2 := s.mustCreateUser("cntact2@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-cntact")
-
-	s.mustCreateSubscription(user1.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
-		c.SetExpiresAt(time.Now().Add(24 * time.Hour))
-	})
-	s.mustCreateSubscription(user2.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
-		c.SetExpiresAt(time.Now().Add(-24 * time.Hour)) // expired by time
-	})
-
-	count, err := s.repo.CountActiveByGroupID(s.ctx, group.ID)
-	s.Require().NoError(err, "CountActiveByGroupID")
-	s.Require().Equal(int64(1), count, "only future expiry counts as active")
-}
-
-// --- DeleteByGroupID ---
-
-func (s *UserSubscriptionRepoSuite) TestDeleteByGroupID() {
-	user1 := s.mustCreateUser("delgrp1@test.com", service.RoleUser)
-	user2 := s.mustCreateUser("delgrp2@test.com", service.RoleUser)
-	group := s.mustCreateGroup("g-delgrp")
-
-	s.mustCreateSubscription(user1.ID, group.ID, nil)
-	s.mustCreateSubscription(user2.ID, group.ID, nil)
-
-	affected, err := s.repo.DeleteByGroupID(s.ctx, group.ID)
-	s.Require().NoError(err, "DeleteByGroupID")
-	s.Require().Equal(int64(2), affected)
-
-	count, _ := s.repo.CountByGroupID(s.ctx, group.ID)
-	s.Require().Zero(count)
-}
-
 // --- Combined scenario ---
 
 func (s *UserSubscriptionRepoSuite) TestActiveExpiredBoundaries_UsageAndReset_BatchUpdateExpiredStatus() {
@@ -698,8 +635,10 @@ func (s *UserSubscriptionRepoSuite) TestIncrementUsage_SoftDeletedGroup() {
 
 	// IncrementUsage 应该失败，因为分组已软删除
 	err = s.repo.IncrementUsage(s.ctx, sub.ID, 1.0)
-	s.Require().Error(err, "should fail for soft-deleted group")
-	s.Require().ErrorIs(err, service.ErrSubscriptionNotFound)
+	s.Require().NoError(err, "group soft delete should not affect user-level subscription usage")
+	got, err := s.repo.GetByID(s.ctx, sub.ID)
+	s.Require().NoError(err)
+	s.Require().InDelta(1.0, got.DailyUsageUSD, 1e-6)
 }
 
 func (s *UserSubscriptionRepoSuite) TestIncrementUsage_NotFound() {
@@ -774,15 +713,9 @@ func (s *UserSubscriptionRepoSuite) TestTxContext_RollbackIsolation() {
 		Save(txCtx)
 	s.Require().NoError(err, "create user in tx")
 
-	groupEnt, err := tx.Client().Group.Create().
-		SetName("tx-group-" + suffix).
-		Save(txCtx)
-	s.Require().NoError(err, "create group in tx")
-
 	repo := NewUserSubscriptionRepository(baseClient)
 	sub := &service.UserSubscription{
 		UserID:     userEnt.ID,
-		GroupID:    groupEnt.ID,
 		ExpiresAt:  time.Now().AddDate(0, 0, 30),
 		Status:     service.SubscriptionStatusActive,
 		AssignedAt: time.Now(),

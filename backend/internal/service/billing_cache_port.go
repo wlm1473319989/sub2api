@@ -12,5 +12,4 @@ type SubscriptionCacheData struct {
 	WeeklyUsage  float64
 	MonthlyUsage float64
 	Version      int64
-	GroupID      int64
 }

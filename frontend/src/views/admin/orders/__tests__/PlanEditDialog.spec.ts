@@ -55,10 +55,9 @@ describe('PlanEditDialog', () => {
         groups: [
           {
             id: 7,
-            name: 'legacy-sub-group',
+            name: 'openai-default',
             platform: 'openai',
             rate_multiplier: 1,
-            subscription_type: 'subscription',
           },
         ],
       },
