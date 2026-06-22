@@ -1,6 +1,7 @@
 package service
 
 import (
+	"context"
 	"testing"
 	"time"
 
@@ -17,6 +18,30 @@ func newTestSubscriptionService() *SubscriptionService {
 func ptrFloat64(v float64) *float64  { return &v }
 func ptrTime(t time.Time) *time.Time { return &t }
 
+type progressByIDRepoStub struct {
+	userSubRepoNoop
+	sub *UserSubscription
+}
+
+func (s progressByIDRepoStub) GetByID(context.Context, int64) (*UserSubscription, error) {
+	if s.sub == nil {
+		return nil, ErrSubscriptionNotFound
+	}
+	cp := *s.sub
+	return &cp, nil
+}
+
+type progressActiveRepoStub struct {
+	userSubRepoNoop
+	subs []UserSubscription
+}
+
+func (s progressActiveRepoStub) ListActiveByUserID(context.Context, int64) ([]UserSubscription, error) {
+	out := make([]UserSubscription, len(s.subs))
+	copy(out, s.subs)
+	return out, nil
+}
+
 func TestCalculateProgress_BasicFields(t *testing.T) {
 	svc := newTestSubscriptionService()
 	now := time.Now()
@@ -32,12 +57,71 @@ func TestCalculateProgress_BasicFields(t *testing.T) {
 	progress := svc.calculateProgress(sub, group)
 
 	assert.Equal(t, int64(100), progress.ID)
-	assert.Equal(t, "Premium", progress.GroupName)
+	assert.Equal(t, "Premium", progress.DisplayName)
 	assert.Equal(t, sub.ExpiresAt, progress.ExpiresAt)
 	assert.True(t, progress.ExpiresInDays == 29 || progress.ExpiresInDays == 30, "ExpiresInDays should be 29 or 30, got %d", progress.ExpiresInDays)
 	assert.Nil(t, progress.Daily, "无日限额时 Daily 应为 nil")
 	assert.Nil(t, progress.Weekly, "无周限额时 Weekly 应为 nil")
 	assert.Nil(t, progress.Monthly, "无月限额时 Monthly 应为 nil")
+}
+
+func TestCalculateProgress_PrefersPlanSnapshotNameWithoutGroup(t *testing.T) {
+	svc := newTestSubscriptionService()
+	planName := "Starter Plan"
+	sub := &UserSubscription{
+		ID:               101,
+		PlanNameSnapshot: &planName,
+		ExpiresAt:        time.Now().Add(7 * 24 * time.Hour),
+	}
+
+	progress := svc.calculateProgress(sub, nil)
+
+	assert.Equal(t, "Starter Plan", progress.DisplayName)
+}
+
+func TestGetSubscriptionProgress_PlanOnlySubscriptionDoesNotRequireGroupLookup(t *testing.T) {
+	planName := "Starter Plan"
+	sub := &UserSubscription{
+		ID:               102,
+		GroupID:          999,
+		PlanNameSnapshot: &planName,
+		ExpiresAt:        time.Now().Add(7 * 24 * time.Hour),
+	}
+	svc := &SubscriptionService{
+		groupRepo:   groupRepoNoop{},
+		userSubRepo: progressByIDRepoStub{sub: sub},
+	}
+
+	progress, err := svc.GetSubscriptionProgress(context.Background(), sub.ID)
+
+	require.NoError(t, err)
+	require.NotNil(t, progress)
+	assert.Equal(t, "Starter Plan", progress.DisplayName)
+}
+
+func TestGetUserSubscriptionsWithProgress_IncludesPlanOnlySubscriptionWithoutGroup(t *testing.T) {
+	planName := "Starter Plan"
+	svc := &SubscriptionService{
+		groupRepo: groupRepoNoop{},
+		userSubRepo: progressActiveRepoStub{
+			subs: []UserSubscription{
+				{
+					ID:               103,
+					UserID:           42,
+					GroupID:          999,
+					PlanNameSnapshot: &planName,
+					Status:           SubscriptionStatusActive,
+					ExpiresAt:        time.Now().Add(7 * 24 * time.Hour),
+				},
+			},
+		},
+	}
+
+	progresses, err := svc.GetUserSubscriptionsWithProgress(context.Background(), 42)
+
+	require.NoError(t, err)
+	require.Len(t, progresses, 1)
+	assert.Equal(t, "Starter Plan", progresses[0].DisplayName)
 }
 
 func TestCalculateProgress_DailyUsage(t *testing.T) {

@@ -1358,7 +1358,7 @@ export interface BatchUpdateRedeemCodeFields {
   status?: 'unused' | 'disabled'
   expires_at?: string | null
   notes?: string
-  group_id?: number | null
+  plan_id?: number | null
 }
 
 export interface BatchUpdateRedeemCodesRequest {
@@ -1556,7 +1556,7 @@ export interface ChangePasswordRequest {
 export interface UserSubscription {
   id: number
   user_id: number
-  group_id: number
+  group_id?: number | null
   plan_id?: number | null
   plan_name_snapshot?: string | null
   plan_price_snapshot?: number | null
@@ -1581,41 +1581,64 @@ export interface UserSubscription {
   group?: Group
 }
 
+export interface SubscriptionUsageWindowProgress {
+  limit_usd: number
+  used_usd: number
+  remaining_usd: number
+  percentage: number
+  window_start: string
+  resets_at: string
+  resets_in_seconds: number
+}
+
 export interface SubscriptionProgress {
-  subscription_id: number
-  daily: {
-    used: number
-    limit: number | null
-    percentage: number
-    reset_in_seconds: number | null
-  } | null
-  weekly: {
-    used: number
-    limit: number | null
-    percentage: number
-    reset_in_seconds: number | null
-  } | null
-  monthly: {
-    used: number
-    limit: number | null
-    percentage: number
-    reset_in_seconds: number | null
-  } | null
-  expires_at: string | null
-  days_remaining: number | null
+  id: number
+  display_name: string
+  expires_at: string
+  expires_in_days: number
+  daily?: SubscriptionUsageWindowProgress | null
+  weekly?: SubscriptionUsageWindowProgress | null
+  monthly?: SubscriptionUsageWindowProgress | null
+}
+
+export interface UserSubscriptionProgressInfo {
+  subscription: UserSubscription
+  progress: SubscriptionProgress
+}
+
+export interface SubscriptionSummaryItem {
+  id: number
+  display_name: string
+  plan_id?: number | null
+  plan_name_snapshot?: string | null
+  status: UserSubscription['status']
+  daily_used_usd?: number
+  daily_quota_knives?: number | null
+  daily_used_knives?: number
+  weekly_used_usd?: number
+  weekly_quota_knives?: number | null
+  weekly_used_knives?: number
+  monthly_used_usd?: number
+  monthly_quota_knives?: number | null
+  monthly_used_knives?: number
+  expires_at?: string | null
+}
+
+export interface SubscriptionSummary {
+  active_count: number
+  total_used_usd: number
+  subscriptions: SubscriptionSummaryItem[]
 }
 
 export interface AssignSubscriptionRequest {
   user_id: number
-  group_id?: number
-  plan_id?: number
+  plan_id: number
   validity_days?: number
 }
 
 export interface BulkAssignSubscriptionRequest {
   user_ids: number[]
-  group_id?: number
-  plan_id?: number
+  plan_id: number
   validity_days?: number
 }
 

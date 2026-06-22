@@ -1,6 +1,8 @@
 package handler
 
 import (
+	"strings"
+
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	middleware2 "github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -12,8 +14,7 @@ import (
 // SubscriptionSummaryItem represents a subscription item in summary
 type SubscriptionSummaryItem struct {
 	ID                 int64    `json:"id"`
-	GroupID            int64    `json:"group_id"`
-	GroupName          string   `json:"group_name"`
+	DisplayName        string   `json:"display_name"`
 	PlanID             *int64   `json:"plan_id,omitempty"`
 	PlanNameSnapshot   *string  `json:"plan_name_snapshot,omitempty"`
 	Status             string   `json:"status"`
@@ -146,7 +147,6 @@ func (h *SubscriptionHandler) GetSummary(c *gin.Context) {
 	for _, sub := range subscriptions {
 		item := SubscriptionSummaryItem{
 			ID:                 sub.ID,
-			GroupID:            sub.GroupID,
 			PlanID:             sub.PlanID,
 			PlanNameSnapshot:   sub.PlanNameSnapshot,
 			Status:             sub.Status,
@@ -161,9 +161,13 @@ func (h *SubscriptionHandler) GetSummary(c *gin.Context) {
 			MonthlyUsedKnives:  sub.MonthlyUsedKnives,
 		}
 
-		// Add group info if preloaded
-		if sub.Group != nil {
-			item.GroupName = sub.Group.Name
+		if sub.PlanNameSnapshot != nil {
+			item.DisplayName = strings.TrimSpace(*sub.PlanNameSnapshot)
+		}
+
+		// Fallback to legacy group name during the final compatibility window.
+		if item.DisplayName == "" && sub.Group != nil {
+			item.DisplayName = sub.Group.Name
 		}
 
 		// Format expiration time
