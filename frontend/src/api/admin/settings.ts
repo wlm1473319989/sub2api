@@ -13,8 +13,6 @@ import type {
 
 export interface DefaultSubscriptionSetting {
   plan_id?: number | null;
-  group_id?: number | null;
-  validity_days: number;
 }
 
 // ── 平台限额类型 ──────────────────────────────────────────────────
@@ -199,37 +197,21 @@ export function normalizeDefaultSubscriptionSettings(
   if (!Array.isArray(subscriptions)) return [];
 
   return subscriptions
-    .filter(
-      (item) =>
-        ((typeof item.plan_id === "number" && item.plan_id > 0) ||
-          (typeof item.group_id === "number" && item.group_id > 0)) &&
-        item.validity_days > 0,
-    )
+    .filter((item) => typeof item.plan_id === "number" && item.plan_id > 0)
     .map((item) => ({
       plan_id:
         typeof item.plan_id === "number" && item.plan_id > 0
           ? Math.floor(item.plan_id)
           : undefined,
-      group_id:
-        typeof item.group_id === "number" && item.group_id > 0
-          ? Math.floor(item.group_id)
-          : undefined,
-      validity_days: Math.min(
-        36500,
-        Math.max(1, Math.floor(item.validity_days)),
-      ),
     }));
 }
 
 export function serializeDefaultSubscriptionSettings(
   subscriptions: DefaultSubscriptionSetting[] | null | undefined,
 ): DefaultSubscriptionSetting[] {
-  return normalizeDefaultSubscriptionSettings(subscriptions)
-    .filter((item) => typeof item.plan_id === "number" && item.plan_id > 0)
-    .map((item) => ({
-      plan_id: item.plan_id ?? undefined,
-      validity_days: item.validity_days,
-    }));
+  return normalizeDefaultSubscriptionSettings(subscriptions).map((item) => ({
+    plan_id: item.plan_id ?? undefined,
+  }));
 }
 
 export function buildAuthSourceDefaultsState(

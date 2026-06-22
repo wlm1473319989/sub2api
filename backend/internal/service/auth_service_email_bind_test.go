@@ -28,42 +28,24 @@ type emailBindDefaultSubAssignerStub struct {
 	calls []*service.AssignSubscriptionInput
 }
 
-func (s *emailBindDefaultSubAssignerStub) AssignOrExtendSubscription(
-	_ context.Context,
-	input *service.AssignSubscriptionInput,
-) (*service.UserSubscription, bool, error) {
-	cloned := *input
-	s.calls = append(s.calls, &cloned)
-	return &service.UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, false, nil
-}
-
 func (s *emailBindDefaultSubAssignerStub) GrantConfiguredSubscription(
 	_ context.Context,
 	userID int64,
 	item service.DefaultSubscriptionSetting,
 	notes string,
 ) (*service.UserSubscription, bool, error) {
-	input := &service.AssignSubscriptionInput{
-		UserID:       userID,
-		GroupID:      item.GroupID,
-		ValidityDays: item.ValidityDays,
-		Notes:        notes,
+	call := &service.AssignSubscriptionInput{
+		UserID: userID,
+		PlanID: item.PlanID,
+		Notes:  notes,
 	}
-	return s.AssignOrExtendSubscription(context.Background(), input)
+	s.calls = append(s.calls, call)
+	return &service.UserSubscription{UserID: userID}, false, nil
 }
 
 type flakyEmailBindDefaultSubAssignerStub struct {
 	err   error
 	calls []*service.AssignSubscriptionInput
-}
-
-func (s *flakyEmailBindDefaultSubAssignerStub) AssignOrExtendSubscription(
-	_ context.Context,
-	input *service.AssignSubscriptionInput,
-) (*service.UserSubscription, bool, error) {
-	cloned := *input
-	s.calls = append(s.calls, &cloned)
-	return nil, false, s.err
 }
 
 func (s *flakyEmailBindDefaultSubAssignerStub) GrantConfiguredSubscription(
@@ -72,13 +54,13 @@ func (s *flakyEmailBindDefaultSubAssignerStub) GrantConfiguredSubscription(
 	item service.DefaultSubscriptionSetting,
 	notes string,
 ) (*service.UserSubscription, bool, error) {
-	input := &service.AssignSubscriptionInput{
-		UserID:       userID,
-		GroupID:      item.GroupID,
-		ValidityDays: item.ValidityDays,
-		Notes:        notes,
+	call := &service.AssignSubscriptionInput{
+		UserID: userID,
+		PlanID: item.PlanID,
+		Notes:  notes,
 	}
-	return s.AssignOrExtendSubscription(context.Background(), input)
+	s.calls = append(s.calls, call)
+	return nil, false, s.err
 }
 
 func newAuthServiceForEmailBind(
@@ -156,7 +138,7 @@ func TestAuthServiceBindEmailIdentity_UpdatesEmailAndAppliesFirstBindDefaults(t 
 	svc, _, client := newAuthServiceForEmailBind(t, map[string]string{
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, cache, assigner)
 
@@ -197,8 +179,7 @@ func TestAuthServiceBindEmailIdentity_UpdatesEmailAndAppliesFirstBindDefaults(t 
 
 	require.Len(t, assigner.calls, 1)
 	require.Equal(t, user.ID, assigner.calls[0].UserID)
-	require.Equal(t, int64(11), assigner.calls[0].GroupID)
-	require.Equal(t, 30, assigner.calls[0].ValidityDays)
+	require.Equal(t, int64(11), assigner.calls[0].PlanID)
 	require.Equal(t, 1, countProviderGrantRecords(t, client, user.ID, "email", "first_bind"))
 }
 
@@ -256,7 +237,7 @@ func TestAuthServiceBindEmailIdentity_RollsBackWhenFirstBindDefaultsFail(t *test
 	svc, _, client := newAuthServiceForEmailBind(t, map[string]string{
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, cache, assigner)
 
@@ -339,7 +320,7 @@ func TestAuthServiceBindEmailIdentity_ReplacesBoundEmailAndSkipsFirstBindDefault
 	svc, _, client := newAuthServiceForEmailBind(t, map[string]string{
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, cache, assigner)
 

@@ -45,16 +45,8 @@ func coerceDeprecatedDingTalkCorpPolicy(policy string) string {
 }
 
 var (
-	ErrRegistrationDisabled   = infraerrors.Forbidden("REGISTRATION_DISABLED", "registration is currently disabled")
-	ErrSettingNotFound        = infraerrors.NotFound("SETTING_NOT_FOUND", "setting not found")
-	ErrDefaultSubGroupInvalid = infraerrors.BadRequest(
-		"DEFAULT_SUBSCRIPTION_GROUP_INVALID",
-		"default subscription group must exist and be subscription type",
-	)
-	ErrDefaultSubGroupDuplicate = infraerrors.BadRequest(
-		"DEFAULT_SUBSCRIPTION_GROUP_DUPLICATE",
-		"default subscription group cannot be duplicated",
-	)
+	ErrRegistrationDisabled  = infraerrors.Forbidden("REGISTRATION_DISABLED", "registration is currently disabled")
+	ErrSettingNotFound       = infraerrors.NotFound("SETTING_NOT_FOUND", "setting not found")
 	ErrDefaultSubPlanInvalid = infraerrors.BadRequest(
 		"DEFAULT_SUBSCRIPTION_PLAN_INVALID",
 		"default subscription plan must exist",
@@ -187,11 +179,6 @@ const openAIQuotaAutoPauseSettingsDBTimeout = 5 * time.Second
 
 const openAIQuotaAutoPauseSettingsRefreshKey = "openai_quota_auto_pause_settings"
 
-// DefaultSubscriptionGroupReader validates group references used by default subscriptions.
-type DefaultSubscriptionGroupReader interface {
-	GetByID(ctx context.Context, id int64) (*Group, error)
-}
-
 type DefaultSubscriptionPlanReader interface {
 	GetPlan(ctx context.Context, id int64) (*dbent.SubscriptionPlan, error)
 }
@@ -214,7 +201,6 @@ type WebSearchManagerBuilder func(cfg *WebSearchEmulationConfig, proxyURLs map[i
 // SettingService 系统设置服务
 type SettingService struct {
 	settingRepo                 SettingRepository
-	defaultSubGroupReader       DefaultSubscriptionGroupReader
 	defaultSubPlanReader        DefaultSubscriptionPlanReader
 	proxyRepo                   ProxyRepository // for resolving websearch provider proxy URLs
 	cfg                         *config.Config
@@ -687,11 +673,6 @@ func NewSettingService(settingRepo SettingRepository, cfg *config.Config) *Setti
 		settingRepo: settingRepo,
 		cfg:         cfg,
 	}
-}
-
-// SetDefaultSubscriptionGroupReader injects an optional group reader for default subscription validation.
-func (s *SettingService) SetDefaultSubscriptionGroupReader(reader DefaultSubscriptionGroupReader) {
-	s.defaultSubGroupReader = reader
 }
 
 func (s *SettingService) SetDefaultSubscriptionPlanReader(reader DefaultSubscriptionPlanReader) {
@@ -2219,12 +2200,7 @@ func (s *SettingService) validateDefaultSubscriptions(ctx context.Context, items
 	checked := make(map[string]struct{}, len(items))
 	for _, item := range items {
 		if item.PlanID <= 0 {
-			if item.GroupID > 0 {
-				return ErrDefaultSubPlanInvalid.WithMetadata(map[string]string{
-					"group_id": strconv.FormatInt(item.GroupID, 10),
-				})
-			}
-			continue
+			return ErrDefaultSubPlanInvalid
 		}
 
 		key := "plan:" + strconv.FormatInt(item.PlanID, 10)
@@ -3616,21 +3592,8 @@ func parseDefaultSubscriptions(raw string) []DefaultSubscriptionSetting {
 
 	normalized := make([]DefaultSubscriptionSetting, 0, len(items))
 	for _, item := range items {
-		switch {
-		case item.PlanID > 0:
-			item.GroupID = 0
-			if item.ValidityDays < 0 {
-				item.ValidityDays = 0
-			}
-			normalized = append(normalized, item)
-		case item.GroupID > 0 && item.ValidityDays > 0:
-			if item.ValidityDays > MaxValidityDays {
-				item.ValidityDays = MaxValidityDays
-			}
-			item.PlanID = 0
-			normalized = append(normalized, item)
-		default:
-			continue
+		if item.PlanID > 0 {
+			normalized = append(normalized, DefaultSubscriptionSetting{PlanID: item.PlanID})
 		}
 	}
 

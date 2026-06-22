@@ -103,17 +103,9 @@ export interface PaymentOrder {
 
 export interface SubscriptionPlan {
   id: number
-  group_id?: number | null
-  group_platform?: string | null
-  group_name?: string | null
-  rate_multiplier?: number | null
-  daily_limit_usd?: number | null
-  weekly_limit_usd?: number | null
-  monthly_limit_usd?: number | null
   daily_quota_knives?: number | null
   weekly_quota_knives?: number | null
   monthly_quota_knives?: number | null
-  supported_model_scopes?: string[]
   name: string
   description: string
   price: number

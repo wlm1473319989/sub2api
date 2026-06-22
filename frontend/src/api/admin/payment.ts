@@ -14,8 +14,6 @@ import type {
 import type { BasePaginationResponse } from '@/types'
 
 export interface PlanPayload {
-  group_id?: number | null
-  clear_group_id?: boolean
   name: string
   description: string
   price: number

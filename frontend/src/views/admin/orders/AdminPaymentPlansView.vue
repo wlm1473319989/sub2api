@@ -13,21 +13,6 @@
           <span class="text-sm font-medium" :class="getPlanNameClass(row)">{{ value }}</span>
         </template>
 
-        <template #cell-group_id="{ row }">
-          <span v-if="row.group_id == null" class="text-sm text-gray-400">{{ t('payment.admin.userLevelPlan') }}</span>
-          <span v-else-if="isGroupMissing(row.group_id)" class="text-sm">
-            <span class="text-gray-400">#{{ row.group_id }}</span>
-            <span class="ml-1 badge badge-warning">{{ t('payment.admin.legacyGroupBinding') }}</span>
-          </span>
-          <GroupBadge
-            v-else-if="getGroup(row.group_id)"
-            :name="getGroup(row.group_id)!.name"
-            :platform="getGroup(row.group_id)!.platform"
-            :rate-multiplier="getGroup(row.group_id)!.rate_multiplier"
-          />
-          <span v-else class="text-sm text-gray-400">-</span>
-        </template>
-
         <template #cell-price="{ value, row }">
           <div class="text-sm">
             <span class="font-medium text-gray-900 dark:text-white">${{ (value ?? 0).toFixed(2) }}</span>
@@ -106,12 +91,10 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import type { Column } from '@/components/common/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
-import { platformTextClass } from '@/utils/platformColors'
 import { useAppStore } from '@/stores/app'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import DataTable from '@/components/common/DataTable.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
 import Icon from '@/components/icons/Icon.vue'
 import PlanEditDialog from './PlanEditDialog.vue'
 
@@ -129,7 +112,6 @@ const deletingPlanId = ref<number | null>(null)
 const planColumns = computed((): Column[] => [
   { key: 'id', label: 'ID' },
   { key: 'name', label: t('payment.admin.planName') },
-  { key: 'group_id', label: t('payment.admin.planScope') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'quotas', label: t('payment.planCard.quota') },
   { key: 'validity_days', label: t('payment.admin.validityDays') },
@@ -169,20 +151,9 @@ async function loadGroups() {
   }
 }
 
-function getGroup(id: number): AdminGroup | undefined {
-  return groups.value.find((group) => group.id === id)
-}
-
-function isGroupMissing(id: number): boolean {
-  return id > 0 && !getGroup(id)
-}
-
 function getPlanNameClass(plan: SubscriptionPlan): string {
-  if (!plan.group_id) {
-    return 'text-gray-900 dark:text-white'
-  }
-  const group = getGroup(plan.group_id)
-  return group ? platformTextClass(group.platform) : 'text-gray-900 dark:text-white'
+  void plan
+  return 'text-gray-900 dark:text-white'
 }
 
 async function loadPlans() {

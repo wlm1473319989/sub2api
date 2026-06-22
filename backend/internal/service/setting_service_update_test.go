@@ -143,18 +143,17 @@ func TestSettingService_UpdateSettings_DefaultSubscriptions_ValidPlan(t *testing
 	require.Equal(t, []DefaultSubscriptionSetting{{PlanID: 21}}, got)
 }
 
-func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsLegacyGroupWrite(t *testing.T) {
+func TestSettingService_UpdateSettings_DefaultSubscriptions_RejectsMissingPlanID(t *testing.T) {
 	repo := &settingUpdateRepoStub{}
 	svc := NewSettingService(repo, &config.Config{})
 
 	err := svc.UpdateSettings(context.Background(), &SystemSettings{
 		DefaultSubscriptions: []DefaultSubscriptionSetting{
-			{GroupID: 13, ValidityDays: 7},
+			{},
 		},
 	})
 	require.Error(t, err)
 	require.Equal(t, "DEFAULT_SUBSCRIPTION_PLAN_INVALID", infraerrors.Reason(err))
-	require.Equal(t, "13", infraerrors.FromError(err).Metadata["group_id"])
 	require.Nil(t, repo.updates)
 }
 
@@ -218,12 +217,11 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 }
 
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {
-	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"plan_id":91},{"group_id":11,"validity_days":60},{"group_id":0,"validity_days":10},{"group_id":12,"validity_days":99999}]`)
+	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"plan_id":91},{"plan_id":92,"validity_days":60},{"group_id":0,"validity_days":10},{"plan_id":93}]`)
 	require.Equal(t, []DefaultSubscriptionSetting{
 		{PlanID: 91},
-		{GroupID: 11, ValidityDays: 30},
-		{GroupID: 11, ValidityDays: 60},
-		{GroupID: 12, ValidityDays: MaxValidityDays},
+		{PlanID: 92},
+		{PlanID: 93},
 	}, got)
 }
 

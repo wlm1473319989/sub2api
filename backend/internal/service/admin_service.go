@@ -730,7 +730,7 @@ func (s *adminServiceImpl) assignDefaultSubscriptions(ctx context.Context, userI
 	items := s.settingService.GetDefaultSubscriptions(ctx)
 	for _, item := range items {
 		if _, _, err := s.defaultSubAssigner.GrantConfiguredSubscription(ctx, userID, item, "auto assigned by default user subscriptions setting"); err != nil {
-			logger.LegacyPrintf("service.admin", "failed to assign default subscription: user_id=%d group_id=%d plan_id=%d err=%v", userID, item.GroupID, item.PlanID, err)
+			logger.LegacyPrintf("service.admin", "failed to assign default subscription: user_id=%d plan_id=%d err=%v", userID, item.PlanID, err)
 		}
 	}
 }
@@ -2257,7 +2257,7 @@ func (s *adminServiceImpl) DeleteGroup(ctx context.Context, id int64) error {
 			cacheCtx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 			defer cancel()
 			for _, userID := range affectedUserIDs {
-				if err := s.billingCacheService.InvalidateSubscription(cacheCtx, userID, groupID); err != nil {
+				if err := s.billingCacheService.InvalidateSubscription(cacheCtx, userID); err != nil {
 					logger.LegacyPrintf("service.admin", "invalidate subscription cache failed: user_id=%d group_id=%d err=%v", userID, groupID, err)
 				}
 			}

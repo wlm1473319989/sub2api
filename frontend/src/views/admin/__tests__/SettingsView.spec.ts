@@ -1027,25 +1027,17 @@ describe("admin SettingsView wechat connect controls", () => {
     getSettings.mockResolvedValueOnce({
       ...baseSettingsResponse,
       default_subscriptions: [
-        { plan_id: 11, validity_days: 30 },
-        { group_id: 99, validity_days: 15 },
+        { plan_id: 11 },
+        { plan_id: 12 },
       ],
     });
     getPlans.mockResolvedValueOnce({
       data: [
         {
           id: 11,
-          group_id: 201,
-          group_platform: "openai",
-          group_name: "OpenAI",
-          rate_multiplier: 1,
-          daily_limit_usd: null,
-          weekly_limit_usd: null,
-          monthly_limit_usd: null,
           daily_quota_knives: null,
           weekly_quota_knives: null,
           monthly_quota_knives: null,
-          supported_model_scopes: [],
           name: "Starter Plan",
           description: "starter",
           price: 9.9,
@@ -1057,19 +1049,11 @@ describe("admin SettingsView wechat connect controls", () => {
         },
         {
           id: 12,
-          group_id: 99,
-          group_platform: "anthropic",
-          group_name: "Anthropic",
-          rate_multiplier: 1,
-          daily_limit_usd: null,
-          weekly_limit_usd: null,
-          monthly_limit_usd: null,
           daily_quota_knives: null,
           weekly_quota_knives: null,
           monthly_quota_knives: null,
-          supported_model_scopes: [],
-          name: "Legacy Mapped Plan",
-          description: "legacy",
+          name: "Growth Plan",
+          description: "growth",
           price: 19.9,
           validity_days: 15,
           validity_unit: "day",
@@ -1095,8 +1079,8 @@ describe("admin SettingsView wechat connect controls", () => {
     expect(updateSettings).toHaveBeenCalledWith(
       expect.objectContaining({
         default_subscriptions: [
-          { plan_id: 11, validity_days: 30 },
-          { plan_id: 12, validity_days: 15 },
+          { plan_id: 11 },
+          { plan_id: 12 },
         ],
       }),
     );
@@ -1105,8 +1089,8 @@ describe("admin SettingsView wechat connect controls", () => {
       default_subscriptions?: Array<Record<string, unknown>>;
     };
     expect(payload.default_subscriptions).toEqual([
-      { plan_id: 11, validity_days: 30 },
-      { plan_id: 12, validity_days: 15 },
+      { plan_id: 11 },
+      { plan_id: 12 },
     ]);
     expect(
       payload.default_subscriptions?.some((item) => "group_id" in item),

@@ -86,8 +86,6 @@ describe('PlanEditDialog', () => {
     expect(showError).not.toHaveBeenCalled()
     expect(createPlan).toHaveBeenCalledTimes(1)
     expect(createPlan).toHaveBeenCalledWith(expect.objectContaining({
-      group_id: null,
-      clear_group_id: false,
       name: 'Starter Plan',
       description: 'starter description',
       price: 19.9,

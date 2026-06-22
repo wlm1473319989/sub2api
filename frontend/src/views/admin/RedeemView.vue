@@ -319,30 +319,7 @@
                   v-model="generateForm.plan_id"
                   :options="subscriptionPlanOptions"
                   :placeholder="t('payment.selectPlan')"
-                >
-                  <template #selected="{ option }">
-                    <GroupBadge
-                      v-if="option"
-                      :name="(option as unknown as GroupOption).label"
-                      :platform="(option as unknown as GroupOption).platform"
-                      :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                      :rate-multiplier="(option as unknown as GroupOption).rate"
-                    />
-                    <span v-else class="text-gray-400">{{
-                      t('payment.selectPlan')
-                    }}</span>
-                  </template>
-                  <template #option="{ option, selected }">
-                    <GroupOptionItem
-                      :name="(option as unknown as GroupOption).label"
-                      :platform="(option as unknown as GroupOption).platform"
-                      :subscription-type="(option as unknown as GroupOption).subscriptionType"
-                      :rate-multiplier="(option as unknown as GroupOption).rate"
-                      :description="(option as unknown as GroupOption).description"
-                      :selected="selected"
-                    />
-                  </template>
-                </Select>
+                />
               </div>
               <div>
                 <label class="input-label">{{ t('admin.redeem.validityDays') }}</label>
@@ -619,8 +596,6 @@ import { formatDateTime } from '@/utils/format'
 import type {
   RedeemCode,
   RedeemCodeType,
-  GroupPlatform,
-  SubscriptionType,
   BatchUpdateRedeemCodeFields
 } from '@/types'
 import type { SubscriptionPlan } from '@/types/payment'
@@ -631,22 +606,11 @@ import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import Select from '@/components/common/Select.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
-import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Icon from '@/components/icons/Icon.vue'
 
 const { t } = useI18n()
 const appStore = useAppStore()
 const { copyToClipboard: clipboardCopy } = useClipboard()
-
-interface GroupOption {
-  value: number
-  label: string
-  description: string
-  platform: GroupPlatform
-  subscriptionType: SubscriptionType
-  rate?: number
-}
 
 const showGenerateDialog = ref(false)
 const showResultDialog = ref(false)
@@ -660,11 +624,6 @@ const subscriptionPlanOptions = computed(() => {
       value: plan.id,
       label: plan.name,
       description: plan.description || '',
-      platform: plan.group_platform
-        ? (plan.group_platform as GroupPlatform)
-        : 'openai',
-      subscriptionType: 'subscription' as SubscriptionType,
-      rate: plan.rate_multiplier ?? undefined
     }))
 })
 

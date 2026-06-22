@@ -39,23 +39,17 @@ func newPaymentHandlerTestClient(t *testing.T) *dbent.Client {
 	return client
 }
 
-func TestBuildPublicCheckoutPlansFiltersUserLevelPlans(t *testing.T) {
+func TestBuildPublicCheckoutPlansIncludesAllForSalePlans(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentHandlerTestClient(t)
 	configService := service.NewPaymentConfigService(client, nil, nil)
 
-	group, err := client.Group.Create().SetName("legacy").Save(ctx)
-	if err != nil {
-		t.Fatalf("create group: %v", err)
-	}
-
 	dailyQuota := 10.0
 	weeklyQuota := 70.0
 
-	legacyPlan, err := client.SubscriptionPlan.Create().
-		SetGroupID(group.ID).
-		SetName("Legacy").
-		SetDescription("legacy").
+	firstPlan, err := client.SubscriptionPlan.Create().
+		SetName("Starter").
+		SetDescription("starter").
 		SetPrice(9.99).
 		SetValidityDays(30).
 		SetValidityUnit("day").
@@ -67,11 +61,11 @@ func TestBuildPublicCheckoutPlansFiltersUserLevelPlans(t *testing.T) {
 		SetSortOrder(1).
 		Save(ctx)
 	if err != nil {
-		t.Fatalf("create legacy plan: %v", err)
+		t.Fatalf("create first plan: %v", err)
 	}
 
 	userLevelQuota := 25.0
-	if _, err := client.SubscriptionPlan.Create().
+	secondPlan, err := client.SubscriptionPlan.Create().
 		SetName("User Level").
 		SetDescription("new").
 		SetPrice(19.99).
@@ -82,8 +76,9 @@ func TestBuildPublicCheckoutPlansFiltersUserLevelPlans(t *testing.T) {
 		SetProductName("user-level").
 		SetForSale(true).
 		SetSortOrder(2).
-		Save(ctx); err != nil {
-		t.Fatalf("create user-level plan: %v", err)
+		Save(ctx)
+	if err != nil {
+		t.Fatalf("create second plan: %v", err)
 	}
 
 	plans, err := configService.ListPlansForSale(ctx)
@@ -91,12 +86,12 @@ func TestBuildPublicCheckoutPlansFiltersUserLevelPlans(t *testing.T) {
 		t.Fatalf("ListPlansForSale: %v", err)
 	}
 
-	out := buildPublicCheckoutPlans(ctx, configService, plans)
-	if len(out) != 1 {
-		t.Fatalf("buildPublicCheckoutPlans len = %d, want 1", len(out))
+	out := buildPublicCheckoutPlans(plans)
+	if len(out) != 2 {
+		t.Fatalf("buildPublicCheckoutPlans len = %d, want 2", len(out))
 	}
-	if out[0].ID != legacyPlan.ID {
-		t.Fatalf("plan ID = %d, want %d", out[0].ID, legacyPlan.ID)
+	if out[0].ID != firstPlan.ID {
+		t.Fatalf("first plan ID = %d, want %d", out[0].ID, firstPlan.ID)
 	}
 	if out[0].DailyQuotaKnives == nil || *out[0].DailyQuotaKnives != dailyQuota {
 		t.Fatalf("DailyQuotaKnives = %v, want %v", out[0].DailyQuotaKnives, dailyQuota)
@@ -104,10 +99,16 @@ func TestBuildPublicCheckoutPlansFiltersUserLevelPlans(t *testing.T) {
 	if out[0].WeeklyQuotaKnives == nil || *out[0].WeeklyQuotaKnives != weeklyQuota {
 		t.Fatalf("WeeklyQuotaKnives = %v, want %v", out[0].WeeklyQuotaKnives, weeklyQuota)
 	}
-	if out[0].GroupID == nil || *out[0].GroupID != group.ID {
-		t.Fatalf("GroupID = %v, want %d", out[0].GroupID, group.ID)
-	}
 	if len(out[0].Features) != 2 {
 		t.Fatalf("Features len = %d, want 2", len(out[0].Features))
+	}
+	if out[1].ID != secondPlan.ID {
+		t.Fatalf("second plan ID = %d, want %d", out[1].ID, secondPlan.ID)
+	}
+	if out[1].DailyQuotaKnives == nil || *out[1].DailyQuotaKnives != userLevelQuota {
+		t.Fatalf("second DailyQuotaKnives = %v, want %v", out[1].DailyQuotaKnives, userLevelQuota)
+	}
+	if len(out[1].Features) != 1 {
+		t.Fatalf("second Features len = %d, want 1", len(out[1].Features))
 	}
 }

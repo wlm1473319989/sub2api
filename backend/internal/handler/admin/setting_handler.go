@@ -104,9 +104,7 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 	defaultSubscriptions := make([]dto.DefaultSubscriptionSetting, 0, len(settings.DefaultSubscriptions))
 	for _, sub := range settings.DefaultSubscriptions {
 		defaultSubscriptions = append(defaultSubscriptions, dto.DefaultSubscriptionSetting{
-			GroupID:      sub.GroupID,
-			PlanID:       sub.PlanID,
-			ValidityDays: sub.ValidityDays,
+			PlanID: sub.PlanID,
 		})
 	}
 
@@ -1429,9 +1427,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	defaultSubscriptions := make([]service.DefaultSubscriptionSetting, 0, len(req.DefaultSubscriptions))
 	for _, sub := range req.DefaultSubscriptions {
 		defaultSubscriptions = append(defaultSubscriptions, service.DefaultSubscriptionSetting{
-			GroupID:      sub.GroupID,
-			PlanID:       sub.PlanID,
-			ValidityDays: sub.ValidityDays,
+			PlanID: sub.PlanID,
 		})
 	}
 
@@ -1948,9 +1944,7 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 	updatedDefaultSubscriptions := make([]dto.DefaultSubscriptionSetting, 0, len(updatedSettings.DefaultSubscriptions))
 	for _, sub := range updatedSettings.DefaultSubscriptions {
 		updatedDefaultSubscriptions = append(updatedDefaultSubscriptions, dto.DefaultSubscriptionSetting{
-			GroupID:      sub.GroupID,
-			PlanID:       sub.PlanID,
-			ValidityDays: sub.ValidityDays,
+			PlanID: sub.PlanID,
 		})
 	}
 
@@ -2707,21 +2701,8 @@ func normalizeDefaultSubscriptions(input []dto.DefaultSubscriptionSetting) []dto
 	}
 	normalized := make([]dto.DefaultSubscriptionSetting, 0, len(input))
 	for _, item := range input {
-		switch {
-		case item.PlanID > 0:
-			item.GroupID = 0
-			if item.ValidityDays < 0 {
-				item.ValidityDays = 0
-			}
-			normalized = append(normalized, item)
-		case item.GroupID > 0 && item.ValidityDays > 0:
-			item.PlanID = 0
-			if item.ValidityDays > service.MaxValidityDays {
-				item.ValidityDays = service.MaxValidityDays
-			}
-			normalized = append(normalized, item)
-		default:
-			continue
+		if item.PlanID > 0 {
+			normalized = append(normalized, dto.DefaultSubscriptionSetting{PlanID: item.PlanID})
 		}
 	}
 	return normalized
@@ -2763,9 +2744,7 @@ func defaultSubscriptionsValueOrDefault(input *[]dto.DefaultSubscriptionSetting,
 	result := make([]service.DefaultSubscriptionSetting, 0, len(*input))
 	for _, item := range *input {
 		result = append(result, service.DefaultSubscriptionSetting{
-			GroupID:      item.GroupID,
-			PlanID:       item.PlanID,
-			ValidityDays: item.ValidityDays,
+			PlanID: item.PlanID,
 		})
 	}
 	return result
@@ -2856,7 +2835,7 @@ func equalDefaultSubscriptions(a, b []service.DefaultSubscriptionSetting) bool {
 		return false
 	}
 	for i := range a {
-		if a[i].GroupID != b[i].GroupID || a[i].PlanID != b[i].PlanID || a[i].ValidityDays != b[i].ValidityDays {
+		if a[i].PlanID != b[i].PlanID {
 			return false
 		}
 	}

@@ -492,28 +492,7 @@
             v-model="assignForm.plan_id"
             :options="subscriptionPlanOptions"
             :placeholder="t('payment.selectPlan')"
-          >
-            <template #selected="{ option }">
-              <GroupBadge
-                v-if="option"
-                :name="(option as unknown as PlanOption).label"
-                :platform="(option as unknown as PlanOption).platform"
-                :subscription-type="(option as unknown as PlanOption).subscriptionType"
-                :rate-multiplier="(option as unknown as PlanOption).rate"
-              />
-              <span v-else class="text-gray-400">{{ t('payment.selectPlan') }}</span>
-            </template>
-            <template #option="{ option, selected }">
-              <GroupOptionItem
-                :name="(option as unknown as PlanOption).label"
-                :platform="(option as unknown as PlanOption).platform"
-                :subscription-type="(option as unknown as PlanOption).subscriptionType"
-                :rate-multiplier="(option as unknown as PlanOption).rate"
-                :description="(option as unknown as PlanOption).description"
-                :selected="selected"
-              />
-            </template>
-          </Select>
+          />
           <p class="input-hint">
             {{ selectedAssignPlan ? formatPlanValidity(selectedAssignPlan) : t('admin.subscriptions.planHint') }}
           </p>
@@ -734,7 +713,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import type { UserSubscription, Group, GroupPlatform, SubscriptionType } from '@/types'
+import type { UserSubscription, Group } from '@/types'
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import type { SubscriptionPlan } from '@/types/payment'
@@ -749,7 +728,6 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Select from '@/components/common/Select.vue'
 import GroupBadge from '@/components/common/GroupBadge.vue'
-import GroupOptionItem from '@/components/common/GroupOptionItem.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
 
@@ -760,9 +738,6 @@ interface PlanOption extends Record<string, unknown> {
   value: number
   label: string
   description: string
-  platform: GroupPlatform
-  subscriptionType: SubscriptionType
-  rate: number
 }
 
 // Guide modal state
@@ -970,9 +945,6 @@ const subscriptionPlanOptions = computed<PlanOption[]>(() =>
     value: plan.id,
     label: plan.name,
     description: plan.description,
-    platform: (plan.group_platform || '') as GroupPlatform,
-    subscriptionType: 'subscription',
-    rate: plan.rate_multiplier ?? 1,
   }))
 )
 

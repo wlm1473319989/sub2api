@@ -1,94 +1,77 @@
 import { mount } from '@vue/test-utils'
-import { describe, expect, it } from 'vitest'
-import { createI18n } from 'vue-i18n'
+import { describe, expect, it, vi } from 'vitest'
+
 import SubscriptionPlanCard from '../SubscriptionPlanCard.vue'
 
-const i18n = createI18n({
-  legacy: false,
-  locale: 'en',
-  fallbackWarn: false,
-  missingWarn: false,
-  messages: {
-    en: {
-      payment: {
-        days: 'days',
-        perMonth: 'month',
-        perYear: 'year',
-        subscribeNow: 'Subscribe now',
-        renewNow: 'Renew now',
-        admin: {
-          weeks: 'weeks',
-        },
-        planCard: {
-          quota: 'Quota',
-          rate: 'Rate',
-          unlimited: 'Unlimited',
-          dailyLimit: 'Daily',
-          weeklyLimit: 'Weekly',
-          monthlyLimit: 'Monthly',
-          models: 'Models',
-        },
-      },
-    },
-  },
-})
+const translations: Record<string, string> = {
+  'payment.days': 'days',
+  'payment.perMonth': 'month',
+  'payment.perYear': 'year',
+  'payment.subscribeNow': 'Subscribe now',
+  'payment.renewNow': 'Renew now',
+  'payment.admin.weeks': 'weeks',
+  'payment.planCard.quota': 'Quota',
+  'payment.planCard.unlimited': 'Unlimited',
+  'payment.planCard.dailyLimit': 'Daily',
+  'payment.planCard.weeklyLimit': 'Weekly',
+  'payment.planCard.monthlyLimit': 'Monthly',
+}
+
+vi.mock('vue-i18n', () => ({
+  useI18n: () => ({
+    t: (key: string) => translations[key] ?? key,
+  }),
+}))
 
 const basePlan = {
   id: 1,
-  group_id: 10,
-  group_platform: 'antigravity',
   name: 'Pro',
+  description: 'pro tier',
   price: 10,
   features: [],
-  rate_multiplier: 1,
   validity_days: 30,
   validity_unit: 'day',
-  supported_model_scopes: ['claude', 'gemini_text', 'gemini_image'],
   for_sale: true,
   sort_order: 1,
 }
 
 describe('SubscriptionPlanCard', () => {
-  it('shows model scopes for Antigravity plans', () => {
+  it('shows configured quota limits', () => {
     const text = mount(SubscriptionPlanCard, {
       props: {
         plan: {
           ...basePlan,
           daily_quota_knives: 10,
+          weekly_quota_knives: 20,
+          monthly_quota_knives: 30,
         },
       },
-      global: { plugins: [i18n] },
     }).text()
 
-    expect(text).toContain('Claude')
-    expect(text).toContain('Gemini')
-    expect(text).toContain('Imagen')
+    expect(text).toContain('Daily')
+    expect(text).toContain('Weekly')
+    expect(text).toContain('Monthly')
     expect(text).toContain('10')
+    expect(text).toContain('20')
+    expect(text).toContain('30')
+    expect(text).not.toContain('Unlimited')
   })
 
-  it('does not show Antigravity model scopes for OpenAI plans', () => {
+  it('shows unlimited when no quota limits are configured', () => {
     const text = mount(SubscriptionPlanCard, {
       props: {
-        plan: {
-          ...basePlan,
-          group_platform: 'openai',
-        },
+        plan: basePlan,
       },
-      global: { plugins: [i18n] },
     }).text()
 
-    expect(text).not.toContain('Claude')
-    expect(text).not.toContain('Gemini')
-    expect(text).not.toContain('Imagen')
+    expect(text).toContain('Quota')
+    expect(text).toContain('Unlimited')
   })
 
   it('prefers plan_id for renewal matching', () => {
     const text = mount(SubscriptionPlanCard, {
       props: {
-        plan: {
-          ...basePlan,
-          group_id: null,
-        },
+        plan: basePlan,
         activeSubscriptions: [
           {
             id: 99,
@@ -109,9 +92,8 @@ describe('SubscriptionPlanCard', () => {
           },
         ],
       },
-      global: { plugins: [i18n] },
     }).text()
 
-    expect(text).toContain('payment.renewNow')
+    expect(text).toContain('Renew now')
   })
 })

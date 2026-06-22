@@ -31,9 +31,6 @@ func TestPaymentConfigServiceCreatePlan_UserLevelQuotas(t *testing.T) {
 		t.Fatalf("CreatePlan returned error: %v", err)
 	}
 
-	if plan.GroupID != nil {
-		t.Fatalf("GroupID = %v, want nil", *plan.GroupID)
-	}
 	if plan.ValidityUnit != "day" {
 		t.Fatalf("ValidityUnit = %q, want day", plan.ValidityUnit)
 	}
@@ -45,20 +42,14 @@ func TestPaymentConfigServiceCreatePlan_UserLevelQuotas(t *testing.T) {
 	}
 }
 
-func TestPaymentConfigServiceUpdatePlan_ClearLegacyGroupAndQuota(t *testing.T) {
+func TestPaymentConfigServiceUpdatePlan_ReplacesQuotaAndNormalizesUnit(t *testing.T) {
 	ctx := context.Background()
 	client := newPaymentConfigServiceTestClient(t)
 	svc := &PaymentConfigService{entClient: client}
 
-	group, err := client.Group.Create().SetName("legacy").Save(ctx)
-	if err != nil {
-		t.Fatalf("create group: %v", err)
-	}
-
 	created, err := client.SubscriptionPlan.Create().
-		SetGroupID(group.ID).
-		SetName("Legacy").
-		SetDescription("legacy plan").
+		SetName("Starter").
+		SetDescription("starter plan").
 		SetPrice(19.99).
 		SetValidityDays(30).
 		SetValidityUnit("day").
@@ -74,7 +65,6 @@ func TestPaymentConfigServiceUpdatePlan_ClearLegacyGroupAndQuota(t *testing.T) {
 
 	weeklyQuota := 88.0
 	updated, err := svc.UpdatePlan(ctx, created.ID, UpdatePlanRequest{
-		ClearGroupID:      true,
 		DailyQuotaKnives:  ptrPlanFloat(0),
 		WeeklyQuotaKnives: &weeklyQuota,
 		ValidityUnit:      ptrPlanStr("months"),
@@ -83,9 +73,6 @@ func TestPaymentConfigServiceUpdatePlan_ClearLegacyGroupAndQuota(t *testing.T) {
 		t.Fatalf("UpdatePlan returned error: %v", err)
 	}
 
-	if updated.GroupID != nil {
-		t.Fatalf("GroupID = %v, want nil", *updated.GroupID)
-	}
 	if updated.DailyQuotaKnives != nil {
 		t.Fatalf("DailyQuotaKnives = %v, want nil", *updated.DailyQuotaKnives)
 	}

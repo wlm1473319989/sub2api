@@ -14,36 +14,6 @@
         </div>
       </div>
 
-      <div v-if="legacyGroupInfo" class="rounded-lg border border-amber-200 bg-amber-50 p-3 dark:border-amber-700/50 dark:bg-amber-950/20">
-        <div class="mb-2 flex items-center gap-2">
-          <span class="badge badge-warning">{{ t('payment.admin.legacyGroupBinding') }}</span>
-          <GroupBadge :name="legacyGroupInfo.name" :platform="legacyGroupInfo.platform" :rate-multiplier="legacyGroupInfo.rate_multiplier" />
-        </div>
-        <p class="mb-3 text-xs text-amber-800 dark:text-amber-200">
-          {{ t('payment.admin.legacyGroupBindingHint') }}
-        </p>
-        <div class="grid grid-cols-2 gap-2 text-xs">
-          <div>
-            <span class="text-gray-500">{{ t('payment.admin.dailyLimit') }}:</span>
-            <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ legacyGroupInfo.daily_limit_usd != null ? '$' + legacyGroupInfo.daily_limit_usd : t('payment.admin.unlimited') }}
-            </span>
-          </div>
-          <div>
-            <span class="text-gray-500">{{ t('payment.admin.weeklyLimit') }}:</span>
-            <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ legacyGroupInfo.weekly_limit_usd != null ? '$' + legacyGroupInfo.weekly_limit_usd : t('payment.admin.unlimited') }}
-            </span>
-          </div>
-          <div>
-            <span class="text-gray-500">{{ t('payment.admin.monthlyLimit') }}:</span>
-            <span class="ml-1 font-medium text-gray-700 dark:text-gray-300">
-              {{ legacyGroupInfo.monthly_limit_usd != null ? '$' + legacyGroupInfo.monthly_limit_usd : t('payment.admin.unlimited') }}
-            </span>
-          </div>
-        </div>
-      </div>
-
       <div>
         <label class="input-label">{{ t('payment.admin.planDescription') }} <span class="text-red-500">*</span></label>
         <textarea v-model="planForm.description" rows="2" class="input" required></textarea>
@@ -137,7 +107,6 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
-import GroupBadge from '@/components/common/GroupBadge.vue'
 
 const props = defineProps<{
   show: boolean
@@ -174,12 +143,6 @@ const validityUnitOptions = computed(() => [
   { value: 'week', label: t('payment.admin.weeks') },
   { value: 'month', label: t('payment.admin.months') },
 ])
-
-const legacyGroupInfo = computed(() => {
-  const groupID = props.plan?.group_id
-  if (!groupID) return null
-  return props.groups.find((g) => g.id === groupID) || null
-})
 
 watch(
   () => props.show,
@@ -233,8 +196,6 @@ function buildPlanPayload(): PlanPayload {
     .join('\n')
 
   return {
-    group_id: null,
-    clear_group_id: !!props.plan?.group_id,
     name: planForm.name,
     description: planForm.description,
     price: planForm.price,

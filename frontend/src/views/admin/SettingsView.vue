@@ -3158,7 +3158,7 @@
                   <div
                     v-for="(item, index) in form.default_subscriptions"
                     :key="`default-sub-${index}`"
-                    class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_160px_auto] dark:border-dark-600"
+                    class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_auto] dark:border-dark-600"
                   >
                     <div>
                       <label
@@ -3173,73 +3173,6 @@
                         :placeholder="
                           t('payment.selectPlan')
                         "
-                      >
-                        <template #selected="{ option }">
-                          <GroupBadge
-                            v-if="option"
-                            :name="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).label
-                            "
-                            :platform="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).platform
-                            "
-                            :rate-multiplier="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).rate
-                            "
-                            subscription-type="subscription"
-                          />
-                          <span v-else class="text-gray-400">
-                            {{ t("payment.selectPlan") }}
-                          </span>
-                        </template>
-                        <template #option="{ option, selected }">
-                          <GroupOptionItem
-                            :name="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).label
-                            "
-                            :platform="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).platform
-                            "
-                            :rate-multiplier="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).rate
-                            "
-                            :description="
-                              (
-                                option as unknown as DefaultSubscriptionPlanOption
-                              ).description
-                            "
-                            :selected="selected"
-                            subscription-type="subscription"
-                          />
-                        </template>
-                      </Select>
-                    </div>
-                    <div>
-                      <label
-                        class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
-                      >
-                        {{
-                          t("admin.settings.defaults.subscriptionValidityDays")
-                        }}
-                      </label>
-                      <input
-                        v-model.number="item.validity_days"
-                        type="number"
-                        min="1"
-                        max="36500"
-                        class="input h-[42px]"
                       />
                     </div>
                     <div class="flex items-end">
@@ -3480,7 +3413,7 @@
                           authSource.source
                         ].subscriptions"
                         :key="`${authSource.source}-sub-${index}`"
-                        class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_160px_auto] dark:border-dark-600"
+                        class="grid grid-cols-1 gap-3 rounded border border-gray-200 p-3 md:grid-cols-[1fr_auto] dark:border-dark-600"
                       >
                         <div>
                           <label
@@ -3495,77 +3428,6 @@
                             :placeholder="
                               t('payment.selectPlan')
                             "
-                          >
-                            <template #selected="{ option }">
-                              <GroupBadge
-                                v-if="option"
-                                :name="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).label
-                                "
-                                :platform="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).platform
-                                "
-                                :rate-multiplier="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).rate
-                                "
-                                subscription-type="subscription"
-                              />
-                              <span v-else class="text-gray-400">
-                                {{
-                                  t("payment.selectPlan")
-                                }}
-                              </span>
-                            </template>
-                            <template #option="{ option, selected }">
-                              <GroupOptionItem
-                                :name="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).label
-                                "
-                                :platform="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).platform
-                                "
-                                :rate-multiplier="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).rate
-                                "
-                                :description="
-                                  (
-                                    option as unknown as DefaultSubscriptionPlanOption
-                                  ).description
-                                "
-                                :selected="selected"
-                                subscription-type="subscription"
-                              />
-                            </template>
-                          </Select>
-                        </div>
-                        <div>
-                          <label
-                            class="mb-1 block text-xs font-medium text-gray-600 dark:text-gray-400"
-                          >
-                            {{
-                              t(
-                                "admin.settings.defaults.subscriptionValidityDays",
-                              )
-                            }}
-                          </label>
-                          <input
-                            v-model.number="item.validity_days"
-                            type="number"
-                            min="1"
-                            max="36500"
-                            class="input h-[42px]"
                           />
                         </div>
                         <div class="flex items-end">
@@ -6968,8 +6830,6 @@ import Select from "@/components/common/Select.vue";
 import ConfirmDialog from "@/components/common/ConfirmDialog.vue";
 import PaymentProviderList from "@/components/payment/PaymentProviderList.vue";
 import PaymentProviderDialog from "@/components/payment/PaymentProviderDialog.vue";
-import GroupBadge from "@/components/common/GroupBadge.vue";
-import GroupOptionItem from "@/components/common/GroupOptionItem.vue";
 import Toggle from "@/components/common/Toggle.vue";
 import ProxySelector from "@/components/common/ProxySelector.vue";
 import ImageUpload from "@/components/common/ImageUpload.vue";
@@ -7587,9 +7447,6 @@ interface DefaultSubscriptionPlanOption {
   value: number;
   label: string;
   description: string;
-  platform: "anthropic" | "openai" | "gemini" | "antigravity";
-  groupName: string | null;
-  rate?: number;
   [key: string]: unknown;
 }
 
@@ -8071,15 +7928,6 @@ const defaultSubscriptionPlanOptions = computed<
     value: plan.id,
     label: plan.name,
     description: plan.description || "",
-    platform: plan.group_platform
-      ? (plan.group_platform as
-          | "anthropic"
-          | "openai"
-          | "gemini"
-          | "antigravity")
-      : "openai",
-    groupName: plan.group_name ?? null,
-    rate: plan.rate_multiplier ?? undefined,
   })),
 );
 
@@ -8586,50 +8434,10 @@ async function loadSubscriptionPlans() {
   }
 }
 
-function resolveLegacyDefaultSubscriptionPlan(
-  item: DefaultSubscriptionSetting,
-): DefaultSubscriptionSetting {
-  if ((item.plan_id ?? 0) > 0) {
-    return {
-      plan_id: item.plan_id,
-      validity_days: item.validity_days,
-    };
-  }
-  if ((item.group_id ?? 0) <= 0) {
-    return item;
-  }
-
-  const exactMatches = subscriptionPlans.value.filter(
-    (plan) =>
-      plan.group_id === item.group_id &&
-      plan.validity_days === item.validity_days,
-  );
-  if (exactMatches.length === 1) {
-    return {
-      plan_id: exactMatches[0].id,
-      validity_days: exactMatches[0].validity_days,
-    };
-  }
-
-  const groupMatches = subscriptionPlans.value.filter(
-    (plan) => plan.group_id === item.group_id,
-  );
-  if (groupMatches.length === 1) {
-    return {
-      plan_id: groupMatches[0].id,
-      validity_days: groupMatches[0].validity_days,
-    };
-  }
-
-  return item;
-}
-
 function normalizeDefaultSubscriptionsForPlanUI(
   subscriptions: DefaultSubscriptionSetting[],
 ): DefaultSubscriptionSetting[] {
-  return normalizeDefaultSubscriptionSettings(subscriptions).map((item) =>
-    resolveLegacyDefaultSubscriptionPlan(item),
-  );
+  return normalizeDefaultSubscriptionSettings(subscriptions);
 }
 
 function reconcileDefaultSubscriptionSettingsWithPlans() {
@@ -8664,7 +8472,6 @@ function addDefaultSubscription() {
   if (!candidate) return;
   form.default_subscriptions.push({
     plan_id: candidate.id,
-    validity_days: 30,
   });
 }
 
@@ -8682,7 +8489,6 @@ function addAuthSourceDefaultSubscription(source: AuthSourceType) {
   if (!candidate) return;
   authSourceDefaults[source].subscriptions.push({
     plan_id: candidate.id,
-    validity_days: 30,
   });
 }
 
@@ -8796,9 +8602,7 @@ async function saveSettings() {
     if (duplicateDefaultSubscription) {
       appStore.showError(
         t("admin.settings.defaults.defaultSubscriptionsDuplicate", {
-          planId:
-            duplicateDefaultSubscription.plan_id ??
-            duplicateDefaultSubscription.group_id,
+          planId: duplicateDefaultSubscription.plan_id,
         }),
       );
       return;
@@ -8817,7 +8621,7 @@ async function saveSettings() {
           `${authSource.title}: ${t(
             "admin.settings.defaults.defaultSubscriptionsDuplicate",
             {
-              planId: duplicate.plan_id ?? duplicate.group_id,
+              planId: duplicate.plan_id,
             },
           )}`,
         );

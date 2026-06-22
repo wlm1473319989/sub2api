@@ -26,45 +26,24 @@ type authIdentityDefaultSubAssignerStub struct {
 	calls []*service.AssignSubscriptionInput
 }
 
-func (s *authIdentityDefaultSubAssignerStub) AssignOrExtendSubscription(
-	_ context.Context,
-	input *service.AssignSubscriptionInput,
-) (*service.UserSubscription, bool, error) {
-	cloned := *input
-	s.calls = append(s.calls, &cloned)
-	return &service.UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, true, nil
-}
-
 func (s *authIdentityDefaultSubAssignerStub) GrantConfiguredSubscription(
 	_ context.Context,
 	userID int64,
 	item service.DefaultSubscriptionSetting,
 	notes string,
 ) (*service.UserSubscription, bool, error) {
-	return s.AssignOrExtendSubscription(context.Background(), &service.AssignSubscriptionInput{
-		UserID:       userID,
-		GroupID:      item.GroupID,
-		ValidityDays: item.ValidityDays,
-		Notes:        notes,
-	})
+	call := &service.AssignSubscriptionInput{
+		UserID: userID,
+		PlanID: item.PlanID,
+		Notes:  notes,
+	}
+	s.calls = append(s.calls, call)
+	return &service.UserSubscription{UserID: userID}, true, nil
 }
 
 type flakyAuthIdentityDefaultSubAssignerStub struct {
 	failuresRemaining int
 	calls             []*service.AssignSubscriptionInput
-}
-
-func (s *flakyAuthIdentityDefaultSubAssignerStub) AssignOrExtendSubscription(
-	_ context.Context,
-	input *service.AssignSubscriptionInput,
-) (*service.UserSubscription, bool, error) {
-	cloned := *input
-	s.calls = append(s.calls, &cloned)
-	if s.failuresRemaining > 0 {
-		s.failuresRemaining--
-		return nil, false, errors.New("temporary assign failure")
-	}
-	return &service.UserSubscription{UserID: input.UserID, GroupID: input.GroupID}, true, nil
 }
 
 func (s *flakyAuthIdentityDefaultSubAssignerStub) GrantConfiguredSubscription(
@@ -73,12 +52,17 @@ func (s *flakyAuthIdentityDefaultSubAssignerStub) GrantConfiguredSubscription(
 	item service.DefaultSubscriptionSetting,
 	notes string,
 ) (*service.UserSubscription, bool, error) {
-	return s.AssignOrExtendSubscription(context.Background(), &service.AssignSubscriptionInput{
-		UserID:       userID,
-		GroupID:      item.GroupID,
-		ValidityDays: item.ValidityDays,
-		Notes:        notes,
-	})
+	call := &service.AssignSubscriptionInput{
+		UserID: userID,
+		PlanID: item.PlanID,
+		Notes:  notes,
+	}
+	s.calls = append(s.calls, call)
+	if s.failuresRemaining > 0 {
+		s.failuresRemaining--
+		return nil, false, errors.New("temporary assign failure")
+	}
+	return &service.UserSubscription{UserID: userID}, true, nil
 }
 
 type authIdentitySettingRepoStub struct {
@@ -293,7 +277,7 @@ func TestAuthServiceLogin_DoesNotApplyEmailFirstBindDefaultsWhenBackfillingLegac
 		service.SettingKeyRegistrationEnabled:                    "true",
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, assigner)
 	ctx := context.Background()
@@ -351,7 +335,7 @@ func TestAuthServiceLogin_DoesNotApplyMergedEmailFirstBindDefaultsWhenBackfillin
 	assigner := &authIdentityDefaultSubAssignerStub{}
 	svc, _, client := newAuthServiceWithEnt(t, map[string]string{
 		service.SettingKeyRegistrationEnabled:                    "true",
-		service.SettingKeyDefaultSubscriptions:                   `[{"group_id":21,"validity_days":14}]`,
+		service.SettingKeyDefaultSubscriptions:                   `[{"plan_id":21}]`,
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "5",
 		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[]`,
@@ -392,7 +376,7 @@ func TestAuthServiceLogin_DoesNotApplyEmailFirstBindDefaultsWhenIdentityAlreadyE
 		service.SettingKeyRegistrationEnabled:                    "true",
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, assigner)
 	ctx := context.Background()
@@ -439,7 +423,7 @@ func TestAuthServiceLogin_DoesNotRetryEmailFirstBindDefaultsForBackfilledEmailId
 		service.SettingKeyRegistrationEnabled:                    "true",
 		service.SettingKeyAuthSourceDefaultEmailBalance:          "8.5",
 		service.SettingKeyAuthSourceDefaultEmailConcurrency:      "4",
-		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"group_id":11,"validity_days":30}]`,
+		service.SettingKeyAuthSourceDefaultEmailSubscriptions:    `[{"plan_id":11}]`,
 		service.SettingKeyAuthSourceDefaultEmailGrantOnFirstBind: "true",
 	}, assigner)
 	ctx := context.Background()
