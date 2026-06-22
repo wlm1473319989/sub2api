@@ -77,7 +77,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 		}
 		maintenanceCalled := make(chan struct{}, 1)
 		subscriptionRepo := &stubUserSubscriptionRepo{
-			getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
+			getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 				clone := *sub
 				return &clone, nil
 			},
@@ -153,11 +153,12 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			Status:           service.SubscriptionStatusActive,
 			ExpiresAt:        now.Add(24 * time.Hour),
 			DailyWindowStart: &now,
-			DailyUsageUSD:    10,
+			DailyQuotaKnives: &limit,
+			DailyUsedKnives:  10,
 		}
 		subscriptionRepo := &stubUserSubscriptionRepo{
-			getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-				if userID != sub.UserID || groupID != sub.GroupID {
+			getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+				if userID != sub.UserID {
 					return nil, service.ErrSubscriptionNotFound
 				}
 				clone := *sub
@@ -1137,7 +1138,7 @@ func (r *stubApiKeyRepo) GetRateLimitData(ctx context.Context, id int64) (*servi
 }
 
 type stubUserSubscriptionRepo struct {
-	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
+	getActive      func(ctx context.Context, userID int64) (*service.UserSubscription, error)
 	activeByUser   map[int64][]service.UserSubscription
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
 	activateWindow func(ctx context.Context, id int64, start time.Time) error
@@ -1189,11 +1190,10 @@ func (r *stubUserSubscriptionRepo) GetByID(ctx context.Context, id int64) (*serv
 	return nil, errors.New("not implemented")
 }
 
-func (r *stubUserSubscriptionRepo) GetByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	return nil, errors.New("not implemented")
-}
-
 func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+	if r.getActive != nil {
+		return r.getActive(ctx, userID)
+	}
 	if r.activeByUser == nil {
 		return nil, service.ErrSubscriptionNotFound
 	}
@@ -1206,13 +1206,6 @@ func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID
 	}
 	cp := subs[0]
 	return &cp, nil
-}
-
-func (r *stubUserSubscriptionRepo) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	if r.getActive != nil {
-		return r.getActive(ctx, userID, groupID)
-	}
-	return nil, errors.New("not implemented")
 }
 
 func (r *stubUserSubscriptionRepo) Update(ctx context.Context, sub *service.UserSubscription) error {
@@ -1231,16 +1224,8 @@ func (r *stubUserSubscriptionRepo) ListActiveByUserID(ctx context.Context, userI
 	return nil, errors.New("not implemented")
 }
 
-func (r *stubUserSubscriptionRepo) ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]service.UserSubscription, *pagination.PaginationResult, error) {
+func (r *stubUserSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID *int64, status, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
 	return nil, nil, errors.New("not implemented")
-}
-
-func (r *stubUserSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, platform, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
-	return nil, nil, errors.New("not implemented")
-}
-
-func (r *stubUserSubscriptionRepo) ExistsByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
-	return false, errors.New("not implemented")
 }
 
 func (r *stubUserSubscriptionRepo) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {

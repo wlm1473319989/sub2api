@@ -1983,9 +1983,6 @@ func (stubUserSubscriptionRepo) Create(ctx context.Context, sub *service.UserSub
 func (stubUserSubscriptionRepo) GetByID(ctx context.Context, id int64) (*service.UserSubscription, error) {
 	return nil, errors.New("not implemented")
 }
-func (stubUserSubscriptionRepo) GetByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	return nil, errors.New("not implemented")
-}
 func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 	if r.activeByUser == nil {
 		return nil, service.ErrSubscriptionNotFound
@@ -1999,9 +1996,6 @@ func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID
 	}
 	cp := subs[0]
 	return &cp, nil
-}
-func (stubUserSubscriptionRepo) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	return nil, errors.New("not implemented")
 }
 func (stubUserSubscriptionRepo) Update(ctx context.Context, sub *service.UserSubscription) error {
 	return errors.New("not implemented")
@@ -2021,14 +2015,8 @@ func (r *stubUserSubscriptionRepo) ListActiveByUserID(ctx context.Context, userI
 	}
 	return append([]service.UserSubscription(nil), r.activeByUser[userID]...), nil
 }
-func (stubUserSubscriptionRepo) ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]service.UserSubscription, *pagination.PaginationResult, error) {
+func (stubUserSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID *int64, status, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
 	return nil, nil, errors.New("not implemented")
-}
-func (stubUserSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, platform, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
-	return nil, nil, errors.New("not implemented")
-}
-func (stubUserSubscriptionRepo) ExistsByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
-	return false, errors.New("not implemented")
 }
 func (r *stubUserSubscriptionRepo) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {
 	if r.activeByUser == nil {

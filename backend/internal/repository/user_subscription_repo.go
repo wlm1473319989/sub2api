@@ -5,7 +5,6 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/Wei-Shaw/sub2api/internal/service"
@@ -27,7 +26,6 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 	client := clientFromContext(ctx, r.client)
 	builder := client.UserSubscription.Create().
 		SetUserID(sub.UserID).
-		SetGroupID(sub.GroupID).
 		SetNillablePlanID(sub.PlanID).
 		SetNillablePlanNameSnapshot(sub.PlanNameSnapshot).
 		SetNillablePlanPriceSnapshot(sub.PlanPriceSnapshot).
@@ -46,6 +44,9 @@ func (r *userSubscriptionRepository) Create(ctx context.Context, sub *service.Us
 		SetMonthlyUsedKnives(sub.MonthlyUsedKnives).
 		SetNillableSupersededByID(sub.SupersededByID).
 		SetNillableAssignedBy(sub.AssignedBy)
+	if sub.GroupID > 0 {
+		builder.SetGroupID(sub.GroupID)
+	}
 
 	if sub.StartsAt.IsZero() {
 		builder.SetStartsAt(time.Now())
@@ -82,18 +83,6 @@ func (r *userSubscriptionRepository) GetByID(ctx context.Context, id int64) (*se
 	return userSubscriptionEntityToService(m), nil
 }
 
-func (r *userSubscriptionRepository) GetByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	client := clientFromContext(ctx, r.client)
-	m, err := client.UserSubscription.Query().
-		Where(usersubscription.UserIDEQ(userID), usersubscription.GroupIDEQ(groupID)).
-		WithGroup().
-		Only(ctx)
-	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
-	}
-	return userSubscriptionEntityToService(m), nil
-}
-
 func (r *userSubscriptionRepository) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 	client := clientFromContext(ctx, r.client)
 	subs, err := client.UserSubscription.Query().
@@ -119,23 +108,6 @@ func (r *userSubscriptionRepository) GetActiveByUserID(ctx context.Context, user
 	}
 }
 
-func (r *userSubscriptionRepository) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	client := clientFromContext(ctx, r.client)
-	m, err := client.UserSubscription.Query().
-		Where(
-			usersubscription.UserIDEQ(userID),
-			usersubscription.GroupIDEQ(groupID),
-			usersubscription.StatusEQ(service.SubscriptionStatusActive),
-			usersubscription.ExpiresAtGT(time.Now()),
-		).
-		WithGroup().
-		Only(ctx)
-	if err != nil {
-		return nil, translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
-	}
-	return userSubscriptionEntityToService(m), nil
-}
-
 func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.UserSubscription) error {
 	if sub == nil {
 		return service.ErrSubscriptionNilInput
@@ -144,7 +116,6 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 	client := clientFromContext(ctx, r.client)
 	builder := client.UserSubscription.UpdateOneID(sub.ID).
 		SetUserID(sub.UserID).
-		SetGroupID(sub.GroupID).
 		SetNillablePlanID(sub.PlanID).
 		SetNillablePlanNameSnapshot(sub.PlanNameSnapshot).
 		SetNillablePlanPriceSnapshot(sub.PlanPriceSnapshot).
@@ -167,6 +138,11 @@ func (r *userSubscriptionRepository) Update(ctx context.Context, sub *service.Us
 		SetNillableAssignedBy(sub.AssignedBy).
 		SetAssignedAt(sub.AssignedAt).
 		SetNotes(sub.Notes)
+	if sub.GroupID > 0 {
+		builder.SetGroupID(sub.GroupID)
+	} else {
+		builder.ClearGroupID()
+	}
 
 	updated, err := builder.Save(ctx)
 	if err == nil {
@@ -213,40 +189,11 @@ func (r *userSubscriptionRepository) ListActiveByUserID(ctx context.Context, use
 	return userSubscriptionEntitiesToService(subs), nil
 }
 
-func (r *userSubscriptionRepository) ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]service.UserSubscription, *pagination.PaginationResult, error) {
-	client := clientFromContext(ctx, r.client)
-	q := client.UserSubscription.Query().Where(usersubscription.GroupIDEQ(groupID))
-
-	total, err := q.Clone().Count(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	subs, err := q.
-		WithUser().
-		WithGroup().
-		Order(dbent.Desc(usersubscription.FieldCreatedAt)).
-		Offset(params.Offset()).
-		Limit(params.Limit()).
-		All(ctx)
-	if err != nil {
-		return nil, nil, err
-	}
-
-	return userSubscriptionEntitiesToService(subs), paginationResultFromTotal(int64(total), params), nil
-}
-
-func (r *userSubscriptionRepository) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, platform, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
+func (r *userSubscriptionRepository) List(ctx context.Context, params pagination.PaginationParams, userID *int64, status, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
 	client := clientFromContext(ctx, r.client)
 	q := client.UserSubscription.Query()
 	if userID != nil {
 		q = q.Where(usersubscription.UserIDEQ(*userID))
-	}
-	if groupID != nil {
-		q = q.Where(usersubscription.GroupIDEQ(*groupID))
-	}
-	if platform != "" {
-		q = q.Where(usersubscription.HasGroupWith(group.PlatformEQ(platform)))
 	}
 
 	// Status filtering with real-time expiration check
@@ -311,13 +258,6 @@ func (r *userSubscriptionRepository) List(ctx context.Context, params pagination
 	}
 
 	return userSubscriptionEntitiesToService(subs), paginationResultFromTotal(int64(total), params), nil
-}
-
-func (r *userSubscriptionRepository) ExistsByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
-	client := clientFromContext(ctx, r.client)
-	return client.UserSubscription.Query().
-		Where(usersubscription.UserIDEQ(userID), usersubscription.GroupIDEQ(groupID)).
-		Exist(ctx)
 }
 
 func (r *userSubscriptionRepository) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {
@@ -482,7 +422,7 @@ func userSubscriptionEntityToService(m *dbent.UserSubscription) *service.UserSub
 	out := &service.UserSubscription{
 		ID:                 m.ID,
 		UserID:             m.UserID,
-		GroupID:            m.GroupID,
+		GroupID:            derefInt64(m.GroupID),
 		PlanID:             m.PlanID,
 		PlanNameSnapshot:   m.PlanNameSnapshot,
 		PlanPriceSnapshot:  m.PlanPriceSnapshot,
@@ -535,6 +475,14 @@ func applyUserSubscriptionEntityToService(dst *service.UserSubscription, src *db
 		return
 	}
 	dst.ID = src.ID
+	dst.GroupID = derefInt64(src.GroupID)
 	dst.CreatedAt = src.CreatedAt
 	dst.UpdatedAt = src.UpdatedAt
+}
+
+func derefInt64(value *int64) int64 {
+	if value == nil {
+		return 0
+	}
+	return *value
 }

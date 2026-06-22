@@ -24,7 +24,7 @@ type fakeAPIKeyRepo struct {
 }
 
 type fakeGoogleSubscriptionRepo struct {
-	getActive      func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error)
+	getActive      func(ctx context.Context, userID int64) (*service.UserSubscription, error)
 	updateStatus   func(ctx context.Context, subscriptionID int64, status string) error
 	activateWindow func(ctx context.Context, id int64, start time.Time) error
 	resetDaily     func(ctx context.Context, id int64, start time.Time) error
@@ -117,15 +117,9 @@ func (f fakeGoogleSubscriptionRepo) Create(ctx context.Context, sub *service.Use
 func (f fakeGoogleSubscriptionRepo) GetByID(ctx context.Context, id int64) (*service.UserSubscription, error) {
 	return nil, errors.New("not implemented")
 }
-func (f fakeGoogleSubscriptionRepo) GetByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-	return nil, errors.New("not implemented")
-}
 func (f fakeGoogleSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
-	return nil, errors.New("not implemented")
-}
-func (f fakeGoogleSubscriptionRepo) GetActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
 	if f.getActive != nil {
-		return f.getActive(ctx, userID, groupID)
+		return f.getActive(ctx, userID)
 	}
 	return nil, errors.New("not implemented")
 }
@@ -141,14 +135,8 @@ func (f fakeGoogleSubscriptionRepo) ListByUserID(ctx context.Context, userID int
 func (f fakeGoogleSubscriptionRepo) ListActiveByUserID(ctx context.Context, userID int64) ([]service.UserSubscription, error) {
 	return nil, errors.New("not implemented")
 }
-func (f fakeGoogleSubscriptionRepo) ListByGroupID(ctx context.Context, groupID int64, params pagination.PaginationParams) ([]service.UserSubscription, *pagination.PaginationResult, error) {
+func (f fakeGoogleSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID *int64, status, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
 	return nil, nil, errors.New("not implemented")
-}
-func (f fakeGoogleSubscriptionRepo) List(ctx context.Context, params pagination.PaginationParams, userID, groupID *int64, status, platform, sortBy, sortOrder string) ([]service.UserSubscription, *pagination.PaginationResult, error) {
-	return nil, nil, errors.New("not implemented")
-}
-func (f fakeGoogleSubscriptionRepo) ExistsByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
-	return false, errors.New("not implemented")
 }
 func (f fakeGoogleSubscriptionRepo) HasActiveByUserID(ctx context.Context, userID int64) (bool, error) {
 	return false, errors.New("not implemented")
@@ -725,11 +713,12 @@ func TestApiKeyAuthWithSubscriptionGoogle_SubscriptionLimitExceededReturns429(t 
 		Status:           service.SubscriptionStatusActive,
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
-		DailyUsageUSD:    10,
+		DailyQuotaKnives: &limit,
+		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
-		getActive: func(ctx context.Context, userID, groupID int64) (*service.UserSubscription, error) {
-			if userID != user.ID || groupID != group.ID {
+		getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+			if userID != user.ID {
 				return nil, service.ErrSubscriptionNotFound
 			}
 			clone := *sub

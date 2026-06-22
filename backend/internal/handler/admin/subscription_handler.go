@@ -65,25 +65,19 @@ func (h *SubscriptionHandler) List(c *gin.Context) {
 	page, pageSize := response.ParsePagination(c)
 
 	// Parse optional filters
-	var userID, groupID *int64
+	var userID *int64
 	if userIDStr := c.Query("user_id"); userIDStr != "" {
 		if id, err := strconv.ParseInt(userIDStr, 10, 64); err == nil {
 			userID = &id
 		}
 	}
-	if groupIDStr := c.Query("group_id"); groupIDStr != "" {
-		if id, err := strconv.ParseInt(groupIDStr, 10, 64); err == nil {
-			groupID = &id
-		}
-	}
 	status := c.Query("status")
-	platform := c.Query("platform")
 
 	// Parse sorting parameters
 	sortBy := c.DefaultQuery("sort_by", "created_at")
 	sortOrder := c.DefaultQuery("sort_order", "desc")
 
-	subscriptions, pagination, err := h.subscriptionService.List(c.Request.Context(), page, pageSize, userID, groupID, status, platform, sortBy, sortOrder)
+	subscriptions, pagination, err := h.subscriptionService.List(c.Request.Context(), page, pageSize, userID, status, sortBy, sortOrder)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return

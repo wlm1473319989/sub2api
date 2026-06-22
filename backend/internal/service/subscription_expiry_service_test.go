@@ -22,15 +22,7 @@ func (r *subscriptionExpiryRepoStub) GetByID(context.Context, int64) (*UserSubsc
 	return nil, ErrSubscriptionNotFound
 }
 
-func (r *subscriptionExpiryRepoStub) GetByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
-	return nil, ErrSubscriptionNotFound
-}
-
 func (r *subscriptionExpiryRepoStub) GetActiveByUserID(context.Context, int64) (*UserSubscription, error) {
-	return nil, ErrSubscriptionNotFound
-}
-
-func (r *subscriptionExpiryRepoStub) GetActiveByUserIDAndGroupID(context.Context, int64, int64) (*UserSubscription, error) {
 	return nil, ErrSubscriptionNotFound
 }
 
@@ -50,17 +42,9 @@ func (r *subscriptionExpiryRepoStub) ListActiveByUserID(context.Context, int64) 
 	return nil, nil
 }
 
-func (r *subscriptionExpiryRepoStub) ListByGroupID(context.Context, int64, pagination.PaginationParams) ([]UserSubscription, *pagination.PaginationResult, error) {
-	return nil, nil, nil
-}
-
-func (r *subscriptionExpiryRepoStub) List(context.Context, pagination.PaginationParams, *int64, *int64, string, string, string, string) ([]UserSubscription, *pagination.PaginationResult, error) {
+func (r *subscriptionExpiryRepoStub) List(context.Context, pagination.PaginationParams, *int64, string, string, string) ([]UserSubscription, *pagination.PaginationResult, error) {
 	r.listCalls++
 	return nil, &pagination.PaginationResult{Page: 1, Pages: 1}, nil
-}
-
-func (r *subscriptionExpiryRepoStub) ExistsByUserIDAndGroupID(context.Context, int64, int64) (bool, error) {
-	return false, nil
 }
 
 func (r *subscriptionExpiryRepoStub) HasActiveByUserID(context.Context, int64) (bool, error) {

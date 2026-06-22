@@ -73,22 +73,6 @@
                 @change="applyFilters"
               />
             </div>
-            <div class="w-full sm:w-48">
-              <Select
-                v-model="filters.group_id"
-                :options="groupOptions"
-                :placeholder="t('admin.subscriptions.allGroups')"
-                @change="applyFilters"
-              />
-            </div>
-            <div class="w-full sm:w-40">
-              <Select
-                v-model="filters.platform"
-                :options="platformFilterOptions"
-                :placeholder="t('admin.subscriptions.allPlatforms')"
-                @change="applyFilters"
-              />
-            </div>
           </div>
 
           <!-- Right: Actions -->
@@ -713,7 +697,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import type { UserSubscription, Group } from '@/types'
+import type { UserSubscription } from '@/types'
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import type { SubscriptionPlan } from '@/types/payment'
@@ -865,7 +849,6 @@ const statusOptions = computed(() => [
 ])
 
 const subscriptions = ref<UserSubscription[]>([])
-const groups = ref<Group[]>([])
 const subscriptionPlans = ref<SubscriptionPlan[]>([])
 const loading = ref(false)
 let abortController: AbortController | null = null
@@ -888,8 +871,6 @@ let userSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const filters = reactive({
   status: 'active',
-  group_id: '',
-  platform: '',
   user_id: null as number | null
 })
 
@@ -926,20 +907,6 @@ const extendForm = reactive({
   days: 30
 })
 
-// Group options for filter (all groups)
-const groupOptions = computed(() => [
-  { value: '', label: t('admin.subscriptions.allGroups') },
-  ...groups.value.map((g) => ({ value: g.id.toString(), label: g.name }))
-])
-
-const platformFilterOptions = computed(() => [
-  { value: '', label: t('admin.subscriptions.allPlatforms') },
-  { value: 'anthropic', label: 'Anthropic' },
-  { value: 'openai', label: 'OpenAI' },
-  { value: 'gemini', label: 'Gemini' },
-  { value: 'antigravity', label: 'Antigravity' }
-])
-
 const subscriptionPlanOptions = computed<PlanOption[]>(() =>
   subscriptionPlans.value.map((plan) => ({
     value: plan.id,
@@ -972,8 +939,6 @@ const loadSubscriptions = async () => {
       pagination.page_size,
       {
         status: (filters.status as any) || undefined,
-        group_id: filters.group_id ? parseInt(filters.group_id) : undefined,
-        platform: filters.platform || undefined,
         user_id: filters.user_id || undefined,
         sort_by: sortState.sort_by,
         sort_order: sortState.sort_order
@@ -997,14 +962,6 @@ const loadSubscriptions = async () => {
       loading.value = false
       abortController = null
     }
-  }
-}
-
-const loadGroups = async () => {
-  try {
-    groups.value = await adminAPI.groups.getAll()
-  } catch (error) {
-    console.error('Error loading groups:', error)
   }
 }
 
@@ -1401,7 +1358,6 @@ onMounted(() => {
   loadUserColumnMode()
   loadSavedColumns()
   loadSubscriptions()
-  loadGroups()
   loadSubscriptionPlans()
   document.addEventListener('click', handleClickOutside)
 })
