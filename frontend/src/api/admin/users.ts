@@ -239,11 +239,9 @@ export interface BalanceHistoryItem {
   used_by: number | null
   used_at: string | null
   created_at: string
-  group_id: number | null
-  validity_days: number
-  notes: string
+  plan_id?: number | null
+  notes?: string
   user?: { id: number; email: string } | null
-  group?: { id: number; name: string } | null
 }
 
 // Balance history response extends pagination with total_recharged summary

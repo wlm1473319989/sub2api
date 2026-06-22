@@ -105,7 +105,7 @@ const (
 	// It exists in this package in order to avoid circular dependency with the "redeemcode" package.
 	RedeemCodesInverseTable = "redeem_codes"
 	// RedeemCodesColumn is the table column denoting the redeem_codes relation/edge.
-	RedeemCodesColumn = "group_id"
+	RedeemCodesColumn = "group_redeem_codes"
 	// UsageLogsTable is the table that holds the usage_logs relation/edge.
 	UsageLogsTable = "usage_logs"
 	// UsageLogsInverseTable is the table name for the UsageLog entity.

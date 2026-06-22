@@ -412,9 +412,7 @@ type GenerateRedeemCodesInput struct {
 	Count        int
 	Type         string
 	Value        float64
-	GroupID      *int64 // legacy subscription fallback during migration
 	PlanID       *int64
-	ValidityDays int // legacy subscription fallback during migration
 	ExpiresAt    *time.Time
 }
 
@@ -3191,7 +3189,6 @@ func (s *adminServiceImpl) GenerateRedeemCodes(ctx context.Context, input *Gener
 		return nil, ErrRedeemCodeExpired
 	}
 
-	// 新写入的订阅兑换码只允许 plan_id。group_id 保留给兼容期的旧数据读取。
 	if input.Type == RedeemTypeSubscription {
 		if input.PlanID == nil || *input.PlanID <= 0 {
 			return nil, errors.New("plan_id is required for subscription type")

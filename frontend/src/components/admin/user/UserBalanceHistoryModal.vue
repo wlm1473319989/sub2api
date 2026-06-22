@@ -317,9 +317,7 @@ const formatValue = (item: BalanceHistoryItem) => {
     return `${sign}$${item.value.toFixed(2)}`
   }
   if (isSubscriptionType(item.type)) {
-    const days = item.validity_days || Math.round(item.value)
-    const groupName = item.group?.name || ''
-    return groupName ? `${days}d - ${groupName}` : `${days}d`
+    return item.plan_id ? `#${item.plan_id}` : t('redeem.subscriptionAssigned')
   }
   // concurrency types
   const sign = item.value >= 0 ? '+' : ''

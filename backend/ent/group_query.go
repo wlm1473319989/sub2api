@@ -715,9 +715,7 @@ func (_q *GroupQuery) loadRedeemCodes(ctx context.Context, query *RedeemCodeQuer
 			init(nodes[i])
 		}
 	}
-	if len(query.ctx.Fields) > 0 {
-		query.ctx.AppendFieldOnce(redeemcode.FieldGroupID)
-	}
+	query.withFKs = true
 	query.Where(predicate.RedeemCode(func(s *sql.Selector) {
 		s.Where(sql.InValues(s.C(group.RedeemCodesColumn), fks...))
 	}))
@@ -726,13 +724,13 @@ func (_q *GroupQuery) loadRedeemCodes(ctx context.Context, query *RedeemCodeQuer
 		return err
 	}
 	for _, n := range neighbors {
-		fk := n.GroupID
+		fk := n.group_redeem_codes
 		if fk == nil {
-			return fmt.Errorf(`foreign-key "group_id" is nil for node %v`, n.ID)
+			return fmt.Errorf(`foreign-key "group_redeem_codes" is nil for node %v`, n.ID)
 		}
 		node, ok := nodeids[*fk]
 		if !ok {
-			return fmt.Errorf(`unexpected referenced foreign-key "group_id" returned %v for node %v`, *fk, n.ID)
+			return fmt.Errorf(`unexpected referenced foreign-key "group_redeem_codes" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}

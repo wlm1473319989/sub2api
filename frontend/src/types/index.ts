@@ -1322,20 +1322,15 @@ export interface RedeemCode {
   expires_at?: string | null
   updated_at?: string
   notes?: string
-  group_id?: number | null // 订阅类型专用
   plan_id?: number | null
-  validity_days?: number // 订阅类型专用
   user?: User
-  group?: Group // 关联的分组
 }
 
 export interface GenerateRedeemCodesRequest {
   count: number
   type: RedeemCodeType
   value: number
-  group_id?: number | null // 订阅类型专用
   plan_id?: number | null
-  validity_days?: number // 订阅类型专用
   expires_at?: string | null
   expires_in_days?: number
 }

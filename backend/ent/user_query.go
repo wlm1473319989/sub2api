@@ -1023,6 +1023,7 @@ func (_q *UserQuery) loadRedeemCodes(ctx context.Context, query *RedeemCodeQuery
 			init(nodes[i])
 		}
 	}
+	query.withFKs = true
 	if len(query.ctx.Fields) > 0 {
 		query.ctx.AppendFieldOnce(redeemcode.FieldUsedBy)
 	}

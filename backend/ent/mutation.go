@@ -29204,30 +29204,26 @@ func (m *ProxyMutation) ResetEdge(name string) error {
 // RedeemCodeMutation represents an operation that mutates the RedeemCode nodes in the graph.
 type RedeemCodeMutation struct {
 	config
-	op               Op
-	typ              string
-	id               *int64
-	code             *string
-	_type            *string
-	value            *float64
-	addvalue         *float64
-	status           *string
-	used_at          *time.Time
-	notes            *string
-	created_at       *time.Time
-	expires_at       *time.Time
-	plan_id          *int64
-	addplan_id       *int64
-	validity_days    *int
-	addvalidity_days *int
-	clearedFields    map[string]struct{}
-	user             *int64
-	cleareduser      bool
-	group            *int64
-	clearedgroup     bool
-	done             bool
-	oldValue         func(context.Context) (*RedeemCode, error)
-	predicates       []predicate.RedeemCode
+	op            Op
+	typ           string
+	id            *int64
+	code          *string
+	_type         *string
+	value         *float64
+	addvalue      *float64
+	status        *string
+	used_at       *time.Time
+	notes         *string
+	created_at    *time.Time
+	expires_at    *time.Time
+	plan_id       *int64
+	addplan_id    *int64
+	clearedFields map[string]struct{}
+	user          *int64
+	cleareduser   bool
+	done          bool
+	oldValue      func(context.Context) (*RedeemCode, error)
+	predicates    []predicate.RedeemCode
 }
 
 var _ ent.Mutation = (*RedeemCodeMutation)(nil)
@@ -29724,55 +29720,6 @@ func (m *RedeemCodeMutation) ResetExpiresAt() {
 	delete(m.clearedFields, redeemcode.FieldExpiresAt)
 }
 
-// SetGroupID sets the "group_id" field.
-func (m *RedeemCodeMutation) SetGroupID(i int64) {
-	m.group = &i
-}
-
-// GroupID returns the value of the "group_id" field in the mutation.
-func (m *RedeemCodeMutation) GroupID() (r int64, exists bool) {
-	v := m.group
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldGroupID returns the old "group_id" field's value of the RedeemCode entity.
-// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RedeemCodeMutation) OldGroupID(ctx context.Context) (v *int64, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldGroupID is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldGroupID requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldGroupID: %w", err)
-	}
-	return oldValue.GroupID, nil
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (m *RedeemCodeMutation) ClearGroupID() {
-	m.group = nil
-	m.clearedFields[redeemcode.FieldGroupID] = struct{}{}
-}
-
-// GroupIDCleared returns if the "group_id" field was cleared in this mutation.
-func (m *RedeemCodeMutation) GroupIDCleared() bool {
-	_, ok := m.clearedFields[redeemcode.FieldGroupID]
-	return ok
-}
-
-// ResetGroupID resets all changes to the "group_id" field.
-func (m *RedeemCodeMutation) ResetGroupID() {
-	m.group = nil
-	delete(m.clearedFields, redeemcode.FieldGroupID)
-}
-
 // SetPlanID sets the "plan_id" field.
 func (m *RedeemCodeMutation) SetPlanID(i int64) {
 	m.plan_id = &i
@@ -29843,62 +29790,6 @@ func (m *RedeemCodeMutation) ResetPlanID() {
 	delete(m.clearedFields, redeemcode.FieldPlanID)
 }
 
-// SetValidityDays sets the "validity_days" field.
-func (m *RedeemCodeMutation) SetValidityDays(i int) {
-	m.validity_days = &i
-	m.addvalidity_days = nil
-}
-
-// ValidityDays returns the value of the "validity_days" field in the mutation.
-func (m *RedeemCodeMutation) ValidityDays() (r int, exists bool) {
-	v := m.validity_days
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// OldValidityDays returns the old "validity_days" field's value of the RedeemCode entity.
-// If the RedeemCode object wasn't provided to the builder, the object is fetched from the database.
-// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
-func (m *RedeemCodeMutation) OldValidityDays(ctx context.Context) (v int, err error) {
-	if !m.op.Is(OpUpdateOne) {
-		return v, errors.New("OldValidityDays is only allowed on UpdateOne operations")
-	}
-	if m.id == nil || m.oldValue == nil {
-		return v, errors.New("OldValidityDays requires an ID field in the mutation")
-	}
-	oldValue, err := m.oldValue(ctx)
-	if err != nil {
-		return v, fmt.Errorf("querying old value for OldValidityDays: %w", err)
-	}
-	return oldValue.ValidityDays, nil
-}
-
-// AddValidityDays adds i to the "validity_days" field.
-func (m *RedeemCodeMutation) AddValidityDays(i int) {
-	if m.addvalidity_days != nil {
-		*m.addvalidity_days += i
-	} else {
-		m.addvalidity_days = &i
-	}
-}
-
-// AddedValidityDays returns the value that was added to the "validity_days" field in this mutation.
-func (m *RedeemCodeMutation) AddedValidityDays() (r int, exists bool) {
-	v := m.addvalidity_days
-	if v == nil {
-		return
-	}
-	return *v, true
-}
-
-// ResetValidityDays resets all changes to the "validity_days" field.
-func (m *RedeemCodeMutation) ResetValidityDays() {
-	m.validity_days = nil
-	m.addvalidity_days = nil
-}
-
 // SetUserID sets the "user" edge to the User entity by id.
 func (m *RedeemCodeMutation) SetUserID(id int64) {
 	m.user = &id
@@ -29939,33 +29830,6 @@ func (m *RedeemCodeMutation) ResetUser() {
 	m.cleareduser = false
 }
 
-// ClearGroup clears the "group" edge to the Group entity.
-func (m *RedeemCodeMutation) ClearGroup() {
-	m.clearedgroup = true
-	m.clearedFields[redeemcode.FieldGroupID] = struct{}{}
-}
-
-// GroupCleared reports if the "group" edge to the Group entity was cleared.
-func (m *RedeemCodeMutation) GroupCleared() bool {
-	return m.GroupIDCleared() || m.clearedgroup
-}
-
-// GroupIDs returns the "group" edge IDs in the mutation.
-// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
-// GroupID instead. It exists only for internal usage by the builders.
-func (m *RedeemCodeMutation) GroupIDs() (ids []int64) {
-	if id := m.group; id != nil {
-		ids = append(ids, *id)
-	}
-	return
-}
-
-// ResetGroup resets all changes to the "group" edge.
-func (m *RedeemCodeMutation) ResetGroup() {
-	m.group = nil
-	m.clearedgroup = false
-}
-
 // Where appends a list predicates to the RedeemCodeMutation builder.
 func (m *RedeemCodeMutation) Where(ps ...predicate.RedeemCode) {
 	m.predicates = append(m.predicates, ps...)
@@ -30000,7 +29864,7 @@ func (m *RedeemCodeMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *RedeemCodeMutation) Fields() []string {
-	fields := make([]string, 0, 12)
+	fields := make([]string, 0, 10)
 	if m.code != nil {
 		fields = append(fields, redeemcode.FieldCode)
 	}
@@ -30028,14 +29892,8 @@ func (m *RedeemCodeMutation) Fields() []string {
 	if m.expires_at != nil {
 		fields = append(fields, redeemcode.FieldExpiresAt)
 	}
-	if m.group != nil {
-		fields = append(fields, redeemcode.FieldGroupID)
-	}
 	if m.plan_id != nil {
 		fields = append(fields, redeemcode.FieldPlanID)
-	}
-	if m.validity_days != nil {
-		fields = append(fields, redeemcode.FieldValidityDays)
 	}
 	return fields
 }
@@ -30063,12 +29921,8 @@ func (m *RedeemCodeMutation) Field(name string) (ent.Value, bool) {
 		return m.CreatedAt()
 	case redeemcode.FieldExpiresAt:
 		return m.ExpiresAt()
-	case redeemcode.FieldGroupID:
-		return m.GroupID()
 	case redeemcode.FieldPlanID:
 		return m.PlanID()
-	case redeemcode.FieldValidityDays:
-		return m.ValidityDays()
 	}
 	return nil, false
 }
@@ -30096,12 +29950,8 @@ func (m *RedeemCodeMutation) OldField(ctx context.Context, name string) (ent.Val
 		return m.OldCreatedAt(ctx)
 	case redeemcode.FieldExpiresAt:
 		return m.OldExpiresAt(ctx)
-	case redeemcode.FieldGroupID:
-		return m.OldGroupID(ctx)
 	case redeemcode.FieldPlanID:
 		return m.OldPlanID(ctx)
-	case redeemcode.FieldValidityDays:
-		return m.OldValidityDays(ctx)
 	}
 	return nil, fmt.Errorf("unknown RedeemCode field %s", name)
 }
@@ -30174,26 +30024,12 @@ func (m *RedeemCodeMutation) SetField(name string, value ent.Value) error {
 		}
 		m.SetExpiresAt(v)
 		return nil
-	case redeemcode.FieldGroupID:
-		v, ok := value.(int64)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetGroupID(v)
-		return nil
 	case redeemcode.FieldPlanID:
 		v, ok := value.(int64)
 		if !ok {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetPlanID(v)
-		return nil
-	case redeemcode.FieldValidityDays:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.SetValidityDays(v)
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
@@ -30209,9 +30045,6 @@ func (m *RedeemCodeMutation) AddedFields() []string {
 	if m.addplan_id != nil {
 		fields = append(fields, redeemcode.FieldPlanID)
 	}
-	if m.addvalidity_days != nil {
-		fields = append(fields, redeemcode.FieldValidityDays)
-	}
 	return fields
 }
 
@@ -30224,8 +30057,6 @@ func (m *RedeemCodeMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedValue()
 	case redeemcode.FieldPlanID:
 		return m.AddedPlanID()
-	case redeemcode.FieldValidityDays:
-		return m.AddedValidityDays()
 	}
 	return nil, false
 }
@@ -30249,13 +30080,6 @@ func (m *RedeemCodeMutation) AddField(name string, value ent.Value) error {
 		}
 		m.AddPlanID(v)
 		return nil
-	case redeemcode.FieldValidityDays:
-		v, ok := value.(int)
-		if !ok {
-			return fmt.Errorf("unexpected type %T for field %s", value, name)
-		}
-		m.AddValidityDays(v)
-		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode numeric field %s", name)
 }
@@ -30275,9 +30099,6 @@ func (m *RedeemCodeMutation) ClearedFields() []string {
 	}
 	if m.FieldCleared(redeemcode.FieldExpiresAt) {
 		fields = append(fields, redeemcode.FieldExpiresAt)
-	}
-	if m.FieldCleared(redeemcode.FieldGroupID) {
-		fields = append(fields, redeemcode.FieldGroupID)
 	}
 	if m.FieldCleared(redeemcode.FieldPlanID) {
 		fields = append(fields, redeemcode.FieldPlanID)
@@ -30307,9 +30128,6 @@ func (m *RedeemCodeMutation) ClearField(name string) error {
 		return nil
 	case redeemcode.FieldExpiresAt:
 		m.ClearExpiresAt()
-		return nil
-	case redeemcode.FieldGroupID:
-		m.ClearGroupID()
 		return nil
 	case redeemcode.FieldPlanID:
 		m.ClearPlanID()
@@ -30349,14 +30167,8 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 	case redeemcode.FieldExpiresAt:
 		m.ResetExpiresAt()
 		return nil
-	case redeemcode.FieldGroupID:
-		m.ResetGroupID()
-		return nil
 	case redeemcode.FieldPlanID:
 		m.ResetPlanID()
-		return nil
-	case redeemcode.FieldValidityDays:
-		m.ResetValidityDays()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode field %s", name)
@@ -30364,12 +30176,9 @@ func (m *RedeemCodeMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *RedeemCodeMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.user != nil {
 		edges = append(edges, redeemcode.EdgeUser)
-	}
-	if m.group != nil {
-		edges = append(edges, redeemcode.EdgeGroup)
 	}
 	return edges
 }
@@ -30382,17 +30191,13 @@ func (m *RedeemCodeMutation) AddedIDs(name string) []ent.Value {
 		if id := m.user; id != nil {
 			return []ent.Value{*id}
 		}
-	case redeemcode.EdgeGroup:
-		if id := m.group; id != nil {
-			return []ent.Value{*id}
-		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *RedeemCodeMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	return edges
 }
 
@@ -30404,12 +30209,9 @@ func (m *RedeemCodeMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *RedeemCodeMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 1)
 	if m.cleareduser {
 		edges = append(edges, redeemcode.EdgeUser)
-	}
-	if m.clearedgroup {
-		edges = append(edges, redeemcode.EdgeGroup)
 	}
 	return edges
 }
@@ -30420,8 +30222,6 @@ func (m *RedeemCodeMutation) EdgeCleared(name string) bool {
 	switch name {
 	case redeemcode.EdgeUser:
 		return m.cleareduser
-	case redeemcode.EdgeGroup:
-		return m.clearedgroup
 	}
 	return false
 }
@@ -30433,9 +30233,6 @@ func (m *RedeemCodeMutation) ClearEdge(name string) error {
 	case redeemcode.EdgeUser:
 		m.ClearUser()
 		return nil
-	case redeemcode.EdgeGroup:
-		m.ClearGroup()
-		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode unique edge %s", name)
 }
@@ -30446,9 +30243,6 @@ func (m *RedeemCodeMutation) ResetEdge(name string) error {
 	switch name {
 	case redeemcode.EdgeUser:
 		m.ResetUser()
-		return nil
-	case redeemcode.EdgeGroup:
-		m.ResetGroup()
 		return nil
 	}
 	return fmt.Errorf("unknown RedeemCode edge %s", name)

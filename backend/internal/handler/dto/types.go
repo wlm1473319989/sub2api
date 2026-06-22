@@ -346,16 +346,13 @@ type RedeemCode struct {
 	CreatedAt time.Time  `json:"created_at"`
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
 
-	GroupID      *int64 `json:"group_id"`
-	PlanID       *int64 `json:"plan_id"`
-	ValidityDays int    `json:"validity_days"`
+	PlanID *int64 `json:"plan_id"`
 
 	// Notes is only populated for admin_balance/admin_concurrency types
 	// so users can see why they were charged or credited
 	Notes *string `json:"notes,omitempty"`
 
-	User  *User  `json:"user,omitempty"`
-	Group *Group `json:"group,omitempty"`
+	User *User `json:"user,omitempty"`
 }
 
 // AdminRedeemCode 是管理员接口使用的 redeem code DTO（包含 notes 等字段）。
@@ -409,7 +406,6 @@ type BatchUpdateRedeemCodeFields struct {
 	ExpiresAt NullableTimeField  `json:"expires_at,omitempty"`
 	Notes     *string            `json:"notes,omitempty"`
 	PlanID    NullableInt64Field `json:"plan_id,omitempty"`
-	GroupID   NullableInt64Field `json:"group_id,omitempty"` // legacy alias, mapped to plan_id
 
 	Type  *string  `json:"type,omitempty"`
 	Value *float64 `json:"value,omitempty"`

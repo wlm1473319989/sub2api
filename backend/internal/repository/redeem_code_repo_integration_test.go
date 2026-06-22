@@ -53,17 +53,14 @@ func (s *RedeemCodeRepoSuite) createGroup(name string) *dbent.Group {
 
 func (s *RedeemCodeRepoSuite) TestCreate() {
 	expiresAt := time.Now().UTC().Add(2 * time.Hour)
-	group := s.createGroup(uniqueTestValue(s.T(), "create-group"))
 	planID := int64(601)
 	code := &service.RedeemCode{
-		Code:         "TEST-CREATE",
-		Type:         service.RedeemTypeSubscription,
-		Value:        100,
-		Status:       service.StatusUnused,
-		ExpiresAt:    &expiresAt,
-		GroupID:      &group.ID,
-		PlanID:       &planID,
-		ValidityDays: 45,
+		Code:      "TEST-CREATE",
+		Type:      service.RedeemTypeSubscription,
+		Value:     100,
+		Status:    service.StatusUnused,
+		ExpiresAt: &expiresAt,
+		PlanID:    &planID,
 	}
 
 	err := s.repo.Create(s.ctx, code)
@@ -75,18 +72,15 @@ func (s *RedeemCodeRepoSuite) TestCreate() {
 	s.Require().Equal("TEST-CREATE", got.Code)
 	s.Require().NotNil(got.ExpiresAt)
 	s.Require().WithinDuration(expiresAt, *got.ExpiresAt, time.Second)
-	s.Require().NotNil(got.GroupID)
-	s.Require().Equal(group.ID, *got.GroupID)
 	s.Require().NotNil(got.PlanID)
 	s.Require().Equal(planID, *got.PlanID)
-	s.Require().Equal(45, got.ValidityDays)
 }
 
 func (s *RedeemCodeRepoSuite) TestCreateBatch() {
 	planID := int64(602)
 	codes := []service.RedeemCode{
 		{Code: "BATCH-1", Type: service.RedeemTypeBalance, Value: 10, Status: service.StatusUnused},
-		{Code: "BATCH-2", Type: service.RedeemTypeSubscription, Value: 20, Status: service.StatusUnused, PlanID: &planID, ValidityDays: 14},
+		{Code: "BATCH-2", Type: service.RedeemTypeSubscription, Value: 20, Status: service.StatusUnused, PlanID: &planID},
 	}
 
 	err := s.repo.CreateBatch(s.ctx, codes)
@@ -101,7 +95,6 @@ func (s *RedeemCodeRepoSuite) TestCreateBatch() {
 	s.Require().Equal(float64(20), got2.Value)
 	s.Require().NotNil(got2.PlanID)
 	s.Require().Equal(planID, *got2.PlanID)
-	s.Require().Equal(14, got2.ValidityDays)
 }
 
 func (s *RedeemCodeRepoSuite) TestGetByID_NotFound() {
@@ -117,7 +110,6 @@ func (s *RedeemCodeRepoSuite) TestGetByCode() {
 		SetStatus(service.StatusUnused).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		Save(s.ctx)
 	s.Require().NoError(err, "seed redeem code")
 
@@ -141,7 +133,6 @@ func (s *RedeemCodeRepoSuite) TestDelete() {
 		SetStatus(service.StatusUnused).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		Save(s.ctx)
 	s.Require().NoError(err)
 
@@ -212,24 +203,23 @@ func (s *RedeemCodeRepoSuite) TestListWithFilters_Search() {
 	s.Require().Contains(codes[0].Code, "ALPHA")
 }
 
-func (s *RedeemCodeRepoSuite) TestListWithFilters_GroupPreload() {
-	group := s.createGroup(uniqueTestValue(s.T(), "g-preload"))
+func (s *RedeemCodeRepoSuite) TestListWithFilters_PlanID() {
+	planID := int64(603)
 	_, err := s.client.RedeemCode.Create().
-		SetCode("WITH-GROUP").
+		SetCode("WITH-PLAN").
 		SetType(service.RedeemTypeSubscription).
 		SetStatus(service.StatusUnused).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
-		SetGroupID(group.ID).
+		SetPlanID(planID).
 		Save(s.ctx)
 	s.Require().NoError(err)
 
 	codes, _, err := s.repo.ListWithFilters(s.ctx, pagination.PaginationParams{Page: 1, PageSize: 10}, "", "", "")
 	s.Require().NoError(err)
 	s.Require().Len(codes, 1)
-	s.Require().NotNil(codes[0].Group, "expected Group preload")
-	s.Require().Equal(group.ID, codes[0].Group.ID)
+	s.Require().NotNil(codes[0].PlanID)
+	s.Require().Equal(planID, *codes[0].PlanID)
 }
 
 // --- Update ---
@@ -423,7 +413,6 @@ func (s *RedeemCodeRepoSuite) TestListByUser() {
 		SetStatus(service.StatusUsed).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		SetUsedBy(user.ID).
 		SetUsedAt(usedAt1).
 		Save(s.ctx)
@@ -436,7 +425,6 @@ func (s *RedeemCodeRepoSuite) TestListByUser() {
 		SetStatus(service.StatusUsed).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		SetUsedBy(user.ID).
 		SetUsedAt(usedAt2).
 		Save(s.ctx)
@@ -450,28 +438,27 @@ func (s *RedeemCodeRepoSuite) TestListByUser() {
 	s.Require().Equal("USER-1", codes[1].Code)
 }
 
-func (s *RedeemCodeRepoSuite) TestListByUser_WithGroupPreload() {
+func (s *RedeemCodeRepoSuite) TestListByUser_WithPlanID() {
 	user := s.createUser(uniqueTestValue(s.T(), "grp") + "@example.com")
-	group := s.createGroup(uniqueTestValue(s.T(), "g-listby"))
+	planID := int64(604)
 
 	_, err := s.client.RedeemCode.Create().
-		SetCode("WITH-GRP").
+		SetCode("WITH-PLAN-ID").
 		SetType(service.RedeemTypeSubscription).
 		SetStatus(service.StatusUsed).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		SetUsedBy(user.ID).
 		SetUsedAt(time.Now()).
-		SetGroupID(group.ID).
+		SetPlanID(planID).
 		Save(s.ctx)
 	s.Require().NoError(err)
 
 	codes, err := s.repo.ListByUser(s.ctx, user.ID, 10)
 	s.Require().NoError(err)
 	s.Require().Len(codes, 1)
-	s.Require().NotNil(codes[0].Group)
-	s.Require().Equal(group.ID, codes[0].Group.ID)
+	s.Require().NotNil(codes[0].PlanID)
+	s.Require().Equal(planID, *codes[0].PlanID)
 }
 
 func (s *RedeemCodeRepoSuite) TestListByUser_DefaultLimit() {
@@ -482,7 +469,6 @@ func (s *RedeemCodeRepoSuite) TestListByUser_DefaultLimit() {
 		SetStatus(service.StatusUsed).
 		SetValue(0).
 		SetNotes("").
-		SetValidityDays(30).
 		SetUsedBy(user.ID).
 		SetUsedAt(time.Now()).
 		Save(s.ctx)
@@ -498,12 +484,11 @@ func (s *RedeemCodeRepoSuite) TestListByUser_DefaultLimit() {
 
 func (s *RedeemCodeRepoSuite) TestCreateBatch_Filters_Use_Idempotency_ListByUser() {
 	user := s.createUser(uniqueTestValue(s.T(), "rc") + "@example.com")
-	group := s.createGroup(uniqueTestValue(s.T(), "g-rc"))
-	groupID := group.ID
+	planID := int64(605)
 
 	codes := []service.RedeemCode{
 		{Code: "CODEA", Type: service.RedeemTypeBalance, Value: 1, Status: service.StatusUnused, Notes: ""},
-		{Code: "CODEB", Type: service.RedeemTypeSubscription, Value: 0, Status: service.StatusUnused, Notes: "", GroupID: &groupID, ValidityDays: 7},
+		{Code: "CODEB", Type: service.RedeemTypeSubscription, Value: 0, Status: service.StatusUnused, Notes: "", PlanID: &planID},
 	}
 	s.Require().NoError(s.repo.CreateBatch(s.ctx, codes), "CreateBatch")
 
@@ -511,8 +496,8 @@ func (s *RedeemCodeRepoSuite) TestCreateBatch_Filters_Use_Idempotency_ListByUser
 	s.Require().NoError(err, "ListWithFilters")
 	s.Require().Equal(int64(1), page.Total)
 	s.Require().Len(list, 1)
-	s.Require().NotNil(list[0].Group, "expected Group preload")
-	s.Require().Equal(group.ID, list[0].Group.ID)
+	s.Require().NotNil(list[0].PlanID)
+	s.Require().Equal(planID, *list[0].PlanID)
 
 	codeB, err := s.repo.GetByCode(s.ctx, "CODEB")
 	s.Require().NoError(err, "GetByCode")

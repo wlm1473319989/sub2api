@@ -323,16 +323,12 @@ func mustCreateRedeemCode(t *testing.T, client *dbent.Client, c *service.RedeemC
 		SetType(c.Type).
 		SetValue(c.Value).
 		SetStatus(c.Status).
-		SetNotes(c.Notes).
-		SetValidityDays(c.ValidityDays)
+		SetNotes(c.Notes)
 	if c.UsedBy != nil {
 		create.SetUsedBy(*c.UsedBy)
 	}
 	if c.UsedAt != nil {
 		create.SetUsedAt(*c.UsedAt)
-	}
-	if c.GroupID != nil {
-		create.SetGroupID(*c.GroupID)
 	}
 	if !c.CreatedAt.IsZero() {
 		create.SetCreatedAt(c.CreatedAt)

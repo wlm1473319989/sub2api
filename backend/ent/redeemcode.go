@@ -9,7 +9,6 @@ import (
 
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
-	"github.com/Wei-Shaw/sub2api/ent/group"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
@@ -37,27 +36,22 @@ type RedeemCode struct {
 	CreatedAt time.Time `json:"created_at,omitempty"`
 	// ExpiresAt holds the value of the "expires_at" field.
 	ExpiresAt *time.Time `json:"expires_at,omitempty"`
-	// GroupID holds the value of the "group_id" field.
-	GroupID *int64 `json:"group_id,omitempty"`
 	// PlanID holds the value of the "plan_id" field.
 	PlanID *int64 `json:"plan_id,omitempty"`
-	// ValidityDays holds the value of the "validity_days" field.
-	ValidityDays int `json:"validity_days,omitempty"`
 	// Edges holds the relations/edges for other nodes in the graph.
 	// The values are being populated by the RedeemCodeQuery when eager-loading is set.
-	Edges        RedeemCodeEdges `json:"edges"`
-	selectValues sql.SelectValues
+	Edges              RedeemCodeEdges `json:"edges"`
+	group_redeem_codes *int64
+	selectValues       sql.SelectValues
 }
 
 // RedeemCodeEdges holds the relations/edges for other nodes in the graph.
 type RedeemCodeEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
-	// Group holds the value of the group edge.
-	Group *Group `json:"group,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [1]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -71,17 +65,6 @@ func (e RedeemCodeEdges) UserOrErr() (*User, error) {
 	return nil, &NotLoadedError{edge: "user"}
 }
 
-// GroupOrErr returns the Group value or an error if the edge
-// was not loaded in eager-loading, or loaded but was not found.
-func (e RedeemCodeEdges) GroupOrErr() (*Group, error) {
-	if e.Group != nil {
-		return e.Group, nil
-	} else if e.loadedTypes[1] {
-		return nil, &NotFoundError{label: group.Label}
-	}
-	return nil, &NotLoadedError{edge: "group"}
-}
-
 // scanValues returns the types for scanning values from sql.Rows.
 func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
@@ -89,12 +72,14 @@ func (*RedeemCode) scanValues(columns []string) ([]any, error) {
 		switch columns[i] {
 		case redeemcode.FieldValue:
 			values[i] = new(sql.NullFloat64)
-		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldGroupID, redeemcode.FieldPlanID, redeemcode.FieldValidityDays:
+		case redeemcode.FieldID, redeemcode.FieldUsedBy, redeemcode.FieldPlanID:
 			values[i] = new(sql.NullInt64)
 		case redeemcode.FieldCode, redeemcode.FieldType, redeemcode.FieldStatus, redeemcode.FieldNotes:
 			values[i] = new(sql.NullString)
 		case redeemcode.FieldUsedAt, redeemcode.FieldCreatedAt, redeemcode.FieldExpiresAt:
 			values[i] = new(sql.NullTime)
+		case redeemcode.ForeignKeys[0]: // group_redeem_codes
+			values[i] = new(sql.NullInt64)
 		default:
 			values[i] = new(sql.UnknownType)
 		}
@@ -174,13 +159,6 @@ func (_m *RedeemCode) assignValues(columns []string, values []any) error {
 				_m.ExpiresAt = new(time.Time)
 				*_m.ExpiresAt = value.Time
 			}
-		case redeemcode.FieldGroupID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
-			} else if value.Valid {
-				_m.GroupID = new(int64)
-				*_m.GroupID = value.Int64
-			}
 		case redeemcode.FieldPlanID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
 				return fmt.Errorf("unexpected type %T for field plan_id", values[i])
@@ -188,11 +166,12 @@ func (_m *RedeemCode) assignValues(columns []string, values []any) error {
 				_m.PlanID = new(int64)
 				*_m.PlanID = value.Int64
 			}
-		case redeemcode.FieldValidityDays:
+		case redeemcode.ForeignKeys[0]:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field validity_days", values[i])
+				return fmt.Errorf("unexpected type %T for edge-field group_redeem_codes", value)
 			} else if value.Valid {
-				_m.ValidityDays = int(value.Int64)
+				_m.group_redeem_codes = new(int64)
+				*_m.group_redeem_codes = int64(value.Int64)
 			}
 		default:
 			_m.selectValues.Set(columns[i], values[i])
@@ -210,11 +189,6 @@ func (_m *RedeemCode) GetValue(name string) (ent.Value, error) {
 // QueryUser queries the "user" edge of the RedeemCode entity.
 func (_m *RedeemCode) QueryUser() *UserQuery {
 	return NewRedeemCodeClient(_m.config).QueryUser(_m)
-}
-
-// QueryGroup queries the "group" edge of the RedeemCode entity.
-func (_m *RedeemCode) QueryGroup() *GroupQuery {
-	return NewRedeemCodeClient(_m.config).QueryGroup(_m)
 }
 
 // Update returns a builder for updating this RedeemCode.
@@ -275,18 +249,10 @@ func (_m *RedeemCode) String() string {
 		builder.WriteString(v.Format(time.ANSIC))
 	}
 	builder.WriteString(", ")
-	if v := _m.GroupID; v != nil {
-		builder.WriteString("group_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
 	if v := _m.PlanID; v != nil {
 		builder.WriteString("plan_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
-	builder.WriteString(", ")
-	builder.WriteString("validity_days=")
-	builder.WriteString(fmt.Sprintf("%v", _m.ValidityDays))
 	builder.WriteByte(')')
 	return builder.String()
 }

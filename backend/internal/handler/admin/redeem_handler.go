@@ -37,9 +37,7 @@ type GenerateRedeemCodesRequest struct {
 	Count         int        `json:"count" binding:"required,min=1,max=100"`
 	Type          string     `json:"type" binding:"required,oneof=balance concurrency subscription invitation"`
 	Value         float64    `json:"value"`
-	GroupID       *int64     `json:"group_id"`
 	PlanID        *int64     `json:"plan_id"`
-	ValidityDays  int        `json:"validity_days"`
 	ExpiresAt     *time.Time `json:"expires_at"`
 	ExpiresInDays *int       `json:"expires_in_days" binding:"omitempty,min=1,max=3650"`
 }
@@ -51,9 +49,7 @@ type CreateAndRedeemCodeRequest struct {
 	Type          string     `json:"type" binding:"omitempty,oneof=balance concurrency subscription invitation"`
 	Value         float64    `json:"value" binding:"required"`
 	UserID        int64      `json:"user_id" binding:"required,gt=0"`
-	GroupID       *int64     `json:"group_id"`
 	PlanID        *int64     `json:"plan_id"`
-	ValidityDays  int        `json:"validity_days"`
 	Notes         string     `json:"notes"`
 	ExpiresAt     *time.Time `json:"expires_at"`
 	ExpiresInDays *int       `json:"expires_in_days" binding:"omitempty,min=1,max=3650"`
@@ -144,13 +140,11 @@ func (h *RedeemHandler) Generate(c *gin.Context) {
 
 	executeAdminIdempotentJSON(c, "admin.redeem_codes.generate", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
 		codes, execErr := h.adminService.GenerateRedeemCodes(ctx, &service.GenerateRedeemCodesInput{
-			Count:        req.Count,
-			Type:         req.Type,
-			Value:        req.Value,
-			GroupID:      req.GroupID,
-			PlanID:       req.PlanID,
-			ValidityDays: req.ValidityDays,
-			ExpiresAt:    expiresAt,
+			Count:     req.Count,
+			Type:      req.Type,
+			Value:     req.Value,
+			PlanID:    req.PlanID,
+			ExpiresAt: expiresAt,
 		})
 		if execErr != nil {
 			return nil, execErr
@@ -203,15 +197,13 @@ func (h *RedeemHandler) CreateAndRedeem(c *gin.Context) {
 		}
 
 		createErr := h.redeemService.CreateCode(ctx, &service.RedeemCode{
-			Code:         req.Code,
-			Type:         req.Type,
-			Value:        req.Value,
-			Status:       service.StatusUnused,
-			Notes:        req.Notes,
-			GroupID:      req.GroupID,
-			PlanID:       req.PlanID,
-			ValidityDays: req.ValidityDays,
-			ExpiresAt:    expiresAt,
+			Code:      req.Code,
+			Type:      req.Type,
+			Value:     req.Value,
+			Status:    service.StatusUnused,
+			Notes:     req.Notes,
+			PlanID:    req.PlanID,
+			ExpiresAt: expiresAt,
 		})
 		if createErr != nil {
 			existingAfterCreateErr, getErr := h.redeemService.GetByCode(ctx, req.Code)
@@ -340,8 +332,6 @@ func redeemBatchUpdateFieldsFromDTO(in dto.BatchUpdateRedeemCodeFields) service.
 	}
 	if in.PlanID.Set {
 		out.PlanID = service.NullableInt64Update{Set: true, Value: in.PlanID.Value}
-	} else if in.GroupID.Set {
-		out.PlanID = service.NullableInt64Update{Set: true, Value: in.GroupID.Value}
 	}
 	return out
 }

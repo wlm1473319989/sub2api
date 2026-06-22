@@ -76,7 +76,6 @@ describe('SubscriptionPlanCard', () => {
           {
             id: 99,
             user_id: 1,
-            group_id: 777,
             plan_id: 1,
             status: 'active',
             starts_at: '2026-01-01T00:00:00Z',

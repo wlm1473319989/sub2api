@@ -217,7 +217,7 @@ func TestSettingService_UpdateSettings_RegistrationEmailSuffixWhitelist_Invalid(
 }
 
 func TestParseDefaultSubscriptions_NormalizesValues(t *testing.T) {
-	got := parseDefaultSubscriptions(`[{"group_id":11,"validity_days":30},{"plan_id":91},{"plan_id":92,"validity_days":60},{"group_id":0,"validity_days":10},{"plan_id":93}]`)
+	got := parseDefaultSubscriptions(`[{},{"plan_id":91},{"plan_id":92},{"plan_id":0},{"plan_id":93}]`)
 	require.Equal(t, []DefaultSubscriptionSetting{
 		{PlanID: 91},
 		{PlanID: 92},

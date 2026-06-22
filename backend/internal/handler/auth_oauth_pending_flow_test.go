@@ -2789,8 +2789,6 @@ func (r *oauthPendingFlowRedeemCodeRepo) GetByCode(ctx context.Context, code str
 		UsedAt:       entity.UsedAt,
 		Notes:        notes,
 		CreatedAt:    entity.CreatedAt,
-		GroupID:      entity.GroupID,
-		ValidityDays: entity.ValidityDays,
 	}, nil
 }
 
@@ -2803,8 +2801,7 @@ func (r *oauthPendingFlowRedeemCodeRepo) Update(ctx context.Context, code *servi
 		SetType(code.Type).
 		SetValue(code.Value).
 		SetStatus(code.Status).
-		SetNotes(code.Notes).
-		SetValidityDays(code.ValidityDays)
+		SetNotes(code.Notes)
 	if code.UsedBy != nil {
 		update = update.SetUsedBy(*code.UsedBy)
 	} else {
@@ -2814,11 +2811,6 @@ func (r *oauthPendingFlowRedeemCodeRepo) Update(ctx context.Context, code *servi
 		update = update.SetUsedAt(*code.UsedAt)
 	} else {
 		update = update.ClearUsedAt()
-	}
-	if code.GroupID != nil {
-		update = update.SetGroupID(*code.GroupID)
-	} else {
-		update = update.ClearGroupID()
 	}
 	_, err := update.Save(ctx)
 	return err

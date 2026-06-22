@@ -20,14 +20,13 @@ import (
 func newCreateAndRedeemHandler() *RedeemHandler {
 	return &RedeemHandler{
 		adminService:  newStubAdminService(),
-		redeemService: &service.RedeemService{}, // non-nil to pass nil guard
+		redeemService: &service.RedeemService{},
 	}
 }
 
 // postCreateAndRedeemValidation calls CreateAndRedeem and returns the response
-// status code. For cases that pass validation and proceed into the service layer,
-// a panic may occur (because RedeemService internals are nil); this is expected
-// and treated as "validation passed" (returns 0 to indicate panic).
+// status code. If validation passes and the request reaches the minimal service
+// stub, a panic is expected and reported as code 0.
 func postCreateAndRedeemValidation(t *testing.T, handler *RedeemHandler, body any) (code int) {
 	t.Helper()
 	gin.SetMode(gin.TestMode)
@@ -41,7 +40,6 @@ func postCreateAndRedeemValidation(t *testing.T, handler *RedeemHandler, body an
 
 	defer func() {
 		if r := recover(); r != nil {
-			// Panic means we passed validation and entered service layer (expected for minimal stub).
 			code = 0
 		}
 	}()
@@ -50,8 +48,6 @@ func postCreateAndRedeemValidation(t *testing.T, handler *RedeemHandler, body an
 }
 
 func TestCreateAndRedeem_TypeDefaultsToBalance(t *testing.T) {
-	// 不传 type 字段时应默认 balance，不触发 subscription 校验。
-	// 验证通过后进入 service 层会 panic（返回 0），说明默认值生效。
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
 		"code":    "test-balance-default",
@@ -59,76 +55,37 @@ func TestCreateAndRedeem_TypeDefaultsToBalance(t *testing.T) {
 		"user_id": 1,
 	})
 
-	assert.NotEqual(t, http.StatusBadRequest, code,
-		"omitting type should default to balance and pass validation")
+	assert.NotEqual(t, http.StatusBadRequest, code)
 }
 
 func TestCreateAndRedeem_SubscriptionRequiresPlanID(t *testing.T) {
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
-		"code":          "test-sub-no-plan",
-		"type":          "subscription",
-		"value":         29.9,
-		"user_id":       1,
-		"validity_days": 30,
-		// plan_id 缺失
+		"code":    "test-sub-no-plan",
+		"type":    "subscription",
+		"value":   29.9,
+		"user_id": 1,
 	})
 
 	assert.Equal(t, http.StatusBadRequest, code)
-}
-
-func TestCreateAndRedeem_SubscriptionValidityDaysValuesPassValidation(t *testing.T) {
-	planID := int64(5)
-	h := newCreateAndRedeemHandler()
-
-	t.Run("zero_uses_plan_default", func(t *testing.T) {
-		code := postCreateAndRedeemValidation(t, h, map[string]any{
-			"code":          "test-sub-bad-days-zero",
-			"type":          "subscription",
-			"value":         29.9,
-			"user_id":       1,
-			"plan_id":       planID,
-			"validity_days": 0,
-		})
-
-		assert.NotEqual(t, http.StatusBadRequest, code,
-			"zero validity_days should pass validation for plan-based subscriptions")
-	})
-
-	t.Run("negative_passes_validation", func(t *testing.T) {
-		code := postCreateAndRedeemValidation(t, h, map[string]any{
-			"code":          "test-sub-negative-days",
-			"type":          "subscription",
-			"value":         29.9,
-			"user_id":       1,
-			"plan_id":       planID,
-			"validity_days": -7,
-		})
-
-		assert.NotEqual(t, http.StatusBadRequest, code,
-			"negative validity_days should pass validation for refund")
-	})
 }
 
 func TestCreateAndRedeem_SubscriptionValidParamsPassValidation(t *testing.T) {
 	planID := int64(5)
 	h := newCreateAndRedeemHandler()
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
-		"code":          "test-sub-valid",
-		"type":          "subscription",
-		"value":         29.9,
-		"user_id":       1,
-		"plan_id":       planID,
-		"validity_days": 31,
+		"code":    "test-sub-valid",
+		"type":    "subscription",
+		"value":   29.9,
+		"user_id": 1,
+		"plan_id": planID,
 	})
 
-	assert.NotEqual(t, http.StatusBadRequest, code,
-		"valid subscription params should pass validation")
+	assert.NotEqual(t, http.StatusBadRequest, code)
 }
 
 func TestCreateAndRedeem_BalanceIgnoresSubscriptionFields(t *testing.T) {
 	h := newCreateAndRedeemHandler()
-	// balance 类型不传 group_id 和 validity_days，不应报 400
 	code := postCreateAndRedeemValidation(t, h, map[string]any{
 		"code":    "test-balance-no-extras",
 		"type":    "balance",
@@ -136,8 +93,7 @@ func TestCreateAndRedeem_BalanceIgnoresSubscriptionFields(t *testing.T) {
 		"user_id": 1,
 	})
 
-	assert.NotEqual(t, http.StatusBadRequest, code,
-		"balance type should not require group_id or validity_days")
+	assert.NotEqual(t, http.StatusBadRequest, code)
 }
 
 func TestResolveRedeemCodeExpiresAt_FromDays(t *testing.T) {

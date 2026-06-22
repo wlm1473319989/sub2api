@@ -4130,22 +4130,6 @@ func (c *RedeemCodeClient) QueryUser(_m *RedeemCode) *UserQuery {
 	return query
 }
 
-// QueryGroup queries the group edge of a RedeemCode.
-func (c *RedeemCodeClient) QueryGroup(_m *RedeemCode) *GroupQuery {
-	query := (&GroupClient{config: c.config}).Query()
-	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
-		id := _m.ID
-		step := sqlgraph.NewStep(
-			sqlgraph.From(redeemcode.Table, redeemcode.FieldID, id),
-			sqlgraph.To(group.Table, group.FieldID),
-			sqlgraph.Edge(sqlgraph.M2O, true, redeemcode.GroupTable, redeemcode.GroupColumn),
-		)
-		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
-		return fromV, nil
-	}
-	return query
-}
-
 // Hooks returns the client hooks.
 func (c *RedeemCodeClient) Hooks() []Hook {
 	return c.hooks.RedeemCode

@@ -367,8 +367,6 @@ func (s *AuthService) loadOAuthRegistrationInvitation(ctx context.Context, invit
 			Notes:        oauthEmailFlowStringValue(entity.Notes),
 			CreatedAt:    entity.CreatedAt,
 			ExpiresAt:    entity.ExpiresAt,
-			GroupID:      entity.GroupID,
-			ValidityDays: entity.ValidityDays,
 		}, nil
 	}
 	return s.redeemRepo.GetByCode(ctx, invitationCode)
@@ -407,8 +405,7 @@ func (s *AuthService) updateOAuthRegistrationInvitation(ctx context.Context, cod
 			SetType(code.Type).
 			SetValue(code.Value).
 			SetStatus(code.Status).
-			SetNotes(code.Notes).
-			SetValidityDays(code.ValidityDays)
+			SetNotes(code.Notes)
 		if code.ExpiresAt != nil {
 			update = update.SetExpiresAt(*code.ExpiresAt)
 		} else {
@@ -423,11 +420,6 @@ func (s *AuthService) updateOAuthRegistrationInvitation(ctx context.Context, cod
 			update = update.SetUsedAt(*code.UsedAt)
 		} else {
 			update = update.ClearUsedAt()
-		}
-		if code.GroupID != nil {
-			update = update.SetGroupID(*code.GroupID)
-		} else {
-			update = update.ClearGroupID()
 		}
 		_, err := update.Save(ctx)
 		return err

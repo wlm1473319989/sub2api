@@ -132,10 +132,7 @@
             <span class="text-sm font-medium text-gray-900 dark:text-white">
               <template v-if="row.type === 'balance'">${{ value.toFixed(2) }}</template>
               <template v-else-if="row.type === 'subscription'">
-                {{ row.validity_days || 30 }} {{ t('admin.redeem.days') }}
-                <span v-if="row.group" class="ml-1 text-xs text-gray-500 dark:text-gray-400"
-                  >({{ row.group.name }})</span
-                >
+                {{ row.plan_id ? `#${row.plan_id}` : '-' }}
               </template>
               <template v-else>{{ value }}</template>
             </span>
@@ -319,17 +316,6 @@
                   v-model="generateForm.plan_id"
                   :options="subscriptionPlanOptions"
                   :placeholder="t('payment.selectPlan')"
-                />
-              </div>
-              <div>
-                <label class="input-label">{{ t('admin.redeem.validityDays') }}</label>
-                <input
-                  v-model.number="generateForm.validity_days"
-                  type="number"
-                  min="1"
-                  max="365"
-                  required
-                  class="input"
                 />
               </div>
             </template>
@@ -794,7 +780,6 @@ const generateForm = reactive({
   value: 10,
   count: 1,
   plan_id: null as number | null,
-  validity_days: 30,
   expiry_option: 'never' as RedeemCodeExpiryOption,
   custom_expiry_days: 7
 })
@@ -999,7 +984,6 @@ const handleGenerateCodes = async () => {
       generateForm.type,
       generateForm.value,
       generateForm.type === 'subscription' ? generateForm.plan_id : undefined,
-      generateForm.type === 'subscription' ? generateForm.validity_days : undefined,
       expiresInDays
     )
     showGenerateDialog.value = false
@@ -1007,7 +991,6 @@ const handleGenerateCodes = async () => {
     showResultDialog.value = true
     // 重置表单
     generateForm.plan_id = null
-    generateForm.validity_days = 30
     generateForm.expiry_option = 'never'
     generateForm.custom_expiry_days = 7
     loadCodes()
