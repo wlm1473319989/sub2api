@@ -28,33 +28,6 @@ func (_u *SubscriptionPlanUpdate) Where(ps ...predicate.SubscriptionPlan) *Subsc
 	return _u
 }
 
-// SetGroupID sets the "group_id" field.
-func (_u *SubscriptionPlanUpdate) SetGroupID(v int64) *SubscriptionPlanUpdate {
-	_u.mutation.ResetGroupID()
-	_u.mutation.SetGroupID(v)
-	return _u
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (_u *SubscriptionPlanUpdate) SetNillableGroupID(v *int64) *SubscriptionPlanUpdate {
-	if v != nil {
-		_u.SetGroupID(*v)
-	}
-	return _u
-}
-
-// AddGroupID adds value to the "group_id" field.
-func (_u *SubscriptionPlanUpdate) AddGroupID(v int64) *SubscriptionPlanUpdate {
-	_u.mutation.AddGroupID(v)
-	return _u
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (_u *SubscriptionPlanUpdate) ClearGroupID() *SubscriptionPlanUpdate {
-	_u.mutation.ClearGroupID()
-	return _u
-}
-
 // SetName sets the "name" field.
 func (_u *SubscriptionPlanUpdate) SetName(v string) *SubscriptionPlanUpdate {
 	_u.mutation.SetName(v)
@@ -389,15 +362,6 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 			}
 		}
 	}
-	if value, ok := _u.mutation.GroupID(); ok {
-		_spec.SetField(subscriptionplan.FieldGroupID, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedGroupID(); ok {
-		_spec.AddField(subscriptionplan.FieldGroupID, field.TypeInt64, value)
-	}
-	if _u.mutation.GroupIDCleared() {
-		_spec.ClearField(subscriptionplan.FieldGroupID, field.TypeInt64)
-	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(subscriptionplan.FieldName, field.TypeString, value)
 	}
@@ -491,33 +455,6 @@ type SubscriptionPlanUpdateOne struct {
 	fields   []string
 	hooks    []Hook
 	mutation *SubscriptionPlanMutation
-}
-
-// SetGroupID sets the "group_id" field.
-func (_u *SubscriptionPlanUpdateOne) SetGroupID(v int64) *SubscriptionPlanUpdateOne {
-	_u.mutation.ResetGroupID()
-	_u.mutation.SetGroupID(v)
-	return _u
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (_u *SubscriptionPlanUpdateOne) SetNillableGroupID(v *int64) *SubscriptionPlanUpdateOne {
-	if v != nil {
-		_u.SetGroupID(*v)
-	}
-	return _u
-}
-
-// AddGroupID adds value to the "group_id" field.
-func (_u *SubscriptionPlanUpdateOne) AddGroupID(v int64) *SubscriptionPlanUpdateOne {
-	_u.mutation.AddGroupID(v)
-	return _u
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (_u *SubscriptionPlanUpdateOne) ClearGroupID() *SubscriptionPlanUpdateOne {
-	_u.mutation.ClearGroupID()
-	return _u
 }
 
 // SetName sets the "name" field.
@@ -883,15 +820,6 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 				ps[i](selector)
 			}
 		}
-	}
-	if value, ok := _u.mutation.GroupID(); ok {
-		_spec.SetField(subscriptionplan.FieldGroupID, field.TypeInt64, value)
-	}
-	if value, ok := _u.mutation.AddedGroupID(); ok {
-		_spec.AddField(subscriptionplan.FieldGroupID, field.TypeInt64, value)
-	}
-	if _u.mutation.GroupIDCleared() {
-		_spec.ClearField(subscriptionplan.FieldGroupID, field.TypeInt64)
 	}
 	if value, ok := _u.mutation.Name(); ok {
 		_spec.SetField(subscriptionplan.FieldName, field.TypeString, value)

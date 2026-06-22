@@ -13,8 +13,6 @@ const (
 	Label = "subscription_plan"
 	// FieldID holds the string denoting the id field in the database.
 	FieldID = "id"
-	// FieldGroupID holds the string denoting the group_id field in the database.
-	FieldGroupID = "group_id"
 	// FieldName holds the string denoting the name field in the database.
 	FieldName = "name"
 	// FieldDescription holds the string denoting the description field in the database.
@@ -52,7 +50,6 @@ const (
 // Columns holds all SQL columns for subscriptionplan fields.
 var Columns = []string{
 	FieldID,
-	FieldGroupID,
 	FieldName,
 	FieldDescription,
 	FieldPrice,
@@ -115,11 +112,6 @@ type OrderOption func(*sql.Selector)
 // ByID orders the results by the id field.
 func ByID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldID, opts...).ToFunc()
-}
-
-// ByGroupID orders the results by the group_id field.
-func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
 }
 
 // ByName orders the results by the name field.

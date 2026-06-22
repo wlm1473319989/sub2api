@@ -22,20 +22,6 @@ type SubscriptionPlanCreate struct {
 	conflict []sql.ConflictOption
 }
 
-// SetGroupID sets the "group_id" field.
-func (_c *SubscriptionPlanCreate) SetGroupID(v int64) *SubscriptionPlanCreate {
-	_c.mutation.SetGroupID(v)
-	return _c
-}
-
-// SetNillableGroupID sets the "group_id" field if the given value is not nil.
-func (_c *SubscriptionPlanCreate) SetNillableGroupID(v *int64) *SubscriptionPlanCreate {
-	if v != nil {
-		_c.SetGroupID(*v)
-	}
-	return _c
-}
-
 // SetName sets the "name" field.
 func (_c *SubscriptionPlanCreate) SetName(v string) *SubscriptionPlanCreate {
 	_c.mutation.SetName(v)
@@ -380,10 +366,6 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 		_spec = sqlgraph.NewCreateSpec(subscriptionplan.Table, sqlgraph.NewFieldSpec(subscriptionplan.FieldID, field.TypeInt64))
 	)
 	_spec.OnConflict = _c.conflict
-	if value, ok := _c.mutation.GroupID(); ok {
-		_spec.SetField(subscriptionplan.FieldGroupID, field.TypeInt64, value)
-		_node.GroupID = &value
-	}
 	if value, ok := _c.mutation.Name(); ok {
 		_spec.SetField(subscriptionplan.FieldName, field.TypeString, value)
 		_node.Name = value
@@ -451,7 +433,7 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 // of the `INSERT` statement. For example:
 //
 //	client.SubscriptionPlan.Create().
-//		SetGroupID(v).
+//		SetName(v).
 //		OnConflict(
 //			// Update the row with the new values
 //			// the was proposed for insertion.
@@ -460,7 +442,7 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.SubscriptionPlanUpsert) {
-//			SetGroupID(v+v).
+//			SetName(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *SubscriptionPlanCreate) OnConflict(opts ...sql.ConflictOption) *SubscriptionPlanUpsertOne {
@@ -495,30 +477,6 @@ type (
 		*sql.UpdateSet
 	}
 )
-
-// SetGroupID sets the "group_id" field.
-func (u *SubscriptionPlanUpsert) SetGroupID(v int64) *SubscriptionPlanUpsert {
-	u.Set(subscriptionplan.FieldGroupID, v)
-	return u
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *SubscriptionPlanUpsert) UpdateGroupID() *SubscriptionPlanUpsert {
-	u.SetExcluded(subscriptionplan.FieldGroupID)
-	return u
-}
-
-// AddGroupID adds v to the "group_id" field.
-func (u *SubscriptionPlanUpsert) AddGroupID(v int64) *SubscriptionPlanUpsert {
-	u.Add(subscriptionplan.FieldGroupID, v)
-	return u
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *SubscriptionPlanUpsert) ClearGroupID() *SubscriptionPlanUpsert {
-	u.SetNull(subscriptionplan.FieldGroupID)
-	return u
-}
 
 // SetName sets the "name" field.
 func (u *SubscriptionPlanUpsert) SetName(v string) *SubscriptionPlanUpsert {
@@ -797,34 +755,6 @@ func (u *SubscriptionPlanUpsertOne) Update(set func(*SubscriptionPlanUpsert)) *S
 		set(&SubscriptionPlanUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetGroupID sets the "group_id" field.
-func (u *SubscriptionPlanUpsertOne) SetGroupID(v int64) *SubscriptionPlanUpsertOne {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.SetGroupID(v)
-	})
-}
-
-// AddGroupID adds v to the "group_id" field.
-func (u *SubscriptionPlanUpsertOne) AddGroupID(v int64) *SubscriptionPlanUpsertOne {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.AddGroupID(v)
-	})
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *SubscriptionPlanUpsertOne) UpdateGroupID() *SubscriptionPlanUpsertOne {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.UpdateGroupID()
-	})
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *SubscriptionPlanUpsertOne) ClearGroupID() *SubscriptionPlanUpsertOne {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.ClearGroupID()
-	})
 }
 
 // SetName sets the "name" field.
@@ -1235,7 +1165,7 @@ func (_c *SubscriptionPlanCreateBulk) ExecX(ctx context.Context) {
 //		// Override some of the fields with custom
 //		// update values.
 //		Update(func(u *ent.SubscriptionPlanUpsert) {
-//			SetGroupID(v+v).
+//			SetName(v+v).
 //		}).
 //		Exec(ctx)
 func (_c *SubscriptionPlanCreateBulk) OnConflict(opts ...sql.ConflictOption) *SubscriptionPlanUpsertBulk {
@@ -1309,34 +1239,6 @@ func (u *SubscriptionPlanUpsertBulk) Update(set func(*SubscriptionPlanUpsert)) *
 		set(&SubscriptionPlanUpsert{UpdateSet: update})
 	}))
 	return u
-}
-
-// SetGroupID sets the "group_id" field.
-func (u *SubscriptionPlanUpsertBulk) SetGroupID(v int64) *SubscriptionPlanUpsertBulk {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.SetGroupID(v)
-	})
-}
-
-// AddGroupID adds v to the "group_id" field.
-func (u *SubscriptionPlanUpsertBulk) AddGroupID(v int64) *SubscriptionPlanUpsertBulk {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.AddGroupID(v)
-	})
-}
-
-// UpdateGroupID sets the "group_id" field to the value that was provided on create.
-func (u *SubscriptionPlanUpsertBulk) UpdateGroupID() *SubscriptionPlanUpsertBulk {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.UpdateGroupID()
-	})
-}
-
-// ClearGroupID clears the value of the "group_id" field.
-func (u *SubscriptionPlanUpsertBulk) ClearGroupID() *SubscriptionPlanUpsertBulk {
-	return u.Update(func(s *SubscriptionPlanUpsert) {
-		s.ClearGroupID()
-	})
 }
 
 // SetName sets the "name" field.

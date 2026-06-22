@@ -60,10 +60,6 @@ const (
 	FieldSubscriptionWeeklyQuotaKnivesSnapshot = "subscription_weekly_quota_knives_snapshot"
 	// FieldSubscriptionMonthlyQuotaKnivesSnapshot holds the string denoting the subscription_monthly_quota_knives_snapshot field in the database.
 	FieldSubscriptionMonthlyQuotaKnivesSnapshot = "subscription_monthly_quota_knives_snapshot"
-	// FieldSubscriptionGroupID holds the string denoting the subscription_group_id field in the database.
-	FieldSubscriptionGroupID = "subscription_group_id"
-	// FieldSubscriptionDays holds the string denoting the subscription_days field in the database.
-	FieldSubscriptionDays = "subscription_days"
 	// FieldProviderInstanceID holds the string denoting the provider_instance_id field in the database.
 	FieldProviderInstanceID = "provider_instance_id"
 	// FieldProviderKey holds the string denoting the provider_key field in the database.
@@ -145,8 +141,6 @@ var Columns = []string{
 	FieldSubscriptionDailyQuotaKnivesSnapshot,
 	FieldSubscriptionWeeklyQuotaKnivesSnapshot,
 	FieldSubscriptionMonthlyQuotaKnivesSnapshot,
-	FieldSubscriptionGroupID,
-	FieldSubscriptionDays,
 	FieldProviderInstanceID,
 	FieldProviderKey,
 	FieldProviderSnapshot,
@@ -352,16 +346,6 @@ func BySubscriptionWeeklyQuotaKnivesSnapshot(opts ...sql.OrderTermOption) OrderO
 // BySubscriptionMonthlyQuotaKnivesSnapshot orders the results by the subscription_monthly_quota_knives_snapshot field.
 func BySubscriptionMonthlyQuotaKnivesSnapshot(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldSubscriptionMonthlyQuotaKnivesSnapshot, opts...).ToFunc()
-}
-
-// BySubscriptionGroupID orders the results by the subscription_group_id field.
-func BySubscriptionGroupID(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSubscriptionGroupID, opts...).ToFunc()
-}
-
-// BySubscriptionDays orders the results by the subscription_days field.
-func BySubscriptionDays(opts ...sql.OrderTermOption) OrderOption {
-	return sql.OrderByField(FieldSubscriptionDays, opts...).ToFunc()
 }
 
 // ByProviderInstanceID orders the results by the provider_instance_id field.

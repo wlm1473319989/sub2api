@@ -108,12 +108,6 @@ func (PaymentOrder) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "decimal(20,10)"}),
-		field.Int64("subscription_group_id").
-			Optional().
-			Nillable(),
-		field.Int("subscription_days").
-			Optional().
-			Nillable(),
 		field.String("provider_instance_id").
 			Optional().
 			Nillable().

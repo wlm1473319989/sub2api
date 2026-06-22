@@ -79,6 +79,14 @@ func (_c *UserSubscriptionCreate) SetGroupID(v int64) *UserSubscriptionCreate {
 	return _c
 }
 
+// SetNillableGroupID sets the "group_id" field if the given value is not nil.
+func (_c *UserSubscriptionCreate) SetNillableGroupID(v *int64) *UserSubscriptionCreate {
+	if v != nil {
+		_c.SetGroupID(*v)
+	}
+	return _c
+}
+
 // SetPlanID sets the "plan_id" field.
 func (_c *UserSubscriptionCreate) SetPlanID(v int64) *UserSubscriptionCreate {
 	_c.mutation.SetPlanID(v)
@@ -515,9 +523,6 @@ func (_c *UserSubscriptionCreate) check() error {
 	if _, ok := _c.mutation.UserID(); !ok {
 		return &ValidationError{Name: "user_id", err: errors.New(`ent: missing required field "UserSubscription.user_id"`)}
 	}
-	if _, ok := _c.mutation.GroupID(); !ok {
-		return &ValidationError{Name: "group_id", err: errors.New(`ent: missing required field "UserSubscription.group_id"`)}
-	}
 	if v, ok := _c.mutation.PlanNameSnapshot(); ok {
 		if err := usersubscription.PlanNameSnapshotValidator(v); err != nil {
 			return &ValidationError{Name: "plan_name_snapshot", err: fmt.Errorf(`ent: validator failed for field "UserSubscription.plan_name_snapshot": %w`, err)}
@@ -560,9 +565,6 @@ func (_c *UserSubscriptionCreate) check() error {
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "UserSubscription.user"`)}
-	}
-	if len(_c.mutation.GroupIDs()) == 0 {
-		return &ValidationError{Name: "group", err: errors.New(`ent: missing required edge "UserSubscription.group"`)}
 	}
 	return nil
 }
@@ -718,7 +720,7 @@ func (_c *UserSubscriptionCreate) createSpec() (*UserSubscription, *sqlgraph.Cre
 		for _, k := range nodes {
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
-		_node.GroupID = nodes[0]
+		_node.GroupID = &nodes[0]
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	if nodes := _c.mutation.AssignedByUserIDs(); len(nodes) > 0 {
@@ -857,6 +859,12 @@ func (u *UserSubscriptionUpsert) SetGroupID(v int64) *UserSubscriptionUpsert {
 // UpdateGroupID sets the "group_id" field to the value that was provided on create.
 func (u *UserSubscriptionUpsert) UpdateGroupID() *UserSubscriptionUpsert {
 	u.SetExcluded(usersubscription.FieldGroupID)
+	return u
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (u *UserSubscriptionUpsert) ClearGroupID() *UserSubscriptionUpsert {
+	u.SetNull(usersubscription.FieldGroupID)
 	return u
 }
 
@@ -1373,6 +1381,13 @@ func (u *UserSubscriptionUpsertOne) SetGroupID(v int64) *UserSubscriptionUpsertO
 func (u *UserSubscriptionUpsertOne) UpdateGroupID() *UserSubscriptionUpsertOne {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (u *UserSubscriptionUpsertOne) ClearGroupID() *UserSubscriptionUpsertOne {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearGroupID()
 	})
 }
 
@@ -2123,6 +2138,13 @@ func (u *UserSubscriptionUpsertBulk) SetGroupID(v int64) *UserSubscriptionUpsert
 func (u *UserSubscriptionUpsertBulk) UpdateGroupID() *UserSubscriptionUpsertBulk {
 	return u.Update(func(s *UserSubscriptionUpsert) {
 		s.UpdateGroupID()
+	})
+}
+
+// ClearGroupID clears the value of the "group_id" field.
+func (u *UserSubscriptionUpsertBulk) ClearGroupID() *UserSubscriptionUpsertBulk {
+	return u.Update(func(s *UserSubscriptionUpsert) {
+		s.ClearGroupID()
 	})
 }
 

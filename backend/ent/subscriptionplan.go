@@ -17,8 +17,6 @@ type SubscriptionPlan struct {
 	config `json:"-"`
 	// ID of the ent.
 	ID int64 `json:"id,omitempty"`
-	// GroupID holds the value of the "group_id" field.
-	GroupID *int64 `json:"group_id,omitempty"`
 	// Name holds the value of the "name" field.
 	Name string `json:"name,omitempty"`
 	// Description holds the value of the "description" field.
@@ -61,7 +59,7 @@ func (*SubscriptionPlan) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case subscriptionplan.FieldPrice, subscriptionplan.FieldOriginalPrice, subscriptionplan.FieldDailyQuotaKnives, subscriptionplan.FieldWeeklyQuotaKnives, subscriptionplan.FieldMonthlyQuotaKnives:
 			values[i] = new(sql.NullFloat64)
-		case subscriptionplan.FieldID, subscriptionplan.FieldGroupID, subscriptionplan.FieldValidityDays, subscriptionplan.FieldSortOrder:
+		case subscriptionplan.FieldID, subscriptionplan.FieldValidityDays, subscriptionplan.FieldSortOrder:
 			values[i] = new(sql.NullInt64)
 		case subscriptionplan.FieldName, subscriptionplan.FieldDescription, subscriptionplan.FieldValidityUnit, subscriptionplan.FieldFeatures, subscriptionplan.FieldProductName:
 			values[i] = new(sql.NullString)
@@ -88,13 +86,6 @@ func (_m *SubscriptionPlan) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field id", value)
 			}
 			_m.ID = int64(value.Int64)
-		case subscriptionplan.FieldGroupID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field group_id", values[i])
-			} else if value.Valid {
-				_m.GroupID = new(int64)
-				*_m.GroupID = value.Int64
-			}
 		case subscriptionplan.FieldName:
 			if value, ok := values[i].(*sql.NullString); !ok {
 				return fmt.Errorf("unexpected type %T for field name", values[i])
@@ -225,11 +216,6 @@ func (_m *SubscriptionPlan) String() string {
 	var builder strings.Builder
 	builder.WriteString("SubscriptionPlan(")
 	builder.WriteString(fmt.Sprintf("id=%v, ", _m.ID))
-	if v := _m.GroupID; v != nil {
-		builder.WriteString("group_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
 	builder.WriteString("name=")
 	builder.WriteString(_m.Name)
 	builder.WriteString(", ")

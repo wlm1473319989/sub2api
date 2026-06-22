@@ -65,10 +65,6 @@ type PaymentOrder struct {
 	SubscriptionWeeklyQuotaKnivesSnapshot *float64 `json:"subscription_weekly_quota_knives_snapshot,omitempty"`
 	// SubscriptionMonthlyQuotaKnivesSnapshot holds the value of the "subscription_monthly_quota_knives_snapshot" field.
 	SubscriptionMonthlyQuotaKnivesSnapshot *float64 `json:"subscription_monthly_quota_knives_snapshot,omitempty"`
-	// SubscriptionGroupID holds the value of the "subscription_group_id" field.
-	SubscriptionGroupID *int64 `json:"subscription_group_id,omitempty"`
-	// SubscriptionDays holds the value of the "subscription_days" field.
-	SubscriptionDays *int `json:"subscription_days,omitempty"`
 	// ProviderInstanceID holds the value of the "provider_instance_id" field.
 	ProviderInstanceID *string `json:"provider_instance_id,omitempty"`
 	// ProviderKey holds the value of the "provider_key" field.
@@ -148,7 +144,7 @@ func (*PaymentOrder) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldSubscriptionPlanPriceSnapshot, paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, paymentorder.FieldRefundAmount:
 			values[i] = new(sql.NullFloat64)
-		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionValidityDaysSnapshot, paymentorder.FieldSubscriptionGroupID, paymentorder.FieldSubscriptionDays:
+		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionValidityDaysSnapshot:
 			values[i] = new(sql.NullInt64)
 		case paymentorder.FieldUserEmail, paymentorder.FieldUserName, paymentorder.FieldUserNotes, paymentorder.FieldRechargeCode, paymentorder.FieldOutTradeNo, paymentorder.FieldPaymentType, paymentorder.FieldPaymentTradeNo, paymentorder.FieldPayURL, paymentorder.FieldQrCode, paymentorder.FieldQrCodeImg, paymentorder.FieldOrderType, paymentorder.FieldSubscriptionAction, paymentorder.FieldSubscriptionPlanNameSnapshot, paymentorder.FieldProviderInstanceID, paymentorder.FieldProviderKey, paymentorder.FieldStatus, paymentorder.FieldRefundReason, paymentorder.FieldRefundRequestReason, paymentorder.FieldRefundRequestedBy, paymentorder.FieldFailedReason, paymentorder.FieldClientIP, paymentorder.FieldSrcHost, paymentorder.FieldSrcURL:
 			values[i] = new(sql.NullString)
@@ -324,20 +320,6 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.SubscriptionMonthlyQuotaKnivesSnapshot = new(float64)
 				*_m.SubscriptionMonthlyQuotaKnivesSnapshot = value.Float64
-			}
-		case paymentorder.FieldSubscriptionGroupID:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field subscription_group_id", values[i])
-			} else if value.Valid {
-				_m.SubscriptionGroupID = new(int64)
-				*_m.SubscriptionGroupID = value.Int64
-			}
-		case paymentorder.FieldSubscriptionDays:
-			if value, ok := values[i].(*sql.NullInt64); !ok {
-				return fmt.Errorf("unexpected type %T for field subscription_days", values[i])
-			} else if value.Valid {
-				_m.SubscriptionDays = new(int)
-				*_m.SubscriptionDays = int(value.Int64)
 			}
 		case paymentorder.FieldProviderInstanceID:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -610,16 +592,6 @@ func (_m *PaymentOrder) String() string {
 	builder.WriteString(", ")
 	if v := _m.SubscriptionMonthlyQuotaKnivesSnapshot; v != nil {
 		builder.WriteString("subscription_monthly_quota_knives_snapshot=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
-	if v := _m.SubscriptionGroupID; v != nil {
-		builder.WriteString("subscription_group_id=")
-		builder.WriteString(fmt.Sprintf("%v", *v))
-	}
-	builder.WriteString(", ")
-	if v := _m.SubscriptionDays; v != nil {
-		builder.WriteString("subscription_days=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
 	builder.WriteString(", ")

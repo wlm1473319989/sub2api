@@ -54,11 +54,6 @@ func IDLTE(id int64) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldLTE(FieldID, id))
 }
 
-// GroupID applies equality check predicate on the "group_id" field. It's identical to GroupIDEQ.
-func GroupID(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldEQ(FieldGroupID, v))
-}
-
 // Name applies equality check predicate on the "name" field. It's identical to NameEQ.
 func Name(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldName, v))
@@ -132,56 +127,6 @@ func CreatedAt(v time.Time) predicate.SubscriptionPlan {
 // UpdatedAt applies equality check predicate on the "updated_at" field. It's identical to UpdatedAtEQ.
 func UpdatedAt(v time.Time) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldUpdatedAt, v))
-}
-
-// GroupIDEQ applies the EQ predicate on the "group_id" field.
-func GroupIDEQ(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldEQ(FieldGroupID, v))
-}
-
-// GroupIDNEQ applies the NEQ predicate on the "group_id" field.
-func GroupIDNEQ(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldGroupID, v))
-}
-
-// GroupIDIn applies the In predicate on the "group_id" field.
-func GroupIDIn(vs ...int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldIn(FieldGroupID, vs...))
-}
-
-// GroupIDNotIn applies the NotIn predicate on the "group_id" field.
-func GroupIDNotIn(vs ...int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldGroupID, vs...))
-}
-
-// GroupIDGT applies the GT predicate on the "group_id" field.
-func GroupIDGT(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldGT(FieldGroupID, v))
-}
-
-// GroupIDGTE applies the GTE predicate on the "group_id" field.
-func GroupIDGTE(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldGTE(FieldGroupID, v))
-}
-
-// GroupIDLT applies the LT predicate on the "group_id" field.
-func GroupIDLT(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldLT(FieldGroupID, v))
-}
-
-// GroupIDLTE applies the LTE predicate on the "group_id" field.
-func GroupIDLTE(v int64) predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldLTE(FieldGroupID, v))
-}
-
-// GroupIDIsNil applies the IsNil predicate on the "group_id" field.
-func GroupIDIsNil() predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldGroupID))
-}
-
-// GroupIDNotNil applies the NotNil predicate on the "group_id" field.
-func GroupIDNotNil() predicate.SubscriptionPlan {
-	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldGroupID))
 }
 
 // NameEQ applies the EQ predicate on the "name" field.
