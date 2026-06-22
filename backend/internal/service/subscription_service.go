@@ -861,13 +861,13 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 // CheckUsageLimits 检查使用限额（返回错误如果超限）
 // 用于中间件的快速预检查，additionalCost 通常为 0
 func (s *SubscriptionService) CheckUsageLimits(ctx context.Context, sub *UserSubscription, group *Group, additionalCost float64) error {
-	if !sub.CheckDailyLimit(group, additionalCost) {
+	if !sub.CheckDailyLimit(additionalCost) {
 		return ErrDailyLimitExceeded
 	}
-	if !sub.CheckWeeklyLimit(group, additionalCost) {
+	if !sub.CheckWeeklyLimit(additionalCost) {
 		return ErrWeeklyLimitExceeded
 	}
-	if !sub.CheckMonthlyLimit(group, additionalCost) {
+	if !sub.CheckMonthlyLimit(additionalCost) {
 		return ErrMonthlyLimitExceeded
 	}
 	return nil
@@ -892,14 +892,17 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	//    实际的 DB 窗口重置由 DoWindowMaintenance 异步完成
 	if sub.NeedsDailyReset() {
 		sub.DailyUsageUSD = 0
+		sub.DailyUsedKnives = 0
 		needsMaintenance = true
 	}
 	if sub.NeedsWeeklyReset() {
 		sub.WeeklyUsageUSD = 0
+		sub.WeeklyUsedKnives = 0
 		needsMaintenance = true
 	}
 	if sub.NeedsMonthlyReset() {
 		sub.MonthlyUsageUSD = 0
+		sub.MonthlyUsedKnives = 0
 		needsMaintenance = true
 	}
 	if !sub.IsWindowActivated() {
@@ -907,13 +910,13 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 	}
 
 	// 3. 检查用量限额
-	if !sub.CheckDailyLimit(group, 0) {
+	if !sub.CheckDailyLimit(0) {
 		return needsMaintenance, ErrDailyLimitExceeded
 	}
-	if !sub.CheckWeeklyLimit(group, 0) {
+	if !sub.CheckWeeklyLimit(0) {
 		return needsMaintenance, ErrWeeklyLimitExceeded
 	}
-	if !sub.CheckMonthlyLimit(group, 0) {
+	if !sub.CheckMonthlyLimit(0) {
 		return needsMaintenance, ErrMonthlyLimitExceeded
 	}
 
@@ -1011,23 +1014,23 @@ func (s *SubscriptionService) GetSubscriptionProgress(ctx context.Context, subsc
 func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Group) *SubscriptionProgress {
 	progress := &SubscriptionProgress{
 		ID:            sub.ID,
-		GroupName:     group.Name,
+		GroupName:     resolveSubscriptionProgressGroupName(sub, group),
 		ExpiresAt:     sub.ExpiresAt,
 		ExpiresInDays: sub.DaysRemaining(),
 	}
 
 	// 日进度
-	if group.HasDailyLimit() && sub.DailyWindowStart != nil {
-		limit := *group.DailyLimitUSD
+	if sub.DailyQuotaKnives != nil && *sub.DailyQuotaKnives > 0 && sub.DailyWindowStart != nil {
+		limit := *sub.DailyQuotaKnives
 		resetsAt := sub.DailyWindowStart.Add(24 * time.Hour)
 		if dailyResetTime := sub.DailyResetTime(); dailyResetTime != nil {
 			resetsAt = *dailyResetTime
 		}
 		progress.Daily = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.DailyUsageUSD,
-			RemainingUSD:    limit - sub.DailyUsageUSD,
-			Percentage:      (sub.DailyUsageUSD / limit) * 100,
+			UsedUSD:         sub.DailyUsedKnives,
+			RemainingUSD:    limit - sub.DailyUsedKnives,
+			Percentage:      (sub.DailyUsedKnives / limit) * 100,
 			WindowStart:     *sub.DailyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
@@ -1044,14 +1047,14 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 周进度
-	if group.HasWeeklyLimit() && sub.WeeklyWindowStart != nil {
-		limit := *group.WeeklyLimitUSD
+	if sub.WeeklyQuotaKnives != nil && *sub.WeeklyQuotaKnives > 0 && sub.WeeklyWindowStart != nil {
+		limit := *sub.WeeklyQuotaKnives
 		resetsAt := sub.WeeklyWindowStart.Add(7 * 24 * time.Hour)
 		progress.Weekly = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.WeeklyUsageUSD,
-			RemainingUSD:    limit - sub.WeeklyUsageUSD,
-			Percentage:      (sub.WeeklyUsageUSD / limit) * 100,
+			UsedUSD:         sub.WeeklyUsedKnives,
+			RemainingUSD:    limit - sub.WeeklyUsedKnives,
+			Percentage:      (sub.WeeklyUsedKnives / limit) * 100,
 			WindowStart:     *sub.WeeklyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
@@ -1068,14 +1071,14 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	// 月进度
-	if group.HasMonthlyLimit() && sub.MonthlyWindowStart != nil {
-		limit := *group.MonthlyLimitUSD
+	if sub.MonthlyQuotaKnives != nil && *sub.MonthlyQuotaKnives > 0 && sub.MonthlyWindowStart != nil {
+		limit := *sub.MonthlyQuotaKnives
 		resetsAt := sub.MonthlyWindowStart.Add(30 * 24 * time.Hour)
 		progress.Monthly = &UsageWindowProgress{
 			LimitUSD:        limit,
-			UsedUSD:         sub.MonthlyUsageUSD,
-			RemainingUSD:    limit - sub.MonthlyUsageUSD,
-			Percentage:      (sub.MonthlyUsageUSD / limit) * 100,
+			UsedUSD:         sub.MonthlyUsedKnives,
+			RemainingUSD:    limit - sub.MonthlyUsedKnives,
+			Percentage:      (sub.MonthlyUsedKnives / limit) * 100,
 			WindowStart:     *sub.MonthlyWindowStart,
 			ResetsAt:        resetsAt,
 			ResetsInSeconds: int64(time.Until(resetsAt).Seconds()),
@@ -1092,6 +1095,16 @@ func (s *SubscriptionService) calculateProgress(sub *UserSubscription, group *Gr
 	}
 
 	return progress
+}
+
+func resolveSubscriptionProgressGroupName(sub *UserSubscription, group *Group) string {
+	if sub != nil && sub.PlanNameSnapshot != nil && strings.TrimSpace(*sub.PlanNameSnapshot) != "" {
+		return strings.TrimSpace(*sub.PlanNameSnapshot)
+	}
+	if group != nil {
+		return group.Name
+	}
+	return ""
 }
 
 // GetUserSubscriptionsWithProgress 获取用户所有订阅及进度

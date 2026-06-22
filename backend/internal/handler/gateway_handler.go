@@ -1387,28 +1387,30 @@ func (h *GatewayHandler) usageQuotaLimited(c *gin.Context, ctx context.Context, 
 // usageUnrestricted 处理 unrestricted 模式的响应（向后兼容）
 func (h *GatewayHandler) usageUnrestricted(c *gin.Context, ctx context.Context, apiKey *service.APIKey, subject middleware2.AuthSubject, usageData gin.H, dailyUsage any, modelStats any) {
 	// 订阅模式
-	if apiKey.Group != nil && apiKey.Group.IsSubscriptionType() {
+	if subscription, ok := middleware2.GetSubscriptionFromContext(c); ok && subscription != nil {
 		resp := gin.H{
 			"mode":     "unrestricted",
 			"isValid":  true,
-			"planName": apiKey.Group.Name,
+			"planName": subscriptionDisplayName(subscription, apiKey.Group),
 			"unit":     "USD",
 		}
 
-		// 订阅信息可能不在 context 中（/v1/usage 路径跳过了中间件的计费检查）
-		subscription, ok := middleware2.GetSubscriptionFromContext(c)
-		if ok {
-			remaining := h.calculateSubscriptionRemaining(apiKey.Group, subscription)
-			resp["remaining"] = remaining
-			resp["subscription"] = gin.H{
-				"daily_usage_usd":   subscription.DailyUsageUSD,
-				"weekly_usage_usd":  subscription.WeeklyUsageUSD,
-				"monthly_usage_usd": subscription.MonthlyUsageUSD,
-				"daily_limit_usd":   apiKey.Group.DailyLimitUSD,
-				"weekly_limit_usd":  apiKey.Group.WeeklyLimitUSD,
-				"monthly_limit_usd": apiKey.Group.MonthlyLimitUSD,
-				"expires_at":        subscription.ExpiresAt,
-			}
+		remaining := h.calculateSubscriptionRemaining(subscription)
+		resp["remaining"] = remaining
+		resp["subscription"] = gin.H{
+			"daily_usage_usd":      subscription.DailyUsageUSD,
+			"weekly_usage_usd":     subscription.WeeklyUsageUSD,
+			"monthly_usage_usd":    subscription.MonthlyUsageUSD,
+			"daily_limit_usd":      subscription.DailyQuotaKnives,
+			"weekly_limit_usd":     subscription.WeeklyQuotaKnives,
+			"monthly_limit_usd":    subscription.MonthlyQuotaKnives,
+			"daily_used_knives":    subscription.DailyUsedKnives,
+			"weekly_used_knives":   subscription.WeeklyUsedKnives,
+			"monthly_used_knives":  subscription.MonthlyUsedKnives,
+			"daily_quota_knives":   subscription.DailyQuotaKnives,
+			"weekly_quota_knives":  subscription.WeeklyQuotaKnives,
+			"monthly_quota_knives": subscription.MonthlyQuotaKnives,
+			"expires_at":           subscription.ExpiresAt,
 		}
 
 		if usageData != nil {
@@ -1455,12 +1457,12 @@ func (h *GatewayHandler) usageUnrestricted(c *gin.Context, ctx context.Context, 
 // 逻辑：
 // 1. 如果日/周/月任一限额达到100%，返回0
 // 2. 否则返回所有已配置周期中剩余额度的最小值
-func (h *GatewayHandler) calculateSubscriptionRemaining(group *service.Group, sub *service.UserSubscription) float64 {
+func (h *GatewayHandler) calculateSubscriptionRemaining(sub *service.UserSubscription) float64 {
 	var remainingValues []float64
 
 	// 检查日限额
-	if group.HasDailyLimit() {
-		remaining := *group.DailyLimitUSD - sub.DailyUsageUSD
+	if sub != nil && sub.DailyQuotaKnives != nil && *sub.DailyQuotaKnives > 0 {
+		remaining := *sub.DailyQuotaKnives - sub.DailyUsedKnives
 		if remaining <= 0 {
 			return 0
 		}
@@ -1468,8 +1470,8 @@ func (h *GatewayHandler) calculateSubscriptionRemaining(group *service.Group, su
 	}
 
 	// 检查周限额
-	if group.HasWeeklyLimit() {
-		remaining := *group.WeeklyLimitUSD - sub.WeeklyUsageUSD
+	if sub != nil && sub.WeeklyQuotaKnives != nil && *sub.WeeklyQuotaKnives > 0 {
+		remaining := *sub.WeeklyQuotaKnives - sub.WeeklyUsedKnives
 		if remaining <= 0 {
 			return 0
 		}
@@ -1477,8 +1479,8 @@ func (h *GatewayHandler) calculateSubscriptionRemaining(group *service.Group, su
 	}
 
 	// 检查月限额
-	if group.HasMonthlyLimit() {
-		remaining := *group.MonthlyLimitUSD - sub.MonthlyUsageUSD
+	if sub != nil && sub.MonthlyQuotaKnives != nil && *sub.MonthlyQuotaKnives > 0 {
+		remaining := *sub.MonthlyQuotaKnives - sub.MonthlyUsedKnives
 		if remaining <= 0 {
 			return 0
 		}
@@ -1498,6 +1500,16 @@ func (h *GatewayHandler) calculateSubscriptionRemaining(group *service.Group, su
 		}
 	}
 	return min
+}
+
+func subscriptionDisplayName(sub *service.UserSubscription, group *service.Group) string {
+	if sub != nil && sub.PlanNameSnapshot != nil && *sub.PlanNameSnapshot != "" {
+		return *sub.PlanNameSnapshot
+	}
+	if group != nil {
+		return group.Name
+	}
+	return "Subscription"
 }
 
 // handleConcurrencyError handles concurrency-related acquire errors.

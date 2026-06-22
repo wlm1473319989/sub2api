@@ -48,12 +48,12 @@ func TestCalculateProgress_DailyUsage(t *testing.T) {
 	sub := &UserSubscription{
 		ID:               1,
 		ExpiresAt:        now.Add(10 * 24 * time.Hour),
-		DailyUsageUSD:    3.0,
+		DailyUsedKnives:  3.0,
+		DailyQuotaKnives: ptrFloat64(10.0),
 		DailyWindowStart: ptrTime(dailyStart),
 	}
 	group := &Group{
-		Name:          "Pro",
-		DailyLimitUSD: ptrFloat64(10.0),
+		Name: "Pro",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -76,12 +76,12 @@ func TestCalculateProgress_DailyCardUsesExpiryAsDailyResetTime(t *testing.T) {
 		ID:               1,
 		StartsAt:         startsAt,
 		ExpiresAt:        expiresAt,
-		DailyUsageUSD:    3.0,
+		DailyUsedKnives:  3.0,
+		DailyQuotaKnives: ptrFloat64(10.0),
 		DailyWindowStart: ptrTime(dailyStart),
 	}
 	group := &Group{
-		Name:          "Daily",
-		DailyLimitUSD: ptrFloat64(10.0),
+		Name: "Daily",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -98,12 +98,12 @@ func TestCalculateProgress_WeeklyUsage(t *testing.T) {
 	sub := &UserSubscription{
 		ID:                1,
 		ExpiresAt:         now.Add(10 * 24 * time.Hour),
-		WeeklyUsageUSD:    25.0,
+		WeeklyUsedKnives:  25.0,
+		WeeklyQuotaKnives: ptrFloat64(50.0),
 		WeeklyWindowStart: ptrTime(weeklyStart),
 	}
 	group := &Group{
-		Name:           "Pro",
-		WeeklyLimitUSD: ptrFloat64(50.0),
+		Name: "Pro",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -123,12 +123,12 @@ func TestCalculateProgress_MonthlyUsage(t *testing.T) {
 	sub := &UserSubscription{
 		ID:                 1,
 		ExpiresAt:          now.Add(10 * 24 * time.Hour),
-		MonthlyUsageUSD:    80.0,
+		MonthlyUsedKnives:  80.0,
+		MonthlyQuotaKnives: ptrFloat64(100.0),
 		MonthlyWindowStart: ptrTime(monthlyStart),
 	}
 	group := &Group{
-		Name:            "Enterprise",
-		MonthlyLimitUSD: ptrFloat64(100.0),
+		Name: "Enterprise",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -147,12 +147,12 @@ func TestCalculateProgress_OverLimit_ClampedTo100Percent(t *testing.T) {
 	sub := &UserSubscription{
 		ID:               1,
 		ExpiresAt:        now.Add(10 * 24 * time.Hour),
-		DailyUsageUSD:    15.0, // 超过限额
+		DailyUsedKnives:  15.0, // 超过限额
+		DailyQuotaKnives: ptrFloat64(10.0),
 		DailyWindowStart: ptrTime(now.Add(-1 * time.Hour)),
 	}
 	group := &Group{
-		Name:          "Pro",
-		DailyLimitUSD: ptrFloat64(10.0),
+		Name: "Pro",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -168,15 +168,15 @@ func TestCalculateProgress_NoWindowStart_NoProgress(t *testing.T) {
 
 	// 有限额但无窗口起始时间（订阅未激活）
 	sub := &UserSubscription{
-		ID:             1,
-		ExpiresAt:      now.Add(10 * 24 * time.Hour),
-		DailyUsageUSD:  0,
-		WeeklyUsageUSD: 0,
+		ID:                1,
+		ExpiresAt:         now.Add(10 * 24 * time.Hour),
+		DailyUsedKnives:   0,
+		WeeklyUsedKnives:  0,
+		DailyQuotaKnives:  ptrFloat64(10.0),
+		WeeklyQuotaKnives: ptrFloat64(50.0),
 	}
 	group := &Group{
-		Name:           "Pro",
-		DailyLimitUSD:  ptrFloat64(10.0),
-		WeeklyLimitUSD: ptrFloat64(50.0),
+		Name: "Pro",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -192,18 +192,18 @@ func TestCalculateProgress_AllLimits(t *testing.T) {
 	sub := &UserSubscription{
 		ID:                 1,
 		ExpiresAt:          now.Add(10 * 24 * time.Hour),
-		DailyUsageUSD:      5.0,
-		WeeklyUsageUSD:     20.0,
-		MonthlyUsageUSD:    60.0,
+		DailyUsedKnives:    5.0,
+		WeeklyUsedKnives:   20.0,
+		MonthlyUsedKnives:  60.0,
+		DailyQuotaKnives:   ptrFloat64(10.0),
+		WeeklyQuotaKnives:  ptrFloat64(50.0),
+		MonthlyQuotaKnives: ptrFloat64(100.0),
 		DailyWindowStart:   ptrTime(now.Add(-6 * time.Hour)),
 		WeeklyWindowStart:  ptrTime(now.Add(-3 * 24 * time.Hour)),
 		MonthlyWindowStart: ptrTime(now.Add(-15 * 24 * time.Hour)),
 	}
 	group := &Group{
-		Name:            "Full",
-		DailyLimitUSD:   ptrFloat64(10.0),
-		WeeklyLimitUSD:  ptrFloat64(50.0),
-		MonthlyLimitUSD: ptrFloat64(100.0),
+		Name: "Full",
 	}
 
 	progress := svc.calculateProgress(sub, group)
@@ -239,12 +239,12 @@ func TestCalculateProgress_ResetsInSeconds_NotNegative(t *testing.T) {
 	sub := &UserSubscription{
 		ID:               1,
 		ExpiresAt:        time.Now().Add(10 * 24 * time.Hour),
-		DailyUsageUSD:    1.0,
+		DailyUsedKnives:  1.0,
+		DailyQuotaKnives: ptrFloat64(10.0),
 		DailyWindowStart: ptrTime(pastStart),
 	}
 	group := &Group{
-		Name:          "Test",
-		DailyLimitUSD: ptrFloat64(10.0),
+		Name: "Test",
 	}
 
 	progress := svc.calculateProgress(sub, group)

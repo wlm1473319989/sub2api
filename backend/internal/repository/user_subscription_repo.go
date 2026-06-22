@@ -378,6 +378,7 @@ func (r *userSubscriptionRepository) ResetDailyUsage(ctx context.Context, id int
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetDailyUsageUsd(0).
+		SetDailyUsedKnives(0).
 		SetDailyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
@@ -387,6 +388,7 @@ func (r *userSubscriptionRepository) ResetWeeklyUsage(ctx context.Context, id in
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetWeeklyUsageUsd(0).
+		SetWeeklyUsedKnives(0).
 		SetWeeklyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
@@ -396,46 +398,29 @@ func (r *userSubscriptionRepository) ResetMonthlyUsage(ctx context.Context, id i
 	client := clientFromContext(ctx, r.client)
 	_, err := client.UserSubscription.UpdateOneID(id).
 		SetMonthlyUsageUsd(0).
+		SetMonthlyUsedKnives(0).
 		SetMonthlyWindowStart(newWindowStart).
 		Save(ctx)
 	return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
 }
 
-// IncrementUsage 原子性地累加订阅用量。
-// 限额检查已在请求前由 BillingCacheService.CheckBillingEligibility 完成，
-// 此处仅负责记录实际消费，确保消费数据的完整性。
 func (r *userSubscriptionRepository) IncrementUsage(ctx context.Context, id int64, costUSD float64) error {
-	const updateSQL = `
-		UPDATE user_subscriptions us
-		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
-			updated_at = NOW()
-		FROM groups g
-		WHERE us.id = $2
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
-	`
-
 	client := clientFromContext(ctx, r.client)
-	result, err := client.ExecContext(ctx, updateSQL, costUSD, id)
+	result, err := client.UserSubscription.UpdateOneID(id).
+		AddDailyUsageUsd(costUSD).
+		AddWeeklyUsageUsd(costUSD).
+		AddMonthlyUsageUsd(costUSD).
+		AddDailyUsedKnives(costUSD).
+		AddWeeklyUsedKnives(costUSD).
+		AddMonthlyUsedKnives(costUSD).
+		Save(ctx)
 	if err != nil {
-		return err
+		return translatePersistenceError(err, service.ErrSubscriptionNotFound, nil)
 	}
-
-	affected, err := result.RowsAffected()
-	if err != nil {
-		return err
+	if result == nil {
+		return service.ErrSubscriptionNotFound
 	}
-
-	if affected > 0 {
-		return nil
-	}
-
-	// affected == 0：订阅不存在或已删除
-	return service.ErrSubscriptionNotFound
+	return nil
 }
 
 func (r *userSubscriptionRepository) BatchUpdateExpiredStatus(ctx context.Context) (int64, error) {

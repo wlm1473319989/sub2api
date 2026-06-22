@@ -147,17 +147,17 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 
 func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscriptionID int64, costUSD float64) error {
 	const updateSQL = `
-		UPDATE user_subscriptions us
+		UPDATE user_subscriptions
 		SET
-			daily_usage_usd = us.daily_usage_usd + $1,
-			weekly_usage_usd = us.weekly_usage_usd + $1,
-			monthly_usage_usd = us.monthly_usage_usd + $1,
+			daily_usage_usd = daily_usage_usd + $1,
+			weekly_usage_usd = weekly_usage_usd + $1,
+			monthly_usage_usd = monthly_usage_usd + $1,
+			daily_used_knives = daily_used_knives + $1,
+			weekly_used_knives = weekly_used_knives + $1,
+			monthly_used_knives = monthly_used_knives + $1,
 			updated_at = NOW()
-		FROM groups g
-		WHERE us.id = $2
-			AND us.deleted_at IS NULL
-			AND us.group_id = g.id
-			AND g.deleted_at IS NULL
+		WHERE id = $2
+			AND deleted_at IS NULL
 	`
 	res, err := tx.ExecContext(ctx, updateSQL, costUSD, subscriptionID)
 	if err != nil {

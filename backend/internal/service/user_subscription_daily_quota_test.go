@@ -163,6 +163,8 @@ func TestValidateAndCheckLimits_DailyCardDoesNotAllowSecondQuotaAfterMidnight(t 
 		ExpiresAt:        start.Add(24 * time.Hour),
 		DailyWindowStart: &dailyWindowStart,
 		DailyUsageUSD:    dailyLimit + 0.01,
+		DailyUsedKnives:  dailyLimit + 0.01,
+		DailyQuotaKnives: &dailyLimit,
 	}
 	group := &Group{
 		SubscriptionType: SubscriptionTypeSubscription,

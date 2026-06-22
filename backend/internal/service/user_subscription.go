@@ -126,30 +126,30 @@ func (s *UserSubscription) MonthlyResetTime() *time.Time {
 	return &t
 }
 
-func (s *UserSubscription) CheckDailyLimit(group *Group, additionalCost float64) bool {
-	if !group.HasDailyLimit() {
+func (s *UserSubscription) CheckDailyLimit(additionalCost float64) bool {
+	if s.DailyQuotaKnives == nil || *s.DailyQuotaKnives <= 0 {
 		return true
 	}
-	return s.DailyUsageUSD+additionalCost <= *group.DailyLimitUSD
+	return s.DailyUsedKnives+additionalCost <= *s.DailyQuotaKnives
 }
 
-func (s *UserSubscription) CheckWeeklyLimit(group *Group, additionalCost float64) bool {
-	if !group.HasWeeklyLimit() {
+func (s *UserSubscription) CheckWeeklyLimit(additionalCost float64) bool {
+	if s.WeeklyQuotaKnives == nil || *s.WeeklyQuotaKnives <= 0 {
 		return true
 	}
-	return s.WeeklyUsageUSD+additionalCost <= *group.WeeklyLimitUSD
+	return s.WeeklyUsedKnives+additionalCost <= *s.WeeklyQuotaKnives
 }
 
-func (s *UserSubscription) CheckMonthlyLimit(group *Group, additionalCost float64) bool {
-	if !group.HasMonthlyLimit() {
+func (s *UserSubscription) CheckMonthlyLimit(additionalCost float64) bool {
+	if s.MonthlyQuotaKnives == nil || *s.MonthlyQuotaKnives <= 0 {
 		return true
 	}
-	return s.MonthlyUsageUSD+additionalCost <= *group.MonthlyLimitUSD
+	return s.MonthlyUsedKnives+additionalCost <= *s.MonthlyQuotaKnives
 }
 
-func (s *UserSubscription) CheckAllLimits(group *Group, additionalCost float64) (daily, weekly, monthly bool) {
-	daily = s.CheckDailyLimit(group, additionalCost)
-	weekly = s.CheckWeeklyLimit(group, additionalCost)
-	monthly = s.CheckMonthlyLimit(group, additionalCost)
+func (s *UserSubscription) CheckAllLimits(additionalCost float64) (daily, weekly, monthly bool) {
+	daily = s.CheckDailyLimit(additionalCost)
+	weekly = s.CheckWeeklyLimit(additionalCost)
+	monthly = s.CheckMonthlyLimit(additionalCost)
 	return
 }

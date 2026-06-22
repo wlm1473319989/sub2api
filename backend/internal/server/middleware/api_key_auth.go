@@ -142,19 +142,16 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 			return
 		}
 
-		// ── 5. 加载订阅（订阅模式时尽量加载，用于预检优先尝试订阅放行） ───────────
+		// ── 5. 加载订阅（按用户唯一 active subscription 读取） ───────────────────
 
 		// skipBilling: /v1/usage 只需鉴权，跳过所有计费执行
 		skipBilling := c.Request.URL.Path == "/v1/usage"
 
 		var subscription *service.UserSubscription
-		isSubscriptionType := apiKey.Group != nil && apiKey.Group.IsSubscriptionType()
-
-		if isSubscriptionType && subscriptionService != nil {
-			sub, subErr := subscriptionService.GetActiveSubscription(
+		if subscriptionService != nil {
+			sub, subErr := subscriptionService.GetActiveSubscriptionByUser(
 				c.Request.Context(),
 				apiKey.User.ID,
-				apiKey.Group.ID,
 			)
 			if subErr != nil {
 				// 订阅缺失仅表示当前请求不能走订阅预检；若余额可用，后续仍可放行。
@@ -189,7 +186,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 
 			// 订阅模式预检：订阅可用或余额可用任一成立即可放行；两者都不可用才拒绝。
 			if subscription != nil {
-				needsMaintenance, validateErr := subscriptionService.ValidateAndCheckLimits(subscription, apiKey.Group)
+				needsMaintenance, validateErr := subscriptionService.ValidateAndCheckLimits(subscription, nil)
 				if validateErr != nil {
 					if apiKey.User.Balance > 0 {
 						subscription = nil
@@ -315,9 +312,6 @@ func validateAPIKeyGroupAllowed(apiKey *service.APIKey) bool {
 		return true
 	}
 	group := apiKey.Group
-	if group.IsSubscriptionType() {
-		return true
-	}
 	return apiKey.User.CanBindGroup(group.ID, group.IsExclusive)
 }
 
