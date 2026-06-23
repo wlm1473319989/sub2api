@@ -7,20 +7,25 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
 var (
-	ErrSubscriptionPlanRequired          = infraerrors.BadRequest("SUBSCRIPTION_PLAN_REQUIRED", "subscription plan is required")
-	ErrActiveSubscriptionExists          = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_EXISTS", "user already has an active subscription")
-	ErrActiveSubscriptionRequired        = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_REQUIRED", "user must have an active subscription")
-	ErrActiveSubscriptionSnapshotMissing = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_SNAPSHOT_MISSING", "active subscription snapshot is incomplete")
-	ErrSubscriptionPlanActionInvalid     = infraerrors.BadRequest("SUBSCRIPTION_PLAN_ACTION_INVALID", "active subscription only supports renewal or upgrade")
-	ErrRenewPlanMismatch                 = infraerrors.BadRequest("RENEW_PLAN_MISMATCH", "renewal plan must match the active subscription")
-	ErrUpgradePlanPriceInvalid           = infraerrors.BadRequest("UPGRADE_PLAN_PRICE_INVALID", "upgrade target plan price must be higher than the active subscription")
-	ErrRefundOrderRequired               = infraerrors.BadRequest("REFUND_ORDER_REQUIRED", "refund requires a subscription order id")
-	ErrRefundOrderNotLatest              = infraerrors.Conflict("REFUND_ORDER_NOT_LATEST", "refund order must be the latest order for the active subscription")
+	ErrSubscriptionPlanRequired           = infraerrors.BadRequest("SUBSCRIPTION_PLAN_REQUIRED", "subscription plan is required")
+	ErrActiveSubscriptionExists           = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_EXISTS", "user already has an active subscription")
+	ErrActiveSubscriptionRequired         = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_REQUIRED", "user must have an active subscription")
+	ErrActiveSubscriptionSnapshotMissing  = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_SNAPSHOT_MISSING", "active subscription snapshot is incomplete")
+	ErrSubscriptionPlanActionInvalid      = infraerrors.BadRequest("SUBSCRIPTION_PLAN_ACTION_INVALID", "active subscription only supports renewal or upgrade")
+	ErrRenewPlanMismatch                  = infraerrors.BadRequest("RENEW_PLAN_MISMATCH", "renewal plan must match the active subscription")
+	ErrUpgradePlanPriceInvalid            = infraerrors.BadRequest("UPGRADE_PLAN_PRICE_INVALID", "upgrade target plan price must be higher than the active subscription")
+	ErrRefundOrderRequired                = infraerrors.BadRequest("REFUND_ORDER_REQUIRED", "refund requires a subscription order id")
+	ErrRefundOrderNotLatest               = infraerrors.Conflict("REFUND_ORDER_NOT_LATEST", "refund order must be the latest order for the active subscription")
+	ErrSettlementHeadRequired             = infraerrors.Conflict("SETTLEMENT_HEAD_REQUIRED", "refund requires an effective subscription settlement head")
+	ErrSettlementHeadSubscriptionMismatch = infraerrors.Conflict("SETTLEMENT_HEAD_SUBSCRIPTION_MISMATCH", "active subscription does not match settlement head")
+	ErrSettlementRefundRequiresPayment    = infraerrors.BadRequest("SETTLEMENT_REFUND_REQUIRES_PAYMENT", "user purchase settlement refund must use payment refund")
+	ErrSettlementRefundSourceInvalid      = infraerrors.BadRequest("SETTLEMENT_REFUND_SOURCE_INVALID", "settlement source does not support direct refund")
 )
 
 type PurchaseNewPlanInput struct {
@@ -49,6 +54,12 @@ type RefundActivePlanInput struct {
 	Notes   string
 }
 
+type RefundActiveSettlementHeadInput struct {
+	UserID         int64
+	OperatorUserID int64
+	Notes          string
+}
+
 type UpgradeActivePlanResult struct {
 	Previous *UserSubscription
 	Current  *UserSubscription
@@ -57,6 +68,12 @@ type UpgradeActivePlanResult struct {
 type RefundActivePlanResult struct {
 	Subscription *UserSubscription
 	OrderID      int64
+}
+
+type RefundActiveSettlementHeadResult struct {
+	Subscription        *UserSubscription
+	SettlementOrder     *dbent.SubscriptionSettlementOrder
+	RefundResidualValue float64
 }
 
 func (s *SubscriptionService) PurchaseNewPlan(ctx context.Context, input *PurchaseNewPlanInput) (*UserSubscription, error) {
@@ -203,6 +220,101 @@ func (s *SubscriptionService) RefundActivePlan(ctx context.Context, input *Refun
 		Subscription: sub,
 		OrderID:      latestOrder.ID,
 	}, nil
+}
+
+func (s *SubscriptionService) RefundActiveSettlementHead(ctx context.Context, input *RefundActiveSettlementHeadInput) (*RefundActiveSettlementHeadResult, error) {
+	if input == nil || input.UserID <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_INPUT", "user id is required")
+	}
+	if s.entClient == nil {
+		return nil, infraerrors.InternalServer("SUBSCRIPTION_ENT_CLIENT_REQUIRED", "subscription refund requires database access")
+	}
+
+	now := time.Now()
+	settlementSvc := NewSettlementService(s.entClient)
+	var result *RefundActiveSettlementHeadResult
+	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
+		active, err := s.userSubRepo.GetActiveByUserID(txCtx, input.UserID)
+		if err != nil {
+			if errorsIsSubscriptionNotFound(err) {
+				return ErrActiveSubscriptionRequired
+			}
+			return err
+		}
+
+		head, err := settlementSvc.GetEffectiveHead(txCtx, input.UserID, now)
+		if err != nil {
+			return err
+		}
+		if head == nil {
+			return ErrSettlementHeadRequired
+		}
+		if head.ActionSource == domain.SettlementActionSourceUserPurchase {
+			return ErrSettlementRefundRequiresPayment
+		}
+		if head.ActionSource != domain.SettlementActionSourceExchangeCode &&
+			head.ActionSource != domain.SettlementActionSourceSubscriptionAssign {
+			return ErrSettlementRefundSourceInvalid
+		}
+		if head.AfterUserSubscriptionID == nil || *head.AfterUserSubscriptionID != active.ID {
+			return ErrSettlementHeadSubscriptionMismatch
+		}
+
+		refundAt := now
+		refundResidual := settlementResidualValue(active, settlementResidualBasisValue(head, active, head.AfterSettlementValue))
+		refunded := *active
+		refunded.Status = SubscriptionStatusRefunded
+		refunded.ExpiresAt = refundAt
+		refunded.Notes = appendSubscriptionNotes(active.Notes, input.Notes)
+		if err := s.userSubRepo.Update(txCtx, &refunded); err != nil {
+			return err
+		}
+
+		triggerRefID := copyInt64Pointer(head.TriggerRefID)
+		operatorUserID := input.OperatorUserID
+		if operatorUserID <= 0 {
+			operatorUserID = input.UserID
+		}
+		settlementOrder, err := settlementSvc.CreateSettlementOrder(txCtx, SettlementOrderInput{
+			UserID:                  input.UserID,
+			OperatorUserID:          operatorUserID,
+			ActionType:              domain.SettlementActionRefund,
+			ActionSource:            head.ActionSource,
+			TriggerRefType:          head.TriggerRefType,
+			TriggerRefID:            triggerRefID,
+			ActionNote:              input.Notes,
+			CarryInResidualValue:    refundResidual,
+			ActionDeltaValue:        -refundResidual,
+			AfterSettlementValue:    0,
+			RefundResidualValue:     &refundResidual,
+			WriteoffValue:           0,
+			AfterUserSubscription:   &refunded,
+			AfterSubscriptionStatus: domain.SubscriptionStatusRefunded,
+			EffectiveAt:             refundAt,
+		})
+		if err != nil {
+			return err
+		}
+
+		result = &RefundActiveSettlementHeadResult{
+			Subscription:        &refunded,
+			SettlementOrder:     settlementOrder,
+			RefundResidualValue: refundResidual,
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	s.invalidateSubscriptionCaches(input.UserID)
+	if result != nil && result.Subscription != nil {
+		subscription, err := s.userSubRepo.GetByID(ctx, result.Subscription.ID)
+		if err != nil {
+			return nil, err
+		}
+		result.Subscription = subscription
+	}
+	return result, nil
 }
 
 func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan, assignedBy int64, notes string, now time.Time) (*UserSubscription, error) {
