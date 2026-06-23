@@ -83,6 +83,33 @@ func (h *settlementServiceHarness) createSettlementHead(t *testing.T, user *dben
 	return order
 }
 
+func (h *settlementServiceHarness) createSettlementSubscription(t *testing.T, user *dbent.User, plan *dbent.SubscriptionPlan, startsAt, expiresAt time.Time) *UserSubscription {
+	t.Helper()
+	planID := plan.ID
+	planName := plan.Name
+	planPrice := plan.Price
+	sub, err := h.client.UserSubscription.Create().
+		SetUserID(user.ID).
+		SetPlanID(plan.ID).
+		SetPlanNameSnapshot(plan.Name).
+		SetPlanPriceSnapshot(plan.Price).
+		SetStartsAt(startsAt).
+		SetExpiresAt(expiresAt).
+		SetStatus(domain.SubscriptionStatusActive).
+		Save(h.ctx)
+	require.NoError(t, err)
+	return &UserSubscription{
+		ID:                sub.ID,
+		UserID:            user.ID,
+		PlanID:            &planID,
+		PlanNameSnapshot:  &planName,
+		PlanPriceSnapshot: &planPrice,
+		StartsAt:          startsAt,
+		ExpiresAt:         expiresAt,
+		Status:            domain.SubscriptionStatusActive,
+	}
+}
+
 func TestSettlementService_GetEffectiveHead(t *testing.T) {
 	h := newSettlementServiceHarness(t)
 	now := time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC)
@@ -147,4 +174,49 @@ func TestSettlementService_DeterminePlanActionRequiresHeadPriceForSwitch(t *test
 
 	_, err := h.svc.DeterminePlanAction(head, targetPlan)
 	require.ErrorIs(t, err, ErrSettlementHeadIncomplete)
+}
+
+func TestSettlementService_CreateSettlementOrderClosesPreviousHead(t *testing.T) {
+	h := newSettlementServiceHarness(t)
+	now := time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC)
+	user := h.createSettlementUser(t, "settlement-create@example.com")
+	plan := h.createSettlementPlan(t, "Starter", 100)
+	prev := h.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusActive, now.Add(24*time.Hour))
+	afterSub := h.createSettlementSubscription(t, user, plan, now, now.Add(30*24*time.Hour))
+	triggerRefID := int64(42)
+
+	created, err := h.svc.CreateSettlementOrder(h.ctx, SettlementOrderInput{
+		UserID:                  user.ID,
+		OperatorUserID:          user.ID,
+		ActionType:              domain.SettlementActionRenew,
+		ActionSource:            domain.SettlementActionSourceUserPurchase,
+		TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+		TriggerRefID:            &triggerRefID,
+		ActionNote:              "payment order 42",
+		CarryInResidualValue:    20,
+		ActionDeltaValue:        100,
+		AfterSettlementValue:    120,
+		AfterUserSubscription:   afterSub,
+		AfterPlan:               plan,
+		AfterSubscriptionStatus: domain.SubscriptionStatusActive,
+		EffectiveAt:             now,
+	})
+	require.NoError(t, err)
+	require.Equal(t, domain.SettlementStatusEffective, created.Status)
+	require.NotNil(t, created.PrevSettlementID)
+	require.Equal(t, prev.ID, *created.PrevSettlementID)
+	require.Equal(t, afterSub.ID, *created.AfterUserSubscriptionID)
+	require.Equal(t, plan.ID, *created.AfterPlanID)
+	require.InDelta(t, 20, created.CarryInResidualValue, 1e-9)
+	require.InDelta(t, 120, created.AfterSettlementValue, 1e-9)
+
+	reloadedPrev, err := h.client.SubscriptionSettlementOrder.Get(h.ctx, prev.ID)
+	require.NoError(t, err)
+	require.Equal(t, domain.SettlementStatusClosed, reloadedPrev.Status)
+	require.NotNil(t, reloadedPrev.ClosedAt)
+
+	head, err := h.svc.GetEffectiveHead(h.ctx, user.ID, now)
+	require.NoError(t, err)
+	require.NotNil(t, head)
+	require.Equal(t, created.ID, head.ID)
 }

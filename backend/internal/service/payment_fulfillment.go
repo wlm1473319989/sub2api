@@ -14,6 +14,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentauditlog"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
@@ -416,54 +417,193 @@ func (s *PaymentService) ExecuteSubscriptionFulfillment(ctx context.Context, oid
 }
 
 func (s *PaymentService) doSub(ctx context.Context, o *dbent.PaymentOrder) error {
-	// Idempotency: check audit log to see if subscription was already assigned.
-	// Prevents double-extension on retry after markCompleted fails.
 	if s.hasAuditLog(ctx, o.ID, "SUBSCRIPTION_SUCCESS") {
 		slog.Info("subscription already assigned for order, skipping", "orderID", o.ID, "subscriptionAction", derefString(o.SubscriptionAction))
 		return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
 	}
-
-	if err := s.doUserLevelSubscriptionFulfillment(ctx, o); err != nil {
-		return err
-	}
-	return s.markCompleted(ctx, o, "SUBSCRIPTION_SUCCESS")
+	return s.doUserLevelSubscriptionFulfillment(ctx, o)
 }
 
 func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context, o *dbent.PaymentOrder) error {
 	if o.PlanID == nil || o.SubscriptionAction == nil {
 		return infraerrors.BadRequest("INVALID_STATUS", "missing user-level subscription fulfillment fields")
 	}
-	plan, err := s.configService.GetPlan(ctx, *o.PlanID)
+	if s.entClient == nil || s.subscriptionSvc == nil {
+		return infraerrors.InternalServer("SUBSCRIPTION_FULFILLMENT_UNAVAILABLE", "subscription fulfillment requires database access")
+	}
+
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return fmt.Errorf("begin subscription fulfillment tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	txCtx := dbent.NewTxContext(ctx, tx)
+	txClient := tx.Client()
+	order, err := txClient.PaymentOrder.Query().
+		Where(paymentorder.IDEQ(o.ID), paymentorder.StatusEQ(OrderStatusRecharging)).
+		Only(txCtx)
+	if err != nil {
+		return fmt.Errorf("load subscription order in tx: %w", err)
+	}
+	if order.PlanID == nil || order.SubscriptionAction == nil {
+		return infraerrors.BadRequest("INVALID_STATUS", "missing user-level subscription fulfillment fields")
+	}
+	plan, err := txClient.SubscriptionPlan.Get(txCtx, *order.PlanID)
 	if err != nil {
 		return fmt.Errorf("get plan: %w", err)
 	}
-	orderNote := fmt.Sprintf("payment order %d", o.ID)
-	switch strings.TrimSpace(*o.SubscriptionAction) {
+	normalizePlanEntity(plan)
+
+	now := time.Now()
+	action := strings.TrimSpace(*order.SubscriptionAction)
+	var activeBefore *UserSubscription
+	switch action {
+	case subscriptionActionRenew, subscriptionActionUpgrade:
+		activeBefore, err = s.subscriptionSvc.GetActiveSubscriptionByUser(txCtx, order.UserID)
+		if err != nil {
+			return err
+		}
 	case subscriptionActionPurchase:
-		_, err = s.subscriptionSvc.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
-			UserID: o.UserID,
+		activeBefore = nil
+	default:
+		return infraerrors.BadRequest("INVALID_SUBSCRIPTION_ACTION", "unknown subscription action")
+	}
+
+	orderNote := fmt.Sprintf("payment order %d", order.ID)
+	var afterSub *UserSubscription
+	switch action {
+	case subscriptionActionPurchase:
+		afterSub, err = s.subscriptionSvc.PurchaseNewPlan(txCtx, &PurchaseNewPlanInput{
+			UserID: order.UserID,
 			Plan:   plan,
 			Notes:  orderNote,
 		})
 	case subscriptionActionRenew:
-		_, err = s.subscriptionSvc.RenewActivePlan(ctx, &RenewActivePlanInput{
-			UserID: o.UserID,
+		afterSub, err = s.subscriptionSvc.RenewActivePlan(txCtx, &RenewActivePlanInput{
+			UserID: order.UserID,
 			Plan:   plan,
 			Notes:  orderNote,
 		})
 	case subscriptionActionUpgrade:
-		_, err = s.subscriptionSvc.UpgradeActivePlan(ctx, &UpgradeActivePlanInput{
-			UserID:     o.UserID,
+		result, upgradeErr := s.subscriptionSvc.UpgradeActivePlan(txCtx, &UpgradeActivePlanInput{
+			UserID:     order.UserID,
 			TargetPlan: plan,
 			Notes:      orderNote,
 		})
-	default:
-		return infraerrors.BadRequest("INVALID_SUBSCRIPTION_ACTION", "unknown subscription action")
+		if upgradeErr != nil {
+			err = upgradeErr
+			break
+		}
+		afterSub = result.Current
 	}
 	if err != nil {
-		return fmt.Errorf("apply user-level subscription action %s: %w", *o.SubscriptionAction, err)
+		return fmt.Errorf("apply user-level subscription action %s: %w", action, err)
 	}
+	if afterSub == nil {
+		return infraerrors.InternalServer("SUBSCRIPTION_FULFILLMENT_UNAVAILABLE", "subscription fulfillment did not produce a resulting subscription")
+	}
+
+	if s.settlementSvc != nil {
+		carryIn := 0.0
+		if activeBefore != nil {
+			currentPrice := plan.Price
+			if activeBefore.PlanPriceSnapshot != nil {
+				currentPrice = *activeBefore.PlanPriceSnapshot
+			}
+			carryIn = settlementResidualValue(activeBefore, currentPrice)
+		}
+		actionDelta := order.Amount
+		afterSettlement := plan.Price
+		writeoff := 0.0
+		if action == subscriptionActionRenew {
+			afterSettlement = carryIn + actionDelta
+		}
+		if action == subscriptionActionPurchase {
+			carryIn = 0
+			afterSettlement = actionDelta
+		}
+		if action == subscriptionActionUpgrade && carryIn > plan.Price {
+			writeoff = carryIn - plan.Price
+		}
+
+		if _, err = s.settlementSvc.CreateSettlementOrder(txCtx, SettlementOrderInput{
+			UserID:                  order.UserID,
+			OperatorUserID:          order.UserID,
+			ActionType:              settlementActionTypeForSubscription(action),
+			ActionSource:            domain.SettlementActionSourceUserPurchase,
+			TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+			TriggerRefID:            &order.ID,
+			ActionNote:              orderNote,
+			CarryInResidualValue:    carryIn,
+			ActionDeltaValue:        actionDelta,
+			AfterSettlementValue:    afterSettlement,
+			WriteoffValue:           writeoff,
+			AfterUserSubscription:   afterSub,
+			AfterPlan:               plan,
+			AfterSubscriptionStatus: afterSub.Status,
+			EffectiveAt:             now,
+		}); err != nil {
+			return err
+		}
+	}
+
+	if _, err = txClient.PaymentOrder.UpdateOneID(order.ID).
+		SetStatus(OrderStatusCompleted).
+		SetCompletedAt(now).
+		Save(txCtx); err != nil {
+		return fmt.Errorf("mark subscription order completed: %w", err)
+	}
+	if err := tx.Commit(); err != nil {
+		return fmt.Errorf("commit subscription fulfillment tx: %w", err)
+	}
+
+	s.writeAuditLog(ctx, order.ID, "SUBSCRIPTION_SUCCESS", "system", map[string]any{
+		"rechargeCode":   order.RechargeCode,
+		"creditedAmount": order.Amount,
+		"payAmount":      order.PayAmount,
+	})
+	s.dispatchPaymentFulfillmentNotification(order, "SUBSCRIPTION_SUCCESS")
 	return nil
+}
+
+func settlementActionTypeForSubscription(action string) string {
+	switch strings.TrimSpace(action) {
+	case subscriptionActionPurchase:
+		return domain.SettlementActionPurchase
+	case subscriptionActionRenew:
+		return domain.SettlementActionRenew
+	case subscriptionActionUpgrade:
+		return domain.SettlementActionUpgrade
+	default:
+		return action
+	}
+}
+
+func settlementResidualValue(active *UserSubscription, currentPrice float64) float64 {
+	if active == nil || currentPrice <= 0 {
+		return 0
+	}
+	breakdown, err := CalculateUpgradeResidual(UpgradeResidualInput{
+		Now:                time.Now(),
+		StartsAt:           active.StartsAt,
+		ExpiresAt:          active.ExpiresAt,
+		PlanPrice:          currentPrice,
+		TargetPlanPrice:    currentPrice,
+		DailyQuotaKnives:   active.DailyQuotaKnives,
+		WeeklyQuotaKnives:  active.WeeklyQuotaKnives,
+		MonthlyQuotaKnives: active.MonthlyQuotaKnives,
+		DailyUsedKnives:    active.DailyUsedKnives,
+		WeeklyUsedKnives:   active.WeeklyUsedKnives,
+		MonthlyUsedKnives:  active.MonthlyUsedKnives,
+		DailyWindowStart:   active.DailyWindowStart,
+		WeeklyWindowStart:  active.WeeklyWindowStart,
+		MonthlyWindowStart: active.MonthlyWindowStart,
+	})
+	if err != nil {
+		return 0
+	}
+	return breakdown.ResidualValue
 }
 
 func derefString(v *string) string {
