@@ -39,6 +39,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -86,6 +87,7 @@ const (
 	TypeSecuritySecret                = "SecuritySecret"
 	TypeSetting                       = "Setting"
 	TypeSubscriptionPlan              = "SubscriptionPlan"
+	TypeSubscriptionSettlementOrder   = "SubscriptionSettlementOrder"
 	TypeTLSFingerprintProfile         = "TLSFingerprintProfile"
 	TypeUsageCleanupTask              = "UsageCleanupTask"
 	TypeUsageLog                      = "UsageLog"
@@ -31173,35 +31175,38 @@ func (m *SettingMutation) ResetEdge(name string) error {
 // SubscriptionPlanMutation represents an operation that mutates the SubscriptionPlan nodes in the graph.
 type SubscriptionPlanMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *int64
-	name                    *string
-	description             *string
-	price                   *float64
-	addprice                *float64
-	original_price          *float64
-	addoriginal_price       *float64
-	validity_days           *int
-	addvalidity_days        *int
-	validity_unit           *string
-	daily_quota_knives      *float64
-	adddaily_quota_knives   *float64
-	weekly_quota_knives     *float64
-	addweekly_quota_knives  *float64
-	monthly_quota_knives    *float64
-	addmonthly_quota_knives *float64
-	features                *string
-	product_name            *string
-	for_sale                *bool
-	sort_order              *int
-	addsort_order           *int
-	created_at              *time.Time
-	updated_at              *time.Time
-	clearedFields           map[string]struct{}
-	done                    bool
-	oldValue                func(context.Context) (*SubscriptionPlan, error)
-	predicates              []predicate.SubscriptionPlan
+	op                       Op
+	typ                      string
+	id                       *int64
+	name                     *string
+	description              *string
+	price                    *float64
+	addprice                 *float64
+	original_price           *float64
+	addoriginal_price        *float64
+	validity_days            *int
+	addvalidity_days         *int
+	validity_unit            *string
+	daily_quota_knives       *float64
+	adddaily_quota_knives    *float64
+	weekly_quota_knives      *float64
+	addweekly_quota_knives   *float64
+	monthly_quota_knives     *float64
+	addmonthly_quota_knives  *float64
+	features                 *string
+	product_name             *string
+	for_sale                 *bool
+	sort_order               *int
+	addsort_order            *int
+	created_at               *time.Time
+	updated_at               *time.Time
+	clearedFields            map[string]struct{}
+	settlement_orders        map[int64]struct{}
+	removedsettlement_orders map[int64]struct{}
+	clearedsettlement_orders bool
+	done                     bool
+	oldValue                 func(context.Context) (*SubscriptionPlan, error)
+	predicates               []predicate.SubscriptionPlan
 }
 
 var _ ent.Mutation = (*SubscriptionPlanMutation)(nil)
@@ -32038,6 +32043,60 @@ func (m *SubscriptionPlanMutation) ResetUpdatedAt() {
 	m.updated_at = nil
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by ids.
+func (m *SubscriptionPlanMutation) AddSettlementOrderIDs(ids ...int64) {
+	if m.settlement_orders == nil {
+		m.settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSettlementOrders clears the "settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *SubscriptionPlanMutation) ClearSettlementOrders() {
+	m.clearedsettlement_orders = true
+}
+
+// SettlementOrdersCleared reports if the "settlement_orders" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *SubscriptionPlanMutation) SettlementOrdersCleared() bool {
+	return m.clearedsettlement_orders
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (m *SubscriptionPlanMutation) RemoveSettlementOrderIDs(ids ...int64) {
+	if m.removedsettlement_orders == nil {
+		m.removedsettlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.settlement_orders, ids[i])
+		m.removedsettlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSettlementOrders returns the removed IDs of the "settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *SubscriptionPlanMutation) RemovedSettlementOrdersIDs() (ids []int64) {
+	for id := range m.removedsettlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SettlementOrdersIDs returns the "settlement_orders" edge IDs in the mutation.
+func (m *SubscriptionPlanMutation) SettlementOrdersIDs() (ids []int64) {
+	for id := range m.settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSettlementOrders resets all changes to the "settlement_orders" edge.
+func (m *SubscriptionPlanMutation) ResetSettlementOrders() {
+	m.settlement_orders = nil
+	m.clearedsettlement_orders = false
+	m.removedsettlement_orders = nil
+}
+
 // Where appends a list predicates to the SubscriptionPlanMutation builder.
 func (m *SubscriptionPlanMutation) Where(ps ...predicate.SubscriptionPlan) {
 	m.predicates = append(m.predicates, ps...)
@@ -32523,50 +32582,2982 @@ func (m *SubscriptionPlanMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *SubscriptionPlanMutation) AddedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.settlement_orders != nil {
+		edges = append(edges, subscriptionplan.EdgeSettlementOrders)
+	}
 	return edges
 }
 
 // AddedIDs returns all IDs (to other nodes) that were added for the given edge
 // name in this mutation.
 func (m *SubscriptionPlanMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case subscriptionplan.EdgeSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.settlement_orders))
+		for id := range m.settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *SubscriptionPlanMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.removedsettlement_orders != nil {
+		edges = append(edges, subscriptionplan.EdgeSettlementOrders)
+	}
 	return edges
 }
 
 // RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
 // the given name in this mutation.
 func (m *SubscriptionPlanMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case subscriptionplan.EdgeSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.removedsettlement_orders))
+		for id := range m.removedsettlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *SubscriptionPlanMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 0)
+	edges := make([]string, 0, 1)
+	if m.clearedsettlement_orders {
+		edges = append(edges, subscriptionplan.EdgeSettlementOrders)
+	}
 	return edges
 }
 
 // EdgeCleared returns a boolean which indicates if the edge with the given name
 // was cleared in this mutation.
 func (m *SubscriptionPlanMutation) EdgeCleared(name string) bool {
+	switch name {
+	case subscriptionplan.EdgeSettlementOrders:
+		return m.clearedsettlement_orders
+	}
 	return false
 }
 
 // ClearEdge clears the value of the edge with the given name. It returns an error
 // if that edge is not defined in the schema.
 func (m *SubscriptionPlanMutation) ClearEdge(name string) error {
+	switch name {
+	}
 	return fmt.Errorf("unknown SubscriptionPlan unique edge %s", name)
 }
 
 // ResetEdge resets all changes to the edge with the given name in this mutation.
 // It returns an error if the edge is not defined in the schema.
 func (m *SubscriptionPlanMutation) ResetEdge(name string) error {
+	switch name {
+	case subscriptionplan.EdgeSettlementOrders:
+		m.ResetSettlementOrders()
+		return nil
+	}
 	return fmt.Errorf("unknown SubscriptionPlan edge %s", name)
+}
+
+// SubscriptionSettlementOrderMutation represents an operation that mutates the SubscriptionSettlementOrder nodes in the graph.
+type SubscriptionSettlementOrderMutation struct {
+	config
+	op                                     Op
+	typ                                    string
+	id                                     *int64
+	action_type                            *string
+	action_source                          *string
+	status                                 *string
+	trigger_ref_type                       *string
+	trigger_ref_id                         *int64
+	addtrigger_ref_id                      *int64
+	action_note                            *string
+	carry_in_residual_value                *float64
+	addcarry_in_residual_value             *float64
+	action_delta_value                     *float64
+	addaction_delta_value                  *float64
+	after_settlement_value                 *float64
+	addafter_settlement_value              *float64
+	refund_residual_value                  *float64
+	addrefund_residual_value               *float64
+	writeoff_value                         *float64
+	addwriteoff_value                      *float64
+	after_plan_name_snapshot               *string
+	after_plan_price_snapshot              *float64
+	addafter_plan_price_snapshot           *float64
+	after_validity_days_snapshot           *int
+	addafter_validity_days_snapshot        *int
+	after_validity_unit_snapshot           *string
+	after_starts_at                        *time.Time
+	after_expires_at                       *time.Time
+	after_daily_quota_knives_snapshot      *float64
+	addafter_daily_quota_knives_snapshot   *float64
+	after_weekly_quota_knives_snapshot     *float64
+	addafter_weekly_quota_knives_snapshot  *float64
+	after_monthly_quota_knives_snapshot    *float64
+	addafter_monthly_quota_knives_snapshot *float64
+	after_subscription_status              *string
+	effective_at                           *time.Time
+	closed_at                              *time.Time
+	created_at                             *time.Time
+	updated_at                             *time.Time
+	clearedFields                          map[string]struct{}
+	user                                   *int64
+	cleareduser                            bool
+	operator                               *int64
+	clearedoperator                        bool
+	next                                   *int64
+	clearednext                            bool
+	previous                               *int64
+	clearedprevious                        bool
+	after_user_subscription                *int64
+	clearedafter_user_subscription         bool
+	after_plan                             *int64
+	clearedafter_plan                      bool
+	done                                   bool
+	oldValue                               func(context.Context) (*SubscriptionSettlementOrder, error)
+	predicates                             []predicate.SubscriptionSettlementOrder
+}
+
+var _ ent.Mutation = (*SubscriptionSettlementOrderMutation)(nil)
+
+// subscriptionsettlementorderOption allows management of the mutation configuration using functional options.
+type subscriptionsettlementorderOption func(*SubscriptionSettlementOrderMutation)
+
+// newSubscriptionSettlementOrderMutation creates new mutation for the SubscriptionSettlementOrder entity.
+func newSubscriptionSettlementOrderMutation(c config, op Op, opts ...subscriptionsettlementorderOption) *SubscriptionSettlementOrderMutation {
+	m := &SubscriptionSettlementOrderMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeSubscriptionSettlementOrder,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withSubscriptionSettlementOrderID sets the ID field of the mutation.
+func withSubscriptionSettlementOrderID(id int64) subscriptionsettlementorderOption {
+	return func(m *SubscriptionSettlementOrderMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *SubscriptionSettlementOrder
+		)
+		m.oldValue = func(ctx context.Context) (*SubscriptionSettlementOrder, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().SubscriptionSettlementOrder.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withSubscriptionSettlementOrder sets the old SubscriptionSettlementOrder of the mutation.
+func withSubscriptionSettlementOrder(node *SubscriptionSettlementOrder) subscriptionsettlementorderOption {
+	return func(m *SubscriptionSettlementOrderMutation) {
+		m.oldValue = func(context.Context) (*SubscriptionSettlementOrder, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m SubscriptionSettlementOrderMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m SubscriptionSettlementOrderMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *SubscriptionSettlementOrderMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *SubscriptionSettlementOrderMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().SubscriptionSettlementOrder.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetUserID sets the "user_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetUserID(i int64) {
+	m.user = &i
+}
+
+// UserID returns the value of the "user_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) UserID() (r int64, exists bool) {
+	v := m.user
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUserID returns the old "user_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUserID: %w", err)
+	}
+	return oldValue.UserID, nil
+}
+
+// ResetUserID resets all changes to the "user_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetUserID() {
+	m.user = nil
+}
+
+// SetPrevSettlementID sets the "prev_settlement_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetPrevSettlementID(i int64) {
+	m.next = &i
+}
+
+// PrevSettlementID returns the value of the "prev_settlement_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) PrevSettlementID() (r int64, exists bool) {
+	v := m.next
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPrevSettlementID returns the old "prev_settlement_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldPrevSettlementID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPrevSettlementID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPrevSettlementID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPrevSettlementID: %w", err)
+	}
+	return oldValue.PrevSettlementID, nil
+}
+
+// ClearPrevSettlementID clears the value of the "prev_settlement_id" field.
+func (m *SubscriptionSettlementOrderMutation) ClearPrevSettlementID() {
+	m.next = nil
+	m.clearedFields[subscriptionsettlementorder.FieldPrevSettlementID] = struct{}{}
+}
+
+// PrevSettlementIDCleared returns if the "prev_settlement_id" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) PrevSettlementIDCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldPrevSettlementID]
+	return ok
+}
+
+// ResetPrevSettlementID resets all changes to the "prev_settlement_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetPrevSettlementID() {
+	m.next = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldPrevSettlementID)
+}
+
+// SetActionType sets the "action_type" field.
+func (m *SubscriptionSettlementOrderMutation) SetActionType(s string) {
+	m.action_type = &s
+}
+
+// ActionType returns the value of the "action_type" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) ActionType() (r string, exists bool) {
+	v := m.action_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionType returns the old "action_type" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldActionType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionType: %w", err)
+	}
+	return oldValue.ActionType, nil
+}
+
+// ResetActionType resets all changes to the "action_type" field.
+func (m *SubscriptionSettlementOrderMutation) ResetActionType() {
+	m.action_type = nil
+}
+
+// SetActionSource sets the "action_source" field.
+func (m *SubscriptionSettlementOrderMutation) SetActionSource(s string) {
+	m.action_source = &s
+}
+
+// ActionSource returns the value of the "action_source" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) ActionSource() (r string, exists bool) {
+	v := m.action_source
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionSource returns the old "action_source" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldActionSource(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionSource is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionSource requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionSource: %w", err)
+	}
+	return oldValue.ActionSource, nil
+}
+
+// ResetActionSource resets all changes to the "action_source" field.
+func (m *SubscriptionSettlementOrderMutation) ResetActionSource() {
+	m.action_source = nil
+}
+
+// SetStatus sets the "status" field.
+func (m *SubscriptionSettlementOrderMutation) SetStatus(s string) {
+	m.status = &s
+}
+
+// Status returns the value of the "status" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) Status() (r string, exists bool) {
+	v := m.status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStatus returns the old "status" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStatus: %w", err)
+	}
+	return oldValue.Status, nil
+}
+
+// ResetStatus resets all changes to the "status" field.
+func (m *SubscriptionSettlementOrderMutation) ResetStatus() {
+	m.status = nil
+}
+
+// SetTriggerRefType sets the "trigger_ref_type" field.
+func (m *SubscriptionSettlementOrderMutation) SetTriggerRefType(s string) {
+	m.trigger_ref_type = &s
+}
+
+// TriggerRefType returns the value of the "trigger_ref_type" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) TriggerRefType() (r string, exists bool) {
+	v := m.trigger_ref_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggerRefType returns the old "trigger_ref_type" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldTriggerRefType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggerRefType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggerRefType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggerRefType: %w", err)
+	}
+	return oldValue.TriggerRefType, nil
+}
+
+// ResetTriggerRefType resets all changes to the "trigger_ref_type" field.
+func (m *SubscriptionSettlementOrderMutation) ResetTriggerRefType() {
+	m.trigger_ref_type = nil
+}
+
+// SetTriggerRefID sets the "trigger_ref_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetTriggerRefID(i int64) {
+	m.trigger_ref_id = &i
+	m.addtrigger_ref_id = nil
+}
+
+// TriggerRefID returns the value of the "trigger_ref_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) TriggerRefID() (r int64, exists bool) {
+	v := m.trigger_ref_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldTriggerRefID returns the old "trigger_ref_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldTriggerRefID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldTriggerRefID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldTriggerRefID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldTriggerRefID: %w", err)
+	}
+	return oldValue.TriggerRefID, nil
+}
+
+// AddTriggerRefID adds i to the "trigger_ref_id" field.
+func (m *SubscriptionSettlementOrderMutation) AddTriggerRefID(i int64) {
+	if m.addtrigger_ref_id != nil {
+		*m.addtrigger_ref_id += i
+	} else {
+		m.addtrigger_ref_id = &i
+	}
+}
+
+// AddedTriggerRefID returns the value that was added to the "trigger_ref_id" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedTriggerRefID() (r int64, exists bool) {
+	v := m.addtrigger_ref_id
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearTriggerRefID clears the value of the "trigger_ref_id" field.
+func (m *SubscriptionSettlementOrderMutation) ClearTriggerRefID() {
+	m.trigger_ref_id = nil
+	m.addtrigger_ref_id = nil
+	m.clearedFields[subscriptionsettlementorder.FieldTriggerRefID] = struct{}{}
+}
+
+// TriggerRefIDCleared returns if the "trigger_ref_id" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) TriggerRefIDCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldTriggerRefID]
+	return ok
+}
+
+// ResetTriggerRefID resets all changes to the "trigger_ref_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetTriggerRefID() {
+	m.trigger_ref_id = nil
+	m.addtrigger_ref_id = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldTriggerRefID)
+}
+
+// SetOperatorUserID sets the "operator_user_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetOperatorUserID(i int64) {
+	m.operator = &i
+}
+
+// OperatorUserID returns the value of the "operator_user_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) OperatorUserID() (r int64, exists bool) {
+	v := m.operator
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldOperatorUserID returns the old "operator_user_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldOperatorUserID(ctx context.Context) (v int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldOperatorUserID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldOperatorUserID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldOperatorUserID: %w", err)
+	}
+	return oldValue.OperatorUserID, nil
+}
+
+// ResetOperatorUserID resets all changes to the "operator_user_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetOperatorUserID() {
+	m.operator = nil
+}
+
+// SetActionNote sets the "action_note" field.
+func (m *SubscriptionSettlementOrderMutation) SetActionNote(s string) {
+	m.action_note = &s
+}
+
+// ActionNote returns the value of the "action_note" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) ActionNote() (r string, exists bool) {
+	v := m.action_note
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionNote returns the old "action_note" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldActionNote(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionNote is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionNote requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionNote: %w", err)
+	}
+	return oldValue.ActionNote, nil
+}
+
+// ClearActionNote clears the value of the "action_note" field.
+func (m *SubscriptionSettlementOrderMutation) ClearActionNote() {
+	m.action_note = nil
+	m.clearedFields[subscriptionsettlementorder.FieldActionNote] = struct{}{}
+}
+
+// ActionNoteCleared returns if the "action_note" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) ActionNoteCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldActionNote]
+	return ok
+}
+
+// ResetActionNote resets all changes to the "action_note" field.
+func (m *SubscriptionSettlementOrderMutation) ResetActionNote() {
+	m.action_note = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldActionNote)
+}
+
+// SetCarryInResidualValue sets the "carry_in_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) SetCarryInResidualValue(f float64) {
+	m.carry_in_residual_value = &f
+	m.addcarry_in_residual_value = nil
+}
+
+// CarryInResidualValue returns the value of the "carry_in_residual_value" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) CarryInResidualValue() (r float64, exists bool) {
+	v := m.carry_in_residual_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCarryInResidualValue returns the old "carry_in_residual_value" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldCarryInResidualValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCarryInResidualValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCarryInResidualValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCarryInResidualValue: %w", err)
+	}
+	return oldValue.CarryInResidualValue, nil
+}
+
+// AddCarryInResidualValue adds f to the "carry_in_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) AddCarryInResidualValue(f float64) {
+	if m.addcarry_in_residual_value != nil {
+		*m.addcarry_in_residual_value += f
+	} else {
+		m.addcarry_in_residual_value = &f
+	}
+}
+
+// AddedCarryInResidualValue returns the value that was added to the "carry_in_residual_value" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedCarryInResidualValue() (r float64, exists bool) {
+	v := m.addcarry_in_residual_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetCarryInResidualValue resets all changes to the "carry_in_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) ResetCarryInResidualValue() {
+	m.carry_in_residual_value = nil
+	m.addcarry_in_residual_value = nil
+}
+
+// SetActionDeltaValue sets the "action_delta_value" field.
+func (m *SubscriptionSettlementOrderMutation) SetActionDeltaValue(f float64) {
+	m.action_delta_value = &f
+	m.addaction_delta_value = nil
+}
+
+// ActionDeltaValue returns the value of the "action_delta_value" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) ActionDeltaValue() (r float64, exists bool) {
+	v := m.action_delta_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldActionDeltaValue returns the old "action_delta_value" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldActionDeltaValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldActionDeltaValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldActionDeltaValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldActionDeltaValue: %w", err)
+	}
+	return oldValue.ActionDeltaValue, nil
+}
+
+// AddActionDeltaValue adds f to the "action_delta_value" field.
+func (m *SubscriptionSettlementOrderMutation) AddActionDeltaValue(f float64) {
+	if m.addaction_delta_value != nil {
+		*m.addaction_delta_value += f
+	} else {
+		m.addaction_delta_value = &f
+	}
+}
+
+// AddedActionDeltaValue returns the value that was added to the "action_delta_value" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedActionDeltaValue() (r float64, exists bool) {
+	v := m.addaction_delta_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetActionDeltaValue resets all changes to the "action_delta_value" field.
+func (m *SubscriptionSettlementOrderMutation) ResetActionDeltaValue() {
+	m.action_delta_value = nil
+	m.addaction_delta_value = nil
+}
+
+// SetAfterSettlementValue sets the "after_settlement_value" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterSettlementValue(f float64) {
+	m.after_settlement_value = &f
+	m.addafter_settlement_value = nil
+}
+
+// AfterSettlementValue returns the value of the "after_settlement_value" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterSettlementValue() (r float64, exists bool) {
+	v := m.after_settlement_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterSettlementValue returns the old "after_settlement_value" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterSettlementValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterSettlementValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterSettlementValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterSettlementValue: %w", err)
+	}
+	return oldValue.AfterSettlementValue, nil
+}
+
+// AddAfterSettlementValue adds f to the "after_settlement_value" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterSettlementValue(f float64) {
+	if m.addafter_settlement_value != nil {
+		*m.addafter_settlement_value += f
+	} else {
+		m.addafter_settlement_value = &f
+	}
+}
+
+// AddedAfterSettlementValue returns the value that was added to the "after_settlement_value" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterSettlementValue() (r float64, exists bool) {
+	v := m.addafter_settlement_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetAfterSettlementValue resets all changes to the "after_settlement_value" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterSettlementValue() {
+	m.after_settlement_value = nil
+	m.addafter_settlement_value = nil
+}
+
+// SetRefundResidualValue sets the "refund_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) SetRefundResidualValue(f float64) {
+	m.refund_residual_value = &f
+	m.addrefund_residual_value = nil
+}
+
+// RefundResidualValue returns the value of the "refund_residual_value" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) RefundResidualValue() (r float64, exists bool) {
+	v := m.refund_residual_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundResidualValue returns the old "refund_residual_value" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldRefundResidualValue(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundResidualValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundResidualValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundResidualValue: %w", err)
+	}
+	return oldValue.RefundResidualValue, nil
+}
+
+// AddRefundResidualValue adds f to the "refund_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) AddRefundResidualValue(f float64) {
+	if m.addrefund_residual_value != nil {
+		*m.addrefund_residual_value += f
+	} else {
+		m.addrefund_residual_value = &f
+	}
+}
+
+// AddedRefundResidualValue returns the value that was added to the "refund_residual_value" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedRefundResidualValue() (r float64, exists bool) {
+	v := m.addrefund_residual_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearRefundResidualValue clears the value of the "refund_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) ClearRefundResidualValue() {
+	m.refund_residual_value = nil
+	m.addrefund_residual_value = nil
+	m.clearedFields[subscriptionsettlementorder.FieldRefundResidualValue] = struct{}{}
+}
+
+// RefundResidualValueCleared returns if the "refund_residual_value" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) RefundResidualValueCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldRefundResidualValue]
+	return ok
+}
+
+// ResetRefundResidualValue resets all changes to the "refund_residual_value" field.
+func (m *SubscriptionSettlementOrderMutation) ResetRefundResidualValue() {
+	m.refund_residual_value = nil
+	m.addrefund_residual_value = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldRefundResidualValue)
+}
+
+// SetWriteoffValue sets the "writeoff_value" field.
+func (m *SubscriptionSettlementOrderMutation) SetWriteoffValue(f float64) {
+	m.writeoff_value = &f
+	m.addwriteoff_value = nil
+}
+
+// WriteoffValue returns the value of the "writeoff_value" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) WriteoffValue() (r float64, exists bool) {
+	v := m.writeoff_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldWriteoffValue returns the old "writeoff_value" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldWriteoffValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldWriteoffValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldWriteoffValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldWriteoffValue: %w", err)
+	}
+	return oldValue.WriteoffValue, nil
+}
+
+// AddWriteoffValue adds f to the "writeoff_value" field.
+func (m *SubscriptionSettlementOrderMutation) AddWriteoffValue(f float64) {
+	if m.addwriteoff_value != nil {
+		*m.addwriteoff_value += f
+	} else {
+		m.addwriteoff_value = &f
+	}
+}
+
+// AddedWriteoffValue returns the value that was added to the "writeoff_value" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedWriteoffValue() (r float64, exists bool) {
+	v := m.addwriteoff_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetWriteoffValue resets all changes to the "writeoff_value" field.
+func (m *SubscriptionSettlementOrderMutation) ResetWriteoffValue() {
+	m.writeoff_value = nil
+	m.addwriteoff_value = nil
+}
+
+// SetAfterUserSubscriptionID sets the "after_user_subscription_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterUserSubscriptionID(i int64) {
+	m.after_user_subscription = &i
+}
+
+// AfterUserSubscriptionID returns the value of the "after_user_subscription_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterUserSubscriptionID() (r int64, exists bool) {
+	v := m.after_user_subscription
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterUserSubscriptionID returns the old "after_user_subscription_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterUserSubscriptionID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterUserSubscriptionID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterUserSubscriptionID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterUserSubscriptionID: %w", err)
+	}
+	return oldValue.AfterUserSubscriptionID, nil
+}
+
+// ClearAfterUserSubscriptionID clears the value of the "after_user_subscription_id" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterUserSubscriptionID() {
+	m.after_user_subscription = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterUserSubscriptionID] = struct{}{}
+}
+
+// AfterUserSubscriptionIDCleared returns if the "after_user_subscription_id" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterUserSubscriptionIDCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterUserSubscriptionID]
+	return ok
+}
+
+// ResetAfterUserSubscriptionID resets all changes to the "after_user_subscription_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterUserSubscriptionID() {
+	m.after_user_subscription = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterUserSubscriptionID)
+}
+
+// SetAfterPlanID sets the "after_plan_id" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterPlanID(i int64) {
+	m.after_plan = &i
+}
+
+// AfterPlanID returns the value of the "after_plan_id" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanID() (r int64, exists bool) {
+	v := m.after_plan
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterPlanID returns the old "after_plan_id" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterPlanID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterPlanID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterPlanID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterPlanID: %w", err)
+	}
+	return oldValue.AfterPlanID, nil
+}
+
+// ClearAfterPlanID clears the value of the "after_plan_id" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterPlanID() {
+	m.after_plan = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterPlanID] = struct{}{}
+}
+
+// AfterPlanIDCleared returns if the "after_plan_id" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanIDCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterPlanID]
+	return ok
+}
+
+// ResetAfterPlanID resets all changes to the "after_plan_id" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterPlanID() {
+	m.after_plan = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterPlanID)
+}
+
+// SetAfterPlanNameSnapshot sets the "after_plan_name_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterPlanNameSnapshot(s string) {
+	m.after_plan_name_snapshot = &s
+}
+
+// AfterPlanNameSnapshot returns the value of the "after_plan_name_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanNameSnapshot() (r string, exists bool) {
+	v := m.after_plan_name_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterPlanNameSnapshot returns the old "after_plan_name_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterPlanNameSnapshot(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterPlanNameSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterPlanNameSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterPlanNameSnapshot: %w", err)
+	}
+	return oldValue.AfterPlanNameSnapshot, nil
+}
+
+// ClearAfterPlanNameSnapshot clears the value of the "after_plan_name_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterPlanNameSnapshot() {
+	m.after_plan_name_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterPlanNameSnapshot] = struct{}{}
+}
+
+// AfterPlanNameSnapshotCleared returns if the "after_plan_name_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanNameSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterPlanNameSnapshot]
+	return ok
+}
+
+// ResetAfterPlanNameSnapshot resets all changes to the "after_plan_name_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterPlanNameSnapshot() {
+	m.after_plan_name_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterPlanNameSnapshot)
+}
+
+// SetAfterPlanPriceSnapshot sets the "after_plan_price_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterPlanPriceSnapshot(f float64) {
+	m.after_plan_price_snapshot = &f
+	m.addafter_plan_price_snapshot = nil
+}
+
+// AfterPlanPriceSnapshot returns the value of the "after_plan_price_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanPriceSnapshot() (r float64, exists bool) {
+	v := m.after_plan_price_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterPlanPriceSnapshot returns the old "after_plan_price_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterPlanPriceSnapshot(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterPlanPriceSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterPlanPriceSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterPlanPriceSnapshot: %w", err)
+	}
+	return oldValue.AfterPlanPriceSnapshot, nil
+}
+
+// AddAfterPlanPriceSnapshot adds f to the "after_plan_price_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterPlanPriceSnapshot(f float64) {
+	if m.addafter_plan_price_snapshot != nil {
+		*m.addafter_plan_price_snapshot += f
+	} else {
+		m.addafter_plan_price_snapshot = &f
+	}
+}
+
+// AddedAfterPlanPriceSnapshot returns the value that was added to the "after_plan_price_snapshot" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterPlanPriceSnapshot() (r float64, exists bool) {
+	v := m.addafter_plan_price_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAfterPlanPriceSnapshot clears the value of the "after_plan_price_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterPlanPriceSnapshot() {
+	m.after_plan_price_snapshot = nil
+	m.addafter_plan_price_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterPlanPriceSnapshot] = struct{}{}
+}
+
+// AfterPlanPriceSnapshotCleared returns if the "after_plan_price_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanPriceSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterPlanPriceSnapshot]
+	return ok
+}
+
+// ResetAfterPlanPriceSnapshot resets all changes to the "after_plan_price_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterPlanPriceSnapshot() {
+	m.after_plan_price_snapshot = nil
+	m.addafter_plan_price_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterPlanPriceSnapshot)
+}
+
+// SetAfterValidityDaysSnapshot sets the "after_validity_days_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterValidityDaysSnapshot(i int) {
+	m.after_validity_days_snapshot = &i
+	m.addafter_validity_days_snapshot = nil
+}
+
+// AfterValidityDaysSnapshot returns the value of the "after_validity_days_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterValidityDaysSnapshot() (r int, exists bool) {
+	v := m.after_validity_days_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterValidityDaysSnapshot returns the old "after_validity_days_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterValidityDaysSnapshot(ctx context.Context) (v *int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterValidityDaysSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterValidityDaysSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterValidityDaysSnapshot: %w", err)
+	}
+	return oldValue.AfterValidityDaysSnapshot, nil
+}
+
+// AddAfterValidityDaysSnapshot adds i to the "after_validity_days_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterValidityDaysSnapshot(i int) {
+	if m.addafter_validity_days_snapshot != nil {
+		*m.addafter_validity_days_snapshot += i
+	} else {
+		m.addafter_validity_days_snapshot = &i
+	}
+}
+
+// AddedAfterValidityDaysSnapshot returns the value that was added to the "after_validity_days_snapshot" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterValidityDaysSnapshot() (r int, exists bool) {
+	v := m.addafter_validity_days_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAfterValidityDaysSnapshot clears the value of the "after_validity_days_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterValidityDaysSnapshot() {
+	m.after_validity_days_snapshot = nil
+	m.addafter_validity_days_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterValidityDaysSnapshot] = struct{}{}
+}
+
+// AfterValidityDaysSnapshotCleared returns if the "after_validity_days_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterValidityDaysSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterValidityDaysSnapshot]
+	return ok
+}
+
+// ResetAfterValidityDaysSnapshot resets all changes to the "after_validity_days_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterValidityDaysSnapshot() {
+	m.after_validity_days_snapshot = nil
+	m.addafter_validity_days_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterValidityDaysSnapshot)
+}
+
+// SetAfterValidityUnitSnapshot sets the "after_validity_unit_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterValidityUnitSnapshot(s string) {
+	m.after_validity_unit_snapshot = &s
+}
+
+// AfterValidityUnitSnapshot returns the value of the "after_validity_unit_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterValidityUnitSnapshot() (r string, exists bool) {
+	v := m.after_validity_unit_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterValidityUnitSnapshot returns the old "after_validity_unit_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterValidityUnitSnapshot(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterValidityUnitSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterValidityUnitSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterValidityUnitSnapshot: %w", err)
+	}
+	return oldValue.AfterValidityUnitSnapshot, nil
+}
+
+// ClearAfterValidityUnitSnapshot clears the value of the "after_validity_unit_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterValidityUnitSnapshot() {
+	m.after_validity_unit_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterValidityUnitSnapshot] = struct{}{}
+}
+
+// AfterValidityUnitSnapshotCleared returns if the "after_validity_unit_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterValidityUnitSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterValidityUnitSnapshot]
+	return ok
+}
+
+// ResetAfterValidityUnitSnapshot resets all changes to the "after_validity_unit_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterValidityUnitSnapshot() {
+	m.after_validity_unit_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterValidityUnitSnapshot)
+}
+
+// SetAfterStartsAt sets the "after_starts_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterStartsAt(t time.Time) {
+	m.after_starts_at = &t
+}
+
+// AfterStartsAt returns the value of the "after_starts_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterStartsAt() (r time.Time, exists bool) {
+	v := m.after_starts_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterStartsAt returns the old "after_starts_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterStartsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterStartsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterStartsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterStartsAt: %w", err)
+	}
+	return oldValue.AfterStartsAt, nil
+}
+
+// ClearAfterStartsAt clears the value of the "after_starts_at" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterStartsAt() {
+	m.after_starts_at = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterStartsAt] = struct{}{}
+}
+
+// AfterStartsAtCleared returns if the "after_starts_at" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterStartsAtCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterStartsAt]
+	return ok
+}
+
+// ResetAfterStartsAt resets all changes to the "after_starts_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterStartsAt() {
+	m.after_starts_at = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterStartsAt)
+}
+
+// SetAfterExpiresAt sets the "after_expires_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterExpiresAt(t time.Time) {
+	m.after_expires_at = &t
+}
+
+// AfterExpiresAt returns the value of the "after_expires_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterExpiresAt() (r time.Time, exists bool) {
+	v := m.after_expires_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterExpiresAt returns the old "after_expires_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterExpiresAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterExpiresAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterExpiresAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterExpiresAt: %w", err)
+	}
+	return oldValue.AfterExpiresAt, nil
+}
+
+// ClearAfterExpiresAt clears the value of the "after_expires_at" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterExpiresAt() {
+	m.after_expires_at = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterExpiresAt] = struct{}{}
+}
+
+// AfterExpiresAtCleared returns if the "after_expires_at" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterExpiresAtCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterExpiresAt]
+	return ok
+}
+
+// ResetAfterExpiresAt resets all changes to the "after_expires_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterExpiresAt() {
+	m.after_expires_at = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterExpiresAt)
+}
+
+// SetAfterDailyQuotaKnivesSnapshot sets the "after_daily_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterDailyQuotaKnivesSnapshot(f float64) {
+	m.after_daily_quota_knives_snapshot = &f
+	m.addafter_daily_quota_knives_snapshot = nil
+}
+
+// AfterDailyQuotaKnivesSnapshot returns the value of the "after_daily_quota_knives_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterDailyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.after_daily_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterDailyQuotaKnivesSnapshot returns the old "after_daily_quota_knives_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterDailyQuotaKnivesSnapshot(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterDailyQuotaKnivesSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterDailyQuotaKnivesSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterDailyQuotaKnivesSnapshot: %w", err)
+	}
+	return oldValue.AfterDailyQuotaKnivesSnapshot, nil
+}
+
+// AddAfterDailyQuotaKnivesSnapshot adds f to the "after_daily_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterDailyQuotaKnivesSnapshot(f float64) {
+	if m.addafter_daily_quota_knives_snapshot != nil {
+		*m.addafter_daily_quota_knives_snapshot += f
+	} else {
+		m.addafter_daily_quota_knives_snapshot = &f
+	}
+}
+
+// AddedAfterDailyQuotaKnivesSnapshot returns the value that was added to the "after_daily_quota_knives_snapshot" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterDailyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.addafter_daily_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAfterDailyQuotaKnivesSnapshot clears the value of the "after_daily_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterDailyQuotaKnivesSnapshot() {
+	m.after_daily_quota_knives_snapshot = nil
+	m.addafter_daily_quota_knives_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot] = struct{}{}
+}
+
+// AfterDailyQuotaKnivesSnapshotCleared returns if the "after_daily_quota_knives_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterDailyQuotaKnivesSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot]
+	return ok
+}
+
+// ResetAfterDailyQuotaKnivesSnapshot resets all changes to the "after_daily_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterDailyQuotaKnivesSnapshot() {
+	m.after_daily_quota_knives_snapshot = nil
+	m.addafter_daily_quota_knives_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot)
+}
+
+// SetAfterWeeklyQuotaKnivesSnapshot sets the "after_weekly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterWeeklyQuotaKnivesSnapshot(f float64) {
+	m.after_weekly_quota_knives_snapshot = &f
+	m.addafter_weekly_quota_knives_snapshot = nil
+}
+
+// AfterWeeklyQuotaKnivesSnapshot returns the value of the "after_weekly_quota_knives_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterWeeklyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.after_weekly_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterWeeklyQuotaKnivesSnapshot returns the old "after_weekly_quota_knives_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterWeeklyQuotaKnivesSnapshot(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterWeeklyQuotaKnivesSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterWeeklyQuotaKnivesSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterWeeklyQuotaKnivesSnapshot: %w", err)
+	}
+	return oldValue.AfterWeeklyQuotaKnivesSnapshot, nil
+}
+
+// AddAfterWeeklyQuotaKnivesSnapshot adds f to the "after_weekly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterWeeklyQuotaKnivesSnapshot(f float64) {
+	if m.addafter_weekly_quota_knives_snapshot != nil {
+		*m.addafter_weekly_quota_knives_snapshot += f
+	} else {
+		m.addafter_weekly_quota_knives_snapshot = &f
+	}
+}
+
+// AddedAfterWeeklyQuotaKnivesSnapshot returns the value that was added to the "after_weekly_quota_knives_snapshot" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterWeeklyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.addafter_weekly_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAfterWeeklyQuotaKnivesSnapshot clears the value of the "after_weekly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterWeeklyQuotaKnivesSnapshot() {
+	m.after_weekly_quota_knives_snapshot = nil
+	m.addafter_weekly_quota_knives_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot] = struct{}{}
+}
+
+// AfterWeeklyQuotaKnivesSnapshotCleared returns if the "after_weekly_quota_knives_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterWeeklyQuotaKnivesSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot]
+	return ok
+}
+
+// ResetAfterWeeklyQuotaKnivesSnapshot resets all changes to the "after_weekly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterWeeklyQuotaKnivesSnapshot() {
+	m.after_weekly_quota_knives_snapshot = nil
+	m.addafter_weekly_quota_knives_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot)
+}
+
+// SetAfterMonthlyQuotaKnivesSnapshot sets the "after_monthly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterMonthlyQuotaKnivesSnapshot(f float64) {
+	m.after_monthly_quota_knives_snapshot = &f
+	m.addafter_monthly_quota_knives_snapshot = nil
+}
+
+// AfterMonthlyQuotaKnivesSnapshot returns the value of the "after_monthly_quota_knives_snapshot" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterMonthlyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.after_monthly_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterMonthlyQuotaKnivesSnapshot returns the old "after_monthly_quota_knives_snapshot" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterMonthlyQuotaKnivesSnapshot(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterMonthlyQuotaKnivesSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterMonthlyQuotaKnivesSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterMonthlyQuotaKnivesSnapshot: %w", err)
+	}
+	return oldValue.AfterMonthlyQuotaKnivesSnapshot, nil
+}
+
+// AddAfterMonthlyQuotaKnivesSnapshot adds f to the "after_monthly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) AddAfterMonthlyQuotaKnivesSnapshot(f float64) {
+	if m.addafter_monthly_quota_knives_snapshot != nil {
+		*m.addafter_monthly_quota_knives_snapshot += f
+	} else {
+		m.addafter_monthly_quota_knives_snapshot = &f
+	}
+}
+
+// AddedAfterMonthlyQuotaKnivesSnapshot returns the value that was added to the "after_monthly_quota_knives_snapshot" field in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedAfterMonthlyQuotaKnivesSnapshot() (r float64, exists bool) {
+	v := m.addafter_monthly_quota_knives_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearAfterMonthlyQuotaKnivesSnapshot clears the value of the "after_monthly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterMonthlyQuotaKnivesSnapshot() {
+	m.after_monthly_quota_knives_snapshot = nil
+	m.addafter_monthly_quota_knives_snapshot = nil
+	m.clearedFields[subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot] = struct{}{}
+}
+
+// AfterMonthlyQuotaKnivesSnapshotCleared returns if the "after_monthly_quota_knives_snapshot" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterMonthlyQuotaKnivesSnapshotCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot]
+	return ok
+}
+
+// ResetAfterMonthlyQuotaKnivesSnapshot resets all changes to the "after_monthly_quota_knives_snapshot" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterMonthlyQuotaKnivesSnapshot() {
+	m.after_monthly_quota_knives_snapshot = nil
+	m.addafter_monthly_quota_knives_snapshot = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot)
+}
+
+// SetAfterSubscriptionStatus sets the "after_subscription_status" field.
+func (m *SubscriptionSettlementOrderMutation) SetAfterSubscriptionStatus(s string) {
+	m.after_subscription_status = &s
+}
+
+// AfterSubscriptionStatus returns the value of the "after_subscription_status" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) AfterSubscriptionStatus() (r string, exists bool) {
+	v := m.after_subscription_status
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldAfterSubscriptionStatus returns the old "after_subscription_status" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldAfterSubscriptionStatus(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldAfterSubscriptionStatus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldAfterSubscriptionStatus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldAfterSubscriptionStatus: %w", err)
+	}
+	return oldValue.AfterSubscriptionStatus, nil
+}
+
+// ResetAfterSubscriptionStatus resets all changes to the "after_subscription_status" field.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterSubscriptionStatus() {
+	m.after_subscription_status = nil
+}
+
+// SetEffectiveAt sets the "effective_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetEffectiveAt(t time.Time) {
+	m.effective_at = &t
+}
+
+// EffectiveAt returns the value of the "effective_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) EffectiveAt() (r time.Time, exists bool) {
+	v := m.effective_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEffectiveAt returns the old "effective_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldEffectiveAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEffectiveAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEffectiveAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEffectiveAt: %w", err)
+	}
+	return oldValue.EffectiveAt, nil
+}
+
+// ResetEffectiveAt resets all changes to the "effective_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetEffectiveAt() {
+	m.effective_at = nil
+}
+
+// SetClosedAt sets the "closed_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetClosedAt(t time.Time) {
+	m.closed_at = &t
+}
+
+// ClosedAt returns the value of the "closed_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) ClosedAt() (r time.Time, exists bool) {
+	v := m.closed_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldClosedAt returns the old "closed_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldClosedAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldClosedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldClosedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldClosedAt: %w", err)
+	}
+	return oldValue.ClosedAt, nil
+}
+
+// ClearClosedAt clears the value of the "closed_at" field.
+func (m *SubscriptionSettlementOrderMutation) ClearClosedAt() {
+	m.closed_at = nil
+	m.clearedFields[subscriptionsettlementorder.FieldClosedAt] = struct{}{}
+}
+
+// ClosedAtCleared returns if the "closed_at" field was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) ClosedAtCleared() bool {
+	_, ok := m.clearedFields[subscriptionsettlementorder.FieldClosedAt]
+	return ok
+}
+
+// ResetClosedAt resets all changes to the "closed_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetClosedAt() {
+	m.closed_at = nil
+	delete(m.clearedFields, subscriptionsettlementorder.FieldClosedAt)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *SubscriptionSettlementOrderMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *SubscriptionSettlementOrderMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the SubscriptionSettlementOrder entity.
+// If the SubscriptionSettlementOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionSettlementOrderMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *SubscriptionSettlementOrderMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// ClearUser clears the "user" edge to the User entity.
+func (m *SubscriptionSettlementOrderMutation) ClearUser() {
+	m.cleareduser = true
+	m.clearedFields[subscriptionsettlementorder.FieldUserID] = struct{}{}
+}
+
+// UserCleared reports if the "user" edge to the User entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) UserCleared() bool {
+	return m.cleareduser
+}
+
+// UserIDs returns the "user" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// UserID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) UserIDs() (ids []int64) {
+	if id := m.user; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetUser resets all changes to the "user" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetUser() {
+	m.user = nil
+	m.cleareduser = false
+}
+
+// SetOperatorID sets the "operator" edge to the User entity by id.
+func (m *SubscriptionSettlementOrderMutation) SetOperatorID(id int64) {
+	m.operator = &id
+}
+
+// ClearOperator clears the "operator" edge to the User entity.
+func (m *SubscriptionSettlementOrderMutation) ClearOperator() {
+	m.clearedoperator = true
+	m.clearedFields[subscriptionsettlementorder.FieldOperatorUserID] = struct{}{}
+}
+
+// OperatorCleared reports if the "operator" edge to the User entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) OperatorCleared() bool {
+	return m.clearedoperator
+}
+
+// OperatorID returns the "operator" edge ID in the mutation.
+func (m *SubscriptionSettlementOrderMutation) OperatorID() (id int64, exists bool) {
+	if m.operator != nil {
+		return *m.operator, true
+	}
+	return
+}
+
+// OperatorIDs returns the "operator" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// OperatorID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) OperatorIDs() (ids []int64) {
+	if id := m.operator; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetOperator resets all changes to the "operator" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetOperator() {
+	m.operator = nil
+	m.clearedoperator = false
+}
+
+// SetNextID sets the "next" edge to the SubscriptionSettlementOrder entity by id.
+func (m *SubscriptionSettlementOrderMutation) SetNextID(id int64) {
+	m.next = &id
+}
+
+// ClearNext clears the "next" edge to the SubscriptionSettlementOrder entity.
+func (m *SubscriptionSettlementOrderMutation) ClearNext() {
+	m.clearednext = true
+	m.clearedFields[subscriptionsettlementorder.FieldPrevSettlementID] = struct{}{}
+}
+
+// NextCleared reports if the "next" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) NextCleared() bool {
+	return m.PrevSettlementIDCleared() || m.clearednext
+}
+
+// NextID returns the "next" edge ID in the mutation.
+func (m *SubscriptionSettlementOrderMutation) NextID() (id int64, exists bool) {
+	if m.next != nil {
+		return *m.next, true
+	}
+	return
+}
+
+// NextIDs returns the "next" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// NextID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) NextIDs() (ids []int64) {
+	if id := m.next; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetNext resets all changes to the "next" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetNext() {
+	m.next = nil
+	m.clearednext = false
+}
+
+// SetPreviousID sets the "previous" edge to the SubscriptionSettlementOrder entity by id.
+func (m *SubscriptionSettlementOrderMutation) SetPreviousID(id int64) {
+	m.previous = &id
+}
+
+// ClearPrevious clears the "previous" edge to the SubscriptionSettlementOrder entity.
+func (m *SubscriptionSettlementOrderMutation) ClearPrevious() {
+	m.clearedprevious = true
+	m.clearedFields[subscriptionsettlementorder.FieldPrevSettlementID] = struct{}{}
+}
+
+// PreviousCleared reports if the "previous" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) PreviousCleared() bool {
+	return m.PrevSettlementIDCleared() || m.clearedprevious
+}
+
+// PreviousID returns the "previous" edge ID in the mutation.
+func (m *SubscriptionSettlementOrderMutation) PreviousID() (id int64, exists bool) {
+	if m.previous != nil {
+		return *m.previous, true
+	}
+	return
+}
+
+// PreviousIDs returns the "previous" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// PreviousID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) PreviousIDs() (ids []int64) {
+	if id := m.previous; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetPrevious resets all changes to the "previous" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetPrevious() {
+	m.previous = nil
+	m.clearedprevious = false
+}
+
+// ClearAfterUserSubscription clears the "after_user_subscription" edge to the UserSubscription entity.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterUserSubscription() {
+	m.clearedafter_user_subscription = true
+	m.clearedFields[subscriptionsettlementorder.FieldAfterUserSubscriptionID] = struct{}{}
+}
+
+// AfterUserSubscriptionCleared reports if the "after_user_subscription" edge to the UserSubscription entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) AfterUserSubscriptionCleared() bool {
+	return m.AfterUserSubscriptionIDCleared() || m.clearedafter_user_subscription
+}
+
+// AfterUserSubscriptionIDs returns the "after_user_subscription" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AfterUserSubscriptionID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) AfterUserSubscriptionIDs() (ids []int64) {
+	if id := m.after_user_subscription; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAfterUserSubscription resets all changes to the "after_user_subscription" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterUserSubscription() {
+	m.after_user_subscription = nil
+	m.clearedafter_user_subscription = false
+}
+
+// ClearAfterPlan clears the "after_plan" edge to the SubscriptionPlan entity.
+func (m *SubscriptionSettlementOrderMutation) ClearAfterPlan() {
+	m.clearedafter_plan = true
+	m.clearedFields[subscriptionsettlementorder.FieldAfterPlanID] = struct{}{}
+}
+
+// AfterPlanCleared reports if the "after_plan" edge to the SubscriptionPlan entity was cleared.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanCleared() bool {
+	return m.AfterPlanIDCleared() || m.clearedafter_plan
+}
+
+// AfterPlanIDs returns the "after_plan" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// AfterPlanID instead. It exists only for internal usage by the builders.
+func (m *SubscriptionSettlementOrderMutation) AfterPlanIDs() (ids []int64) {
+	if id := m.after_plan; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetAfterPlan resets all changes to the "after_plan" edge.
+func (m *SubscriptionSettlementOrderMutation) ResetAfterPlan() {
+	m.after_plan = nil
+	m.clearedafter_plan = false
+}
+
+// Where appends a list predicates to the SubscriptionSettlementOrderMutation builder.
+func (m *SubscriptionSettlementOrderMutation) Where(ps ...predicate.SubscriptionSettlementOrder) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the SubscriptionSettlementOrderMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *SubscriptionSettlementOrderMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.SubscriptionSettlementOrder, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *SubscriptionSettlementOrderMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *SubscriptionSettlementOrderMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (SubscriptionSettlementOrder).
+func (m *SubscriptionSettlementOrderMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *SubscriptionSettlementOrderMutation) Fields() []string {
+	fields := make([]string, 0, 30)
+	if m.user != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldUserID)
+	}
+	if m.next != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldPrevSettlementID)
+	}
+	if m.action_type != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldActionType)
+	}
+	if m.action_source != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldActionSource)
+	}
+	if m.status != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldStatus)
+	}
+	if m.trigger_ref_type != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldTriggerRefType)
+	}
+	if m.trigger_ref_id != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldTriggerRefID)
+	}
+	if m.operator != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldOperatorUserID)
+	}
+	if m.action_note != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldActionNote)
+	}
+	if m.carry_in_residual_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldCarryInResidualValue)
+	}
+	if m.action_delta_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldActionDeltaValue)
+	}
+	if m.after_settlement_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterSettlementValue)
+	}
+	if m.refund_residual_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldRefundResidualValue)
+	}
+	if m.writeoff_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldWriteoffValue)
+	}
+	if m.after_user_subscription != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterUserSubscriptionID)
+	}
+	if m.after_plan != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanID)
+	}
+	if m.after_plan_name_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanNameSnapshot)
+	}
+	if m.after_plan_price_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanPriceSnapshot)
+	}
+	if m.after_validity_days_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterValidityDaysSnapshot)
+	}
+	if m.after_validity_unit_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterValidityUnitSnapshot)
+	}
+	if m.after_starts_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterStartsAt)
+	}
+	if m.after_expires_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterExpiresAt)
+	}
+	if m.after_daily_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot)
+	}
+	if m.after_weekly_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot)
+	}
+	if m.after_monthly_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot)
+	}
+	if m.after_subscription_status != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterSubscriptionStatus)
+	}
+	if m.effective_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldEffectiveAt)
+	}
+	if m.closed_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldClosedAt)
+	}
+	if m.created_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *SubscriptionSettlementOrderMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case subscriptionsettlementorder.FieldUserID:
+		return m.UserID()
+	case subscriptionsettlementorder.FieldPrevSettlementID:
+		return m.PrevSettlementID()
+	case subscriptionsettlementorder.FieldActionType:
+		return m.ActionType()
+	case subscriptionsettlementorder.FieldActionSource:
+		return m.ActionSource()
+	case subscriptionsettlementorder.FieldStatus:
+		return m.Status()
+	case subscriptionsettlementorder.FieldTriggerRefType:
+		return m.TriggerRefType()
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		return m.TriggerRefID()
+	case subscriptionsettlementorder.FieldOperatorUserID:
+		return m.OperatorUserID()
+	case subscriptionsettlementorder.FieldActionNote:
+		return m.ActionNote()
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		return m.CarryInResidualValue()
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		return m.ActionDeltaValue()
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		return m.AfterSettlementValue()
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		return m.RefundResidualValue()
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		return m.WriteoffValue()
+	case subscriptionsettlementorder.FieldAfterUserSubscriptionID:
+		return m.AfterUserSubscriptionID()
+	case subscriptionsettlementorder.FieldAfterPlanID:
+		return m.AfterPlanID()
+	case subscriptionsettlementorder.FieldAfterPlanNameSnapshot:
+		return m.AfterPlanNameSnapshot()
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		return m.AfterPlanPriceSnapshot()
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		return m.AfterValidityDaysSnapshot()
+	case subscriptionsettlementorder.FieldAfterValidityUnitSnapshot:
+		return m.AfterValidityUnitSnapshot()
+	case subscriptionsettlementorder.FieldAfterStartsAt:
+		return m.AfterStartsAt()
+	case subscriptionsettlementorder.FieldAfterExpiresAt:
+		return m.AfterExpiresAt()
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		return m.AfterDailyQuotaKnivesSnapshot()
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		return m.AfterWeeklyQuotaKnivesSnapshot()
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		return m.AfterMonthlyQuotaKnivesSnapshot()
+	case subscriptionsettlementorder.FieldAfterSubscriptionStatus:
+		return m.AfterSubscriptionStatus()
+	case subscriptionsettlementorder.FieldEffectiveAt:
+		return m.EffectiveAt()
+	case subscriptionsettlementorder.FieldClosedAt:
+		return m.ClosedAt()
+	case subscriptionsettlementorder.FieldCreatedAt:
+		return m.CreatedAt()
+	case subscriptionsettlementorder.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *SubscriptionSettlementOrderMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case subscriptionsettlementorder.FieldUserID:
+		return m.OldUserID(ctx)
+	case subscriptionsettlementorder.FieldPrevSettlementID:
+		return m.OldPrevSettlementID(ctx)
+	case subscriptionsettlementorder.FieldActionType:
+		return m.OldActionType(ctx)
+	case subscriptionsettlementorder.FieldActionSource:
+		return m.OldActionSource(ctx)
+	case subscriptionsettlementorder.FieldStatus:
+		return m.OldStatus(ctx)
+	case subscriptionsettlementorder.FieldTriggerRefType:
+		return m.OldTriggerRefType(ctx)
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		return m.OldTriggerRefID(ctx)
+	case subscriptionsettlementorder.FieldOperatorUserID:
+		return m.OldOperatorUserID(ctx)
+	case subscriptionsettlementorder.FieldActionNote:
+		return m.OldActionNote(ctx)
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		return m.OldCarryInResidualValue(ctx)
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		return m.OldActionDeltaValue(ctx)
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		return m.OldAfterSettlementValue(ctx)
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		return m.OldRefundResidualValue(ctx)
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		return m.OldWriteoffValue(ctx)
+	case subscriptionsettlementorder.FieldAfterUserSubscriptionID:
+		return m.OldAfterUserSubscriptionID(ctx)
+	case subscriptionsettlementorder.FieldAfterPlanID:
+		return m.OldAfterPlanID(ctx)
+	case subscriptionsettlementorder.FieldAfterPlanNameSnapshot:
+		return m.OldAfterPlanNameSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		return m.OldAfterPlanPriceSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		return m.OldAfterValidityDaysSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterValidityUnitSnapshot:
+		return m.OldAfterValidityUnitSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterStartsAt:
+		return m.OldAfterStartsAt(ctx)
+	case subscriptionsettlementorder.FieldAfterExpiresAt:
+		return m.OldAfterExpiresAt(ctx)
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		return m.OldAfterDailyQuotaKnivesSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		return m.OldAfterWeeklyQuotaKnivesSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		return m.OldAfterMonthlyQuotaKnivesSnapshot(ctx)
+	case subscriptionsettlementorder.FieldAfterSubscriptionStatus:
+		return m.OldAfterSubscriptionStatus(ctx)
+	case subscriptionsettlementorder.FieldEffectiveAt:
+		return m.OldEffectiveAt(ctx)
+	case subscriptionsettlementorder.FieldClosedAt:
+		return m.OldClosedAt(ctx)
+	case subscriptionsettlementorder.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case subscriptionsettlementorder.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown SubscriptionSettlementOrder field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubscriptionSettlementOrderMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case subscriptionsettlementorder.FieldUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUserID(v)
+		return nil
+	case subscriptionsettlementorder.FieldPrevSettlementID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPrevSettlementID(v)
+		return nil
+	case subscriptionsettlementorder.FieldActionType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionType(v)
+		return nil
+	case subscriptionsettlementorder.FieldActionSource:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionSource(v)
+		return nil
+	case subscriptionsettlementorder.FieldStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStatus(v)
+		return nil
+	case subscriptionsettlementorder.FieldTriggerRefType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggerRefType(v)
+		return nil
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetTriggerRefID(v)
+		return nil
+	case subscriptionsettlementorder.FieldOperatorUserID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetOperatorUserID(v)
+		return nil
+	case subscriptionsettlementorder.FieldActionNote:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionNote(v)
+		return nil
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCarryInResidualValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetActionDeltaValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterSettlementValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundResidualValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetWriteoffValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterUserSubscriptionID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterUserSubscriptionID(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterPlanID(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanNameSnapshot:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterPlanNameSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterPlanPriceSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterValidityDaysSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityUnitSnapshot:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterValidityUnitSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterStartsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterStartsAt(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterExpiresAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterExpiresAt(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterDailyQuotaKnivesSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterWeeklyQuotaKnivesSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterMonthlyQuotaKnivesSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterSubscriptionStatus:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetAfterSubscriptionStatus(v)
+		return nil
+	case subscriptionsettlementorder.FieldEffectiveAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEffectiveAt(v)
+		return nil
+	case subscriptionsettlementorder.FieldClosedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetClosedAt(v)
+		return nil
+	case subscriptionsettlementorder.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case subscriptionsettlementorder.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedFields() []string {
+	var fields []string
+	if m.addtrigger_ref_id != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldTriggerRefID)
+	}
+	if m.addcarry_in_residual_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldCarryInResidualValue)
+	}
+	if m.addaction_delta_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldActionDeltaValue)
+	}
+	if m.addafter_settlement_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterSettlementValue)
+	}
+	if m.addrefund_residual_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldRefundResidualValue)
+	}
+	if m.addwriteoff_value != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldWriteoffValue)
+	}
+	if m.addafter_plan_price_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanPriceSnapshot)
+	}
+	if m.addafter_validity_days_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterValidityDaysSnapshot)
+	}
+	if m.addafter_daily_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot)
+	}
+	if m.addafter_weekly_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot)
+	}
+	if m.addafter_monthly_quota_knives_snapshot != nil {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *SubscriptionSettlementOrderMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		return m.AddedTriggerRefID()
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		return m.AddedCarryInResidualValue()
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		return m.AddedActionDeltaValue()
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		return m.AddedAfterSettlementValue()
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		return m.AddedRefundResidualValue()
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		return m.AddedWriteoffValue()
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		return m.AddedAfterPlanPriceSnapshot()
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		return m.AddedAfterValidityDaysSnapshot()
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		return m.AddedAfterDailyQuotaKnivesSnapshot()
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		return m.AddedAfterWeeklyQuotaKnivesSnapshot()
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		return m.AddedAfterMonthlyQuotaKnivesSnapshot()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *SubscriptionSettlementOrderMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddTriggerRefID(v)
+		return nil
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddCarryInResidualValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddActionDeltaValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterSettlementValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundResidualValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddWriteoffValue(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterPlanPriceSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterValidityDaysSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterDailyQuotaKnivesSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterWeeklyQuotaKnivesSnapshot(v)
+		return nil
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddAfterMonthlyQuotaKnivesSnapshot(v)
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *SubscriptionSettlementOrderMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(subscriptionsettlementorder.FieldPrevSettlementID) {
+		fields = append(fields, subscriptionsettlementorder.FieldPrevSettlementID)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldTriggerRefID) {
+		fields = append(fields, subscriptionsettlementorder.FieldTriggerRefID)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldActionNote) {
+		fields = append(fields, subscriptionsettlementorder.FieldActionNote)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldRefundResidualValue) {
+		fields = append(fields, subscriptionsettlementorder.FieldRefundResidualValue)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterUserSubscriptionID) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterUserSubscriptionID)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterPlanID) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanID)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterPlanNameSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanNameSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterPlanPriceSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterPlanPriceSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterValidityDaysSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterValidityDaysSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterValidityUnitSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterValidityUnitSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterStartsAt) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterStartsAt)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterExpiresAt) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterExpiresAt)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot) {
+		fields = append(fields, subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot)
+	}
+	if m.FieldCleared(subscriptionsettlementorder.FieldClosedAt) {
+		fields = append(fields, subscriptionsettlementorder.FieldClosedAt)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *SubscriptionSettlementOrderMutation) ClearField(name string) error {
+	switch name {
+	case subscriptionsettlementorder.FieldPrevSettlementID:
+		m.ClearPrevSettlementID()
+		return nil
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		m.ClearTriggerRefID()
+		return nil
+	case subscriptionsettlementorder.FieldActionNote:
+		m.ClearActionNote()
+		return nil
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		m.ClearRefundResidualValue()
+		return nil
+	case subscriptionsettlementorder.FieldAfterUserSubscriptionID:
+		m.ClearAfterUserSubscriptionID()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanID:
+		m.ClearAfterPlanID()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanNameSnapshot:
+		m.ClearAfterPlanNameSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		m.ClearAfterPlanPriceSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		m.ClearAfterValidityDaysSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityUnitSnapshot:
+		m.ClearAfterValidityUnitSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterStartsAt:
+		m.ClearAfterStartsAt()
+		return nil
+	case subscriptionsettlementorder.FieldAfterExpiresAt:
+		m.ClearAfterExpiresAt()
+		return nil
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		m.ClearAfterDailyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		m.ClearAfterWeeklyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		m.ClearAfterMonthlyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldClosedAt:
+		m.ClearClosedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *SubscriptionSettlementOrderMutation) ResetField(name string) error {
+	switch name {
+	case subscriptionsettlementorder.FieldUserID:
+		m.ResetUserID()
+		return nil
+	case subscriptionsettlementorder.FieldPrevSettlementID:
+		m.ResetPrevSettlementID()
+		return nil
+	case subscriptionsettlementorder.FieldActionType:
+		m.ResetActionType()
+		return nil
+	case subscriptionsettlementorder.FieldActionSource:
+		m.ResetActionSource()
+		return nil
+	case subscriptionsettlementorder.FieldStatus:
+		m.ResetStatus()
+		return nil
+	case subscriptionsettlementorder.FieldTriggerRefType:
+		m.ResetTriggerRefType()
+		return nil
+	case subscriptionsettlementorder.FieldTriggerRefID:
+		m.ResetTriggerRefID()
+		return nil
+	case subscriptionsettlementorder.FieldOperatorUserID:
+		m.ResetOperatorUserID()
+		return nil
+	case subscriptionsettlementorder.FieldActionNote:
+		m.ResetActionNote()
+		return nil
+	case subscriptionsettlementorder.FieldCarryInResidualValue:
+		m.ResetCarryInResidualValue()
+		return nil
+	case subscriptionsettlementorder.FieldActionDeltaValue:
+		m.ResetActionDeltaValue()
+		return nil
+	case subscriptionsettlementorder.FieldAfterSettlementValue:
+		m.ResetAfterSettlementValue()
+		return nil
+	case subscriptionsettlementorder.FieldRefundResidualValue:
+		m.ResetRefundResidualValue()
+		return nil
+	case subscriptionsettlementorder.FieldWriteoffValue:
+		m.ResetWriteoffValue()
+		return nil
+	case subscriptionsettlementorder.FieldAfterUserSubscriptionID:
+		m.ResetAfterUserSubscriptionID()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanID:
+		m.ResetAfterPlanID()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanNameSnapshot:
+		m.ResetAfterPlanNameSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterPlanPriceSnapshot:
+		m.ResetAfterPlanPriceSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityDaysSnapshot:
+		m.ResetAfterValidityDaysSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterValidityUnitSnapshot:
+		m.ResetAfterValidityUnitSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterStartsAt:
+		m.ResetAfterStartsAt()
+		return nil
+	case subscriptionsettlementorder.FieldAfterExpiresAt:
+		m.ResetAfterExpiresAt()
+		return nil
+	case subscriptionsettlementorder.FieldAfterDailyQuotaKnivesSnapshot:
+		m.ResetAfterDailyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterWeeklyQuotaKnivesSnapshot:
+		m.ResetAfterWeeklyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterMonthlyQuotaKnivesSnapshot:
+		m.ResetAfterMonthlyQuotaKnivesSnapshot()
+		return nil
+	case subscriptionsettlementorder.FieldAfterSubscriptionStatus:
+		m.ResetAfterSubscriptionStatus()
+		return nil
+	case subscriptionsettlementorder.FieldEffectiveAt:
+		m.ResetEffectiveAt()
+		return nil
+	case subscriptionsettlementorder.FieldClosedAt:
+		m.ResetClosedAt()
+		return nil
+	case subscriptionsettlementorder.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case subscriptionsettlementorder.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.user != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgeUser)
+	}
+	if m.operator != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgeOperator)
+	}
+	if m.next != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgeNext)
+	}
+	if m.previous != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgePrevious)
+	}
+	if m.after_user_subscription != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgeAfterUserSubscription)
+	}
+	if m.after_plan != nil {
+		edges = append(edges, subscriptionsettlementorder.EdgeAfterPlan)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *SubscriptionSettlementOrderMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case subscriptionsettlementorder.EdgeUser:
+		if id := m.user; id != nil {
+			return []ent.Value{*id}
+		}
+	case subscriptionsettlementorder.EdgeOperator:
+		if id := m.operator; id != nil {
+			return []ent.Value{*id}
+		}
+	case subscriptionsettlementorder.EdgeNext:
+		if id := m.next; id != nil {
+			return []ent.Value{*id}
+		}
+	case subscriptionsettlementorder.EdgePrevious:
+		if id := m.previous; id != nil {
+			return []ent.Value{*id}
+		}
+	case subscriptionsettlementorder.EdgeAfterUserSubscription:
+		if id := m.after_user_subscription; id != nil {
+			return []ent.Value{*id}
+		}
+	case subscriptionsettlementorder.EdgeAfterPlan:
+		if id := m.after_plan; id != nil {
+			return []ent.Value{*id}
+		}
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *SubscriptionSettlementOrderMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 6)
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *SubscriptionSettlementOrderMutation) RemovedIDs(name string) []ent.Value {
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 6)
+	if m.cleareduser {
+		edges = append(edges, subscriptionsettlementorder.EdgeUser)
+	}
+	if m.clearedoperator {
+		edges = append(edges, subscriptionsettlementorder.EdgeOperator)
+	}
+	if m.clearednext {
+		edges = append(edges, subscriptionsettlementorder.EdgeNext)
+	}
+	if m.clearedprevious {
+		edges = append(edges, subscriptionsettlementorder.EdgePrevious)
+	}
+	if m.clearedafter_user_subscription {
+		edges = append(edges, subscriptionsettlementorder.EdgeAfterUserSubscription)
+	}
+	if m.clearedafter_plan {
+		edges = append(edges, subscriptionsettlementorder.EdgeAfterPlan)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *SubscriptionSettlementOrderMutation) EdgeCleared(name string) bool {
+	switch name {
+	case subscriptionsettlementorder.EdgeUser:
+		return m.cleareduser
+	case subscriptionsettlementorder.EdgeOperator:
+		return m.clearedoperator
+	case subscriptionsettlementorder.EdgeNext:
+		return m.clearednext
+	case subscriptionsettlementorder.EdgePrevious:
+		return m.clearedprevious
+	case subscriptionsettlementorder.EdgeAfterUserSubscription:
+		return m.clearedafter_user_subscription
+	case subscriptionsettlementorder.EdgeAfterPlan:
+		return m.clearedafter_plan
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *SubscriptionSettlementOrderMutation) ClearEdge(name string) error {
+	switch name {
+	case subscriptionsettlementorder.EdgeUser:
+		m.ClearUser()
+		return nil
+	case subscriptionsettlementorder.EdgeOperator:
+		m.ClearOperator()
+		return nil
+	case subscriptionsettlementorder.EdgeNext:
+		m.ClearNext()
+		return nil
+	case subscriptionsettlementorder.EdgePrevious:
+		m.ClearPrevious()
+		return nil
+	case subscriptionsettlementorder.EdgeAfterUserSubscription:
+		m.ClearAfterUserSubscription()
+		return nil
+	case subscriptionsettlementorder.EdgeAfterPlan:
+		m.ClearAfterPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *SubscriptionSettlementOrderMutation) ResetEdge(name string) error {
+	switch name {
+	case subscriptionsettlementorder.EdgeUser:
+		m.ResetUser()
+		return nil
+	case subscriptionsettlementorder.EdgeOperator:
+		m.ResetOperator()
+		return nil
+	case subscriptionsettlementorder.EdgeNext:
+		m.ResetNext()
+		return nil
+	case subscriptionsettlementorder.EdgePrevious:
+		m.ResetPrevious()
+		return nil
+	case subscriptionsettlementorder.EdgeAfterUserSubscription:
+		m.ResetAfterUserSubscription()
+		return nil
+	case subscriptionsettlementorder.EdgeAfterPlan:
+		m.ResetAfterPlan()
+		return nil
+	}
+	return fmt.Errorf("unknown SubscriptionSettlementOrder edge %s", name)
 }
 
 // TLSFingerprintProfileMutation represents an operation that mutates the TLSFingerprintProfile nodes in the graph.
@@ -38906,80 +41897,86 @@ func (m *UsageLogMutation) ResetEdge(name string) error {
 // UserMutation represents an operation that mutates the User nodes in the graph.
 type UserMutation struct {
 	config
-	op                            Op
-	typ                           string
-	id                            *int64
-	created_at                    *time.Time
-	updated_at                    *time.Time
-	deleted_at                    *time.Time
-	email                         *string
-	password_hash                 *string
-	role                          *string
-	balance                       *float64
-	addbalance                    *float64
-	concurrency                   *int
-	addconcurrency                *int
-	status                        *string
-	username                      *string
-	notes                         *string
-	totp_secret_encrypted         *string
-	totp_enabled                  *bool
-	totp_enabled_at               *time.Time
-	signup_source                 *string
-	last_login_at                 *time.Time
-	last_active_at                *time.Time
-	balance_notify_enabled        *bool
-	balance_notify_threshold_type *string
-	balance_notify_threshold      *float64
-	addbalance_notify_threshold   *float64
-	balance_notify_extra_emails   *string
-	total_recharged               *float64
-	addtotal_recharged            *float64
-	rpm_limit                     *int
-	addrpm_limit                  *int
-	clearedFields                 map[string]struct{}
-	api_keys                      map[int64]struct{}
-	removedapi_keys               map[int64]struct{}
-	clearedapi_keys               bool
-	redeem_codes                  map[int64]struct{}
-	removedredeem_codes           map[int64]struct{}
-	clearedredeem_codes           bool
-	subscriptions                 map[int64]struct{}
-	removedsubscriptions          map[int64]struct{}
-	clearedsubscriptions          bool
-	assigned_subscriptions        map[int64]struct{}
-	removedassigned_subscriptions map[int64]struct{}
-	clearedassigned_subscriptions bool
-	announcement_reads            map[int64]struct{}
-	removedannouncement_reads     map[int64]struct{}
-	clearedannouncement_reads     bool
-	allowed_groups                map[int64]struct{}
-	removedallowed_groups         map[int64]struct{}
-	clearedallowed_groups         bool
-	usage_logs                    map[int64]struct{}
-	removedusage_logs             map[int64]struct{}
-	clearedusage_logs             bool
-	attribute_values              map[int64]struct{}
-	removedattribute_values       map[int64]struct{}
-	clearedattribute_values       bool
-	promo_code_usages             map[int64]struct{}
-	removedpromo_code_usages      map[int64]struct{}
-	clearedpromo_code_usages      bool
-	payment_orders                map[int64]struct{}
-	removedpayment_orders         map[int64]struct{}
-	clearedpayment_orders         bool
-	auth_identities               map[int64]struct{}
-	removedauth_identities        map[int64]struct{}
-	clearedauth_identities        bool
-	pending_auth_sessions         map[int64]struct{}
-	removedpending_auth_sessions  map[int64]struct{}
-	clearedpending_auth_sessions  bool
-	platform_quotas               map[int64]struct{}
-	removedplatform_quotas        map[int64]struct{}
-	clearedplatform_quotas        bool
-	done                          bool
-	oldValue                      func(context.Context) (*User, error)
-	predicates                    []predicate.User
+	op                                             Op
+	typ                                            string
+	id                                             *int64
+	created_at                                     *time.Time
+	updated_at                                     *time.Time
+	deleted_at                                     *time.Time
+	email                                          *string
+	password_hash                                  *string
+	role                                           *string
+	balance                                        *float64
+	addbalance                                     *float64
+	concurrency                                    *int
+	addconcurrency                                 *int
+	status                                         *string
+	username                                       *string
+	notes                                          *string
+	totp_secret_encrypted                          *string
+	totp_enabled                                   *bool
+	totp_enabled_at                                *time.Time
+	signup_source                                  *string
+	last_login_at                                  *time.Time
+	last_active_at                                 *time.Time
+	balance_notify_enabled                         *bool
+	balance_notify_threshold_type                  *string
+	balance_notify_threshold                       *float64
+	addbalance_notify_threshold                    *float64
+	balance_notify_extra_emails                    *string
+	total_recharged                                *float64
+	addtotal_recharged                             *float64
+	rpm_limit                                      *int
+	addrpm_limit                                   *int
+	clearedFields                                  map[string]struct{}
+	api_keys                                       map[int64]struct{}
+	removedapi_keys                                map[int64]struct{}
+	clearedapi_keys                                bool
+	redeem_codes                                   map[int64]struct{}
+	removedredeem_codes                            map[int64]struct{}
+	clearedredeem_codes                            bool
+	subscriptions                                  map[int64]struct{}
+	removedsubscriptions                           map[int64]struct{}
+	clearedsubscriptions                           bool
+	assigned_subscriptions                         map[int64]struct{}
+	removedassigned_subscriptions                  map[int64]struct{}
+	clearedassigned_subscriptions                  bool
+	announcement_reads                             map[int64]struct{}
+	removedannouncement_reads                      map[int64]struct{}
+	clearedannouncement_reads                      bool
+	allowed_groups                                 map[int64]struct{}
+	removedallowed_groups                          map[int64]struct{}
+	clearedallowed_groups                          bool
+	usage_logs                                     map[int64]struct{}
+	removedusage_logs                              map[int64]struct{}
+	clearedusage_logs                              bool
+	attribute_values                               map[int64]struct{}
+	removedattribute_values                        map[int64]struct{}
+	clearedattribute_values                        bool
+	promo_code_usages                              map[int64]struct{}
+	removedpromo_code_usages                       map[int64]struct{}
+	clearedpromo_code_usages                       bool
+	payment_orders                                 map[int64]struct{}
+	removedpayment_orders                          map[int64]struct{}
+	clearedpayment_orders                          bool
+	subscription_settlement_orders                 map[int64]struct{}
+	removedsubscription_settlement_orders          map[int64]struct{}
+	clearedsubscription_settlement_orders          bool
+	operated_subscription_settlement_orders        map[int64]struct{}
+	removedoperated_subscription_settlement_orders map[int64]struct{}
+	clearedoperated_subscription_settlement_orders bool
+	auth_identities                                map[int64]struct{}
+	removedauth_identities                         map[int64]struct{}
+	clearedauth_identities                         bool
+	pending_auth_sessions                          map[int64]struct{}
+	removedpending_auth_sessions                   map[int64]struct{}
+	clearedpending_auth_sessions                   bool
+	platform_quotas                                map[int64]struct{}
+	removedplatform_quotas                         map[int64]struct{}
+	clearedplatform_quotas                         bool
+	done                                           bool
+	oldValue                                       func(context.Context) (*User, error)
+	predicates                                     []predicate.User
 }
 
 var _ ent.Mutation = (*UserMutation)(nil)
@@ -40627,6 +43624,114 @@ func (m *UserMutation) ResetPaymentOrders() {
 	m.removedpayment_orders = nil
 }
 
+// AddSubscriptionSettlementOrderIDs adds the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by ids.
+func (m *UserMutation) AddSubscriptionSettlementOrderIDs(ids ...int64) {
+	if m.subscription_settlement_orders == nil {
+		m.subscription_settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.subscription_settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSubscriptionSettlementOrders clears the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserMutation) ClearSubscriptionSettlementOrders() {
+	m.clearedsubscription_settlement_orders = true
+}
+
+// SubscriptionSettlementOrdersCleared reports if the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *UserMutation) SubscriptionSettlementOrdersCleared() bool {
+	return m.clearedsubscription_settlement_orders
+}
+
+// RemoveSubscriptionSettlementOrderIDs removes the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (m *UserMutation) RemoveSubscriptionSettlementOrderIDs(ids ...int64) {
+	if m.removedsubscription_settlement_orders == nil {
+		m.removedsubscription_settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.subscription_settlement_orders, ids[i])
+		m.removedsubscription_settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSubscriptionSettlementOrders returns the removed IDs of the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserMutation) RemovedSubscriptionSettlementOrdersIDs() (ids []int64) {
+	for id := range m.removedsubscription_settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SubscriptionSettlementOrdersIDs returns the "subscription_settlement_orders" edge IDs in the mutation.
+func (m *UserMutation) SubscriptionSettlementOrdersIDs() (ids []int64) {
+	for id := range m.subscription_settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSubscriptionSettlementOrders resets all changes to the "subscription_settlement_orders" edge.
+func (m *UserMutation) ResetSubscriptionSettlementOrders() {
+	m.subscription_settlement_orders = nil
+	m.clearedsubscription_settlement_orders = false
+	m.removedsubscription_settlement_orders = nil
+}
+
+// AddOperatedSubscriptionSettlementOrderIDs adds the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by ids.
+func (m *UserMutation) AddOperatedSubscriptionSettlementOrderIDs(ids ...int64) {
+	if m.operated_subscription_settlement_orders == nil {
+		m.operated_subscription_settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.operated_subscription_settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearOperatedSubscriptionSettlementOrders clears the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserMutation) ClearOperatedSubscriptionSettlementOrders() {
+	m.clearedoperated_subscription_settlement_orders = true
+}
+
+// OperatedSubscriptionSettlementOrdersCleared reports if the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *UserMutation) OperatedSubscriptionSettlementOrdersCleared() bool {
+	return m.clearedoperated_subscription_settlement_orders
+}
+
+// RemoveOperatedSubscriptionSettlementOrderIDs removes the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (m *UserMutation) RemoveOperatedSubscriptionSettlementOrderIDs(ids ...int64) {
+	if m.removedoperated_subscription_settlement_orders == nil {
+		m.removedoperated_subscription_settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.operated_subscription_settlement_orders, ids[i])
+		m.removedoperated_subscription_settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedOperatedSubscriptionSettlementOrders returns the removed IDs of the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserMutation) RemovedOperatedSubscriptionSettlementOrdersIDs() (ids []int64) {
+	for id := range m.removedoperated_subscription_settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// OperatedSubscriptionSettlementOrdersIDs returns the "operated_subscription_settlement_orders" edge IDs in the mutation.
+func (m *UserMutation) OperatedSubscriptionSettlementOrdersIDs() (ids []int64) {
+	for id := range m.operated_subscription_settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetOperatedSubscriptionSettlementOrders resets all changes to the "operated_subscription_settlement_orders" edge.
+func (m *UserMutation) ResetOperatedSubscriptionSettlementOrders() {
+	m.operated_subscription_settlement_orders = nil
+	m.clearedoperated_subscription_settlement_orders = false
+	m.removedoperated_subscription_settlement_orders = nil
+}
+
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by ids.
 func (m *UserMutation) AddAuthIdentityIDs(ids ...int64) {
 	if m.auth_identities == nil {
@@ -41398,7 +44503,7 @@ func (m *UserMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserMutation) AddedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 15)
 	if m.api_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41428,6 +44533,12 @@ func (m *UserMutation) AddedEdges() []string {
 	}
 	if m.payment_orders != nil {
 		edges = append(edges, user.EdgePaymentOrders)
+	}
+	if m.subscription_settlement_orders != nil {
+		edges = append(edges, user.EdgeSubscriptionSettlementOrders)
+	}
+	if m.operated_subscription_settlement_orders != nil {
+		edges = append(edges, user.EdgeOperatedSubscriptionSettlementOrders)
 	}
 	if m.auth_identities != nil {
 		edges = append(edges, user.EdgeAuthIdentities)
@@ -41505,6 +44616,18 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubscriptionSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.subscription_settlement_orders))
+		for id := range m.subscription_settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOperatedSubscriptionSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.operated_subscription_settlement_orders))
+		for id := range m.operated_subscription_settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeAuthIdentities:
 		ids := make([]ent.Value, 0, len(m.auth_identities))
 		for id := range m.auth_identities {
@@ -41529,7 +44652,7 @@ func (m *UserMutation) AddedIDs(name string) []ent.Value {
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 15)
 	if m.removedapi_keys != nil {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41559,6 +44682,12 @@ func (m *UserMutation) RemovedEdges() []string {
 	}
 	if m.removedpayment_orders != nil {
 		edges = append(edges, user.EdgePaymentOrders)
+	}
+	if m.removedsubscription_settlement_orders != nil {
+		edges = append(edges, user.EdgeSubscriptionSettlementOrders)
+	}
+	if m.removedoperated_subscription_settlement_orders != nil {
+		edges = append(edges, user.EdgeOperatedSubscriptionSettlementOrders)
 	}
 	if m.removedauth_identities != nil {
 		edges = append(edges, user.EdgeAuthIdentities)
@@ -41636,6 +44765,18 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case user.EdgeSubscriptionSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.removedsubscription_settlement_orders))
+		for id := range m.removedsubscription_settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	case user.EdgeOperatedSubscriptionSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.removedoperated_subscription_settlement_orders))
+		for id := range m.removedoperated_subscription_settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
 	case user.EdgeAuthIdentities:
 		ids := make([]ent.Value, 0, len(m.removedauth_identities))
 		for id := range m.removedauth_identities {
@@ -41660,7 +44801,7 @@ func (m *UserMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 13)
+	edges := make([]string, 0, 15)
 	if m.clearedapi_keys {
 		edges = append(edges, user.EdgeAPIKeys)
 	}
@@ -41690,6 +44831,12 @@ func (m *UserMutation) ClearedEdges() []string {
 	}
 	if m.clearedpayment_orders {
 		edges = append(edges, user.EdgePaymentOrders)
+	}
+	if m.clearedsubscription_settlement_orders {
+		edges = append(edges, user.EdgeSubscriptionSettlementOrders)
+	}
+	if m.clearedoperated_subscription_settlement_orders {
+		edges = append(edges, user.EdgeOperatedSubscriptionSettlementOrders)
 	}
 	if m.clearedauth_identities {
 		edges = append(edges, user.EdgeAuthIdentities)
@@ -41727,6 +44874,10 @@ func (m *UserMutation) EdgeCleared(name string) bool {
 		return m.clearedpromo_code_usages
 	case user.EdgePaymentOrders:
 		return m.clearedpayment_orders
+	case user.EdgeSubscriptionSettlementOrders:
+		return m.clearedsubscription_settlement_orders
+	case user.EdgeOperatedSubscriptionSettlementOrders:
+		return m.clearedoperated_subscription_settlement_orders
 	case user.EdgeAuthIdentities:
 		return m.clearedauth_identities
 	case user.EdgePendingAuthSessions:
@@ -41778,6 +44929,12 @@ func (m *UserMutation) ResetEdge(name string) error {
 		return nil
 	case user.EdgePaymentOrders:
 		m.ResetPaymentOrders()
+		return nil
+	case user.EdgeSubscriptionSettlementOrders:
+		m.ResetSubscriptionSettlementOrders()
+		return nil
+	case user.EdgeOperatedSubscriptionSettlementOrders:
+		m.ResetOperatedSubscriptionSettlementOrders()
 		return nil
 	case user.EdgeAuthIdentities:
 		m.ResetAuthIdentities()
@@ -45433,56 +48590,59 @@ func (m *UserPlatformQuotaMutation) ResetEdge(name string) error {
 // UserSubscriptionMutation represents an operation that mutates the UserSubscription nodes in the graph.
 type UserSubscriptionMutation struct {
 	config
-	op                      Op
-	typ                     string
-	id                      *int64
-	created_at              *time.Time
-	updated_at              *time.Time
-	deleted_at              *time.Time
-	plan_id                 *int64
-	addplan_id              *int64
-	plan_name_snapshot      *string
-	plan_price_snapshot     *float64
-	addplan_price_snapshot  *float64
-	starts_at               *time.Time
-	expires_at              *time.Time
-	status                  *string
-	daily_window_start      *time.Time
-	weekly_window_start     *time.Time
-	monthly_window_start    *time.Time
-	daily_usage_usd         *float64
-	adddaily_usage_usd      *float64
-	weekly_usage_usd        *float64
-	addweekly_usage_usd     *float64
-	monthly_usage_usd       *float64
-	addmonthly_usage_usd    *float64
-	daily_quota_knives      *float64
-	adddaily_quota_knives   *float64
-	weekly_quota_knives     *float64
-	addweekly_quota_knives  *float64
-	monthly_quota_knives    *float64
-	addmonthly_quota_knives *float64
-	daily_used_knives       *float64
-	adddaily_used_knives    *float64
-	weekly_used_knives      *float64
-	addweekly_used_knives   *float64
-	monthly_used_knives     *float64
-	addmonthly_used_knives  *float64
-	superseded_by_id        *int64
-	addsuperseded_by_id     *int64
-	assigned_at             *time.Time
-	notes                   *string
-	clearedFields           map[string]struct{}
-	user                    *int64
-	cleareduser             bool
-	assigned_by_user        *int64
-	clearedassigned_by_user bool
-	usage_logs              map[int64]struct{}
-	removedusage_logs       map[int64]struct{}
-	clearedusage_logs       bool
-	done                    bool
-	oldValue                func(context.Context) (*UserSubscription, error)
-	predicates              []predicate.UserSubscription
+	op                       Op
+	typ                      string
+	id                       *int64
+	created_at               *time.Time
+	updated_at               *time.Time
+	deleted_at               *time.Time
+	plan_id                  *int64
+	addplan_id               *int64
+	plan_name_snapshot       *string
+	plan_price_snapshot      *float64
+	addplan_price_snapshot   *float64
+	starts_at                *time.Time
+	expires_at               *time.Time
+	status                   *string
+	daily_window_start       *time.Time
+	weekly_window_start      *time.Time
+	monthly_window_start     *time.Time
+	daily_usage_usd          *float64
+	adddaily_usage_usd       *float64
+	weekly_usage_usd         *float64
+	addweekly_usage_usd      *float64
+	monthly_usage_usd        *float64
+	addmonthly_usage_usd     *float64
+	daily_quota_knives       *float64
+	adddaily_quota_knives    *float64
+	weekly_quota_knives      *float64
+	addweekly_quota_knives   *float64
+	monthly_quota_knives     *float64
+	addmonthly_quota_knives  *float64
+	daily_used_knives        *float64
+	adddaily_used_knives     *float64
+	weekly_used_knives       *float64
+	addweekly_used_knives    *float64
+	monthly_used_knives      *float64
+	addmonthly_used_knives   *float64
+	superseded_by_id         *int64
+	addsuperseded_by_id      *int64
+	assigned_at              *time.Time
+	notes                    *string
+	clearedFields            map[string]struct{}
+	user                     *int64
+	cleareduser              bool
+	assigned_by_user         *int64
+	clearedassigned_by_user  bool
+	usage_logs               map[int64]struct{}
+	removedusage_logs        map[int64]struct{}
+	clearedusage_logs        bool
+	settlement_orders        map[int64]struct{}
+	removedsettlement_orders map[int64]struct{}
+	clearedsettlement_orders bool
+	done                     bool
+	oldValue                 func(context.Context) (*UserSubscription, error)
+	predicates               []predicate.UserSubscription
 }
 
 var _ ent.Mutation = (*UserSubscriptionMutation)(nil)
@@ -47055,6 +50215,60 @@ func (m *UserSubscriptionMutation) ResetUsageLogs() {
 	m.removedusage_logs = nil
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by ids.
+func (m *UserSubscriptionMutation) AddSettlementOrderIDs(ids ...int64) {
+	if m.settlement_orders == nil {
+		m.settlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.settlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearSettlementOrders clears the "settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserSubscriptionMutation) ClearSettlementOrders() {
+	m.clearedsettlement_orders = true
+}
+
+// SettlementOrdersCleared reports if the "settlement_orders" edge to the SubscriptionSettlementOrder entity was cleared.
+func (m *UserSubscriptionMutation) SettlementOrdersCleared() bool {
+	return m.clearedsettlement_orders
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (m *UserSubscriptionMutation) RemoveSettlementOrderIDs(ids ...int64) {
+	if m.removedsettlement_orders == nil {
+		m.removedsettlement_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.settlement_orders, ids[i])
+		m.removedsettlement_orders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedSettlementOrders returns the removed IDs of the "settlement_orders" edge to the SubscriptionSettlementOrder entity.
+func (m *UserSubscriptionMutation) RemovedSettlementOrdersIDs() (ids []int64) {
+	for id := range m.removedsettlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// SettlementOrdersIDs returns the "settlement_orders" edge IDs in the mutation.
+func (m *UserSubscriptionMutation) SettlementOrdersIDs() (ids []int64) {
+	for id := range m.settlement_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetSettlementOrders resets all changes to the "settlement_orders" edge.
+func (m *UserSubscriptionMutation) ResetSettlementOrders() {
+	m.settlement_orders = nil
+	m.clearedsettlement_orders = false
+	m.removedsettlement_orders = nil
+}
+
 // Where appends a list predicates to the UserSubscriptionMutation builder.
 func (m *UserSubscriptionMutation) Where(ps ...predicate.UserSubscription) {
 	m.predicates = append(m.predicates, ps...)
@@ -47841,7 +51055,7 @@ func (m *UserSubscriptionMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *UserSubscriptionMutation) AddedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.user != nil {
 		edges = append(edges, usersubscription.EdgeUser)
 	}
@@ -47850,6 +51064,9 @@ func (m *UserSubscriptionMutation) AddedEdges() []string {
 	}
 	if m.usage_logs != nil {
 		edges = append(edges, usersubscription.EdgeUsageLogs)
+	}
+	if m.settlement_orders != nil {
+		edges = append(edges, usersubscription.EdgeSettlementOrders)
 	}
 	return edges
 }
@@ -47872,15 +51089,24 @@ func (m *UserSubscriptionMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case usersubscription.EdgeSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.settlement_orders))
+		for id := range m.settlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *UserSubscriptionMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.removedusage_logs != nil {
 		edges = append(edges, usersubscription.EdgeUsageLogs)
+	}
+	if m.removedsettlement_orders != nil {
+		edges = append(edges, usersubscription.EdgeSettlementOrders)
 	}
 	return edges
 }
@@ -47895,13 +51121,19 @@ func (m *UserSubscriptionMutation) RemovedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case usersubscription.EdgeSettlementOrders:
+		ids := make([]ent.Value, 0, len(m.removedsettlement_orders))
+		for id := range m.removedsettlement_orders {
+			ids = append(ids, id)
+		}
+		return ids
 	}
 	return nil
 }
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *UserSubscriptionMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 3)
+	edges := make([]string, 0, 4)
 	if m.cleareduser {
 		edges = append(edges, usersubscription.EdgeUser)
 	}
@@ -47910,6 +51142,9 @@ func (m *UserSubscriptionMutation) ClearedEdges() []string {
 	}
 	if m.clearedusage_logs {
 		edges = append(edges, usersubscription.EdgeUsageLogs)
+	}
+	if m.clearedsettlement_orders {
+		edges = append(edges, usersubscription.EdgeSettlementOrders)
 	}
 	return edges
 }
@@ -47924,6 +51159,8 @@ func (m *UserSubscriptionMutation) EdgeCleared(name string) bool {
 		return m.clearedassigned_by_user
 	case usersubscription.EdgeUsageLogs:
 		return m.clearedusage_logs
+	case usersubscription.EdgeSettlementOrders:
+		return m.clearedsettlement_orders
 	}
 	return false
 }
@@ -47954,6 +51191,9 @@ func (m *UserSubscriptionMutation) ResetEdge(name string) error {
 		return nil
 	case usersubscription.EdgeUsageLogs:
 		m.ResetUsageLogs()
+		return nil
+	case usersubscription.EdgeSettlementOrders:
+		m.ResetSettlementOrders()
 		return nil
 	}
 	return fmt.Errorf("unknown UserSubscription edge %s", name)

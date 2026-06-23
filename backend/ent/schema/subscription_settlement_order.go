@@ -160,9 +160,6 @@ func (SubscriptionSettlementOrder) Edges() []ent.Edge {
 func (SubscriptionSettlementOrder) Indexes() []ent.Index {
 	return []ent.Index{
 		index.Fields("user_id"),
-		index.Fields("prev_settlement_id").
-			Unique().
-			Annotations(entsql.IndexWhere("prev_settlement_id IS NOT NULL")),
 		index.Fields("status"),
 		index.Fields("action_type"),
 		index.Fields("action_source"),
@@ -171,6 +168,7 @@ func (SubscriptionSettlementOrder) Indexes() []ent.Index {
 		index.Fields("after_plan_id"),
 		index.Fields("effective_at"),
 		index.Fields("user_id").
+			StorageKey("subscriptionsettlementorder_user_effective").
 			Unique().
 			Annotations(entsql.IndexWhere("status = 'effective'")),
 	}

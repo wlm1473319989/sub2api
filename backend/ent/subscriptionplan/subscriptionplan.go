@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -43,8 +44,17 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeSettlementOrders holds the string denoting the settlement_orders edge name in mutations.
+	EdgeSettlementOrders = "settlement_orders"
 	// Table holds the table name of the subscriptionplan in the database.
 	Table = "subscription_plans"
+	// SettlementOrdersTable is the table that holds the settlement_orders relation/edge.
+	SettlementOrdersTable = "subscription_settlement_orders"
+	// SettlementOrdersInverseTable is the table name for the SubscriptionSettlementOrder entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionsettlementorder" package.
+	SettlementOrdersInverseTable = "subscription_settlement_orders"
+	// SettlementOrdersColumn is the table column denoting the settlement_orders relation/edge.
+	SettlementOrdersColumn = "after_plan_id"
 )
 
 // Columns holds all SQL columns for subscriptionplan fields.
@@ -187,4 +197,25 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// BySettlementOrdersCount orders the results by settlement_orders count.
+func BySettlementOrdersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSettlementOrdersStep(), opts...)
+	}
+}
+
+// BySettlementOrders orders the results by settlement_orders terms.
+func BySettlementOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSettlementOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newSettlementOrdersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SettlementOrdersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SettlementOrdersTable, SettlementOrdersColumn),
+	)
 }

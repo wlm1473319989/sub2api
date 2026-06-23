@@ -1570,6 +1570,52 @@ func HasPaymentOrdersWith(preds ...predicate.PaymentOrder) predicate.User {
 	})
 }
 
+// HasSubscriptionSettlementOrders applies the HasEdge predicate on the "subscription_settlement_orders" edge.
+func HasSubscriptionSettlementOrders() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionSettlementOrdersTable, SubscriptionSettlementOrdersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubscriptionSettlementOrdersWith applies the HasEdge predicate on the "subscription_settlement_orders" edge with a given conditions (other predicates).
+func HasSubscriptionSettlementOrdersWith(preds ...predicate.SubscriptionSettlementOrder) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newSubscriptionSettlementOrdersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOperatedSubscriptionSettlementOrders applies the HasEdge predicate on the "operated_subscription_settlement_orders" edge.
+func HasOperatedSubscriptionSettlementOrders() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OperatedSubscriptionSettlementOrdersTable, OperatedSubscriptionSettlementOrdersColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOperatedSubscriptionSettlementOrdersWith applies the HasEdge predicate on the "operated_subscription_settlement_orders" edge with a given conditions (other predicates).
+func HasOperatedSubscriptionSettlementOrdersWith(preds ...predicate.SubscriptionSettlementOrder) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newOperatedSubscriptionSettlementOrdersStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAuthIdentities applies the HasEdge predicate on the "auth_identities" edge.
 func HasAuthIdentities() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

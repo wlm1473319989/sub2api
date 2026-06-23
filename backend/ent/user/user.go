@@ -81,6 +81,10 @@ const (
 	EdgePromoCodeUsages = "promo_code_usages"
 	// EdgePaymentOrders holds the string denoting the payment_orders edge name in mutations.
 	EdgePaymentOrders = "payment_orders"
+	// EdgeSubscriptionSettlementOrders holds the string denoting the subscription_settlement_orders edge name in mutations.
+	EdgeSubscriptionSettlementOrders = "subscription_settlement_orders"
+	// EdgeOperatedSubscriptionSettlementOrders holds the string denoting the operated_subscription_settlement_orders edge name in mutations.
+	EdgeOperatedSubscriptionSettlementOrders = "operated_subscription_settlement_orders"
 	// EdgeAuthIdentities holds the string denoting the auth_identities edge name in mutations.
 	EdgeAuthIdentities = "auth_identities"
 	// EdgePendingAuthSessions holds the string denoting the pending_auth_sessions edge name in mutations.
@@ -159,6 +163,20 @@ const (
 	PaymentOrdersInverseTable = "payment_orders"
 	// PaymentOrdersColumn is the table column denoting the payment_orders relation/edge.
 	PaymentOrdersColumn = "user_id"
+	// SubscriptionSettlementOrdersTable is the table that holds the subscription_settlement_orders relation/edge.
+	SubscriptionSettlementOrdersTable = "subscription_settlement_orders"
+	// SubscriptionSettlementOrdersInverseTable is the table name for the SubscriptionSettlementOrder entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionsettlementorder" package.
+	SubscriptionSettlementOrdersInverseTable = "subscription_settlement_orders"
+	// SubscriptionSettlementOrdersColumn is the table column denoting the subscription_settlement_orders relation/edge.
+	SubscriptionSettlementOrdersColumn = "user_id"
+	// OperatedSubscriptionSettlementOrdersTable is the table that holds the operated_subscription_settlement_orders relation/edge.
+	OperatedSubscriptionSettlementOrdersTable = "subscription_settlement_orders"
+	// OperatedSubscriptionSettlementOrdersInverseTable is the table name for the SubscriptionSettlementOrder entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionsettlementorder" package.
+	OperatedSubscriptionSettlementOrdersInverseTable = "subscription_settlement_orders"
+	// OperatedSubscriptionSettlementOrdersColumn is the table column denoting the operated_subscription_settlement_orders relation/edge.
+	OperatedSubscriptionSettlementOrdersColumn = "operator_user_id"
 	// AuthIdentitiesTable is the table that holds the auth_identities relation/edge.
 	AuthIdentitiesTable = "auth_identities"
 	// AuthIdentitiesInverseTable is the table name for the AuthIdentity entity.
@@ -550,6 +568,34 @@ func ByPaymentOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 	}
 }
 
+// BySubscriptionSettlementOrdersCount orders the results by subscription_settlement_orders count.
+func BySubscriptionSettlementOrdersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscriptionSettlementOrdersStep(), opts...)
+	}
+}
+
+// BySubscriptionSettlementOrders orders the results by subscription_settlement_orders terms.
+func BySubscriptionSettlementOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscriptionSettlementOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOperatedSubscriptionSettlementOrdersCount orders the results by operated_subscription_settlement_orders count.
+func ByOperatedSubscriptionSettlementOrdersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOperatedSubscriptionSettlementOrdersStep(), opts...)
+	}
+}
+
+// ByOperatedSubscriptionSettlementOrders orders the results by operated_subscription_settlement_orders terms.
+func ByOperatedSubscriptionSettlementOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOperatedSubscriptionSettlementOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAuthIdentitiesCount orders the results by auth_identities count.
 func ByAuthIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -673,6 +719,20 @@ func newPaymentOrdersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(PaymentOrdersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, PaymentOrdersTable, PaymentOrdersColumn),
+	)
+}
+func newSubscriptionSettlementOrdersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscriptionSettlementOrdersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionSettlementOrdersTable, SubscriptionSettlementOrdersColumn),
+	)
+}
+func newOperatedSubscriptionSettlementOrdersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OperatedSubscriptionSettlementOrdersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OperatedSubscriptionSettlementOrdersTable, OperatedSubscriptionSettlementOrdersColumn),
 	)
 }
 func newAuthIdentitiesStep() *sqlgraph.Step {

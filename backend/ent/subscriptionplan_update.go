@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 )
 
 // SubscriptionPlanUpdate is the builder for updating SubscriptionPlan entities.
@@ -289,9 +290,45 @@ func (_u *SubscriptionPlanUpdate) SetUpdatedAt(v time.Time) *SubscriptionPlanUpd
 	return _u
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *SubscriptionPlanUpdate) AddSettlementOrderIDs(ids ...int64) *SubscriptionPlanUpdate {
+	_u.mutation.AddSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSettlementOrders adds the "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *SubscriptionPlanUpdate) AddSettlementOrders(v ...*SubscriptionSettlementOrder) *SubscriptionPlanUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettlementOrderIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdate) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
+}
+
+// ClearSettlementOrders clears all "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *SubscriptionPlanUpdate) ClearSettlementOrders() *SubscriptionPlanUpdate {
+	_u.mutation.ClearSettlementOrders()
+	return _u
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *SubscriptionPlanUpdate) RemoveSettlementOrderIDs(ids ...int64) *SubscriptionPlanUpdate {
+	_u.mutation.RemoveSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSettlementOrders removes "settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *SubscriptionPlanUpdate) RemoveSettlementOrders(v ...*SubscriptionSettlementOrder) *SubscriptionPlanUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettlementOrderIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -436,6 +473,51 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(subscriptionplan.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -718,9 +800,45 @@ func (_u *SubscriptionPlanUpdateOne) SetUpdatedAt(v time.Time) *SubscriptionPlan
 	return _u
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *SubscriptionPlanUpdateOne) AddSettlementOrderIDs(ids ...int64) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSettlementOrders adds the "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *SubscriptionPlanUpdateOne) AddSettlementOrders(v ...*SubscriptionSettlementOrder) *SubscriptionPlanUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettlementOrderIDs(ids...)
+}
+
 // Mutation returns the SubscriptionPlanMutation object of the builder.
 func (_u *SubscriptionPlanUpdateOne) Mutation() *SubscriptionPlanMutation {
 	return _u.mutation
+}
+
+// ClearSettlementOrders clears all "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *SubscriptionPlanUpdateOne) ClearSettlementOrders() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearSettlementOrders()
+	return _u
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *SubscriptionPlanUpdateOne) RemoveSettlementOrderIDs(ids ...int64) *SubscriptionPlanUpdateOne {
+	_u.mutation.RemoveSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSettlementOrders removes "settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *SubscriptionPlanUpdateOne) RemoveSettlementOrders(v ...*SubscriptionSettlementOrder) *SubscriptionPlanUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettlementOrderIDs(ids...)
 }
 
 // Where appends a list predicates to the SubscriptionPlanUpdate builder.
@@ -895,6 +1013,51 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(subscriptionplan.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionplan.SettlementOrdersTable,
+			Columns: []string{subscriptionplan.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &SubscriptionPlan{config: _u.config}
 	_spec.Assign = _node.assignValues

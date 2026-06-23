@@ -22,6 +22,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userallowedgroup"
@@ -33,25 +34,27 @@ import (
 // UserQuery is the builder for querying User entities.
 type UserQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []user.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.User
-	withAPIKeys               *APIKeyQuery
-	withRedeemCodes           *RedeemCodeQuery
-	withSubscriptions         *UserSubscriptionQuery
-	withAssignedSubscriptions *UserSubscriptionQuery
-	withAnnouncementReads     *AnnouncementReadQuery
-	withAllowedGroups         *GroupQuery
-	withUsageLogs             *UsageLogQuery
-	withAttributeValues       *UserAttributeValueQuery
-	withPromoCodeUsages       *PromoCodeUsageQuery
-	withPaymentOrders         *PaymentOrderQuery
-	withAuthIdentities        *AuthIdentityQuery
-	withPendingAuthSessions   *PendingAuthSessionQuery
-	withPlatformQuotas        *UserPlatformQuotaQuery
-	withUserAllowedGroups     *UserAllowedGroupQuery
-	modifiers                 []func(*sql.Selector)
+	ctx                                      *QueryContext
+	order                                    []user.OrderOption
+	inters                                   []Interceptor
+	predicates                               []predicate.User
+	withAPIKeys                              *APIKeyQuery
+	withRedeemCodes                          *RedeemCodeQuery
+	withSubscriptions                        *UserSubscriptionQuery
+	withAssignedSubscriptions                *UserSubscriptionQuery
+	withAnnouncementReads                    *AnnouncementReadQuery
+	withAllowedGroups                        *GroupQuery
+	withUsageLogs                            *UsageLogQuery
+	withAttributeValues                      *UserAttributeValueQuery
+	withPromoCodeUsages                      *PromoCodeUsageQuery
+	withPaymentOrders                        *PaymentOrderQuery
+	withSubscriptionSettlementOrders         *SubscriptionSettlementOrderQuery
+	withOperatedSubscriptionSettlementOrders *SubscriptionSettlementOrderQuery
+	withAuthIdentities                       *AuthIdentityQuery
+	withPendingAuthSessions                  *PendingAuthSessionQuery
+	withPlatformQuotas                       *UserPlatformQuotaQuery
+	withUserAllowedGroups                    *UserAllowedGroupQuery
+	modifiers                                []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -301,6 +304,50 @@ func (_q *UserQuery) QueryPaymentOrders() *PaymentOrderQuery {
 			sqlgraph.From(user.Table, user.FieldID, selector),
 			sqlgraph.To(paymentorder.Table, paymentorder.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.PaymentOrdersTable, user.PaymentOrdersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QuerySubscriptionSettlementOrders chains the current query on the "subscription_settlement_orders" edge.
+func (_q *UserQuery) QuerySubscriptionSettlementOrders() *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionSettlementOrdersTable, user.SubscriptionSettlementOrdersColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOperatedSubscriptionSettlementOrders chains the current query on the "operated_subscription_settlement_orders" edge.
+func (_q *UserQuery) QueryOperatedSubscriptionSettlementOrders() *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OperatedSubscriptionSettlementOrdersTable, user.OperatedSubscriptionSettlementOrdersColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -583,25 +630,27 @@ func (_q *UserQuery) Clone() *UserQuery {
 		return nil
 	}
 	return &UserQuery{
-		config:                    _q.config,
-		ctx:                       _q.ctx.Clone(),
-		order:                     append([]user.OrderOption{}, _q.order...),
-		inters:                    append([]Interceptor{}, _q.inters...),
-		predicates:                append([]predicate.User{}, _q.predicates...),
-		withAPIKeys:               _q.withAPIKeys.Clone(),
-		withRedeemCodes:           _q.withRedeemCodes.Clone(),
-		withSubscriptions:         _q.withSubscriptions.Clone(),
-		withAssignedSubscriptions: _q.withAssignedSubscriptions.Clone(),
-		withAnnouncementReads:     _q.withAnnouncementReads.Clone(),
-		withAllowedGroups:         _q.withAllowedGroups.Clone(),
-		withUsageLogs:             _q.withUsageLogs.Clone(),
-		withAttributeValues:       _q.withAttributeValues.Clone(),
-		withPromoCodeUsages:       _q.withPromoCodeUsages.Clone(),
-		withPaymentOrders:         _q.withPaymentOrders.Clone(),
-		withAuthIdentities:        _q.withAuthIdentities.Clone(),
-		withPendingAuthSessions:   _q.withPendingAuthSessions.Clone(),
-		withPlatformQuotas:        _q.withPlatformQuotas.Clone(),
-		withUserAllowedGroups:     _q.withUserAllowedGroups.Clone(),
+		config:                                   _q.config,
+		ctx:                                      _q.ctx.Clone(),
+		order:                                    append([]user.OrderOption{}, _q.order...),
+		inters:                                   append([]Interceptor{}, _q.inters...),
+		predicates:                               append([]predicate.User{}, _q.predicates...),
+		withAPIKeys:                              _q.withAPIKeys.Clone(),
+		withRedeemCodes:                          _q.withRedeemCodes.Clone(),
+		withSubscriptions:                        _q.withSubscriptions.Clone(),
+		withAssignedSubscriptions:                _q.withAssignedSubscriptions.Clone(),
+		withAnnouncementReads:                    _q.withAnnouncementReads.Clone(),
+		withAllowedGroups:                        _q.withAllowedGroups.Clone(),
+		withUsageLogs:                            _q.withUsageLogs.Clone(),
+		withAttributeValues:                      _q.withAttributeValues.Clone(),
+		withPromoCodeUsages:                      _q.withPromoCodeUsages.Clone(),
+		withPaymentOrders:                        _q.withPaymentOrders.Clone(),
+		withSubscriptionSettlementOrders:         _q.withSubscriptionSettlementOrders.Clone(),
+		withOperatedSubscriptionSettlementOrders: _q.withOperatedSubscriptionSettlementOrders.Clone(),
+		withAuthIdentities:                       _q.withAuthIdentities.Clone(),
+		withPendingAuthSessions:                  _q.withPendingAuthSessions.Clone(),
+		withPlatformQuotas:                       _q.withPlatformQuotas.Clone(),
+		withUserAllowedGroups:                    _q.withUserAllowedGroups.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -715,6 +764,28 @@ func (_q *UserQuery) WithPaymentOrders(opts ...func(*PaymentOrderQuery)) *UserQu
 		opt(query)
 	}
 	_q.withPaymentOrders = query
+	return _q
+}
+
+// WithSubscriptionSettlementOrders tells the query-builder to eager-load the nodes that are connected to
+// the "subscription_settlement_orders" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithSubscriptionSettlementOrders(opts ...func(*SubscriptionSettlementOrderQuery)) *UserQuery {
+	query := (&SubscriptionSettlementOrderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSubscriptionSettlementOrders = query
+	return _q
+}
+
+// WithOperatedSubscriptionSettlementOrders tells the query-builder to eager-load the nodes that are connected to
+// the "operated_subscription_settlement_orders" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOperatedSubscriptionSettlementOrders(opts ...func(*SubscriptionSettlementOrderQuery)) *UserQuery {
+	query := (&SubscriptionSettlementOrderClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOperatedSubscriptionSettlementOrders = query
 	return _q
 }
 
@@ -840,7 +911,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [14]bool{
+		loadedTypes = [16]bool{
 			_q.withAPIKeys != nil,
 			_q.withRedeemCodes != nil,
 			_q.withSubscriptions != nil,
@@ -851,6 +922,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withAttributeValues != nil,
 			_q.withPromoCodeUsages != nil,
 			_q.withPaymentOrders != nil,
+			_q.withSubscriptionSettlementOrders != nil,
+			_q.withOperatedSubscriptionSettlementOrders != nil,
 			_q.withAuthIdentities != nil,
 			_q.withPendingAuthSessions != nil,
 			_q.withPlatformQuotas != nil,
@@ -947,6 +1020,24 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 		if err := _q.loadPaymentOrders(ctx, query, nodes,
 			func(n *User) { n.Edges.PaymentOrders = []*PaymentOrder{} },
 			func(n *User, e *PaymentOrder) { n.Edges.PaymentOrders = append(n.Edges.PaymentOrders, e) }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSubscriptionSettlementOrders; query != nil {
+		if err := _q.loadSubscriptionSettlementOrders(ctx, query, nodes,
+			func(n *User) { n.Edges.SubscriptionSettlementOrders = []*SubscriptionSettlementOrder{} },
+			func(n *User, e *SubscriptionSettlementOrder) {
+				n.Edges.SubscriptionSettlementOrders = append(n.Edges.SubscriptionSettlementOrders, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOperatedSubscriptionSettlementOrders; query != nil {
+		if err := _q.loadOperatedSubscriptionSettlementOrders(ctx, query, nodes,
+			func(n *User) { n.Edges.OperatedSubscriptionSettlementOrders = []*SubscriptionSettlementOrder{} },
+			func(n *User, e *SubscriptionSettlementOrder) {
+				n.Edges.OperatedSubscriptionSettlementOrders = append(n.Edges.OperatedSubscriptionSettlementOrders, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -1316,6 +1407,66 @@ func (_q *UserQuery) loadPaymentOrders(ctx context.Context, query *PaymentOrderQ
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadSubscriptionSettlementOrders(ctx context.Context, query *SubscriptionSettlementOrderQuery, nodes []*User, init func(*User), assign func(*User, *SubscriptionSettlementOrder)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionsettlementorder.FieldUserID)
+	}
+	query.Where(predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.SubscriptionSettlementOrdersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOperatedSubscriptionSettlementOrders(ctx context.Context, query *SubscriptionSettlementOrderQuery, nodes []*User, init func(*User), assign func(*User, *SubscriptionSettlementOrder)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionsettlementorder.FieldOperatorUserID)
+	}
+	query.Where(predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OperatedSubscriptionSettlementOrdersColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.OperatorUserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "operator_user_id" returned %v for node %v`, fk, n.ID)
 		}
 		assign(node, n)
 	}

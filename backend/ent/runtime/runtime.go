@@ -32,6 +32,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -1541,6 +1542,68 @@ func init() {
 	subscriptionplan.DefaultUpdatedAt = subscriptionplanDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	subscriptionplan.UpdateDefaultUpdatedAt = subscriptionplanDescUpdatedAt.UpdateDefault.(func() time.Time)
+	subscriptionsettlementorderFields := schema.SubscriptionSettlementOrder{}.Fields()
+	_ = subscriptionsettlementorderFields
+	// subscriptionsettlementorderDescActionType is the schema descriptor for action_type field.
+	subscriptionsettlementorderDescActionType := subscriptionsettlementorderFields[2].Descriptor()
+	// subscriptionsettlementorder.ActionTypeValidator is a validator for the "action_type" field. It is called by the builders before save.
+	subscriptionsettlementorder.ActionTypeValidator = subscriptionsettlementorderDescActionType.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescActionSource is the schema descriptor for action_source field.
+	subscriptionsettlementorderDescActionSource := subscriptionsettlementorderFields[3].Descriptor()
+	// subscriptionsettlementorder.ActionSourceValidator is a validator for the "action_source" field. It is called by the builders before save.
+	subscriptionsettlementorder.ActionSourceValidator = subscriptionsettlementorderDescActionSource.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescStatus is the schema descriptor for status field.
+	subscriptionsettlementorderDescStatus := subscriptionsettlementorderFields[4].Descriptor()
+	// subscriptionsettlementorder.DefaultStatus holds the default value on creation for the status field.
+	subscriptionsettlementorder.DefaultStatus = subscriptionsettlementorderDescStatus.Default.(string)
+	// subscriptionsettlementorder.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	subscriptionsettlementorder.StatusValidator = subscriptionsettlementorderDescStatus.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescTriggerRefType is the schema descriptor for trigger_ref_type field.
+	subscriptionsettlementorderDescTriggerRefType := subscriptionsettlementorderFields[5].Descriptor()
+	// subscriptionsettlementorder.TriggerRefTypeValidator is a validator for the "trigger_ref_type" field. It is called by the builders before save.
+	subscriptionsettlementorder.TriggerRefTypeValidator = subscriptionsettlementorderDescTriggerRefType.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescCarryInResidualValue is the schema descriptor for carry_in_residual_value field.
+	subscriptionsettlementorderDescCarryInResidualValue := subscriptionsettlementorderFields[9].Descriptor()
+	// subscriptionsettlementorder.DefaultCarryInResidualValue holds the default value on creation for the carry_in_residual_value field.
+	subscriptionsettlementorder.DefaultCarryInResidualValue = subscriptionsettlementorderDescCarryInResidualValue.Default.(float64)
+	// subscriptionsettlementorderDescActionDeltaValue is the schema descriptor for action_delta_value field.
+	subscriptionsettlementorderDescActionDeltaValue := subscriptionsettlementorderFields[10].Descriptor()
+	// subscriptionsettlementorder.DefaultActionDeltaValue holds the default value on creation for the action_delta_value field.
+	subscriptionsettlementorder.DefaultActionDeltaValue = subscriptionsettlementorderDescActionDeltaValue.Default.(float64)
+	// subscriptionsettlementorderDescAfterSettlementValue is the schema descriptor for after_settlement_value field.
+	subscriptionsettlementorderDescAfterSettlementValue := subscriptionsettlementorderFields[11].Descriptor()
+	// subscriptionsettlementorder.DefaultAfterSettlementValue holds the default value on creation for the after_settlement_value field.
+	subscriptionsettlementorder.DefaultAfterSettlementValue = subscriptionsettlementorderDescAfterSettlementValue.Default.(float64)
+	// subscriptionsettlementorderDescWriteoffValue is the schema descriptor for writeoff_value field.
+	subscriptionsettlementorderDescWriteoffValue := subscriptionsettlementorderFields[13].Descriptor()
+	// subscriptionsettlementorder.DefaultWriteoffValue holds the default value on creation for the writeoff_value field.
+	subscriptionsettlementorder.DefaultWriteoffValue = subscriptionsettlementorderDescWriteoffValue.Default.(float64)
+	// subscriptionsettlementorderDescAfterPlanNameSnapshot is the schema descriptor for after_plan_name_snapshot field.
+	subscriptionsettlementorderDescAfterPlanNameSnapshot := subscriptionsettlementorderFields[16].Descriptor()
+	// subscriptionsettlementorder.AfterPlanNameSnapshotValidator is a validator for the "after_plan_name_snapshot" field. It is called by the builders before save.
+	subscriptionsettlementorder.AfterPlanNameSnapshotValidator = subscriptionsettlementorderDescAfterPlanNameSnapshot.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescAfterValidityUnitSnapshot is the schema descriptor for after_validity_unit_snapshot field.
+	subscriptionsettlementorderDescAfterValidityUnitSnapshot := subscriptionsettlementorderFields[19].Descriptor()
+	// subscriptionsettlementorder.AfterValidityUnitSnapshotValidator is a validator for the "after_validity_unit_snapshot" field. It is called by the builders before save.
+	subscriptionsettlementorder.AfterValidityUnitSnapshotValidator = subscriptionsettlementorderDescAfterValidityUnitSnapshot.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescAfterSubscriptionStatus is the schema descriptor for after_subscription_status field.
+	subscriptionsettlementorderDescAfterSubscriptionStatus := subscriptionsettlementorderFields[25].Descriptor()
+	// subscriptionsettlementorder.AfterSubscriptionStatusValidator is a validator for the "after_subscription_status" field. It is called by the builders before save.
+	subscriptionsettlementorder.AfterSubscriptionStatusValidator = subscriptionsettlementorderDescAfterSubscriptionStatus.Validators[0].(func(string) error)
+	// subscriptionsettlementorderDescEffectiveAt is the schema descriptor for effective_at field.
+	subscriptionsettlementorderDescEffectiveAt := subscriptionsettlementorderFields[26].Descriptor()
+	// subscriptionsettlementorder.DefaultEffectiveAt holds the default value on creation for the effective_at field.
+	subscriptionsettlementorder.DefaultEffectiveAt = subscriptionsettlementorderDescEffectiveAt.Default.(func() time.Time)
+	// subscriptionsettlementorderDescCreatedAt is the schema descriptor for created_at field.
+	subscriptionsettlementorderDescCreatedAt := subscriptionsettlementorderFields[28].Descriptor()
+	// subscriptionsettlementorder.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscriptionsettlementorder.DefaultCreatedAt = subscriptionsettlementorderDescCreatedAt.Default.(func() time.Time)
+	// subscriptionsettlementorderDescUpdatedAt is the schema descriptor for updated_at field.
+	subscriptionsettlementorderDescUpdatedAt := subscriptionsettlementorderFields[29].Descriptor()
+	// subscriptionsettlementorder.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	subscriptionsettlementorder.DefaultUpdatedAt = subscriptionsettlementorderDescUpdatedAt.Default.(func() time.Time)
+	// subscriptionsettlementorder.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	subscriptionsettlementorder.UpdateDefaultUpdatedAt = subscriptionsettlementorderDescUpdatedAt.UpdateDefault.(func() time.Time)
 	tlsfingerprintprofileMixin := schema.TLSFingerprintProfile{}.Mixin()
 	tlsfingerprintprofileMixinFields0 := tlsfingerprintprofileMixin[0].Fields()
 	_ = tlsfingerprintprofileMixinFields0

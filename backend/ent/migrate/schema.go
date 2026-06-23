@@ -1263,6 +1263,128 @@ var (
 			},
 		},
 	}
+	// SubscriptionSettlementOrdersColumns holds the columns for the "subscription_settlement_orders" table.
+	SubscriptionSettlementOrdersColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "action_type", Type: field.TypeString, Size: 32},
+		{Name: "action_source", Type: field.TypeString, Size: 32},
+		{Name: "status", Type: field.TypeString, Size: 16, Default: "effective"},
+		{Name: "trigger_ref_type", Type: field.TypeString, Size: 32},
+		{Name: "trigger_ref_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "action_note", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "carry_in_residual_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "action_delta_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "after_settlement_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "refund_residual_value", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "writeoff_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "after_plan_name_snapshot", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "after_plan_price_snapshot", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "after_validity_days_snapshot", Type: field.TypeInt, Nullable: true},
+		{Name: "after_validity_unit_snapshot", Type: field.TypeString, Nullable: true, Size: 16},
+		{Name: "after_starts_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "after_expires_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "after_daily_quota_knives_snapshot", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,10)"}},
+		{Name: "after_weekly_quota_knives_snapshot", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,10)"}},
+		{Name: "after_monthly_quota_knives_snapshot", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(20,10)"}},
+		{Name: "after_subscription_status", Type: field.TypeString, Size: 16},
+		{Name: "effective_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "closed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "after_plan_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "prev_settlement_id", Type: field.TypeInt64, Unique: true, Nullable: true},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "operator_user_id", Type: field.TypeInt64},
+		{Name: "after_user_subscription_id", Type: field.TypeInt64, Nullable: true},
+	}
+	// SubscriptionSettlementOrdersTable holds the schema information for the "subscription_settlement_orders" table.
+	SubscriptionSettlementOrdersTable = &schema.Table{
+		Name:       "subscription_settlement_orders",
+		Columns:    SubscriptionSettlementOrdersColumns,
+		PrimaryKey: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscription_settlement_orders_subscription_plans_settlement_orders",
+				Columns:    []*schema.Column{SubscriptionSettlementOrdersColumns[26]},
+				RefColumns: []*schema.Column{SubscriptionPlansColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "subscription_settlement_orders_subscription_settlement_orders_next",
+				Columns:    []*schema.Column{SubscriptionSettlementOrdersColumns[27]},
+				RefColumns: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "subscription_settlement_orders_users_subscription_settlement_orders",
+				Columns:    []*schema.Column{SubscriptionSettlementOrdersColumns[28]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_settlement_orders_users_operated_subscription_settlement_orders",
+				Columns:    []*schema.Column{SubscriptionSettlementOrdersColumns[29]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_settlement_orders_user_subscriptions_settlement_orders",
+				Columns:    []*schema.Column{SubscriptionSettlementOrdersColumns[30]},
+				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionsettlementorder_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[28]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_status",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[3]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_action_type",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[1]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_action_source",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[2]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_trigger_ref_type_trigger_ref_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[4], SubscriptionSettlementOrdersColumns[5]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_after_user_subscription_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[30]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_after_plan_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[26]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_effective_at",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[22]},
+			},
+			{
+				Name:    "subscriptionsettlementorder_user_effective",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionSettlementOrdersColumns[28]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status = 'effective'",
+				},
+			},
+		},
+	}
 	// TLSFingerprintProfilesColumns holds the columns for the "tls_fingerprint_profiles" table.
 	TLSFingerprintProfilesColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1803,6 +1925,7 @@ var (
 		SecuritySecretsTable,
 		SettingsTable,
 		SubscriptionPlansTable,
+		SubscriptionSettlementOrdersTable,
 		TLSFingerprintProfilesTable,
 		UsageCleanupTasksTable,
 		UsageLogsTable,
@@ -1914,6 +2037,14 @@ func init() {
 	}
 	SubscriptionPlansTable.Annotation = &entsql.Annotation{
 		Table: "subscription_plans",
+	}
+	SubscriptionSettlementOrdersTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
+	SubscriptionSettlementOrdersTable.ForeignKeys[1].RefTable = SubscriptionSettlementOrdersTable
+	SubscriptionSettlementOrdersTable.ForeignKeys[2].RefTable = UsersTable
+	SubscriptionSettlementOrdersTable.ForeignKeys[3].RefTable = UsersTable
+	SubscriptionSettlementOrdersTable.ForeignKeys[4].RefTable = UserSubscriptionsTable
+	SubscriptionSettlementOrdersTable.Annotation = &entsql.Annotation{
+		Table: "subscription_settlement_orders",
 	}
 	TLSFingerprintProfilesTable.Annotation = &entsql.Annotation{
 		Table: "tls_fingerprint_profiles",

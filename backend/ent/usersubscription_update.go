@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -573,6 +574,21 @@ func (_u *UserSubscriptionUpdate) AddUsageLogs(v ...*UsageLog) *UserSubscription
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserSubscriptionUpdate) AddSettlementOrderIDs(ids ...int64) *UserSubscriptionUpdate {
+	_u.mutation.AddSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSettlementOrders adds the "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserSubscriptionUpdate) AddSettlementOrders(v ...*SubscriptionSettlementOrder) *UserSubscriptionUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettlementOrderIDs(ids...)
+}
+
 // Mutation returns the UserSubscriptionMutation object of the builder.
 func (_u *UserSubscriptionUpdate) Mutation() *UserSubscriptionMutation {
 	return _u.mutation
@@ -609,6 +625,27 @@ func (_u *UserSubscriptionUpdate) RemoveUsageLogs(v ...*UsageLog) *UserSubscript
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearSettlementOrders clears all "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserSubscriptionUpdate) ClearSettlementOrders() *UserSubscriptionUpdate {
+	_u.mutation.ClearSettlementOrders()
+	return _u
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserSubscriptionUpdate) RemoveSettlementOrderIDs(ids ...int64) *UserSubscriptionUpdate {
+	_u.mutation.RemoveSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSettlementOrders removes "settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserSubscriptionUpdate) RemoveSettlementOrders(v ...*SubscriptionSettlementOrder) *UserSubscriptionUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettlementOrderIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -920,6 +957,51 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -1490,6 +1572,21 @@ func (_u *UserSubscriptionUpdateOne) AddUsageLogs(v ...*UsageLog) *UserSubscript
 	return _u.AddUsageLogIDs(ids...)
 }
 
+// AddSettlementOrderIDs adds the "settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserSubscriptionUpdateOne) AddSettlementOrderIDs(ids ...int64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSettlementOrders adds the "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserSubscriptionUpdateOne) AddSettlementOrders(v ...*SubscriptionSettlementOrder) *UserSubscriptionUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSettlementOrderIDs(ids...)
+}
+
 // Mutation returns the UserSubscriptionMutation object of the builder.
 func (_u *UserSubscriptionUpdateOne) Mutation() *UserSubscriptionMutation {
 	return _u.mutation
@@ -1526,6 +1623,27 @@ func (_u *UserSubscriptionUpdateOne) RemoveUsageLogs(v ...*UsageLog) *UserSubscr
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveUsageLogIDs(ids...)
+}
+
+// ClearSettlementOrders clears all "settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserSubscriptionUpdateOne) ClearSettlementOrders() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearSettlementOrders()
+	return _u
+}
+
+// RemoveSettlementOrderIDs removes the "settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserSubscriptionUpdateOne) RemoveSettlementOrderIDs(ids ...int64) *UserSubscriptionUpdateOne {
+	_u.mutation.RemoveSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSettlementOrders removes "settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserSubscriptionUpdateOne) RemoveSettlementOrders(v ...*SubscriptionSettlementOrder) *UserSubscriptionUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSettlementOrderIDs(ids...)
 }
 
 // Where appends a list predicates to the UserSubscriptionUpdate builder.
@@ -1867,6 +1985,51 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(usagelog.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.SettlementOrdersTable,
+			Columns: []string{usersubscription.SettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

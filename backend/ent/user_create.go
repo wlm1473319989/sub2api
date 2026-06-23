@@ -19,6 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
@@ -488,6 +489,36 @@ func (_c *UserCreate) AddPaymentOrders(v ...*PaymentOrder) *UserCreate {
 		ids[i] = v[i].ID
 	}
 	return _c.AddPaymentOrderIDs(ids...)
+}
+
+// AddSubscriptionSettlementOrderIDs adds the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_c *UserCreate) AddSubscriptionSettlementOrderIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddSubscriptionSettlementOrderIDs(ids...)
+	return _c
+}
+
+// AddSubscriptionSettlementOrders adds the "subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_c *UserCreate) AddSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubscriptionSettlementOrderIDs(ids...)
+}
+
+// AddOperatedSubscriptionSettlementOrderIDs adds the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_c *UserCreate) AddOperatedSubscriptionSettlementOrderIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+	return _c
+}
+
+// AddOperatedSubscriptionSettlementOrders adds the "operated_subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_c *UserCreate) AddOperatedSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOperatedSubscriptionSettlementOrderIDs(ids...)
 }
 
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
@@ -1000,6 +1031,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(paymentorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OperatedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

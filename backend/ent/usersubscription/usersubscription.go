@@ -73,6 +73,8 @@ const (
 	EdgeAssignedByUser = "assigned_by_user"
 	// EdgeUsageLogs holds the string denoting the usage_logs edge name in mutations.
 	EdgeUsageLogs = "usage_logs"
+	// EdgeSettlementOrders holds the string denoting the settlement_orders edge name in mutations.
+	EdgeSettlementOrders = "settlement_orders"
 	// Table holds the table name of the usersubscription in the database.
 	Table = "user_subscriptions"
 	// UserTable is the table that holds the user relation/edge.
@@ -96,6 +98,13 @@ const (
 	UsageLogsInverseTable = "usage_logs"
 	// UsageLogsColumn is the table column denoting the usage_logs relation/edge.
 	UsageLogsColumn = "subscription_id"
+	// SettlementOrdersTable is the table that holds the settlement_orders relation/edge.
+	SettlementOrdersTable = "subscription_settlement_orders"
+	// SettlementOrdersInverseTable is the table name for the SubscriptionSettlementOrder entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionsettlementorder" package.
+	SettlementOrdersInverseTable = "subscription_settlement_orders"
+	// SettlementOrdersColumn is the table column denoting the settlement_orders relation/edge.
+	SettlementOrdersColumn = "after_user_subscription_id"
 )
 
 // Columns holds all SQL columns for usersubscription fields.
@@ -340,6 +349,20 @@ func ByUsageLogs(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newUsageLogsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// BySettlementOrdersCount orders the results by settlement_orders count.
+func BySettlementOrdersCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSettlementOrdersStep(), opts...)
+	}
+}
+
+// BySettlementOrders orders the results by settlement_orders terms.
+func BySettlementOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSettlementOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -359,5 +382,12 @@ func newUsageLogsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(UsageLogsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, UsageLogsTable, UsageLogsColumn),
+	)
+}
+func newSettlementOrdersStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SettlementOrdersInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SettlementOrdersTable, SettlementOrdersColumn),
 	)
 }

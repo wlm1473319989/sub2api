@@ -20,6 +20,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/userattributevalue"
@@ -561,6 +562,36 @@ func (_u *UserUpdate) AddPaymentOrders(v ...*PaymentOrder) *UserUpdate {
 	return _u.AddPaymentOrderIDs(ids...)
 }
 
+// AddSubscriptionSettlementOrderIDs adds the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserUpdate) AddSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSubscriptionSettlementOrders adds the "subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdate) AddSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionSettlementOrderIDs(ids...)
+}
+
+// AddOperatedSubscriptionSettlementOrderIDs adds the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserUpdate) AddOperatedSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddOperatedSubscriptionSettlementOrders adds the "operated_subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdate) AddOperatedSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+}
+
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
 func (_u *UserUpdate) AddAuthIdentityIDs(ids ...int64) *UserUpdate {
 	_u.mutation.AddAuthIdentityIDs(ids...)
@@ -819,6 +850,48 @@ func (_u *UserUpdate) RemovePaymentOrders(v ...*PaymentOrder) *UserUpdate {
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePaymentOrderIDs(ids...)
+}
+
+// ClearSubscriptionSettlementOrders clears all "subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdate) ClearSubscriptionSettlementOrders() *UserUpdate {
+	_u.mutation.ClearSubscriptionSettlementOrders()
+	return _u
+}
+
+// RemoveSubscriptionSettlementOrderIDs removes the "subscription_settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserUpdate) RemoveSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptionSettlementOrders removes "subscription_settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserUpdate) RemoveSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionSettlementOrderIDs(ids...)
+}
+
+// ClearOperatedSubscriptionSettlementOrders clears all "operated_subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdate) ClearOperatedSubscriptionSettlementOrders() *UserUpdate {
+	_u.mutation.ClearOperatedSubscriptionSettlementOrders()
+	return _u
+}
+
+// RemoveOperatedSubscriptionSettlementOrderIDs removes the "operated_subscription_settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserUpdate) RemoveOperatedSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdate {
+	_u.mutation.RemoveOperatedSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveOperatedSubscriptionSettlementOrders removes "operated_subscription_settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserUpdate) RemoveOperatedSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOperatedSubscriptionSettlementOrderIDs(ids...)
 }
 
 // ClearAuthIdentities clears all "auth_identities" edges to the AuthIdentity entity.
@@ -1534,6 +1607,96 @@ func (_u *UserUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.SubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OperatedSubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOperatedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.OperatedSubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OperatedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _u.mutation.AuthIdentitiesCleared() {
 		edge := &sqlgraph.EdgeSpec{
 			Rel:     sqlgraph.O2M,
@@ -2210,6 +2373,36 @@ func (_u *UserUpdateOne) AddPaymentOrders(v ...*PaymentOrder) *UserUpdateOne {
 	return _u.AddPaymentOrderIDs(ids...)
 }
 
+// AddSubscriptionSettlementOrderIDs adds the "subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserUpdateOne) AddSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddSubscriptionSettlementOrders adds the "subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdateOne) AddSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionSettlementOrderIDs(ids...)
+}
+
+// AddOperatedSubscriptionSettlementOrderIDs adds the "operated_subscription_settlement_orders" edge to the SubscriptionSettlementOrder entity by IDs.
+func (_u *UserUpdateOne) AddOperatedSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// AddOperatedSubscriptionSettlementOrders adds the "operated_subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdateOne) AddOperatedSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+}
+
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
 func (_u *UserUpdateOne) AddAuthIdentityIDs(ids ...int64) *UserUpdateOne {
 	_u.mutation.AddAuthIdentityIDs(ids...)
@@ -2468,6 +2661,48 @@ func (_u *UserUpdateOne) RemovePaymentOrders(v ...*PaymentOrder) *UserUpdateOne 
 		ids[i] = v[i].ID
 	}
 	return _u.RemovePaymentOrderIDs(ids...)
+}
+
+// ClearSubscriptionSettlementOrders clears all "subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdateOne) ClearSubscriptionSettlementOrders() *UserUpdateOne {
+	_u.mutation.ClearSubscriptionSettlementOrders()
+	return _u
+}
+
+// RemoveSubscriptionSettlementOrderIDs removes the "subscription_settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserUpdateOne) RemoveSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptionSettlementOrders removes "subscription_settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserUpdateOne) RemoveSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionSettlementOrderIDs(ids...)
+}
+
+// ClearOperatedSubscriptionSettlementOrders clears all "operated_subscription_settlement_orders" edges to the SubscriptionSettlementOrder entity.
+func (_u *UserUpdateOne) ClearOperatedSubscriptionSettlementOrders() *UserUpdateOne {
+	_u.mutation.ClearOperatedSubscriptionSettlementOrders()
+	return _u
+}
+
+// RemoveOperatedSubscriptionSettlementOrderIDs removes the "operated_subscription_settlement_orders" edge to SubscriptionSettlementOrder entities by IDs.
+func (_u *UserUpdateOne) RemoveOperatedSubscriptionSettlementOrderIDs(ids ...int64) *UserUpdateOne {
+	_u.mutation.RemoveOperatedSubscriptionSettlementOrderIDs(ids...)
+	return _u
+}
+
+// RemoveOperatedSubscriptionSettlementOrders removes "operated_subscription_settlement_orders" edges to SubscriptionSettlementOrder entities.
+func (_u *UserUpdateOne) RemoveOperatedSubscriptionSettlementOrders(v ...*SubscriptionSettlementOrder) *UserUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveOperatedSubscriptionSettlementOrderIDs(ids...)
 }
 
 // ClearAuthIdentities clears all "auth_identities" edges to the AuthIdentity entity.
@@ -3206,6 +3441,96 @@ func (_u *UserUpdateOne) sqlSave(ctx context.Context) (_node *User, err error) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(paymentorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.SubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionSettlementOrdersTable,
+			Columns: []string{user.SubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.OperatedSubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedOperatedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 && !_u.mutation.OperatedSubscriptionSettlementOrdersCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.OperatedSubscriptionSettlementOrdersIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionSettlementOrdersTable,
+			Columns: []string{user.OperatedSubscriptionSettlementOrdersColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

@@ -41,6 +41,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
@@ -111,6 +112,8 @@ type Client struct {
 	Setting *SettingClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
+	// SubscriptionSettlementOrder is the client for interacting with the SubscriptionSettlementOrder builders.
+	SubscriptionSettlementOrder *SubscriptionSettlementOrderClient
 	// TLSFingerprintProfile is the client for interacting with the TLSFingerprintProfile builders.
 	TLSFingerprintProfile *TLSFingerprintProfileClient
 	// UsageCleanupTask is the client for interacting with the UsageCleanupTask builders.
@@ -166,6 +169,7 @@ func (c *Client) init() {
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
+	c.SubscriptionSettlementOrder = NewSubscriptionSettlementOrderClient(c.config)
 	c.TLSFingerprintProfile = NewTLSFingerprintProfileClient(c.config)
 	c.UsageCleanupTask = NewUsageCleanupTaskClient(c.config)
 	c.UsageLog = NewUsageLogClient(c.config)
@@ -293,6 +297,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionSettlementOrder:   NewSubscriptionSettlementOrderClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
 		UsageLog:                      NewUsageLogClient(cfg),
@@ -347,6 +352,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionSettlementOrder:   NewSubscriptionSettlementOrderClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
 		UsageLog:                      NewUsageLogClient(cfg),
@@ -392,9 +398,10 @@ func (c *Client) Use(hooks ...Hook) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.SubscriptionPlan, c.SubscriptionSettlementOrder, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -411,9 +418,10 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog,
-		c.User, c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
-		c.UserPlatformQuota, c.UserSubscription,
+		c.SubscriptionPlan, c.SubscriptionSettlementOrder, c.TLSFingerprintProfile,
+		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
+		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
+		c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -474,6 +482,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Setting.mutate(ctx, m)
 	case *SubscriptionPlanMutation:
 		return c.SubscriptionPlan.mutate(ctx, m)
+	case *SubscriptionSettlementOrderMutation:
+		return c.SubscriptionSettlementOrder.mutate(ctx, m)
 	case *TLSFingerprintProfileMutation:
 		return c.TLSFingerprintProfile.mutate(ctx, m)
 	case *UsageCleanupTaskMutation:
@@ -4529,6 +4539,22 @@ func (c *SubscriptionPlanClient) GetX(ctx context.Context, id int64) *Subscripti
 	return obj
 }
 
+// QuerySettlementOrders queries the settlement_orders edge of a SubscriptionPlan.
+func (c *SubscriptionPlanClient) QuerySettlementOrders(_m *SubscriptionPlan) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionplan.Table, subscriptionplan.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionplan.SettlementOrdersTable, subscriptionplan.SettlementOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *SubscriptionPlanClient) Hooks() []Hook {
 	return c.hooks.SubscriptionPlan
@@ -4551,6 +4577,235 @@ func (c *SubscriptionPlanClient) mutate(ctx context.Context, m *SubscriptionPlan
 		return (&SubscriptionPlanDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown SubscriptionPlan mutation op: %q", m.Op())
+	}
+}
+
+// SubscriptionSettlementOrderClient is a client for the SubscriptionSettlementOrder schema.
+type SubscriptionSettlementOrderClient struct {
+	config
+}
+
+// NewSubscriptionSettlementOrderClient returns a client for the SubscriptionSettlementOrder from the given config.
+func NewSubscriptionSettlementOrderClient(c config) *SubscriptionSettlementOrderClient {
+	return &SubscriptionSettlementOrderClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscriptionsettlementorder.Hooks(f(g(h())))`.
+func (c *SubscriptionSettlementOrderClient) Use(hooks ...Hook) {
+	c.hooks.SubscriptionSettlementOrder = append(c.hooks.SubscriptionSettlementOrder, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscriptionsettlementorder.Intercept(f(g(h())))`.
+func (c *SubscriptionSettlementOrderClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SubscriptionSettlementOrder = append(c.inters.SubscriptionSettlementOrder, interceptors...)
+}
+
+// Create returns a builder for creating a SubscriptionSettlementOrder entity.
+func (c *SubscriptionSettlementOrderClient) Create() *SubscriptionSettlementOrderCreate {
+	mutation := newSubscriptionSettlementOrderMutation(c.config, OpCreate)
+	return &SubscriptionSettlementOrderCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SubscriptionSettlementOrder entities.
+func (c *SubscriptionSettlementOrderClient) CreateBulk(builders ...*SubscriptionSettlementOrderCreate) *SubscriptionSettlementOrderCreateBulk {
+	return &SubscriptionSettlementOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionSettlementOrderClient) MapCreateBulk(slice any, setFunc func(*SubscriptionSettlementOrderCreate, int)) *SubscriptionSettlementOrderCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionSettlementOrderCreateBulk{err: fmt.Errorf("calling to SubscriptionSettlementOrderClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionSettlementOrderCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionSettlementOrderCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) Update() *SubscriptionSettlementOrderUpdate {
+	mutation := newSubscriptionSettlementOrderMutation(c.config, OpUpdate)
+	return &SubscriptionSettlementOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionSettlementOrderClient) UpdateOne(_m *SubscriptionSettlementOrder) *SubscriptionSettlementOrderUpdateOne {
+	mutation := newSubscriptionSettlementOrderMutation(c.config, OpUpdateOne, withSubscriptionSettlementOrder(_m))
+	return &SubscriptionSettlementOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionSettlementOrderClient) UpdateOneID(id int64) *SubscriptionSettlementOrderUpdateOne {
+	mutation := newSubscriptionSettlementOrderMutation(c.config, OpUpdateOne, withSubscriptionSettlementOrderID(id))
+	return &SubscriptionSettlementOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) Delete() *SubscriptionSettlementOrderDelete {
+	mutation := newSubscriptionSettlementOrderMutation(c.config, OpDelete)
+	return &SubscriptionSettlementOrderDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionSettlementOrderClient) DeleteOne(_m *SubscriptionSettlementOrder) *SubscriptionSettlementOrderDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionSettlementOrderClient) DeleteOneID(id int64) *SubscriptionSettlementOrderDeleteOne {
+	builder := c.Delete().Where(subscriptionsettlementorder.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionSettlementOrderDeleteOne{builder}
+}
+
+// Query returns a query builder for SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) Query() *SubscriptionSettlementOrderQuery {
+	return &SubscriptionSettlementOrderQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscriptionSettlementOrder},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SubscriptionSettlementOrder entity by its id.
+func (c *SubscriptionSettlementOrderClient) Get(ctx context.Context, id int64) (*SubscriptionSettlementOrder, error) {
+	return c.Query().Where(subscriptionsettlementorder.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionSettlementOrderClient) GetX(ctx context.Context, id int64) *SubscriptionSettlementOrder {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryUser(_m *SubscriptionSettlementOrder) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.UserTable, subscriptionsettlementorder.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOperator queries the operator edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryOperator(_m *SubscriptionSettlementOrder) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.OperatorTable, subscriptionsettlementorder.OperatorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryNext queries the next edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryNext(_m *SubscriptionSettlementOrder) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, false, subscriptionsettlementorder.NextTable, subscriptionsettlementorder.NextColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPrevious queries the previous edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryPrevious(_m *SubscriptionSettlementOrder) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2O, true, subscriptionsettlementorder.PreviousTable, subscriptionsettlementorder.PreviousColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAfterUserSubscription queries the after_user_subscription edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryAfterUserSubscription(_m *SubscriptionSettlementOrder) *UserSubscriptionQuery {
+	query := (&UserSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(usersubscription.Table, usersubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.AfterUserSubscriptionTable, subscriptionsettlementorder.AfterUserSubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAfterPlan queries the after_plan edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryAfterPlan(_m *SubscriptionSettlementOrder) *SubscriptionPlanQuery {
+	query := (&SubscriptionPlanClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.AfterPlanTable, subscriptionsettlementorder.AfterPlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionSettlementOrderClient) Hooks() []Hook {
+	return c.hooks.SubscriptionSettlementOrder
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionSettlementOrderClient) Interceptors() []Interceptor {
+	return c.inters.SubscriptionSettlementOrder
+}
+
+func (c *SubscriptionSettlementOrderClient) mutate(ctx context.Context, m *SubscriptionSettlementOrderMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionSettlementOrderCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionSettlementOrderUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionSettlementOrderUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionSettlementOrderDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SubscriptionSettlementOrder mutation op: %q", m.Op())
 	}
 }
 
@@ -5294,6 +5549,38 @@ func (c *UserClient) QueryPaymentOrders(_m *User) *PaymentOrderQuery {
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(paymentorder.Table, paymentorder.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.PaymentOrdersTable, user.PaymentOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptionSettlementOrders queries the subscription_settlement_orders edge of a User.
+func (c *UserClient) QuerySubscriptionSettlementOrders(_m *User) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionSettlementOrdersTable, user.SubscriptionSettlementOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOperatedSubscriptionSettlementOrders queries the operated_subscription_settlement_orders edge of a User.
+func (c *UserClient) QueryOperatedSubscriptionSettlementOrders(_m *User) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OperatedSubscriptionSettlementOrdersTable, user.OperatedSubscriptionSettlementOrdersColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -6131,6 +6418,22 @@ func (c *UserSubscriptionClient) QueryUsageLogs(_m *UserSubscription) *UsageLogQ
 	return query
 }
 
+// QuerySettlementOrders queries the settlement_orders edge of a UserSubscription.
+func (c *UserSubscriptionClient) QuerySettlementOrders(_m *UserSubscription) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(usersubscription.Table, usersubscription.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, usersubscription.SettlementOrdersTable, usersubscription.SettlementOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserSubscriptionClient) Hooks() []Hook {
 	hooks := c.hooks.UserSubscription
@@ -6167,9 +6470,9 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Hook
+		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
+		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserPlatformQuota, UserSubscription []ent.Hook
 	}
 	inters struct {
 		APIKey, Account, AccountGroup, Announcement, AnnouncementRead, AuthIdentity,
@@ -6178,9 +6481,9 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		TLSFingerprintProfile, UsageCleanupTask, UsageLog, User, UserAllowedGroup,
-		UserAttributeDefinition, UserAttributeValue, UserPlatformQuota,
-		UserSubscription []ent.Interceptor
+		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
+		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
+		UserPlatformQuota, UserSubscription []ent.Interceptor
 	}
 )
 
