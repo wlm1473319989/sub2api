@@ -12,6 +12,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
@@ -251,6 +252,9 @@ func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, 
 		p.DeductionType = payment.DeductionTypeSubscription
 		active, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, o.UserID)
 		if err == nil && active != nil {
+			if result, handled := s.prepSettlementDeduct(ctx, o, p, active, force); handled {
+				return result
+			}
 			latestOrder, latestErr := s.subscriptionSvc.latestSubscriptionOrderForActive(ctx, o.UserID, active)
 			if latestErr == nil && latestOrder != nil && latestOrder.ID == o.ID {
 				snapshot := *active
@@ -274,6 +278,53 @@ func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, 
 	p.DeductionType = payment.DeductionTypeBalance
 	p.BalanceToDeduct = math.Min(p.RefundAmount, u.Balance)
 	return nil
+}
+
+func (s *PaymentService) prepSettlementDeduct(ctx context.Context, o *dbent.PaymentOrder, p *RefundPlan, active *UserSubscription, force bool) (*RefundResult, bool) {
+	settlementSvc := s.settlementSvc
+	if settlementSvc == nil && s.entClient != nil {
+		settlementSvc = NewSettlementService(s.entClient)
+	}
+	if settlementSvc == nil {
+		return nil, false
+	}
+
+	head, err := settlementSvc.GetEffectiveHead(ctx, o.UserID, time.Now())
+	if err != nil {
+		if !force {
+			return &RefundResult{Success: false, Warning: "cannot load subscription settlement head for refund, use force", RequireForce: true}, true
+		}
+		return nil, false
+	}
+	if head == nil {
+		return nil, false
+	}
+	if head.ActionSource != domain.SettlementActionSourceUserPurchase ||
+		head.TriggerRefType != domain.SettlementTriggerRefPaymentOrder ||
+		head.TriggerRefID == nil ||
+		*head.TriggerRefID != o.ID {
+		if !force {
+			return &RefundResult{Success: false, Warning: "refund order must match current subscription settlement head, use force", RequireForce: true}, true
+		}
+		return nil, false
+	}
+	if head.AfterUserSubscriptionID != nil && *head.AfterUserSubscriptionID != active.ID {
+		if !force {
+			return &RefundResult{Success: false, Warning: "active subscription does not match current settlement head, use force", RequireForce: true}, true
+		}
+		return nil, false
+	}
+
+	snapshot := *active
+	p.SubscriptionID = active.ID
+	p.SubscriptionSnapshot = &snapshot
+	p.SettlementHead = head
+	p.SettlementResidual = settlementResidualValue(active, settlementResidualBasisValue(head, active, head.AfterSettlementValue))
+	if p.SettlementResidual > 0 {
+		p.RefundAmount = p.SettlementResidual
+		p.GatewayAmount = calculateGatewayRefundAmount(o.Amount, o.PayAmount, p.SettlementResidual, PaymentOrderCurrency(o))
+	}
+	return nil, true
 }
 
 func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
@@ -391,6 +442,9 @@ func (s *PaymentService) handleGwFail(ctx context.Context, p *RefundPlan, gErr e
 }
 
 func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
+	if p.SettlementHead != nil {
+		return s.markRefundOkWithSettlement(ctx, p)
+	}
 	fs := OrderStatusRefunded
 	if p.RefundAmount < p.Order.Amount {
 		fs = OrderStatusPartiallyRefunded
@@ -399,6 +453,66 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	_, err := s.entClient.PaymentOrder.UpdateOneID(p.OrderID).SetStatus(fs).SetRefundAmount(p.RefundAmount).SetRefundReason(p.Reason).SetRefundAt(now).SetForceRefund(p.Force).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("mark refund: %w", err)
+	}
+	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
+	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil
+}
+
+func (s *PaymentService) markRefundOkWithSettlement(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
+	tx, err := s.entClient.Tx(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("begin refund settlement tx: %w", err)
+	}
+	defer func() { _ = tx.Rollback() }()
+
+	txCtx := dbent.NewTxContext(ctx, tx)
+	fs := OrderStatusRefunded
+	if p.RefundAmount < p.Order.Amount {
+		fs = OrderStatusPartiallyRefunded
+	}
+	now := time.Now()
+	_, err = tx.Client().PaymentOrder.UpdateOneID(p.OrderID).
+		SetStatus(fs).
+		SetRefundAmount(p.RefundAmount).
+		SetRefundReason(p.Reason).
+		SetRefundAt(now).
+		SetForceRefund(p.Force).
+		Save(txCtx)
+	if err != nil {
+		return nil, fmt.Errorf("mark refund: %w", err)
+	}
+
+	afterSub, err := s.subscriptionSvc.userSubRepo.GetByID(txCtx, p.SubscriptionID)
+	if err != nil {
+		return nil, fmt.Errorf("load refunded subscription: %w", err)
+	}
+	refundResidual := p.SettlementResidual
+	if refundResidual <= 0 && p.SubscriptionSnapshot != nil {
+		refundResidual = settlementResidualValue(p.SubscriptionSnapshot, settlementResidualBasisValue(p.SettlementHead, p.SubscriptionSnapshot, p.SettlementHead.AfterSettlementValue))
+	}
+	triggerRefID := copyInt64Pointer(p.SettlementHead.TriggerRefID)
+	if _, err = NewSettlementService(s.entClient).CreateSettlementOrder(txCtx, SettlementOrderInput{
+		UserID:                  p.Order.UserID,
+		OperatorUserID:          p.Order.UserID,
+		ActionType:              domain.SettlementActionRefund,
+		ActionSource:            p.SettlementHead.ActionSource,
+		TriggerRefType:          p.SettlementHead.TriggerRefType,
+		TriggerRefID:            triggerRefID,
+		ActionNote:              p.Reason,
+		CarryInResidualValue:    refundResidual,
+		ActionDeltaValue:        -refundResidual,
+		AfterSettlementValue:    0,
+		RefundResidualValue:     &refundResidual,
+		WriteoffValue:           0,
+		AfterUserSubscription:   afterSub,
+		AfterSubscriptionStatus: domain.SubscriptionStatusRefunded,
+		EffectiveAt:             now,
+	}); err != nil {
+		return nil, err
+	}
+
+	if err := tx.Commit(); err != nil {
+		return nil, fmt.Errorf("commit refund settlement tx: %w", err)
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
 	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil

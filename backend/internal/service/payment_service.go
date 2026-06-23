@@ -134,6 +134,8 @@ type RefundPlan struct {
 	SubDaysToDeduct      int
 	SubscriptionID       int64
 	SubscriptionSnapshot *UserSubscription
+	SettlementHead       *dbent.SubscriptionSettlementOrder
+	SettlementResidual   float64
 }
 
 type RefundResult struct {
