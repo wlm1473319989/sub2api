@@ -13,6 +13,8 @@ import (
 
 func TestRefundExchangeCodeSettlementHeadCreatesRefundSettlementOrder(t *testing.T) {
 	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, nil, nil)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, nil, nil, nil)
 	redeemSvc := newRedeemSubscriptionTestService(h)
 
 	user := h.createUser(t, "refund-exchange-head@test.com")
@@ -70,6 +72,11 @@ func TestRefundExchangeCodeSettlementHeadCreatesRefundSettlementOrder(t *testing
 	head, err := service.NewSettlementService(h.client).GetEffectiveHead(h.ctx, user.ID, settlements[1].EffectiveAt)
 	require.NoError(t, err)
 	require.Nil(t, head)
+
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID)
+	require.NoError(t, err)
+	require.Equal(t, domain.SettlementActionPurchase, preview.Action)
+	require.InDelta(t, plan.Price, preview.OrderAmount, 1e-9)
 }
 
 func TestRefundAdminAssignmentSettlementHeadCreatesRefundSettlementOrder(t *testing.T) {

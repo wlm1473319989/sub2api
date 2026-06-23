@@ -89,6 +89,11 @@ func TestExecuteSubscriptionRefundCreatesSettlementOrder(t *testing.T) {
 	require.InDelta(t, -refundPlan.SettlementResidual, settlements[1].ActionDeltaValue, 0.01)
 	require.InDelta(t, 0, settlements[1].AfterSettlementValue, 1e-9)
 	require.Equal(t, domain.SubscriptionStatusRefunded, settlements[1].AfterSubscriptionStatus)
+
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID)
+	require.NoError(t, err)
+	require.Equal(t, domain.SettlementActionPurchase, preview.Action)
+	require.InDelta(t, plan.Price, preview.OrderAmount, 1e-9)
 }
 
 func TestPrepareSubscriptionRefundMismatchReturnsSettlementHeadInfo(t *testing.T) {
