@@ -64,12 +64,16 @@ describe('PlanEditDialog', () => {
       global: {
         stubs: {
           BaseDialog: BaseDialogStub,
-          Select: { props: ['modelValue', 'options'], template: '<div data-select-stub></div>' },
           GroupBadge: { template: '<div />' },
           Icon: { template: '<div />' },
+          Teleport: true,
+          Transition: false,
         },
       },
     })
+
+    expect(wrapper.find('.select-trigger').exists()).toBe(true)
+    expect(wrapper.find('.select-trigger').text()).toContain('payment.admin.days')
 
     await wrapper.find('input[type="text"]').setValue('Starter Plan')
     await wrapper.find('textarea').setValue('starter description')

@@ -111,6 +111,7 @@ import { extractApiErrorMessage } from '@/utils/apiError'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
+import Select from '@/components/common/Select.vue'
 
 type ValidityUnit = 'day' | 'week' | 'month' | 'year'
 
