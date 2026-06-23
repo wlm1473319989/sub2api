@@ -15,17 +15,45 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 		if err != nil {
 			return nil, false, err
 		}
+		settlementMeta, hasSettlement, settlementSvc, settlementHead, err := s.prepareGrantSettlement(ctx, userID)
+		if err != nil {
+			return nil, false, err
+		}
+
 		active, err := s.userSubRepo.GetActiveByUserID(ctx, userID)
 		if err != nil {
 			if errorsIsSubscriptionNotFound(err) {
+				if hasSettlement && settlementHead != nil {
+					return nil, false, ErrActiveSubscriptionRequired
+				}
 				sub, purchaseErr := s.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
 					UserID: userID,
 					Plan:   plan,
 					Notes:  notes,
 				})
-				return sub, false, purchaseErr
+				if purchaseErr != nil {
+					return nil, false, purchaseErr
+				}
+				if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, userID, subscriptionActionPurchase, plan, nil, sub, notes); err != nil {
+					return nil, false, err
+				}
+				return sub, false, nil
 			}
 			return nil, false, err
+		}
+
+		settlementAction := ""
+		if hasSettlement && settlementHead != nil {
+			decision, decisionErr := settlementSvc.DeterminePlanAction(settlementHead, plan)
+			if decisionErr != nil {
+				return nil, false, decisionErr
+			}
+			switch decision.Action {
+			case subscriptionActionRenew, subscriptionActionUpgrade:
+				settlementAction = decision.Action
+			default:
+				return nil, false, ErrSubscriptionPlanActionInvalid
+			}
 		}
 
 		currentPlanID, currentPrice, resolveErr := s.resolveActiveGrantReference(ctx, active)
@@ -33,16 +61,22 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 			return nil, false, resolveErr
 		}
 
-		if currentPlanID != nil && *currentPlanID == plan.ID {
+		if settlementAction == subscriptionActionRenew || (settlementAction == "" && currentPlanID != nil && *currentPlanID == plan.ID) {
 			sub, renewErr := s.RenewActivePlan(ctx, &RenewActivePlanInput{
 				UserID: userID,
 				Plan:   plan,
 				Notes:  notes,
 			})
-			return sub, true, renewErr
+			if renewErr != nil {
+				return nil, true, renewErr
+			}
+			if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, userID, subscriptionActionRenew, plan, active, sub, notes); err != nil {
+				return nil, true, err
+			}
+			return sub, true, nil
 		}
 
-		if currentPrice != nil && plan.Price > *currentPrice {
+		if settlementAction == subscriptionActionUpgrade || (settlementAction == "" && currentPrice != nil && plan.Price > *currentPrice) {
 			result, upgradeErr := s.UpgradeActivePlan(ctx, &UpgradeActivePlanInput{
 				UserID:     userID,
 				TargetPlan: plan,
@@ -51,9 +85,15 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 			if upgradeErr != nil {
 				return nil, false, upgradeErr
 			}
+			if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, userID, subscriptionActionUpgrade, plan, active, result.Current, notes); err != nil {
+				return nil, false, err
+			}
 			return result.Current, false, nil
 		}
 
+		if hasSettlement {
+			return nil, false, ErrSubscriptionPlanActionInvalid
+		}
 		return active, true, nil
 	}
 
