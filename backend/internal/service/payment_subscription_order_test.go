@@ -8,6 +8,7 @@ import (
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/stretchr/testify/require"
 	_ "modernc.org/sqlite"
@@ -257,6 +258,35 @@ func TestPrepareSubscriptionOrderDecision_UpgradeUsesResidualDelta(t *testing.T)
 	require.Equal(t, subscriptionActionUpgrade, decision.Action)
 	require.NotNil(t, decision.UpgradeBreakdown)
 	require.InDelta(t, 100, decision.OrderAmount, 1e-9)
+}
+
+func TestPrepareSubscriptionOrderDecision_UsesSettlementHeadWhenPresent(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	h.paymentSvc.settlementSvc = NewSettlementService(h.client)
+	user := h.createUser(t, "settlement-upgrade@example.com")
+	group := h.createGroup(t, "settlement-upgrade-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	plan := h.createPlan(t, "Starter", 100, 30, "day", &groupID, nil, nil, floatPtr(100))
+	targetPlan := h.createPlan(t, "Pro", 160, 30, "day", &groupID, nil, nil, floatPtr(200))
+
+	sub, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: plan})
+	require.NoError(t, err)
+	stored := h.userSubRepo.byID[sub.ID]
+	require.NotNil(t, stored)
+	stored.PlanPriceSnapshot = floatPtr(999)
+
+	settlementHarness := &settlementServiceHarness{
+		ctx:    h.ctx,
+		client: h.client,
+		svc:    h.paymentSvc.settlementSvc,
+	}
+	_ = settlementHarness.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusActive, time.Now().Add(24*time.Hour))
+
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID)
+	require.NoError(t, err)
+	require.Equal(t, subscriptionActionUpgrade, decision.Action)
+	require.NotNil(t, decision.UpgradeBreakdown)
+	require.Greater(t, decision.OrderAmount, 0.0)
 }
 
 func TestPrepareSubscriptionOrderDecision_LegacyActiveWithoutPlanFallsBackToUpgrade(t *testing.T) {

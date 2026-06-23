@@ -67,6 +67,10 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		return nil, infraerrors.NotFound("PLAN_NOT_AVAILABLE", "plan not found or not for sale")
 	}
 
+	if decision, usedSettlementHead, settlementErr := s.prepareSubscriptionOrderDecisionFromSettlementHead(ctx, userID, plan); usedSettlementHead || settlementErr != nil {
+		return decision, settlementErr
+	}
+
 	active, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
 	if err != nil {
 		if errorsIsSubscriptionNotFound(err) {
@@ -121,6 +125,71 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		OrderAmount:        upgradeAmount,
 		UpgradeBreakdown:   breakdown,
 	}, nil
+}
+
+func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan) (*subscriptionOrderDecision, bool, error) {
+	if s == nil || s.settlementSvc == nil {
+		return nil, false, nil
+	}
+
+	head, err := s.settlementSvc.GetEffectiveHead(ctx, userID, time.Now())
+	if err != nil {
+		return nil, true, err
+	}
+	if head == nil {
+		return nil, false, nil
+	}
+
+	settlementDecision, err := s.settlementSvc.DeterminePlanAction(head, plan)
+	if err != nil {
+		return nil, true, err
+	}
+
+	switch settlementDecision.Action {
+	case subscriptionActionPurchase:
+		return &subscriptionOrderDecision{
+			Plan:        plan,
+			Action:      subscriptionActionPurchase,
+			OrderAmount: plan.Price,
+		}, true, nil
+	case subscriptionActionRenew:
+		active, activeErr := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
+		if activeErr != nil {
+			return nil, true, activeErr
+		}
+		return &subscriptionOrderDecision{
+			Plan:               plan,
+			ActiveSubscription: active,
+			Action:             subscriptionActionRenew,
+			OrderAmount:        plan.Price,
+		}, true, nil
+	case subscriptionActionUpgrade:
+		active, activeErr := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
+		if activeErr != nil {
+			return nil, true, activeErr
+		}
+		if settlementDecision.CurrentPlanPrice == nil {
+			return nil, true, ErrSettlementHeadIncomplete
+		}
+		breakdown, calcErr := s.calculateUpgradeOrderDelta(ctx, active, *settlementDecision.CurrentPlanPrice, plan)
+		if calcErr != nil {
+			return nil, true, calcErr
+		}
+		if breakdown.UpgradeDelta <= 0 {
+			return nil, true, ErrUpgradePaymentNotRequired
+		}
+		return &subscriptionOrderDecision{
+			Plan:               plan,
+			ActiveSubscription: active,
+			Action:             subscriptionActionUpgrade,
+			OrderAmount:        breakdown.UpgradeDelta,
+			UpgradeBreakdown:   breakdown,
+		}, true, nil
+	case subscriptionActionUnavailable:
+		return nil, true, ErrSubscriptionOrderActionInvalid
+	default:
+		return nil, true, infraerrors.BadRequest("SUBSCRIPTION_ORDER_ACTION_INVALID", "unsupported subscription settlement action")
+	}
 }
 
 func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID int64, planID int64) (*SubscriptionOrderPreview, error) {
