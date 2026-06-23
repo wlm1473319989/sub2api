@@ -103,7 +103,7 @@
                   <span v-if="selectedPlan.original_price" class="text-sm text-gray-400 line-through dark:text-gray-500">
                     {{ formatSelectedPaymentAmount(selectedPlan.original_price) }}
                   </span>
-                  <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(selectedPlan.price) }}</span>
+                  <span class="text-3xl font-bold text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(selectedPlanOrderAmount) }}</span>
                   <span class="text-sm text-gray-500 dark:text-gray-400">/ {{ planValiditySuffix }}</span>
                 </div>
                 <!-- Description -->
@@ -137,11 +137,11 @@
                   @select="selectedMethod = $event"
                 />
               </div>
-              <div v-if="feeRate > 0 && selectedPlan.price > 0" class="card p-6">
+              <div v-if="feeRate > 0 && selectedPlanOrderAmount > 0" class="card p-6">
                 <div class="space-y-2 text-sm">
                   <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">{{ t('payment.amountLabel') }}</span>
-                    <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(selectedPlan.price) }}</span>
+                    <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(selectedPlanOrderAmount) }}</span>
                   </div>
                   <div class="flex justify-between">
                     <span class="text-gray-500 dark:text-gray-400">{{ t('payment.fee') }} ({{ feeRate }}%)</span>
@@ -153,14 +153,35 @@
                   </div>
                 </div>
               </div>
+              <div v-if="selectedPlanAction === 'upgrade' && selectedUpgradeBreakdown" class="card p-6">
+                <div class="space-y-2 text-sm">
+                  <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">{{ t('payment.currentPlan') }}</span>
+                    <span class="text-gray-900 dark:text-white">{{ selectedCurrentPlanPreview?.name || '-' }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">{{ t('payment.targetPlan') }}</span>
+                    <span class="text-gray-900 dark:text-white">{{ selectedTargetPlanPreview?.name || selectedPlan.name }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">{{ t('payment.residualValue') }}</span>
+                    <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.residual_value) }}</span>
+                  </div>
+                  <div class="flex justify-between">
+                    <span class="text-gray-500 dark:text-gray-400">{{ t('payment.upgradeDelta') }}</span>
+                    <span class="font-semibold text-amber-600 dark:text-amber-400">{{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.upgrade_delta) }}</span>
+                  </div>
+                </div>
+              </div>
+              <p v-if="subscriptionNotice" class="text-sm text-amber-600 dark:text-amber-300">{{ subscriptionNotice }}</p>
               <button :class="['btn w-full py-3 text-base font-medium', paymentButtonClass]" :disabled="!canSubmitSubscription || submitting" @click="confirmSubscribe">
                 <span v-if="submitting" class="flex items-center justify-center gap-2">
                   <span class="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent"></span>
                   {{ t('common.processing') }}
                 </span>
-                <span v-else>{{ t('payment.createOrder') }} {{ formatSelectedPaymentAmount(feeRate > 0 ? subTotalAmount : selectedPlan.price) }}</span>
+                <span v-else>{{ t(selectedPlanAction === 'upgrade' ? 'payment.upgradeNow' : selectedPlanAction === 'renew' ? 'payment.renewNow' : 'payment.subscribeNow') }} {{ formatSelectedPaymentAmount(feeRate > 0 ? subTotalAmount : selectedPlanOrderAmount) }}</span>
               </button>
-              <button class="btn btn-secondary w-full" @click="selectedPlan = null">{{ t('common.cancel') }}</button>
+              <button class="btn btn-secondary w-full" @click="clearSelectedPlan">{{ t('common.cancel') }}</button>
             </template>
             <!-- Plan list -->
             <template v-else>
@@ -169,7 +190,7 @@
                 <p class="text-gray-500 dark:text-gray-400">{{ t('payment.noPlans') }}</p>
               </div>
               <div v-else :class="planGridClass">
-                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlan" />
+                <SubscriptionPlanCard v-for="plan in checkout.plans" :key="plan.id" :plan="plan" :action="getPlanAction(plan)" @select="selectPlan" />
               </div>
               <!-- Active subscriptions (compact, below plan list) -->
               <div v-if="activeSubscriptions.length > 0">
@@ -206,23 +227,6 @@
         </div>
       </template>
     </div>
-    <!-- Renewal Plan Selection Modal -->
-    <Teleport to="body">
-      <Transition name="modal">
-        <div v-if="showRenewalModal" class="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4" @click.self="closeRenewalModal">
-          <div class="relative w-full max-w-lg rounded-2xl border border-gray-200 bg-white p-6 shadow-2xl dark:border-dark-700 dark:bg-dark-900">
-            <!-- Close button -->
-            <button class="absolute right-4 top-4 rounded-lg p-1 text-gray-400 transition-colors hover:bg-gray-100 hover:text-gray-600 dark:hover:bg-dark-700 dark:hover:text-gray-200" @click="closeRenewalModal">
-              <svg class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
-            </button>
-            <h3 class="mb-4 text-lg font-semibold text-gray-900 dark:text-white">{{ t('payment.selectPlan') }}</h3>
-            <div class="space-y-4">
-              <SubscriptionPlanCard v-for="plan in renewalPlans" :key="plan.id" :plan="plan" :active-subscriptions="activeSubscriptions" @select="selectPlanFromModal" />
-            </div>
-          </div>
-        </div>
-      </Transition>
-    </Teleport>
     <!-- Image Preview Overlay -->
     <Teleport to="body">
       <Transition name="modal">
@@ -245,7 +249,15 @@ import { useAppStore } from '@/stores'
 import { paymentAPI } from '@/api/payment'
 import { extractApiErrorMessage, extractI18nErrorMessage } from '@/utils/apiError'
 import { isMobileDevice } from '@/utils/device'
-import type { SubscriptionPlan, CheckoutInfoResponse, CreateOrderResult, OrderType } from '@/types/payment'
+import type { UserSubscription } from '@/types'
+import type {
+  SubscriptionPlan,
+  CheckoutInfoResponse,
+  CreateOrderResult,
+  OrderType,
+  SubscriptionAction,
+  SubscriptionPreviewResponse,
+} from '@/types/payment'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
 import PaymentMethodSelector from '@/components/payment/PaymentMethodSelector.vue'
@@ -295,13 +307,17 @@ function getDaysRemaining(expiresAt: string): number {
 
 const loading = ref(true)
 const submitting = ref(false)
+const previewLoading = ref(false)
 const errorMessage = ref('')
 const errorHintMessage = ref('')
+const subscriptionNotice = ref('')
 const activeTab = ref<'recharge' | 'subscription'>('recharge')
 const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
+const selectedPlanPreview = ref<SubscriptionPreviewResponse | null>(null)
 const previewImage = ref('')
+let previewRequestId = 0
 
 const paymentPhase = ref<'select' | 'paying'>('select')
 
@@ -396,6 +412,18 @@ function resetPayment() {
   removeRecoverySnapshot()
 }
 
+function invalidateSubscriptionPreview() {
+  previewRequestId += 1
+  previewLoading.value = false
+  selectedPlanPreview.value = null
+}
+
+function clearSelectedPlan() {
+  invalidateSubscriptionPreview()
+  selectedPlan.value = null
+  subscriptionNotice.value = ''
+}
+
 async function redirectToPaymentResult(state: PaymentRecoverySnapshot): Promise<void> {
   const query: Record<string, string | undefined> = {}
   if (state.orderId > 0) {
@@ -453,7 +481,7 @@ function buildWechatOAuthAuthorizeUrl(
 function onPaymentDone() {
   const wasSubscription = paymentState.value.orderType === 'subscription'
   resetPayment()
-  selectedPlan.value = null
+  clearSelectedPlan()
   if (wasSubscription) {
     subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
   }
@@ -492,6 +520,45 @@ const balanceRechargeMultiplier = computed(() => {
   return multiplier > 0 ? multiplier : 1
 })
 const creditedAmount = computed(() => Math.round((validAmount.value * balanceRechargeMultiplier.value) * 100) / 100)
+
+const currentSubscription = computed<UserSubscription | null>(() => activeSubscriptions.value[0] ?? null)
+
+function getPlanAction(plan: SubscriptionPlan): SubscriptionAction {
+  const current = currentSubscription.value
+  if (!current) {
+    return 'purchase'
+  }
+  if (current.plan_id === plan.id) {
+    return 'renew'
+  }
+  const currentPrice = current.plan_price_snapshot ?? 0
+  if (currentPrice > 0 && plan.price > currentPrice) {
+    return 'upgrade'
+  }
+  return 'unavailable'
+}
+
+const selectedPlanAction = computed<SubscriptionAction>(() => {
+  if (!selectedPlan.value) {
+    return 'purchase'
+  }
+  return selectedPlanPreview.value?.action ?? getPlanAction(selectedPlan.value)
+})
+
+const selectedPlanOrderAmount = computed(() => {
+  if (!selectedPlan.value) {
+    return 0
+  }
+  const previewAmount = selectedPlanPreview.value?.order_amount
+  if (typeof previewAmount === 'number' && Number.isFinite(previewAmount) && previewAmount >= 0) {
+    return previewAmount
+  }
+  return selectedPlan.value.price
+})
+
+const selectedUpgradeBreakdown = computed(() => selectedPlanPreview.value?.upgrade_breakdown ?? null)
+const selectedCurrentPlanPreview = computed(() => selectedPlanPreview.value?.current_plan ?? null)
+const selectedTargetPlanPreview = computed(() => selectedPlanPreview.value?.target_plan ?? null)
 
 // Adaptive grid: center single card, 2-col for 2 plans, 3-col for 3+
 const planGridClass = computed(() => {
@@ -586,7 +653,7 @@ const canSubmit = computed(() =>
 
 // Subscription-specific: method options based on plan price
 const subMethodOptions = computed<PaymentMethodOption[]>(() => {
-  const planPrice = selectedPlan.value?.price ?? 0
+  const planPrice = selectedPlanOrderAmount.value
   return enabledMethods.value.map((type) => {
     const ml = visibleMethods.value[type]
     return {
@@ -598,20 +665,23 @@ const subMethodOptions = computed<PaymentMethodOption[]>(() => {
 })
 
 const subFeeAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
+  const price = selectedPlanOrderAmount.value
   if (feeRate.value <= 0 || price <= 0) return 0
   return Math.ceil(((price * feeRate.value) / 100) * 100) / 100
 })
 
 const subTotalAmount = computed(() => {
-  const price = selectedPlan.value?.price ?? 0
+  const price = selectedPlanOrderAmount.value
   if (feeRate.value <= 0 || price <= 0) return price
   return Math.round((price + subFeeAmount.value) * 100) / 100
 })
 
 const canSubmitSubscription = computed(() =>
   selectedPlan.value !== null
-    && amountFitsMethod(selectedPlan.value.price, selectedMethod.value)
+    && !previewLoading.value
+    && selectedPlanPreview.value !== null
+    && selectedPlanAction.value !== 'unavailable'
+    && amountFitsMethod(selectedPlanOrderAmount.value, selectedMethod.value)
     && selectedLimit.value?.available !== false
 )
 
@@ -633,14 +703,6 @@ const paymentButtonClass = computed(() => {
   return 'btn-primary'
 })
 
-// Renewal modal state
-const showRenewalModal = ref(false)
-const renewPlanId = ref<number | null>(null)
-const renewalPlans = computed(() => {
-  if (renewPlanId.value == null) return []
-  return checkout.value.plans.filter((plan) => plan.id === renewPlanId.value)
-})
-
 const planValiditySuffix = computed(() => {
   if (!selectedPlan.value) return ''
   const u = selectedPlan.value.validity_unit || 'day'
@@ -650,21 +712,54 @@ const planValiditySuffix = computed(() => {
   return `${selectedPlan.value.validity_days}${t('payment.days')}`
 })
 
-function selectPlan(plan: SubscriptionPlan) {
-  selectedPlan.value = plan
-  errorMessage.value = ''
+async function loadSubscriptionPreview(plan: SubscriptionPlan): Promise<SubscriptionPreviewResponse | null> {
+  const requestId = ++previewRequestId
+  previewLoading.value = true
+  try {
+    const response = await paymentAPI.previewSubscription(plan.id)
+    if (requestId !== previewRequestId) {
+      return null
+    }
+    selectedPlanPreview.value = response.data
+    if (response.data.action === 'unavailable') {
+      subscriptionNotice.value = t('payment.subscriptionUnavailableHint')
+    } else if (response.data.action === 'upgrade') {
+      subscriptionNotice.value = t('payment.upgradePreviewHint')
+    } else {
+      subscriptionNotice.value = ''
+    }
+    return response.data
+  } catch (err: unknown) {
+    if (requestId !== previewRequestId) {
+      return null
+    }
+    selectedPlanPreview.value = null
+    subscriptionNotice.value = ''
+    throw err
+  } finally {
+    if (requestId === previewRequestId) {
+      previewLoading.value = false
+    }
+  }
 }
 
-function selectPlanFromModal(plan: SubscriptionPlan) {
-  showRenewalModal.value = false
-  renewPlanId.value = null
-  selectedPlan.value = plan
-  errorMessage.value = ''
-}
-
-function closeRenewalModal() {
-  showRenewalModal.value = false
-  renewPlanId.value = null
+async function selectPlan(plan: SubscriptionPlan) {
+  try {
+    invalidateSubscriptionPreview()
+    selectedPlan.value = plan
+    errorMessage.value = ''
+    subscriptionNotice.value = ''
+    const preview = await loadSubscriptionPreview(plan)
+    if (preview?.action === 'unavailable') {
+      const notice = t('payment.subscriptionUnavailableHint')
+      clearSelectedPlan()
+      subscriptionNotice.value = notice
+      appStore.showInfo(notice)
+    }
+  } catch (err: unknown) {
+    clearSelectedPlan()
+    appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error')))
+  }
 }
 
 async function handleSubmitRecharge() {
@@ -674,7 +769,12 @@ async function handleSubmitRecharge() {
 
 async function confirmSubscribe() {
   if (!selectedPlan.value || submitting.value) return
-  await createOrder(selectedPlan.value.price, 'subscription', selectedPlan.value.id)
+  if (previewLoading.value || selectedPlanPreview.value === null) return
+  if (selectedPlanAction.value === 'unavailable') {
+    subscriptionNotice.value = t('payment.subscriptionUnavailableHint')
+    return
+  }
+  await createOrder(selectedPlanOrderAmount.value, 'subscription', selectedPlan.value.id)
 }
 
 async function createOrder(orderAmount: number, orderType: OrderType, planId?: number, options: CreateOrderOptions = {}) {
@@ -1048,15 +1148,14 @@ onMounted(async () => {
     if (checkout.value.balance_disabled) {
       activeTab.value = 'subscription'
     }
-    // Handle renewal navigation: ?tab=subscription&plan=123
+    // Handle direct navigation: ?tab=subscription&plan=123
     if (route.query.tab === 'subscription') {
       activeTab.value = 'subscription'
       if (route.query.plan) {
         const planId = Number(route.query.plan)
         const targetPlan = checkout.value.plans.find(p => p.id === planId)
         if (targetPlan) {
-          renewPlanId.value = planId
-          selectedPlan.value = targetPlan
+          await selectPlan(targetPlan)
         }
       }
     }

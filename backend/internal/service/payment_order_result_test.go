@@ -24,6 +24,7 @@ func TestBuildCreateOrderResponseDefaultsToOrderCreated(t *testing.T) {
 			OutTradeNo: "sub2_42",
 		},
 		CreateOrderRequest{PaymentType: payment.TypeWxpay},
+		nil,
 		12.71,
 		&payment.InstanceSelection{PaymentMode: "qrcode"},
 		&payment.CreatePaymentResponse{
@@ -70,6 +71,7 @@ func TestBuildCreateOrderResponseCopiesJSAPIPayload(t *testing.T) {
 			OutTradeNo: "sub2_88",
 		},
 		CreateOrderRequest{PaymentType: payment.TypeWxpay},
+		nil,
 		67.55,
 		&payment.InstanceSelection{PaymentMode: "popup"},
 		&payment.CreatePaymentResponse{
@@ -88,6 +90,42 @@ func TestBuildCreateOrderResponseCopiesJSAPIPayload(t *testing.T) {
 	}
 	if resp.JSAPI != jsapiPayload || resp.JSAPIPayload != jsapiPayload {
 		t.Fatal("expected jsapi aliases to preserve the original pointer")
+	}
+}
+
+func TestBuildCreateOrderResponseIncludesSubscriptionMetadata(t *testing.T) {
+	t.Parallel()
+
+	resp := buildCreateOrderResponse(
+		&dbent.PaymentOrder{
+			ID:         99,
+			Amount:     48,
+			FeeRate:    0,
+			ExpiresAt:  time.Date(2026, 4, 16, 14, 0, 0, 0, time.UTC),
+			OutTradeNo: "sub2_99",
+		},
+		CreateOrderRequest{PaymentType: payment.TypeAlipay},
+		&subscriptionOrderDecision{
+			Action: subscriptionActionUpgrade,
+			UpgradeBreakdown: &UpgradeResidualBreakdown{
+				ResidualValue: 12,
+				UpgradeDelta:  48,
+			},
+		},
+		48,
+		&payment.InstanceSelection{PaymentMode: "redirect"},
+		&payment.CreatePaymentResponse{
+			TradeNo: "sub2_99",
+			PayURL:  "https://pay.example.com/sub2_99",
+		},
+		payment.CreatePaymentResultOrderCreated,
+	)
+
+	if resp.SubscriptionAction != subscriptionActionUpgrade {
+		t.Fatalf("subscription action = %q, want %q", resp.SubscriptionAction, subscriptionActionUpgrade)
+	}
+	if resp.UpgradeBreakdown == nil || resp.UpgradeBreakdown.UpgradeDelta != 48 {
+		t.Fatalf("upgrade breakdown = %+v", resp.UpgradeBreakdown)
 	}
 }
 

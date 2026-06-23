@@ -2,7 +2,9 @@ package service
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"strings"
 	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
@@ -12,10 +14,11 @@ import (
 )
 
 const (
-	subscriptionActionPurchase = "purchase"
-	subscriptionActionRenew    = "renew"
-	subscriptionActionUpgrade  = "upgrade"
-	subscriptionActionRefund   = "refund"
+	subscriptionActionPurchase    = "purchase"
+	subscriptionActionRenew       = "renew"
+	subscriptionActionUpgrade     = "upgrade"
+	subscriptionActionUnavailable = "unavailable"
+	subscriptionActionRefund      = "refund"
 )
 
 var (
@@ -30,6 +33,29 @@ type subscriptionOrderDecision struct {
 	Action             string
 	OrderAmount        float64
 	UpgradeBreakdown   *UpgradeResidualBreakdown
+}
+
+const (
+	subscriptionPreviewBlockedReasonDowngradeOrSwitch = "downgrade_or_switch_not_supported"
+	subscriptionPreviewBlockedReasonUpgradeNoPayment  = "upgrade_payment_not_required"
+)
+
+type SubscriptionOrderPreview struct {
+	Action           string                    `json:"action"`
+	OrderAmount      float64                   `json:"order_amount"`
+	CurrentPlan      *SubscriptionPreviewPlan  `json:"current_plan,omitempty"`
+	TargetPlan       *SubscriptionPreviewPlan  `json:"target_plan,omitempty"`
+	UpgradeBreakdown *UpgradeResidualBreakdown `json:"upgrade_breakdown,omitempty"`
+	BlockedReason    string                    `json:"blocked_reason,omitempty"`
+}
+
+type SubscriptionPreviewPlan struct {
+	ID           *int64     `json:"id,omitempty"`
+	Name         string     `json:"name,omitempty"`
+	Price        *float64   `json:"price,omitempty"`
+	ValidityDays *int       `json:"validity_days,omitempty"`
+	ValidityUnit string     `json:"validity_unit,omitempty"`
+	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
 func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, userID int64, planID int64) (*subscriptionOrderDecision, error) {
@@ -97,6 +123,41 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 	}, nil
 }
 
+func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID int64, planID int64) (*SubscriptionOrderPreview, error) {
+	decision, err := s.prepareSubscriptionOrderDecision(ctx, userID, planID)
+	if err == nil {
+		return s.buildSubscriptionOrderPreview(ctx, decision.Action, decision.OrderAmount, decision.Plan, decision.ActiveSubscription, decision.UpgradeBreakdown, "")
+	}
+
+	if !errors.Is(err, ErrSubscriptionOrderActionInvalid) && !errors.Is(err, ErrUpgradePaymentNotRequired) {
+		return nil, err
+	}
+
+	plan, planErr := s.configService.GetPlan(ctx, planID)
+	if planErr != nil || !plan.ForSale {
+		return nil, infraerrors.NotFound("PLAN_NOT_AVAILABLE", "plan not found or not for sale")
+	}
+
+	active, activeErr := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
+	switch {
+	case activeErr == nil:
+	case errorsIsSubscriptionNotFound(activeErr):
+		active = nil
+	default:
+		return nil, activeErr
+	}
+
+	return s.buildSubscriptionOrderPreview(
+		ctx,
+		subscriptionActionUnavailable,
+		0,
+		plan,
+		active,
+		nil,
+		subscriptionPreviewBlockedReason(err),
+	)
+}
+
 func subscriptionOrderMatchesRenewPlan(active *UserSubscription, currentPlanID *int64, plan *dbent.SubscriptionPlan) bool {
 	if active == nil || plan == nil {
 		return false
@@ -105,6 +166,105 @@ func subscriptionOrderMatchesRenewPlan(active *UserSubscription, currentPlanID *
 		return *active.PlanID == plan.ID
 	}
 	return currentPlanID != nil && *currentPlanID == plan.ID
+}
+
+func (s *PaymentService) buildSubscriptionOrderPreview(
+	ctx context.Context,
+	action string,
+	orderAmount float64,
+	targetPlan *dbent.SubscriptionPlan,
+	active *UserSubscription,
+	upgradeBreakdown *UpgradeResidualBreakdown,
+	blockedReason string,
+) (*SubscriptionOrderPreview, error) {
+	preview := &SubscriptionOrderPreview{
+		Action:           action,
+		OrderAmount:      orderAmount,
+		TargetPlan:       buildSubscriptionPreviewTargetPlan(targetPlan),
+		UpgradeBreakdown: upgradeBreakdown,
+		BlockedReason:    blockedReason,
+	}
+	currentPlan, err := s.buildSubscriptionPreviewCurrentPlan(ctx, active)
+	if err != nil {
+		return nil, err
+	}
+	preview.CurrentPlan = currentPlan
+	return preview, nil
+}
+
+func buildSubscriptionPreviewTargetPlan(plan *dbent.SubscriptionPlan) *SubscriptionPreviewPlan {
+	if plan == nil {
+		return nil
+	}
+	planID := plan.ID
+	price := plan.Price
+	validityDays := plan.ValidityDays
+	return &SubscriptionPreviewPlan{
+		ID:           &planID,
+		Name:         plan.Name,
+		Price:        &price,
+		ValidityDays: &validityDays,
+		ValidityUnit: plan.ValidityUnit,
+	}
+}
+
+func (s *PaymentService) buildSubscriptionPreviewCurrentPlan(ctx context.Context, active *UserSubscription) (*SubscriptionPreviewPlan, error) {
+	if active == nil {
+		return nil, nil
+	}
+
+	currentPlanID, currentPrice, err := s.resolveActiveSubscriptionReference(ctx, active)
+	if err != nil {
+		return nil, err
+	}
+
+	preview := &SubscriptionPreviewPlan{
+		ID:        currentPlanID,
+		Price:     currentPrice,
+		ExpiresAt: copyTimePointer(&active.ExpiresAt),
+	}
+	if active.PlanNameSnapshot != nil && strings.TrimSpace(*active.PlanNameSnapshot) != "" {
+		preview.Name = strings.TrimSpace(*active.PlanNameSnapshot)
+	}
+
+	if currentPlanID != nil {
+		plan, planErr := s.configService.GetPlan(ctx, *currentPlanID)
+		if planErr == nil && plan != nil {
+			if preview.Name == "" {
+				preview.Name = plan.Name
+			}
+			if preview.Price == nil {
+				preview.Price = copyFloat64Pointer(&plan.Price)
+			}
+			validityDays := plan.ValidityDays
+			preview.ValidityDays = &validityDays
+			preview.ValidityUnit = plan.ValidityUnit
+		}
+	}
+
+	if preview.Name == "" {
+		preview.Name = "Current Subscription"
+	}
+	return preview, nil
+}
+
+func subscriptionPreviewBlockedReason(err error) string {
+	switch {
+	case errors.Is(err, ErrUpgradePaymentNotRequired):
+		return subscriptionPreviewBlockedReasonUpgradeNoPayment
+	case errors.Is(err, ErrSubscriptionOrderActionInvalid):
+		return subscriptionPreviewBlockedReasonDowngradeOrSwitch
+	default:
+		return ""
+	}
+}
+
+func copyTimePointer(value *time.Time) *time.Time {
+	if value == nil {
+		return nil
+	}
+	v := *value
+	return &v
 }
 
 func (s *PaymentService) resolveActiveSubscriptionReference(ctx context.Context, active *UserSubscription) (*int64, *float64, error) {

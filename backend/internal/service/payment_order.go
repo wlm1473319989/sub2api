@@ -102,7 +102,7 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if err != nil {
 		return nil, err
 	}
-	resp, err := s.invokeProvider(ctx, order, req, cfg, limitAmount, payAmountStr, payAmount, plan, sel)
+	resp, err := s.invokeProvider(ctx, order, req, cfg, limitAmount, payAmountStr, payAmount, plan, subDecision, sel)
 	if err != nil {
 		_, _ = s.entClient.PaymentOrder.UpdateOneID(order.ID).
 			SetStatus(OrderStatusFailed).
@@ -398,7 +398,7 @@ func (s *PaymentService) usesOfficialWxpayVisibleMethod(ctx context.Context) boo
 	return inst.ProviderKey == payment.TypeWxpay
 }
 
-func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, limitAmount float64, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
+func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.PaymentOrder, req CreateOrderRequest, cfg *PaymentConfig, limitAmount float64, payAmountStr string, payAmount float64, plan *dbent.SubscriptionPlan, subDecision *subscriptionOrderDecision, sel *payment.InstanceSelection) (*CreateOrderResponse, error) {
 	prov, err := provider.CreateProvider(sel.ProviderKey, sel.InstanceID, sel.Config)
 	if err != nil {
 		slog.Error("[PaymentService] CreateProvider failed", "provider", sel.ProviderKey, "instance", sel.InstanceID, "error", err)
@@ -477,7 +477,7 @@ func (s *PaymentService) invokeProvider(ctx context.Context, order *dbent.Paymen
 	if resultType == "" {
 		resultType = payment.CreatePaymentResultOrderCreated
 	}
-	resp := buildCreateOrderResponse(order, req, payAmount, sel, pr, resultType)
+	resp := buildCreateOrderResponse(order, req, subDecision, payAmount, sel, pr, resultType)
 	resp.ResumeToken = resumeToken
 	return resp, nil
 }
@@ -679,28 +679,36 @@ func classifyCreatePaymentError(req CreateOrderRequest, providerKey string, err 
 	return infraerrors.ServiceUnavailable("PAYMENT_GATEWAY_ERROR", fmt.Sprintf("payment gateway error: %s", err.Error()))
 }
 
-func buildCreateOrderResponse(order *dbent.PaymentOrder, req CreateOrderRequest, payAmount float64, sel *payment.InstanceSelection, pr *payment.CreatePaymentResponse, resultType payment.CreatePaymentResultType) *CreateOrderResponse {
+func buildCreateOrderResponse(order *dbent.PaymentOrder, req CreateOrderRequest, subDecision *subscriptionOrderDecision, payAmount float64, sel *payment.InstanceSelection, pr *payment.CreatePaymentResponse, resultType payment.CreatePaymentResultType) *CreateOrderResponse {
+	subscriptionAction := ""
+	var upgradeBreakdown *UpgradeResidualBreakdown
+	if subDecision != nil {
+		subscriptionAction = subDecision.Action
+		upgradeBreakdown = subDecision.UpgradeBreakdown
+	}
 	return &CreateOrderResponse{
-		OrderID:      order.ID,
-		Amount:       order.Amount,
-		PayAmount:    payAmount,
-		FeeRate:      order.FeeRate,
-		Status:       OrderStatusPending,
-		ResultType:   resultType,
-		PaymentType:  req.PaymentType,
-		OutTradeNo:   order.OutTradeNo,
-		PayURL:       pr.PayURL,
-		QRCode:       pr.QRCode,
-		ClientSecret: pr.ClientSecret,
-		IntentID:     pr.IntentID,
-		Currency:     pr.Currency,
-		CountryCode:  pr.CountryCode,
-		PaymentEnv:   pr.PaymentEnv,
-		OAuth:        pr.OAuth,
-		JSAPI:        pr.JSAPI,
-		JSAPIPayload: pr.JSAPI,
-		ExpiresAt:    order.ExpiresAt,
-		PaymentMode:  sel.PaymentMode,
+		OrderID:            order.ID,
+		Amount:             order.Amount,
+		PayAmount:          payAmount,
+		FeeRate:            order.FeeRate,
+		Status:             OrderStatusPending,
+		ResultType:         resultType,
+		PaymentType:        req.PaymentType,
+		SubscriptionAction: subscriptionAction,
+		OutTradeNo:         order.OutTradeNo,
+		PayURL:             pr.PayURL,
+		QRCode:             pr.QRCode,
+		ClientSecret:       pr.ClientSecret,
+		IntentID:           pr.IntentID,
+		Currency:           pr.Currency,
+		CountryCode:        pr.CountryCode,
+		PaymentEnv:         pr.PaymentEnv,
+		OAuth:              pr.OAuth,
+		JSAPI:              pr.JSAPI,
+		JSAPIPayload:       pr.JSAPI,
+		UpgradeBreakdown:   upgradeBreakdown,
+		ExpiresAt:          order.ExpiresAt,
+		PaymentMode:        sel.PaymentMode,
 	}
 }
 

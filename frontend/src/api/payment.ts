@@ -12,7 +12,8 @@ import type {
   CheckoutInfoResponse,
   CreateOrderRequest,
   CreateOrderResult,
-  PaymentOrder
+  PaymentOrder,
+  SubscriptionPreviewResponse,
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
@@ -40,6 +41,11 @@ export const paymentAPI = {
   /** Get payment method limits and fee rates */
   getLimits() {
     return apiClient.get<MethodLimitsResponse>('/payment/limits')
+  },
+
+  /** Preview subscription action before creating an order */
+  previewSubscription(planId: number) {
+    return apiClient.post<SubscriptionPreviewResponse>('/payment/subscription/preview', { plan_id: planId })
   },
 
   /** Create a new payment order */

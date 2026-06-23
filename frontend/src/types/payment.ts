@@ -22,6 +22,8 @@ export type PaymentType = 'alipay' | 'wxpay' | 'alipay_direct' | 'wxpay_direct' 
 
 export type OrderType = 'balance' | 'subscription'
 
+export type SubscriptionAction = 'purchase' | 'renew' | 'upgrade' | 'unavailable'
+
 // ==================== Configuration ====================
 
 export interface PaymentConfig {
@@ -119,6 +121,35 @@ export interface SubscriptionPlan {
   sort_order: number
 }
 
+export interface UpgradeResidualBreakdown {
+  theoretical_full_max_knives: number
+  residual_quota_knives: number
+  unit_cost: number
+  residual_value: number
+  upgrade_delta: number
+  daily_family_max?: number
+  weekly_family_max?: number
+  monthly_family_max?: number
+}
+
+export interface SubscriptionPreviewPlan {
+  id?: number
+  name?: string
+  price?: number
+  validity_days?: number
+  validity_unit?: string
+  expires_at?: string
+}
+
+export interface SubscriptionPreviewResponse {
+  action: SubscriptionAction
+  order_amount: number
+  current_plan?: SubscriptionPreviewPlan
+  target_plan?: SubscriptionPreviewPlan
+  upgrade_breakdown?: UpgradeResidualBreakdown
+  blocked_reason?: string
+}
+
 export interface PaymentChannel {
   id: number
   group_id?: number
@@ -196,12 +227,14 @@ export interface CreateOrderResult {
   expires_at: string
   result_type?: CreateOrderResultType
   payment_type?: string
+  subscription_action?: SubscriptionAction
   out_trade_no?: string
   payment_mode?: string
   resume_token?: string
   oauth?: WechatOAuthInfo
   jsapi?: WechatJSAPIPayload
   jsapi_payload?: WechatJSAPIPayload
+  upgrade_breakdown?: UpgradeResidualBreakdown
 }
 
 export interface DashboardStats {

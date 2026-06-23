@@ -18,6 +18,7 @@ const showError = vi.hoisted(() => vi.fn())
 const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
+const previewSubscription = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-router', async () => {
@@ -77,6 +78,7 @@ vi.mock('@/stores', () => ({
 vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
+    previewSubscription,
   },
 }))
 
@@ -190,6 +192,12 @@ describe('PaymentView WeChat JSAPI flow', () => {
     showInfo.mockReset()
     showWarning.mockReset()
     getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoFixture())
+    previewSubscription.mockReset().mockResolvedValue({
+      data: {
+        action: 'purchase',
+        order_amount: 128,
+      },
+    })
     bridgeInvoke.mockReset()
     window.localStorage.clear()
     ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = {
@@ -407,5 +415,67 @@ describe('PaymentView WeChat JSAPI flow', () => {
     expect(showWarning).toHaveBeenCalledWith('payment.errors.mobilePaymentFallbackToQr')
     expect(showError).not.toHaveBeenCalled()
     expect(window.localStorage.getItem(PAYMENT_RECOVERY_STORAGE_KEY)).toContain('weixin://wxpay/bizpayurl?pr=fallback-native')
+  })
+})
+
+describe('PaymentView subscription preview', () => {
+  beforeEach(() => {
+    routeState.path = '/purchase'
+    routeState.query = {
+      tab: 'subscription',
+      plan: '7',
+    }
+    routerReplace.mockReset().mockResolvedValue(undefined)
+    routerPush.mockReset().mockResolvedValue(undefined)
+    routerResolve.mockClear()
+    createOrder.mockReset()
+    refreshUser.mockReset()
+    fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
+    showError.mockReset()
+    showInfo.mockReset()
+    showWarning.mockReset()
+    getCheckoutInfo.mockReset().mockResolvedValue(checkoutInfoWithPlansFixture())
+    previewSubscription.mockReset().mockResolvedValue({
+      data: {
+        action: 'upgrade',
+        order_amount: 42,
+        current_plan: {
+          id: 1,
+          name: 'Starter',
+          price: 128,
+        },
+        target_plan: {
+          id: 7,
+          name: 'Pro',
+          price: 168,
+        },
+        upgrade_breakdown: {
+          theoretical_full_max_knives: 100,
+          residual_quota_knives: 50,
+          unit_cost: 1.72,
+          residual_value: 86,
+          upgrade_delta: 42,
+        },
+      },
+    })
+    bridgeInvoke.mockReset()
+    window.localStorage.clear()
+    ;(window as Window & { WeixinJSBridge?: { invoke: typeof bridgeInvoke } }).WeixinJSBridge = undefined
+  })
+
+  it('uses backend preview as the selected subscription amount', async () => {
+    const wrapper = shallowMount(PaymentView, {
+      global: {
+        stubs: {
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+    await flushPromises()
+    await flushPromises()
+
+    expect(previewSubscription).toHaveBeenCalledWith(7)
+    expect((wrapper.vm as unknown as { selectedPlanOrderAmount: number }).selectedPlanOrderAmount).toBe(42)
   })
 })

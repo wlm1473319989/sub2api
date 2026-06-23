@@ -187,6 +187,32 @@ func (h *PaymentHandler) GetLimits(c *gin.Context) {
 	response.Success(c, resp)
 }
 
+type SubscriptionPreviewRequest struct {
+	PlanID int64 `json:"plan_id" binding:"required"`
+}
+
+// PreviewSubscriptionOrder returns the effective purchase / renew / upgrade action for a plan.
+// POST /api/v1/payment/subscription/preview
+func (h *PaymentHandler) PreviewSubscriptionOrder(c *gin.Context) {
+	subject, ok := requireAuth(c)
+	if !ok {
+		return
+	}
+
+	var req SubscriptionPreviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	result, err := h.paymentService.PreviewSubscriptionOrder(c.Request.Context(), subject.UserID, req.PlanID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
 // CreateOrderRequest is the request body for creating a payment order.
 type CreateOrderRequest struct {
 	Amount            float64 `json:"amount"`

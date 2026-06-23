@@ -65,9 +65,10 @@
       <button
         type="button"
         :class="['w-full rounded-xl py-2.5 text-sm font-semibold transition-all active:scale-[0.98]', btnClass]"
+        :disabled="disabled"
         @click="emit('select', plan)"
       >
-        {{ isRenewal ? t('payment.renewNow') : t('payment.subscribeNow') }}
+        {{ actionLabel }}
       </button>
     </div>
   </div>
@@ -76,8 +77,7 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useI18n } from 'vue-i18n'
-import type { UserSubscription } from '@/types'
-import type { SubscriptionPlan } from '@/types/payment'
+import type { SubscriptionPlan, SubscriptionAction } from '@/types/payment'
 import {
   platformAccentBarClass,
   platformBorderClass,
@@ -87,23 +87,35 @@ import {
   platformTextClass,
 } from '@/utils/platformColors'
 
-const props = defineProps<{ plan: SubscriptionPlan; activeSubscriptions?: UserSubscription[] }>()
+const props = defineProps<{ plan: SubscriptionPlan; action?: SubscriptionAction }>()
 const emit = defineEmits<{ select: [plan: SubscriptionPlan] }>()
 const { t } = useI18n()
 
 const platform = computed(() => '')
-const isRenewal = computed(() =>
-  props.activeSubscriptions?.some((sub) => {
-    return props.plan.id === sub.plan_id && sub.status === 'active'
-  }) ?? false,
-)
+const action = computed<SubscriptionAction>(() => props.action ?? 'purchase')
 
 const accentClass = computed(() => platformAccentBarClass(platform.value))
 const borderClass = computed(() => platformBorderClass(platform.value))
 const textClass = computed(() => platformTextClass(platform.value))
 const iconClass = computed(() => platformIconClass(platform.value))
-const btnClass = computed(() => platformButtonClass(platform.value))
+const btnClass = computed(() => {
+  if (disabled.value) {
+    return 'cursor-not-allowed bg-gray-100 text-gray-400 dark:bg-dark-700 dark:text-dark-400'
+  }
+  if (action.value === 'upgrade') {
+    return 'bg-amber-500 text-white hover:bg-amber-600'
+  }
+  return platformButtonClass(platform.value)
+})
 const discountClass = computed(() => platformDiscountClass(platform.value))
+const disabled = computed(() => action.value === 'unavailable')
+
+const actionLabel = computed(() => {
+  if (action.value === 'renew') return t('payment.renewNow')
+  if (action.value === 'upgrade') return t('payment.upgradeNow')
+  if (action.value === 'unavailable') return t('payment.notSupportedYet')
+  return t('payment.subscribeNow')
+})
 
 const discountText = computed(() => {
   if (!props.plan.original_price || props.plan.original_price <= 0) return ''

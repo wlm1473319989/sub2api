@@ -37,4 +37,12 @@ describe('payment api', () => {
       resume_token: 'resume-token-123',
     })
   })
+
+  it('posts to subscription preview endpoint', async () => {
+    await paymentAPI.previewSubscription(7)
+
+    expect(post).toHaveBeenCalledWith('/payment/subscription/preview', {
+      plan_id: 7,
+    })
+  })
 })

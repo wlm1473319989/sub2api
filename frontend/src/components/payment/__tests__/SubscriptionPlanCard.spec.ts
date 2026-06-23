@@ -9,6 +9,8 @@ const translations: Record<string, string> = {
   'payment.perYear': 'year',
   'payment.subscribeNow': 'Subscribe now',
   'payment.renewNow': 'Renew now',
+  'payment.upgradeNow': 'Upgrade now',
+  'payment.notSupportedYet': 'Not supported',
   'payment.admin.weeks': 'weeks',
   'payment.planCard.quota': 'Quota',
   'payment.planCard.unlimited': 'Unlimited',
@@ -68,31 +70,37 @@ describe('SubscriptionPlanCard', () => {
     expect(text).toContain('Unlimited')
   })
 
-  it('prefers plan_id for renewal matching', () => {
+  it('shows renew action label', () => {
     const text = mount(SubscriptionPlanCard, {
       props: {
         plan: basePlan,
-        activeSubscriptions: [
-          {
-            id: 99,
-            user_id: 1,
-            plan_id: 1,
-            status: 'active',
-            starts_at: '2026-01-01T00:00:00Z',
-            daily_usage_usd: 0,
-            weekly_usage_usd: 0,
-            monthly_usage_usd: 0,
-            daily_window_start: null,
-            weekly_window_start: null,
-            monthly_window_start: null,
-            created_at: '2026-01-01T00:00:00Z',
-            updated_at: '2026-01-01T00:00:00Z',
-            expires_at: '2026-02-01T00:00:00Z',
-          },
-        ],
+        action: 'renew',
       },
     }).text()
 
     expect(text).toContain('Renew now')
+  })
+
+  it('shows upgrade action label', () => {
+    const text = mount(SubscriptionPlanCard, {
+      props: {
+        plan: basePlan,
+        action: 'upgrade',
+      },
+    }).text()
+
+    expect(text).toContain('Upgrade now')
+  })
+
+  it('disables unavailable action', () => {
+    const wrapper = mount(SubscriptionPlanCard, {
+      props: {
+        plan: basePlan,
+        action: 'unavailable',
+      },
+    })
+
+    expect(wrapper.text()).toContain('Not supported')
+    expect(wrapper.get('button').attributes('disabled')).toBeDefined()
   })
 })

@@ -294,6 +294,58 @@ func TestPrepareSubscriptionOrderDecision_LowerPriceRejected(t *testing.T) {
 	require.ErrorIs(t, err, ErrSubscriptionOrderActionInvalid)
 }
 
+func TestPreviewSubscriptionOrder_Upgrade(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	user := h.createUser(t, "preview-upgrade@example.com")
+	group := h.createGroup(t, "preview-upgrade-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	basePlan := h.createPlan(t, "Starter", 100, 30, "day", &groupID, nil, nil, floatPtr(100))
+	targetPlan := h.createPlan(t, "Pro", 160, 30, "day", &groupID, nil, nil, floatPtr(200))
+
+	sub, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: basePlan})
+	require.NoError(t, err)
+	monthlyStart := startOfDay(time.Now().Add(-20 * 24 * time.Hour))
+	stored := h.userSubRepo.byID[sub.ID]
+	require.NotNil(t, stored)
+	stored.StartsAt = monthlyStart
+	stored.ExpiresAt = monthlyStart.Add(30 * 24 * time.Hour)
+	stored.MonthlyWindowStart = &monthlyStart
+	stored.MonthlyUsedKnives = 40
+
+	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID)
+	require.NoError(t, err)
+	require.Equal(t, subscriptionActionUpgrade, preview.Action)
+	require.InDelta(t, 100, preview.OrderAmount, 1e-9)
+	require.NotNil(t, preview.CurrentPlan)
+	require.Equal(t, basePlan.Name, preview.CurrentPlan.Name)
+	require.NotNil(t, preview.TargetPlan)
+	require.Equal(t, targetPlan.Name, preview.TargetPlan.Name)
+	require.NotNil(t, preview.UpgradeBreakdown)
+	require.InDelta(t, 100, preview.UpgradeBreakdown.UpgradeDelta, 1e-9)
+}
+
+func TestPreviewSubscriptionOrder_LowerPriceReturnsUnavailable(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	user := h.createUser(t, "preview-unavailable@example.com")
+	group := h.createGroup(t, "preview-unavailable-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	activePlan := h.createPlan(t, "Starter", 50, 30, "day", &groupID, nil, nil, floatPtr(100))
+	lowerPlan := h.createPlan(t, "Lower", 30, 30, "day", &groupID, nil, nil, floatPtr(100))
+
+	_, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: activePlan})
+	require.NoError(t, err)
+
+	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, lowerPlan.ID)
+	require.NoError(t, err)
+	require.Equal(t, subscriptionActionUnavailable, preview.Action)
+	require.Equal(t, subscriptionPreviewBlockedReasonDowngradeOrSwitch, preview.BlockedReason)
+	require.Equal(t, 0.0, preview.OrderAmount)
+	require.NotNil(t, preview.CurrentPlan)
+	require.Equal(t, activePlan.Name, preview.CurrentPlan.Name)
+	require.NotNil(t, preview.TargetPlan)
+	require.Equal(t, lowerPlan.Name, preview.TargetPlan.Name)
+}
+
 func TestCreateOrderInTx_WritesSubscriptionActionSnapshot(t *testing.T) {
 	h := newPaymentSubscriptionHarness(t)
 	user := h.createUser(t, "snapshot-order@example.com")
