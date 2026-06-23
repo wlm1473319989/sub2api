@@ -28,11 +28,12 @@ var (
 )
 
 type subscriptionOrderDecision struct {
-	Plan               *dbent.SubscriptionPlan
-	ActiveSubscription *UserSubscription
-	Action             string
-	OrderAmount        float64
-	UpgradeBreakdown   *UpgradeResidualBreakdown
+	Plan                *dbent.SubscriptionPlan
+	ActiveSubscription  *UserSubscription
+	Action              string
+	OrderAmount         float64
+	UpgradeBreakdown    *UpgradeResidualBreakdown
+	CanCompleteDirectly bool
 }
 
 const (
@@ -41,12 +42,13 @@ const (
 )
 
 type SubscriptionOrderPreview struct {
-	Action           string                    `json:"action"`
-	OrderAmount      float64                   `json:"order_amount"`
-	CurrentPlan      *SubscriptionPreviewPlan  `json:"current_plan,omitempty"`
-	TargetPlan       *SubscriptionPreviewPlan  `json:"target_plan,omitempty"`
-	UpgradeBreakdown *UpgradeResidualBreakdown `json:"upgrade_breakdown,omitempty"`
-	BlockedReason    string                    `json:"blocked_reason,omitempty"`
+	Action              string                    `json:"action"`
+	OrderAmount         float64                   `json:"order_amount"`
+	CurrentPlan         *SubscriptionPreviewPlan  `json:"current_plan,omitempty"`
+	TargetPlan          *SubscriptionPreviewPlan  `json:"target_plan,omitempty"`
+	UpgradeBreakdown    *UpgradeResidualBreakdown `json:"upgrade_breakdown,omitempty"`
+	BlockedReason       string                    `json:"blocked_reason,omitempty"`
+	CanCompleteDirectly bool                      `json:"can_complete_directly"`
 }
 
 type SubscriptionPreviewPlan struct {
@@ -115,7 +117,14 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		upgradeAmount = breakdown.UpgradeDelta
 	}
 	if upgradeAmount <= 0 {
-		return nil, ErrUpgradePaymentNotRequired
+		return &subscriptionOrderDecision{
+			Plan:                plan,
+			ActiveSubscription:  active,
+			Action:              subscriptionActionUpgrade,
+			OrderAmount:         0,
+			UpgradeBreakdown:    breakdown,
+			CanCompleteDirectly: true,
+		}, nil
 	}
 
 	return &subscriptionOrderDecision{
@@ -171,12 +180,20 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 		if settlementDecision.CurrentPlanPrice == nil {
 			return nil, true, ErrSettlementHeadIncomplete
 		}
-		breakdown, calcErr := s.calculateUpgradeOrderDelta(ctx, active, *settlementDecision.CurrentPlanPrice, plan)
+		residualBasis := settlementResidualBasisValue(head, active, *settlementDecision.CurrentPlanPrice)
+		breakdown, calcErr := s.calculateUpgradeOrderDelta(ctx, active, residualBasis, plan)
 		if calcErr != nil {
 			return nil, true, calcErr
 		}
 		if breakdown.UpgradeDelta <= 0 {
-			return nil, true, ErrUpgradePaymentNotRequired
+			return &subscriptionOrderDecision{
+				Plan:                plan,
+				ActiveSubscription:  active,
+				Action:              subscriptionActionUpgrade,
+				OrderAmount:         0,
+				UpgradeBreakdown:    breakdown,
+				CanCompleteDirectly: true,
+			}, true, nil
 		}
 		return &subscriptionOrderDecision{
 			Plan:               plan,
@@ -195,7 +212,7 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID int64, planID int64) (*SubscriptionOrderPreview, error) {
 	decision, err := s.prepareSubscriptionOrderDecision(ctx, userID, planID)
 	if err == nil {
-		return s.buildSubscriptionOrderPreview(ctx, decision.Action, decision.OrderAmount, decision.Plan, decision.ActiveSubscription, decision.UpgradeBreakdown, "")
+		return s.buildSubscriptionOrderPreview(ctx, decision.Action, decision.OrderAmount, decision.Plan, decision.ActiveSubscription, decision.UpgradeBreakdown, decision.CanCompleteDirectly, "")
 	}
 
 	if !errors.Is(err, ErrSubscriptionOrderActionInvalid) && !errors.Is(err, ErrUpgradePaymentNotRequired) {
@@ -223,8 +240,19 @@ func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID in
 		plan,
 		active,
 		nil,
+		false,
 		subscriptionPreviewBlockedReason(err),
 	)
+}
+
+func settlementResidualBasisValue(head *dbent.SubscriptionSettlementOrder, active *UserSubscription, fallback float64) float64 {
+	if head != nil && head.AfterSettlementValue > 0 {
+		return head.AfterSettlementValue
+	}
+	if active != nil && active.PlanPriceSnapshot != nil && *active.PlanPriceSnapshot > 0 {
+		return *active.PlanPriceSnapshot
+	}
+	return fallback
 }
 
 func subscriptionOrderMatchesRenewPlan(active *UserSubscription, currentPlanID *int64, plan *dbent.SubscriptionPlan) bool {
@@ -244,14 +272,16 @@ func (s *PaymentService) buildSubscriptionOrderPreview(
 	targetPlan *dbent.SubscriptionPlan,
 	active *UserSubscription,
 	upgradeBreakdown *UpgradeResidualBreakdown,
+	canCompleteDirectly bool,
 	blockedReason string,
 ) (*SubscriptionOrderPreview, error) {
 	preview := &SubscriptionOrderPreview{
-		Action:           action,
-		OrderAmount:      orderAmount,
-		TargetPlan:       buildSubscriptionPreviewTargetPlan(targetPlan),
-		UpgradeBreakdown: upgradeBreakdown,
-		BlockedReason:    blockedReason,
+		Action:              action,
+		OrderAmount:         orderAmount,
+		TargetPlan:          buildSubscriptionPreviewTargetPlan(targetPlan),
+		UpgradeBreakdown:    upgradeBreakdown,
+		BlockedReason:       blockedReason,
+		CanCompleteDirectly: canCompleteDirectly,
 	}
 	currentPlan, err := s.buildSubscriptionPreviewCurrentPlan(ctx, active)
 	if err != nil {

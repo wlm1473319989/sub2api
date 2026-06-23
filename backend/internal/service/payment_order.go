@@ -51,6 +51,9 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 	if s.notificationEmailService != nil {
 		s.notificationEmailService.RememberRecipientLocale(ctx, req.UserID, user.Email, req.Locale)
 	}
+	if subDecision != nil && subDecision.CanCompleteDirectly {
+		return s.completeSubscriptionDirectAction(ctx, req, plan, subDecision)
+	}
 	orderAmount := req.Amount
 	limitAmount := req.Amount
 	if subDecision != nil {

@@ -62,6 +62,24 @@ describe('getVisibleMethods', () => {
 })
 
 describe('decidePaymentLaunch', () => {
+  it('returns completed_directly for zero-payment subscription actions', () => {
+    const decision = decidePaymentLaunch(createOrderResult({
+      order_id: 0,
+      amount: 0,
+      pay_amount: 0,
+      result_type: 'completed_directly',
+      subscription_action: 'upgrade',
+    }), {
+      visibleMethod: 'alipay',
+      orderType: 'subscription',
+      isMobile: false,
+    })
+
+    expect(decision.kind).toBe('completed_directly')
+    expect(decision.paymentState.orderId).toBe(0)
+    expect(decision.paymentState.orderType).toBe('subscription')
+  })
+
   it('uses Stripe popup waiting flow for desktop Alipay client secret', () => {
     const decision = decidePaymentLaunch(createOrderResult({
       client_secret: 'cs_test',

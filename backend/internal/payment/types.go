@@ -114,9 +114,10 @@ type CreatePaymentRequest struct {
 type CreatePaymentResultType = string
 
 const (
-	CreatePaymentResultOrderCreated  CreatePaymentResultType = "order_created"
-	CreatePaymentResultOAuthRequired CreatePaymentResultType = "oauth_required"
-	CreatePaymentResultJSAPIReady    CreatePaymentResultType = "jsapi_ready"
+	CreatePaymentResultOrderCreated      CreatePaymentResultType = "order_created"
+	CreatePaymentResultOAuthRequired     CreatePaymentResultType = "oauth_required"
+	CreatePaymentResultJSAPIReady        CreatePaymentResultType = "jsapi_ready"
+	CreatePaymentResultCompletedDirectly CreatePaymentResultType = "completed_directly"
 )
 
 // WechatOAuthInfo describes the next step when WeChat OAuth is required before payment.

@@ -148,6 +148,7 @@ export interface SubscriptionPreviewResponse {
   target_plan?: SubscriptionPreviewPlan
   upgrade_breakdown?: UpgradeResidualBreakdown
   blocked_reason?: string
+  can_complete_directly?: boolean
 }
 
 export interface PaymentChannel {
@@ -192,7 +193,7 @@ export interface CreateOrderRequest {
   is_mobile?: boolean
 }
 
-export type CreateOrderResultType = 'order_created' | 'oauth_required' | 'jsapi_ready'
+export type CreateOrderResultType = 'order_created' | 'oauth_required' | 'jsapi_ready' | 'completed_directly'
 
 export interface WechatOAuthInfo {
   authorize_url?: string

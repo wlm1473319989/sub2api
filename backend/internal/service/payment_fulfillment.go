@@ -469,6 +469,13 @@ func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context,
 	default:
 		return infraerrors.BadRequest("INVALID_SUBSCRIPTION_ACTION", "unknown subscription action")
 	}
+	var openHead *dbent.SubscriptionSettlementOrder
+	if s.settlementSvc != nil {
+		openHead, err = s.settlementSvc.getOpenHead(txCtx, txClient, order.UserID)
+		if err != nil {
+			return err
+		}
+	}
 
 	orderNote := fmt.Sprintf("payment order %d", order.ID)
 	var afterSub *UserSubscription
@@ -507,11 +514,8 @@ func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context,
 	if s.settlementSvc != nil {
 		carryIn := 0.0
 		if activeBefore != nil {
-			currentPrice := plan.Price
-			if activeBefore.PlanPriceSnapshot != nil {
-				currentPrice = *activeBefore.PlanPriceSnapshot
-			}
-			carryIn = settlementResidualValue(activeBefore, currentPrice)
+			residualBasis := settlementResidualBasisValue(openHead, activeBefore, plan.Price)
+			carryIn = settlementResidualValue(activeBefore, residualBasis)
 		}
 		actionDelta := order.Amount
 		afterSettlement := plan.Price

@@ -845,6 +845,17 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       airwallexRouteUrl,
     })
 
+    if (decision.kind === 'completed_directly') {
+      resetPayment()
+      clearSelectedPlan()
+      authStore.refreshUser()
+      if (orderType === 'subscription') {
+        await subscriptionStore.fetchActiveSubscriptions(true).catch(() => {})
+      }
+      appStore.showSuccess(t('common.success'))
+      return
+    }
+
     if (decision.kind === 'wechat_oauth' && decision.oauth?.authorize_url) {
       window.location.href = buildWechatOAuthAuthorizeUrl(decision.oauth.authorize_url, {
         paymentType: visibleMethod,
