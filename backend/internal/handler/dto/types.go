@@ -603,6 +603,47 @@ type AdminUserSubscription struct {
 	AssignedByUser *User `json:"assigned_by_user,omitempty"`
 }
 
+type AdminUserSubscriptionDetail struct {
+	AdminUserSubscription
+
+	CurrentSettlementHead *SubscriptionSettlementOrder  `json:"current_settlement_head,omitempty"`
+	SettlementHistory     []SubscriptionSettlementOrder `json:"settlement_history"`
+}
+
+type SubscriptionSettlementOrder struct {
+	ID                              int64      `json:"id"`
+	UserID                          int64      `json:"user_id"`
+	PrevSettlementID                *int64     `json:"prev_settlement_id,omitempty"`
+	ActionType                      string     `json:"action_type"`
+	ActionSource                    string     `json:"action_source"`
+	Status                          string     `json:"status"`
+	TriggerRefType                  string     `json:"trigger_ref_type"`
+	TriggerRefID                    *int64     `json:"trigger_ref_id,omitempty"`
+	OperatorUserID                  int64      `json:"operator_user_id"`
+	ActionNote                      *string    `json:"action_note,omitempty"`
+	CarryInResidualValue            float64    `json:"carry_in_residual_value"`
+	ActionDeltaValue                float64    `json:"action_delta_value"`
+	AfterSettlementValue            float64    `json:"after_settlement_value"`
+	RefundResidualValue             *float64   `json:"refund_residual_value,omitempty"`
+	WriteoffValue                   float64    `json:"writeoff_value"`
+	AfterUserSubscriptionID         *int64     `json:"after_user_subscription_id,omitempty"`
+	AfterPlanID                     *int64     `json:"after_plan_id,omitempty"`
+	AfterPlanNameSnapshot           *string    `json:"after_plan_name_snapshot,omitempty"`
+	AfterPlanPriceSnapshot          *float64   `json:"after_plan_price_snapshot,omitempty"`
+	AfterValidityDaysSnapshot       *int       `json:"after_validity_days_snapshot,omitempty"`
+	AfterValidityUnitSnapshot       *string    `json:"after_validity_unit_snapshot,omitempty"`
+	AfterStartsAt                   *time.Time `json:"after_starts_at,omitempty"`
+	AfterExpiresAt                  *time.Time `json:"after_expires_at,omitempty"`
+	AfterDailyQuotaKnivesSnapshot   *float64   `json:"after_daily_quota_knives_snapshot,omitempty"`
+	AfterWeeklyQuotaKnivesSnapshot  *float64   `json:"after_weekly_quota_knives_snapshot,omitempty"`
+	AfterMonthlyQuotaKnivesSnapshot *float64   `json:"after_monthly_quota_knives_snapshot,omitempty"`
+	AfterSubscriptionStatus         string     `json:"after_subscription_status"`
+	EffectiveAt                     time.Time  `json:"effective_at"`
+	ClosedAt                        *time.Time `json:"closed_at,omitempty"`
+	CreatedAt                       time.Time  `json:"created_at"`
+	UpdatedAt                       time.Time  `json:"updated_at"`
+}
+
 type BulkAssignResult struct {
 	SuccessCount  int                     `json:"success_count"`
 	CreatedCount  int                     `json:"created_count"`

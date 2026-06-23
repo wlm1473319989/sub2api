@@ -14,6 +14,7 @@ import (
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/enttest"
 	_ "github.com/Wei-Shaw/sub2api/ent/runtime"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/repository"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	"github.com/gin-gonic/gin"
@@ -145,6 +146,61 @@ func TestSubscriptionAssignAcceptsPlanIDWithoutGroupID(t *testing.T) {
 	}, h.handler.Assign)
 
 	assert.Equal(t, http.StatusOK, code)
+}
+
+func TestSubscriptionGetByIDIncludesSettlementChain(t *testing.T) {
+	h := newSubscriptionHandlerHarness(t)
+	operator := h.createUser(t, "detail-settlement-operator@example.com")
+	user := h.createUser(t, "detail-settlement-user@example.com")
+	group := h.createGroup(t, "detail-settlement-group")
+	plan := h.createPlan(t, "Detail Settlement Plan", group.ID)
+
+	sub, reused, err := h.handler.subscriptionService.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID:     user.ID,
+		PlanID:     plan.ID,
+		AssignedBy: operator.ID,
+		Notes:      "detail settlement",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+
+	gin.SetMode(gin.TestMode)
+	w := httptest.NewRecorder()
+	c, _ := gin.CreateTestContext(w)
+	c.Params = gin.Params{{Key: "id", Value: fmt.Sprintf("%d", sub.ID)}}
+	c.Request, _ = http.NewRequest(http.MethodGet, fmt.Sprintf("/api/v1/admin/subscriptions/%d", sub.ID), nil)
+
+	h.handler.GetByID(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	var payload struct {
+		Code int `json:"code"`
+		Data struct {
+			ID                    int64 `json:"id"`
+			CurrentSettlementHead *struct {
+				ActionType              string `json:"action_type"`
+				ActionSource            string `json:"action_source"`
+				Status                  string `json:"status"`
+				AfterUserSubscriptionID *int64 `json:"after_user_subscription_id"`
+			} `json:"current_settlement_head"`
+			SettlementHistory []struct {
+				ActionType   string `json:"action_type"`
+				ActionSource string `json:"action_source"`
+				Status       string `json:"status"`
+			} `json:"settlement_history"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(w.Body.Bytes(), &payload))
+	require.Equal(t, 0, payload.Code)
+	require.Equal(t, sub.ID, payload.Data.ID)
+	require.NotNil(t, payload.Data.CurrentSettlementHead)
+	require.Equal(t, domain.SettlementActionPurchase, payload.Data.CurrentSettlementHead.ActionType)
+	require.Equal(t, domain.SettlementActionSourceSubscriptionAssign, payload.Data.CurrentSettlementHead.ActionSource)
+	require.Equal(t, domain.SettlementStatusEffective, payload.Data.CurrentSettlementHead.Status)
+	require.NotNil(t, payload.Data.CurrentSettlementHead.AfterUserSubscriptionID)
+	require.Equal(t, sub.ID, *payload.Data.CurrentSettlementHead.AfterUserSubscriptionID)
+	require.Len(t, payload.Data.SettlementHistory, 1)
+	require.Equal(t, domain.SettlementActionSourceSubscriptionAssign, payload.Data.SettlementHistory[0].ActionSource)
 }
 
 func TestSubscriptionBulkAssignRequiresPlanID(t *testing.T) {

@@ -529,17 +529,17 @@ func RedeemCodeFromServiceAdmin(rc *service.RedeemCode) *AdminRedeemCode {
 
 func redeemCodeFromServiceBase(rc *service.RedeemCode) RedeemCode {
 	out := RedeemCode{
-		ID:           rc.ID,
-		Code:         rc.Code,
-		Type:         rc.Type,
-		Value:        rc.Value,
-		Status:       rc.Status,
-		UsedBy:       rc.UsedBy,
-		UsedAt:       rc.UsedAt,
-		CreatedAt:    rc.CreatedAt,
-		ExpiresAt:    rc.ExpiresAt,
-		PlanID:       rc.PlanID,
-		User:         UserFromServiceShallow(rc.User),
+		ID:        rc.ID,
+		Code:      rc.Code,
+		Type:      rc.Type,
+		Value:     rc.Value,
+		Status:    rc.Status,
+		UsedBy:    rc.UsedBy,
+		UsedAt:    rc.UsedAt,
+		CreatedAt: rc.CreatedAt,
+		ExpiresAt: rc.ExpiresAt,
+		PlanID:    rc.PlanID,
+		User:      UserFromServiceShallow(rc.User),
 	}
 	if rc.IsExpired() {
 		out.Status = service.StatusExpired
@@ -728,6 +728,64 @@ func UserSubscriptionFromServiceAdmin(sub *service.UserSubscription) *AdminUserS
 		AssignedAt:       sub.AssignedAt,
 		Notes:            sub.Notes,
 		AssignedByUser:   UserFromServiceShallow(sub.AssignedByUser),
+	}
+}
+
+func AdminUserSubscriptionDetailFromService(detail *service.AdminSubscriptionDetail) *AdminUserSubscriptionDetail {
+	if detail == nil || detail.Subscription == nil {
+		return nil
+	}
+	subscription := UserSubscriptionFromServiceAdmin(detail.Subscription)
+	if subscription == nil {
+		return nil
+	}
+	history := make([]SubscriptionSettlementOrder, 0, len(detail.SettlementHistory))
+	for i := range detail.SettlementHistory {
+		history = append(history, *SubscriptionSettlementOrderFromService(&detail.SettlementHistory[i]))
+	}
+	return &AdminUserSubscriptionDetail{
+		AdminUserSubscription: *subscription,
+		CurrentSettlementHead: SubscriptionSettlementOrderFromService(detail.CurrentSettlementHead),
+		SettlementHistory:     history,
+	}
+}
+
+func SubscriptionSettlementOrderFromService(settlement *service.SubscriptionSettlementOrderView) *SubscriptionSettlementOrder {
+	if settlement == nil {
+		return nil
+	}
+	return &SubscriptionSettlementOrder{
+		ID:                              settlement.ID,
+		UserID:                          settlement.UserID,
+		PrevSettlementID:                settlement.PrevSettlementID,
+		ActionType:                      settlement.ActionType,
+		ActionSource:                    settlement.ActionSource,
+		Status:                          settlement.Status,
+		TriggerRefType:                  settlement.TriggerRefType,
+		TriggerRefID:                    settlement.TriggerRefID,
+		OperatorUserID:                  settlement.OperatorUserID,
+		ActionNote:                      settlement.ActionNote,
+		CarryInResidualValue:            settlement.CarryInResidualValue,
+		ActionDeltaValue:                settlement.ActionDeltaValue,
+		AfterSettlementValue:            settlement.AfterSettlementValue,
+		RefundResidualValue:             settlement.RefundResidualValue,
+		WriteoffValue:                   settlement.WriteoffValue,
+		AfterUserSubscriptionID:         settlement.AfterUserSubscriptionID,
+		AfterPlanID:                     settlement.AfterPlanID,
+		AfterPlanNameSnapshot:           settlement.AfterPlanNameSnapshot,
+		AfterPlanPriceSnapshot:          settlement.AfterPlanPriceSnapshot,
+		AfterValidityDaysSnapshot:       settlement.AfterValidityDaysSnapshot,
+		AfterValidityUnitSnapshot:       settlement.AfterValidityUnitSnapshot,
+		AfterStartsAt:                   settlement.AfterStartsAt,
+		AfterExpiresAt:                  settlement.AfterExpiresAt,
+		AfterDailyQuotaKnivesSnapshot:   settlement.AfterDailyQuotaKnivesSnapshot,
+		AfterWeeklyQuotaKnivesSnapshot:  settlement.AfterWeeklyQuotaKnivesSnapshot,
+		AfterMonthlyQuotaKnivesSnapshot: settlement.AfterMonthlyQuotaKnivesSnapshot,
+		AfterSubscriptionStatus:         settlement.AfterSubscriptionStatus,
+		EffectiveAt:                     settlement.EffectiveAt,
+		ClosedAt:                        settlement.ClosedAt,
+		CreatedAt:                       settlement.CreatedAt,
+		UpdatedAt:                       settlement.UpdatedAt,
 	}
 }
 

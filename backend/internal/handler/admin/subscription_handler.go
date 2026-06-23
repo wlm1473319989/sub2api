@@ -99,13 +99,13 @@ func (h *SubscriptionHandler) GetByID(c *gin.Context) {
 		return
 	}
 
-	subscription, err := h.subscriptionService.GetByID(c.Request.Context(), subscriptionID)
+	detail, err := h.subscriptionService.GetAdminSubscriptionDetail(c.Request.Context(), subscriptionID)
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
-	response.Success(c, dto.UserSubscriptionFromServiceAdmin(subscription))
+	response.Success(c, dto.AdminUserSubscriptionDetailFromService(detail))
 }
 
 // GetProgress handles getting subscription usage progress
