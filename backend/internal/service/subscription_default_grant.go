@@ -2,9 +2,11 @@ package service
 
 import (
 	"context"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
@@ -113,18 +115,52 @@ func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, i
 		return nil, false, err
 	}
 
+	settlementMeta := subscriptionGrantSettlementMeta{
+		ActionSource:   domain.SettlementActionSourceSubscriptionAssign,
+		TriggerRefType: domain.SettlementTriggerRefAdminAssignment,
+		OperatorUserID: input.AssignedBy,
+	}
+	settlementSvc := NewSettlementService(s.entClient)
+	settlementHead, err := settlementSvc.GetEffectiveHead(ctx, input.UserID, time.Now())
+	if err != nil {
+		return nil, false, err
+	}
+
 	active, err := s.userSubRepo.GetActiveByUserID(ctx, input.UserID)
 	if err != nil {
 		if errorsIsSubscriptionNotFound(err) {
+			if settlementHead != nil {
+				return nil, false, ErrActiveSubscriptionRequired
+			}
 			sub, purchaseErr := s.PurchaseNewPlan(ctx, &PurchaseNewPlanInput{
 				UserID:     input.UserID,
 				Plan:       plan,
 				AssignedBy: input.AssignedBy,
 				Notes:      input.Notes,
 			})
-			return sub, false, purchaseErr
+			if purchaseErr != nil {
+				return nil, false, purchaseErr
+			}
+			if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, input.UserID, subscriptionActionPurchase, plan, nil, sub, input.Notes); err != nil {
+				return nil, false, err
+			}
+			return sub, false, nil
 		}
 		return nil, false, err
+	}
+
+	settlementAction := ""
+	if settlementHead != nil {
+		decision, decisionErr := settlementSvc.DeterminePlanAction(settlementHead, plan)
+		if decisionErr != nil {
+			return nil, false, decisionErr
+		}
+		switch decision.Action {
+		case subscriptionActionRenew, subscriptionActionUpgrade:
+			settlementAction = decision.Action
+		default:
+			return nil, false, ErrSubscriptionPlanActionInvalid
+		}
 	}
 
 	currentPlanID, currentPrice, resolveErr := s.resolveActiveGrantReference(ctx, active)
@@ -132,16 +168,22 @@ func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, i
 		return nil, false, resolveErr
 	}
 
-	if currentPlanID != nil && *currentPlanID == plan.ID {
+	if settlementAction == subscriptionActionRenew || (settlementAction == "" && currentPlanID != nil && *currentPlanID == plan.ID) {
 		sub, renewErr := s.RenewActivePlan(ctx, &RenewActivePlanInput{
 			UserID: input.UserID,
 			Plan:   plan,
 			Notes:  input.Notes,
 		})
-		return sub, true, renewErr
+		if renewErr != nil {
+			return nil, true, renewErr
+		}
+		if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, input.UserID, subscriptionActionRenew, plan, active, sub, input.Notes); err != nil {
+			return nil, true, err
+		}
+		return sub, true, nil
 	}
 
-	if currentPrice != nil && plan.Price > *currentPrice {
+	if settlementAction == subscriptionActionUpgrade || (settlementAction == "" && currentPrice != nil && plan.Price > *currentPrice) {
 		result, upgradeErr := s.UpgradeActivePlan(ctx, &UpgradeActivePlanInput{
 			UserID:     input.UserID,
 			TargetPlan: plan,
@@ -150,6 +192,9 @@ func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, i
 		})
 		if upgradeErr != nil {
 			return nil, false, upgradeErr
+		}
+		if err := s.createGrantSettlementOrder(ctx, settlementSvc, settlementMeta, settlementHead, input.UserID, subscriptionActionUpgrade, plan, active, result.Current, input.Notes); err != nil {
+			return nil, false, err
 		}
 		return result.Current, false, nil
 	}
