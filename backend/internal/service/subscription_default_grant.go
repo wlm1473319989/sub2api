@@ -103,6 +103,20 @@ func (s *SubscriptionService) GrantConfiguredSubscription(ctx context.Context, u
 }
 
 func (s *SubscriptionService) AssignUserLevelSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
+	var subscription *UserSubscription
+	var reused bool
+	err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
+		var innerErr error
+		subscription, reused, innerErr = s.assignUserLevelSubscriptionInTx(txCtx, input)
+		return innerErr
+	})
+	if err != nil {
+		return nil, false, err
+	}
+	return subscription, reused, nil
+}
+
+func (s *SubscriptionService) assignUserLevelSubscriptionInTx(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, bool, error) {
 	if input == nil {
 		return nil, false, ErrSubscriptionNilInput
 	}

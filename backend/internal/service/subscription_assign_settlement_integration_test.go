@@ -2,6 +2,7 @@ package service_test
 
 import (
 	"testing"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
@@ -106,4 +107,41 @@ func TestAssignSubscriptionRenewThenUpgradeUsesSettlementHead(t *testing.T) {
 	require.InDelta(t, 0, settlements[1].ActionDeltaValue, 0.01)
 	require.InDelta(t, targetPlan.Price, settlements[1].AfterSettlementValue, 1e-9)
 	require.InDelta(t, 40, settlements[1].WriteoffValue, 0.01)
+}
+
+func TestAssignSubscriptionRollsBackRuntimeUpdateWhenSettlementCreationFails(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+
+	user := h.createUser(t, "assign-settlement-rollback@test.com")
+	group := h.createGroup(t, "assign-settlement-rollback-group")
+	groupID := group.ID
+	plan := h.createPlan(t, "Assign Rollback", 100, 30, "day", &groupID, nil, nil, nil)
+
+	seed, err := h.svc.PurchaseNewPlan(h.ctx, &service.PurchaseNewPlanInput{
+		UserID: user.ID,
+		Plan:   plan,
+		Notes:  "seed",
+	})
+	require.NoError(t, err)
+	initialExpiry := seed.ExpiresAt
+
+	sub, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID:     user.ID,
+		PlanID:     plan.ID,
+		AssignedBy: 999999,
+		Notes:      "should rollback",
+	})
+	require.Error(t, err)
+	require.Nil(t, sub)
+	require.False(t, reused)
+
+	reloaded, err := h.svc.GetByID(h.ctx, seed.ID)
+	require.NoError(t, err)
+	require.WithinDuration(t, initialExpiry, reloaded.ExpiresAt, time.Second)
+
+	count, err := h.client.SubscriptionSettlementOrder.Query().
+		Where(subscriptionsettlementorder.UserIDEQ(user.ID)).
+		Count(h.ctx)
+	require.NoError(t, err)
+	require.Zero(t, count)
 }
