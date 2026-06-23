@@ -32,12 +32,16 @@
 
       <div class="grid grid-cols-2 gap-4">
         <div>
-          <label class="input-label">{{ t('payment.admin.validityDays') }} <span class="text-red-500">*</span></label>
+          <label class="input-label">{{ t('payment.admin.validityValue') }} <span class="text-red-500">*</span></label>
           <input v-model.number="planForm.validity_days" type="number" min="1" class="input" required />
         </div>
         <div>
           <label class="input-label">{{ t('payment.admin.validityUnit') }} <span class="text-red-500">*</span></label>
-          <Select v-model="planForm.validity_unit" :options="validityUnitOptions" />
+          <Select
+            v-model="planForm.validity_unit"
+            :options="validityUnitOptions"
+            :placeholder="t('payment.admin.selectValidityUnit')"
+          />
         </div>
       </div>
 
@@ -108,6 +112,8 @@ import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 
+type ValidityUnit = 'day' | 'week' | 'month' | 'year'
+
 const props = defineProps<{
   show: boolean
   plan: SubscriptionPlan | null
@@ -130,7 +136,7 @@ const planForm = reactive({
   price: 0,
   original_price: 0,
   validity_days: 30,
-  validity_unit: 'day',
+  validity_unit: 'day' as ValidityUnit,
   daily_quota_knives: null as number | null,
   weekly_quota_knives: null as number | null,
   monthly_quota_knives: null as number | null,
@@ -142,7 +148,19 @@ const validityUnitOptions = computed(() => [
   { value: 'day', label: t('payment.admin.days') },
   { value: 'week', label: t('payment.admin.weeks') },
   { value: 'month', label: t('payment.admin.months') },
+  { value: 'year', label: t('payment.admin.years') },
 ])
+
+function normalizeValidityUnit(unit?: string | null): ValidityUnit {
+  switch (unit) {
+    case 'week':
+    case 'month':
+    case 'year':
+      return unit
+    default:
+      return 'day'
+  }
+}
 
 watch(
   () => props.show,
@@ -155,7 +173,7 @@ watch(
         price: props.plan.price,
         original_price: props.plan.original_price || 0,
         validity_days: props.plan.validity_days,
-        validity_unit: props.plan.validity_unit || 'day',
+        validity_unit: normalizeValidityUnit(props.plan.validity_unit),
         daily_quota_knives: props.plan.daily_quota_knives ?? null,
         weekly_quota_knives: props.plan.weekly_quota_knives ?? null,
         monthly_quota_knives: props.plan.monthly_quota_knives ?? null,
@@ -201,7 +219,7 @@ function buildPlanPayload(): PlanPayload {
     price: planForm.price,
     original_price: planForm.original_price > 0 ? planForm.original_price : null,
     validity_days: planForm.validity_days,
-    validity_unit: planForm.validity_unit,
+    validity_unit: normalizeValidityUnit(planForm.validity_unit),
     daily_quota_knives: normalizedQuota(planForm.daily_quota_knives),
     weekly_quota_knives: normalizedQuota(planForm.weekly_quota_knives),
     monthly_quota_knives: normalizedQuota(planForm.monthly_quota_knives),
@@ -225,7 +243,7 @@ async function handleSavePlan() {
     return
   }
   if (!planForm.validity_days || planForm.validity_days < 1) {
-    appStore.showError(t('payment.admin.validityDaysRequired'))
+    appStore.showError(t('payment.admin.validityValueRequired'))
     return
   }
 

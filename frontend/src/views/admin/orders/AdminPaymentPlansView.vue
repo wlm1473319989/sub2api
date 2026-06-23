@@ -114,18 +114,20 @@ const planColumns = computed((): Column[] => [
   { key: 'name', label: t('payment.admin.planName') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'quotas', label: t('payment.planCard.quota') },
-  { key: 'validity_days', label: t('payment.admin.validityDays') },
+  { key: 'validity_days', label: t('payment.admin.validityPeriod') },
   { key: 'for_sale', label: t('payment.admin.forSale') },
   { key: 'sort_order', label: t('payment.admin.sortOrder') },
   { key: 'actions', label: t('common.actions') },
 ])
 
-function validityUnitLabel(unit?: string | null): 'days' | 'weeks' | 'months' {
+function validityUnitLabel(unit?: string | null): 'days' | 'weeks' | 'months' | 'years' {
   switch (unit) {
     case 'week':
       return 'weeks'
     case 'month':
       return 'months'
+    case 'year':
+      return 'years'
     default:
       return 'days'
   }
