@@ -1560,6 +1560,50 @@ export interface UserSubscription {
   user?: User
 }
 
+export type SubscriptionSettlementActionType = 'purchase' | 'renew' | 'upgrade' | 'refund'
+export type SubscriptionSettlementActionSource = 'user_purchase' | 'exchange_code' | 'subscription_assign'
+export type SubscriptionSettlementStatus = 'effective' | 'closed'
+export type SubscriptionSettlementTriggerRefType = 'payment_order' | 'redeem_code' | 'admin_assignment' | 'direct_action'
+
+export interface SubscriptionSettlementOrder {
+  id: number
+  user_id: number
+  prev_settlement_id?: number | null
+  action_type: SubscriptionSettlementActionType
+  action_source: SubscriptionSettlementActionSource
+  status: SubscriptionSettlementStatus
+  trigger_ref_type: SubscriptionSettlementTriggerRefType
+  trigger_ref_id?: number | null
+  operator_user_id: number
+  action_note?: string | null
+  carry_in_residual_value: number
+  action_delta_value: number
+  after_settlement_value: number
+  refund_residual_value?: number | null
+  writeoff_value: number
+  after_user_subscription_id?: number | null
+  after_plan_id?: number | null
+  after_plan_name_snapshot?: string | null
+  after_plan_price_snapshot?: number | null
+  after_validity_days_snapshot?: number | null
+  after_validity_unit_snapshot?: string | null
+  after_starts_at?: string | null
+  after_expires_at?: string | null
+  after_daily_quota_knives_snapshot?: number | null
+  after_weekly_quota_knives_snapshot?: number | null
+  after_monthly_quota_knives_snapshot?: number | null
+  after_subscription_status: UserSubscription['status']
+  effective_at: string
+  closed_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface AdminUserSubscriptionDetail extends UserSubscription {
+  current_settlement_head?: SubscriptionSettlementOrder | null
+  settlement_history: SubscriptionSettlementOrder[]
+}
+
 export interface SubscriptionUsageWindowProgress {
   limit_usd: number
   used_usd: number

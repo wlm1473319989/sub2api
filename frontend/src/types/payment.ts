@@ -101,6 +101,24 @@ export interface PaymentOrder {
   provider_instance_id?: string
 }
 
+export interface RefundSettlementHeadInfo {
+  head_id: number
+  action_source: 'user_purchase' | 'exchange_code' | 'subscription_assign'
+  trigger_ref_type: 'payment_order' | 'redeem_code' | 'admin_assignment' | 'direct_action'
+  trigger_ref_id?: number | null
+  current_residual_value: number
+  refund_residual_value: number
+}
+
+export interface RefundResult {
+  success: boolean
+  warning?: string
+  require_force?: boolean
+  balance_deducted?: number
+  subscription_days_deducted?: number
+  settlement_head?: RefundSettlementHeadInfo
+}
+
 // ==================== Plans & Channels ====================
 
 export interface SubscriptionPlan {

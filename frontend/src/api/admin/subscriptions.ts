@@ -6,6 +6,7 @@
 import { apiClient } from '../client'
 import type {
   UserSubscription,
+  AdminUserSubscriptionDetail,
   SubscriptionProgress,
   AssignSubscriptionRequest,
   BulkAssignSubscriptionRequest,
@@ -52,8 +53,8 @@ export async function list(
  * @param id - Subscription ID
  * @returns Subscription details
  */
-export async function getById(id: number): Promise<UserSubscription> {
-  const { data } = await apiClient.get<UserSubscription>(`/admin/subscriptions/${id}`)
+export async function getById(id: number): Promise<AdminUserSubscriptionDetail> {
+  const { data } = await apiClient.get<AdminUserSubscriptionDetail>(`/admin/subscriptions/${id}`)
   return data
 }
 
