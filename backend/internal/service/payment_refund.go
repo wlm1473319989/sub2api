@@ -299,18 +299,20 @@ func (s *PaymentService) prepSettlementDeduct(ctx context.Context, o *dbent.Paym
 	if head == nil {
 		return nil, false
 	}
+	settlementResidual := settlementResidualValue(active, settlementResidualBasisValue(head, active, head.AfterSettlementValue))
+	settlementInfo := refundSettlementHeadInfo(head, settlementResidual)
 	if head.ActionSource != domain.SettlementActionSourceUserPurchase ||
 		head.TriggerRefType != domain.SettlementTriggerRefPaymentOrder ||
 		head.TriggerRefID == nil ||
 		*head.TriggerRefID != o.ID {
 		if !force {
-			return &RefundResult{Success: false, Warning: "refund order must match current subscription settlement head, use force", RequireForce: true}, true
+			return &RefundResult{Success: false, Warning: "refund order must match current subscription settlement head, use force", RequireForce: true, SettlementHead: settlementInfo}, true
 		}
 		return nil, false
 	}
 	if head.AfterUserSubscriptionID != nil && *head.AfterUserSubscriptionID != active.ID {
 		if !force {
-			return &RefundResult{Success: false, Warning: "active subscription does not match current settlement head, use force", RequireForce: true}, true
+			return &RefundResult{Success: false, Warning: "active subscription does not match current settlement head, use force", RequireForce: true, SettlementHead: settlementInfo}, true
 		}
 		return nil, false
 	}
@@ -319,12 +321,26 @@ func (s *PaymentService) prepSettlementDeduct(ctx context.Context, o *dbent.Paym
 	p.SubscriptionID = active.ID
 	p.SubscriptionSnapshot = &snapshot
 	p.SettlementHead = head
-	p.SettlementResidual = settlementResidualValue(active, settlementResidualBasisValue(head, active, head.AfterSettlementValue))
+	p.SettlementResidual = settlementResidual
 	if p.SettlementResidual > 0 {
 		p.RefundAmount = p.SettlementResidual
 		p.GatewayAmount = calculateGatewayRefundAmount(o.Amount, o.PayAmount, p.SettlementResidual, PaymentOrderCurrency(o))
 	}
 	return nil, true
+}
+
+func refundSettlementHeadInfo(head *dbent.SubscriptionSettlementOrder, residual float64) *RefundSettlementHeadInfo {
+	if head == nil {
+		return nil
+	}
+	return &RefundSettlementHeadInfo{
+		HeadID:               head.ID,
+		ActionSource:         head.ActionSource,
+		TriggerRefType:       head.TriggerRefType,
+		TriggerRefID:         copyInt64Pointer(head.TriggerRefID),
+		CurrentResidualValue: residual,
+		RefundResidualValue:  residual,
+	}
 }
 
 func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
@@ -455,7 +471,7 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 		return nil, fmt.Errorf("mark refund: %w", err)
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
-	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil
+	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct, SettlementHead: refundSettlementHeadInfo(p.SettlementHead, p.SettlementResidual)}, nil
 }
 
 func (s *PaymentService) markRefundOkWithSettlement(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
@@ -515,7 +531,7 @@ func (s *PaymentService) markRefundOkWithSettlement(ctx context.Context, p *Refu
 		return nil, fmt.Errorf("commit refund settlement tx: %w", err)
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
-	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct}, nil
+	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct, SettlementHead: refundSettlementHeadInfo(p.SettlementHead, refundResidual)}, nil
 }
 
 func (s *PaymentService) RollbackRefund(ctx context.Context, p *RefundPlan, gErr error) bool {

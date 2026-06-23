@@ -139,11 +139,21 @@ type RefundPlan struct {
 }
 
 type RefundResult struct {
-	Success         bool    `json:"success"`
-	Warning         string  `json:"warning,omitempty"`
-	RequireForce    bool    `json:"require_force,omitempty"`
-	BalanceDeducted float64 `json:"balance_deducted,omitempty"`
-	SubDaysDeducted int     `json:"subscription_days_deducted,omitempty"`
+	Success         bool                      `json:"success"`
+	Warning         string                    `json:"warning,omitempty"`
+	RequireForce    bool                      `json:"require_force,omitempty"`
+	BalanceDeducted float64                   `json:"balance_deducted,omitempty"`
+	SubDaysDeducted int                       `json:"subscription_days_deducted,omitempty"`
+	SettlementHead  *RefundSettlementHeadInfo `json:"settlement_head,omitempty"`
+}
+
+type RefundSettlementHeadInfo struct {
+	HeadID               int64   `json:"head_id"`
+	ActionSource         string  `json:"action_source"`
+	TriggerRefType       string  `json:"trigger_ref_type"`
+	TriggerRefID         *int64  `json:"trigger_ref_id,omitempty"`
+	CurrentResidualValue float64 `json:"current_residual_value"`
+	RefundResidualValue  float64 `json:"refund_residual_value"`
 }
 
 type DashboardStats struct {

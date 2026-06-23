@@ -55,6 +55,14 @@ func TestExecuteSubscriptionRefundCreatesSettlementOrder(t *testing.T) {
 	result, err := paymentSvc.ExecuteRefund(h.ctx, refundPlan)
 	require.NoError(t, err)
 	require.True(t, result.Success)
+	require.NotNil(t, result.SettlementHead)
+	require.Equal(t, refundPlan.SettlementHead.ID, result.SettlementHead.HeadID)
+	require.Equal(t, domain.SettlementActionSourceUserPurchase, result.SettlementHead.ActionSource)
+	require.Equal(t, domain.SettlementTriggerRefPaymentOrder, result.SettlementHead.TriggerRefType)
+	require.NotNil(t, result.SettlementHead.TriggerRefID)
+	require.Equal(t, order.ID, *result.SettlementHead.TriggerRefID)
+	require.InDelta(t, refundPlan.SettlementResidual, result.SettlementHead.CurrentResidualValue, 0.01)
+	require.InDelta(t, refundPlan.SettlementResidual, result.SettlementHead.RefundResidualValue, 0.01)
 
 	reloadedOrder, err := h.client.PaymentOrder.Get(h.ctx, order.ID)
 	require.NoError(t, err)
@@ -81,4 +89,52 @@ func TestExecuteSubscriptionRefundCreatesSettlementOrder(t *testing.T) {
 	require.InDelta(t, -refundPlan.SettlementResidual, settlements[1].ActionDeltaValue, 0.01)
 	require.InDelta(t, 0, settlements[1].AfterSettlementValue, 1e-9)
 	require.Equal(t, domain.SubscriptionStatusRefunded, settlements[1].AfterSubscriptionStatus)
+}
+
+func TestPrepareSubscriptionRefundMismatchReturnsSettlementHeadInfo(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, nil, nil)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, nil, nil, nil)
+
+	user := h.createUser(t, "refund-preview-settlement@test.com")
+	group := h.createGroup(t, "refund-preview-settlement-group")
+	groupID := group.ID
+	monthly := 100.0
+	plan := h.createPlan(t, "Refund Preview Settlement", 100, 30, "day", &groupID, nil, nil, &monthly)
+
+	inst, err := h.client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("refund-preview-settlement-provider").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		Save(h.ctx)
+	require.NoError(t, err)
+	instID := strconv.FormatInt(inst.ID, 10)
+
+	headOrder := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, plan.ID, plan.Name, plan.Price)
+	err = paymentSvc.ExecuteSubscriptionFulfillment(h.ctx, headOrder.ID)
+	require.NoError(t, err)
+
+	mismatchedOrder := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, plan.ID, plan.Name, plan.Price)
+	mismatchedOrder, err = h.client.PaymentOrder.UpdateOneID(mismatchedOrder.ID).
+		SetStatus(service.OrderStatusCompleted).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	refundPlan, earlyResult, err := paymentSvc.PrepareRefund(h.ctx, mismatchedOrder.ID, 0, "preview settlement", false, true)
+	require.NoError(t, err)
+	require.Nil(t, refundPlan)
+	require.NotNil(t, earlyResult)
+	require.True(t, earlyResult.RequireForce)
+	require.NotNil(t, earlyResult.SettlementHead)
+	require.Equal(t, domain.SettlementActionSourceUserPurchase, earlyResult.SettlementHead.ActionSource)
+	require.Equal(t, domain.SettlementTriggerRefPaymentOrder, earlyResult.SettlementHead.TriggerRefType)
+	require.NotNil(t, earlyResult.SettlementHead.TriggerRefID)
+	require.Equal(t, headOrder.ID, *earlyResult.SettlementHead.TriggerRefID)
+	require.Greater(t, earlyResult.SettlementHead.CurrentResidualValue, 0.0)
+	require.Greater(t, earlyResult.SettlementHead.RefundResidualValue, 0.0)
 }
