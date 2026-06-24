@@ -168,3 +168,20 @@ func TestMigration151AddsAccountAutoPauseExpiryPartialIndex(t *testing.T) {
 	require.Contains(t, sql, "auto_pause_on_expired = TRUE")
 	require.Contains(t, sql, "expires_at IS NOT NULL")
 }
+
+func TestMigration166AddsSubscriptionRefundRequestTables(t *testing.T) {
+	content, err := FS.ReadFile("166_add_subscription_refund_requests.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, "CREATE TABLE IF NOT EXISTS subscription_refund_requests")
+	require.Contains(t, sql, "CREATE TABLE IF NOT EXISTS subscription_refund_allocations")
+	require.Contains(t, sql, "preview_expires_at                      TIMESTAMPTZ NOT NULL")
+	require.Contains(t, sql, "manual_transfer_proof_url               TEXT")
+	require.Contains(t, sql, "CHECK (preview_expires_at > preview_issued_at)")
+	require.Contains(t, sql, "status IN ('previewed', 'submitted', 'gateway_processing', 'manual_pending', 'failed')")
+	require.Contains(t, sql, "allocated_refund_value <= refundable_order_amount")
+	require.Contains(t, sql, "gateway_refund_amount <= order_pay_amount")
+	require.Contains(t, sql, "REFERENCES subscription_settlement_orders(id)")
+	require.Contains(t, sql, "REFERENCES payment_orders(id)")
+}
