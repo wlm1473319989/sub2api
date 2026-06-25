@@ -231,6 +231,14 @@ previewed
 
 提交时后端重新加载订阅、结算头和订单可退状态，重新计算残值和分摊。如果上述任一关键值变化，返回 `SETTLEMENT_REFUND_PREVIEW_STALE`，要求用户重新预览。
 
+#### 4.2.2 重复预览与并发规则
+
+- 同一订阅允许用户重复点击“计算退款预览”，但任一时刻只保留一张有效预览单。
+- 创建新预览时，后端应在同一事务内先将该订阅下所有 `status = previewed` 的旧预览更新为 `expired`，再写入新的 `previewed` 记录。
+- `previewed` 只是预览工单，不代表正式退款申请。它不能阻止用户重新计算，但也不能绕过“当前不得存在处理中退款申请”的校验。
+- 以下状态视为“处理中申请”，禁止再次创建新预览或新申请：`submitted`、`gateway_processing`、`manual_pending`、`failed`。
+- 因此，数据库唯一约束不应把所有未终态都混成一类，而应至少区分“有效预览唯一”和“处理中申请唯一”两类约束。
+
 ### 4.3 提交即冻结
 
 用户点击确认提交后，后端必须在同一事务中完成：
@@ -259,6 +267,13 @@ previewed
 - 结算头暂不关闭，直到退款最终完成并写入 `refund` 结算单。
 - 如果管理员在未发生任何退款付款前取消申请，订阅可从 `suspended` 恢复为 `active`；如果原到期时间已经过期，则恢复为 `expired`。
 
+#### 4.3.1 提交幂等与锁
+
+- `submit` 必须对退款申请记录加行锁，并同时锁定当前订阅行和当前 effective settlement head，避免双提交或和续费、升级并发冲突。
+- 预览状态从 `previewed` 变为 `submitted` 时，应使用带条件的单条更新，条件至少包含 `id`、`status = previewed`、`preview_expires_at >= now`。
+- 冻结订阅时必须再次校验订阅当前状态仍为 `active`，否则直接返回 stale 或冲突错误，不能强行覆盖其他流程写入结果。
+- 同一 `preview_id` 的重复提交应保持幂等：如果第一次提交已经成功，可返回当前申请状态；如果该预览已过期、已被新预览替代或校验快照不一致，则返回预览失效错误。
+
 ### 4.4 完成退款
 
 退款完成时，后端执行：
@@ -269,6 +284,13 @@ previewed
 4. 创建 `refund` 结算单，关闭原 effective head。
 5. 将退款申请状态改为 `completed`。
 6. 清理订阅缓存并写审计日志。
+
+#### 4.4.1 失败与取消后的恢复规则
+
+- `cancelled` 只允许发生在“没有任何网关退款成功，且没有人工转账凭证”的前提下。
+- 取消申请后，订阅状态按 `original_subscription_status` 恢复；如果恢复时 `original_subscription_expires_at <= now`，则恢复为 `expired`。
+- `failed` 代表退款流程处理失败但申请仍未结束，订阅继续保持 `suspended`，防止用户在部分退款之后继续使用权益。
+- 一旦已经发生部分网关退款成功，就不允许把订阅恢复为 `active`；后续只能继续完成剩余退款，或由管理员执行补偿处理并留痕。
 
 ## 5. 退款边界
 
@@ -683,7 +705,8 @@ type SettlementRefundAdminProcessInput struct {
    - 将订阅状态从 `active` 更新为 `suspended`。
    - 保存冻结前订阅快照，用于未付款取消时恢复。
 7. 清理订阅缓存。
-8. 返回提交成功。
+8. 同一 `preview_id` 的重复提交返回当前状态，不重复冻结订阅，不重复推进状态迁移。
+9. 返回提交成功。
 
 ### 8.3 管理端网关退款流程
 
@@ -763,7 +786,10 @@ type SettlementRefundAdminProcessInput struct {
 - `settlement_id`
 - `status`
 - `preview_expires_at`
-- 对 `subscription_id` 建未完成申请唯一约束，避免同一订阅重复申请。
+- `preview_token_hash`
+- 对 `subscription_id` 建“有效预览唯一”部分索引，例如 `status = previewed`。
+- 对 `subscription_id` 建“处理中申请唯一”部分索引，例如 `status in (submitted, gateway_processing, manual_pending, failed)`。
+- 不建议简单对所有未终态建立唯一约束，否则会阻止用户在预览超时前重新计算新预览。
 
 ### 9.2 新增 `subscription_refund_allocations`
 
@@ -966,3 +992,78 @@ after_user_subscription_id = 当前订阅 ID
 - 服务流程使用 mock repository 和 mock gateway。
 - 前端交互使用组件测试覆盖倒计时、按钮禁用、人工补退弹窗。
 - 涉及支付网关副作用的测试必须验证幂等，不依赖真实网关。
+
+### 15.1 建议代码落点
+
+为了降低耦合，建议按能力拆文件，而不是把全部流程塞进现有 `payment_refund.go`：
+
+1. 纯分摊计算：`backend/internal/service/settlement_refund_allocation.go`
+2. 预览 token 与 TTL：`backend/internal/service/settlement_refund_preview_token.go`
+3. 预览持久化 store：`backend/internal/service/settlement_refund_request_store.go`
+4. 预览编排服务：`backend/internal/service/settlement_refund_preview_service.go`
+5. 提交并冻结服务：`backend/internal/service/settlement_refund_submit_service.go`
+6. 管理端网关退款处理：`backend/internal/service/settlement_refund_gateway_service.go`
+7. 人工补退与凭证：`backend/internal/service/settlement_refund_manual_service.go`
+8. 完成退款与写结算单：`backend/internal/service/settlement_refund_complete_service.go`
+9. 用户/管理端 handler 与 DTO：分别落在现有 `subscription_handler.go`、`admin/subscription_handler.go` 及对应 `routes`
+
+如果后续发现文件数量偏多，可以在保持测试闭环的前提下再回收为一个 `SettlementRefundService` 聚合入口，但第一阶段不建议直接做大而全改造。
+
+### 15.2 状态兼容策略
+
+本方案不新增新的订阅主状态，继续复用现有 `suspended`：
+
+1. 订阅主状态仍只使用现有 `active`、`expired`、`suspended`、`superseded`、`refunded`、`revoked`。
+2. “这是普通暂停，还是退款冻结”不靠订阅状态本身区分，而靠退款申请记录区分。
+3. 只要存在 `status in (submitted, gateway_processing, manual_pending, failed)` 的退款申请，就把该 `suspended` 解释为“退款处理中冻结”。
+4. 前端和管理端文案不要直接显示“已暂停”，而应显示“退款处理中（已冻结）”。
+5. 退款成功后订阅从 `suspended` 进入 `refunded`；未发生任何实际付款且管理员取消时，才允许恢复到 `active` 或 `expired`。
+6. 其他现有校验链路无需改语义，只要继续按原逻辑拒绝 `suspended` 即可。
+
+这样做的好处是兼容现有中间件、限额校验和订阅有效性判断，不需要为退款流程额外发明一套新的订阅状态分支。
+
+### 15.3 推荐最小交付切片
+
+为了便于逐段上线和逐段回归，建议把后续实现继续压成下面几个最小闭环：
+
+1. `预览重算 + 单有效预览`：
+   只解决同订阅重复预览、旧预览过期、预览 token 和 2 分钟 TTL。
+2. `提交冻结`：
+   只解决 preview -> submitted、订阅切到 `suspended`、缓存失效、重复提交幂等。
+3. `人工补退入参`：
+   只解决 `manual_transfer_amount > 0` 时的收款信息校验和持久化，不碰网关。
+4. `网关退款分摊执行`：
+   只解决 allocation 状态推进、逐单幂等调用 provider、失败留痕。
+5. `人工凭证上传`：
+   只解决管理员上传转账凭证、用户可见、完成前校验。
+6. `完成退款写结算单`：
+   只解决 `refund` 结算单落库、订阅状态切到 `refunded`、关闭原 head。
+7. `取消/失败恢复规则`：
+   只解决取消恢复、失败保持冻结、禁止已付款后恢复。
+8. `旧订单退款兼容`：
+   只解决老入口转发到新口径，避免出现两套残值算法。
+
+每个切片都应满足三个条件再提交：
+
+1. 有明确输入输出。
+2. 有最小测试覆盖当前切片主路径和一个失败路径。
+3. 不依赖下一个切片才能解释当前行为。
+
+### 15.4 版本管理与提交边界
+
+每个最小闭环完成后单独提交，不把两个闭环硬塞进同一个 commit。
+
+建议的提交顺序：
+
+1. `docs + 数据模型`：计划书、迁移、schema、状态常量。
+2. `纯计算`：残值、分摊、封顶、差额计算 helper。
+3. `预览`：预览单创建、TTL、token、预览一致性校验。
+4. `提交冻结`：preview -> submitted、`suspended` 冻结、幂等。
+5. `人工补退`：收款信息收集、管理员凭证上传、用户可见。
+6. `完成退款`：`refund` 结算单、`refunded` 状态、原 head 关闭。
+7. `网关退款`：按分摊调用 provider、失败留痕、重复调用幂等。
+8. `API 接口`：用户侧和管理端路由、DTO、错误码映射。
+9. `前端用户侧`：预览弹窗、倒计时、人工补退表单、冻结态展示。
+10. `前端管理端`：列表、详情、网关退款、凭证、完成/取消。
+
+每次提交前只检查当前切片的验收条件，不把后续切片的行为当成当前切片通过条件。这样能把回归面压到最小，也方便出问题时按提交点回滚。
