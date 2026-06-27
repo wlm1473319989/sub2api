@@ -13,6 +13,7 @@ import type {
   CreateOrderRequest,
   CreateOrderResult,
   PaymentOrder,
+  RefundPreview,
   SubscriptionPreviewResponse,
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
@@ -44,8 +45,11 @@ export const paymentAPI = {
   },
 
   /** Preview subscription action before creating an order */
-  previewSubscription(planId: number) {
-    return apiClient.post<SubscriptionPreviewResponse>('/payment/subscription/preview', { plan_id: planId })
+  previewSubscription(planId: number, paymentType?: string) {
+    return apiClient.post<SubscriptionPreviewResponse>('/payment/subscription/preview', {
+      plan_id: planId,
+      payment_type: paymentType,
+    })
   },
 
   /** Create a new payment order */
@@ -84,8 +88,24 @@ export const paymentAPI = {
   },
 
   /** Request a refund for a completed order */
-  requestRefund(id: number, data: { reason: string }) {
+  requestRefund(id: number, data: {
+    reason: string
+    preview_id?: number
+    preview_token?: string
+    manual_transfer?: {
+      receiver_type: string
+      receiver_name: string
+      receiver_account: string
+      receiver_qr_image_url: string
+      remark?: string
+    }
+  }) {
     return apiClient.post(`/payment/orders/${id}/refund-request`, data)
+  },
+
+  /** Preview a refund for a completed order */
+  previewRefund(id: number, data?: { reason?: string }) {
+    return apiClient.post<RefundPreview>(`/payment/orders/${id}/refund-preview`, data || {})
   },
 
   /** Get provider instance IDs that allow user refund */

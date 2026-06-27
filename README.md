@@ -208,7 +208,7 @@ sudo systemctl start sub2api
 sudo systemctl enable sub2api
 
 # 3. Open Setup Wizard in browser
-# http://YOUR_SERVER_IP:8080
+# http://YOUR_SERVER_IP:18080
 ```
 
 The Setup Wizard will guide you through:
@@ -310,7 +310,7 @@ ADMIN_EMAIL=admin@example.com
 ADMIN_PASSWORD=your_admin_password
 
 # Optional: Custom port
-SERVER_PORT=8080
+SERVER_PORT=18080
 ```
 
 **Generate secure secrets:**
@@ -354,7 +354,7 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 
 #### Access
 
-Open `http://YOUR_SERVER_IP:8080` in your browser.
+Open `http://YOUR_SERVER_IP:18080` in your browser.
 
 If admin password was auto-generated, find it in logs:
 ```bash
@@ -452,7 +452,7 @@ nano config.yaml
 ```yaml
 server:
   host: "0.0.0.0"
-  port: 8080
+  port: 18080
   mode: "release"
 
 database:
@@ -590,7 +590,7 @@ Sub2API supports [Antigravity](https://antigravity.so/) accounts. After authoriz
 ### Claude Code Configuration
 
 ```bash
-export ANTHROPIC_BASE_URL="http://localhost:8080/antigravity"
+export ANTHROPIC_BASE_URL="http://localhost:18080/antigravity"
 export ANTHROPIC_AUTH_TOKEN="sk-xxx"
 ```
 

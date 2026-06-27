@@ -8,23 +8,27 @@ import (
 	"github.com/shopspring/decimal"
 )
 
-const settlementRefundValuePrecision int32 = 8
-
 type SettlementRefundPaymentOrderCandidate struct {
-	PaymentOrderID         int64
-	OrderAmount            float64
-	PayAmount              float64
-	AlreadyRefundedAmount  float64
-	GatewayRefundedAmount  float64
-	Currency               string
-	RefundChannelAvailable bool
-	UnavailableReason      string
+	PaymentOrderID            int64
+	OrderAmount               float64
+	PayAmount                 float64
+	PaymentType               string
+	PaymentProviderKey        string
+	PaymentProviderInstanceID *int64
+	AlreadyRefundedAmount     float64
+	GatewayRefundedAmount     float64
+	Currency                  string
+	RefundChannelAvailable    bool
+	UnavailableReason         string
 }
 
 type SettlementRefundOrderAllocation struct {
 	PaymentOrderID         int64
 	OrderAmount            float64
 	PayAmount              float64
+	PaymentType            string
+	PaymentProviderKey     string
+	ProviderInstanceID     *int64
 	AlreadyRefundedAmount  float64
 	RefundableOrderAmount  float64
 	AllocatedRefundValue   float64
@@ -41,6 +45,10 @@ type SettlementRefundAllocationResult struct {
 	ManualTransferAmount   float64
 	Currency               string
 	Allocations            []SettlementRefundOrderAllocation
+}
+
+func SettlementRefundManualTransferRequired(amount float64, currency string) bool {
+	return amount >= paymentAmountToleranceForCurrency(currency)
 }
 
 func allocateSettlementRefundAcrossOrders(refundResidualValue float64, currency string, candidates []SettlementRefundPaymentOrderCandidate) SettlementRefundAllocationResult {
@@ -93,12 +101,27 @@ func allocateSettlementRefundAcrossOrders(refundResidualValue float64, currency 
 			continue
 		}
 
-		gatewayAmount := calculateGatewayRefundAmount(candidate.OrderAmount, candidate.PayAmount, allocated, candidate.Currency)
+		gatewayAmount := calculateSettlementGatewayRefundAmount(candidate.OrderAmount, candidate.PayAmount, allocated, candidate.Currency)
 		if gatewayAmount-remainingPayAmount > paymentAmountToleranceForCurrency(candidate.Currency) {
 			gatewayAmount = remainingPayAmount
 		}
+		if gatewayAmount <= 0 {
+			allocation.SkippedReason = "gateway_amount_below_minimum_unit"
+			result.Allocations = append(result.Allocations, allocation)
+			continue
+		}
 
-		allocation.AllocatedRefundValue = roundSettlementRefundValue(allocated)
+		allocatedByGateway := reverseGatewayRefundAmount(candidate.OrderAmount, candidate.PayAmount, gatewayAmount)
+		if allocatedByGateway <= 0 {
+			allocation.SkippedReason = "gateway_amount_below_minimum_unit"
+			result.Allocations = append(result.Allocations, allocation)
+			continue
+		}
+		if allocatedByGateway > allocated {
+			allocatedByGateway = allocated
+		}
+
+		allocation.AllocatedRefundValue = roundSettlementRefundValue(allocatedByGateway)
 		allocation.GatewayRefundAmount = roundGatewayRefundValue(gatewayAmount, candidate.Currency)
 		result.AllocatedRefundValue = roundSettlementRefundValue(result.AllocatedRefundValue + allocation.AllocatedRefundValue)
 		result.GatewayRefundableTotal = roundGatewayRefundValue(result.GatewayRefundableTotal+allocation.GatewayRefundAmount, candidate.Currency)
@@ -118,6 +141,9 @@ func settlementRefundAllocationFromCandidate(candidate SettlementRefundPaymentOr
 		PaymentOrderID:         candidate.PaymentOrderID,
 		OrderAmount:            candidate.OrderAmount,
 		PayAmount:              candidate.PayAmount,
+		PaymentType:            candidate.PaymentType,
+		PaymentProviderKey:     candidate.PaymentProviderKey,
+		ProviderInstanceID:     candidate.PaymentProviderInstanceID,
 		AlreadyRefundedAmount:  candidate.AlreadyRefundedAmount,
 		RefundableOrderAmount:  remainingRefundableAmount(candidate.OrderAmount, candidate.AlreadyRefundedAmount),
 		Currency:               strings.TrimSpace(candidate.Currency),
@@ -157,7 +183,7 @@ func reverseGatewayRefundAmount(orderAmount, payAmount, gatewayAmount float64) f
 	return decimal.NewFromFloat(gatewayAmount).
 		Mul(decimal.NewFromFloat(orderAmount)).
 		Div(decimal.NewFromFloat(payAmount)).
-		Round(settlementRefundValuePrecision).
+		Round(settlementAmountPrecision).
 		InexactFloat64()
 }
 
@@ -178,7 +204,7 @@ func roundSettlementRefundValue(value float64) float64 {
 	if math.IsNaN(value) || math.IsInf(value, 0) || value <= 0 {
 		return 0
 	}
-	return decimal.NewFromFloat(value).Round(settlementRefundValuePrecision).InexactFloat64()
+	return roundSettlementAmountValue(value)
 }
 
 func roundGatewayRefundValue(value float64, currency string) float64 {
@@ -186,4 +212,19 @@ func roundGatewayRefundValue(value float64, currency string) float64 {
 		return 0
 	}
 	return decimal.NewFromFloat(value).Round(int32(payment.CurrencyMaxFractionDigits(currency))).InexactFloat64()
+}
+
+func calculateSettlementGatewayRefundAmount(orderAmount, payAmount, refundAmount float64, currency string) float64 {
+	if orderAmount <= 0 || payAmount <= 0 || refundAmount <= 0 {
+		return 0
+	}
+	fractionDigits := int32(payment.CurrencyMaxFractionDigits(currency))
+	if math.Abs(refundAmount-orderAmount) <= paymentAmountToleranceForCurrency(currency) {
+		return decimal.NewFromFloat(payAmount).Truncate(fractionDigits).InexactFloat64()
+	}
+	return decimal.NewFromFloat(payAmount).
+		Mul(decimal.NewFromFloat(refundAmount)).
+		Div(decimal.NewFromFloat(orderAmount)).
+		Truncate(fractionDigits).
+		InexactFloat64()
 }

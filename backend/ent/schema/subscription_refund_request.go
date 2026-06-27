@@ -56,6 +56,10 @@ func (SubscriptionRefundRequest) Fields() []ent.Field {
 
 		field.String("preview_token_hash").
 			MaxLen(128),
+		field.String("preview_fingerprint").
+			Optional().
+			Nillable().
+			MaxLen(128),
 		field.Time("preview_issued_at").
 			Default(time.Now).
 			SchemaType(map[string]string{dialect.Postgres: "timestamptz"}),
@@ -100,6 +104,10 @@ func (SubscriptionRefundRequest) Fields() []ent.Field {
 			Nillable().
 			MaxLen(255),
 		field.String("manual_receiver_qr_image_url").
+			Optional().
+			Nillable().
+			SchemaType(map[string]string{dialect.Postgres: "text"}),
+		field.String("manual_receiver_remark").
 			Optional().
 			Nillable().
 			SchemaType(map[string]string{dialect.Postgres: "text"}),
@@ -168,8 +176,12 @@ func (SubscriptionRefundRequest) Indexes() []ent.Index {
 		index.Fields("status"),
 		index.Fields("preview_expires_at"),
 		index.Fields("subscription_id").
-			StorageKey("subscriptionrefundrequest_subscription_open").
+			StorageKey("subscriptionrefundrequest_subscription_previewed").
 			Unique().
-			Annotations(entsql.IndexWhere("status IN ('previewed', 'submitted', 'gateway_processing', 'manual_pending', 'failed')")),
+			Annotations(entsql.IndexWhere("status = 'previewed'")),
+		index.Fields("subscription_id").
+			StorageKey("subscriptionrefundrequest_subscription_processing").
+			Unique().
+			Annotations(entsql.IndexWhere("status IN ('submitted', 'gateway_processing', 'manual_pending', 'failed')")),
 	}
 }

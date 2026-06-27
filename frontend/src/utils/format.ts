@@ -56,21 +56,22 @@ export function formatNumber(num: number | null | undefined): string {
  * 格式化货币金额
  * @param amount 金额
  * @param currency 货币代码，默认 USD
+ * @param fractionDigits 小数位数，未指定时保留原有默认策略
  * @returns 格式化后的字符串，如 "$1.25"
  */
-export function formatCurrency(amount: number | null | undefined, currency: string = 'USD'): string {
+export function formatCurrency(amount: number | null | undefined, currency: string = 'USD', fractionDigits?: number): string {
   if (amount === null || amount === undefined) return '$0.00'
 
   const locale = getLocale()
 
-  // For very small amounts, show more decimals
-  const fractionDigits = amount > 0 && amount < 0.01 ? 6 : 2
+  // For very small amounts, show more decimals unless caller overrides
+  const digits = fractionDigits ?? (amount > 0 && amount < 0.01 ? 6 : 2)
 
   return new Intl.NumberFormat(locale, {
     style: 'currency',
     currency: currency,
-    minimumFractionDigits: fractionDigits,
-    maximumFractionDigits: fractionDigits
+    minimumFractionDigits: digits,
+    maximumFractionDigits: digits
   }).format(amount)
 }
 

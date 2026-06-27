@@ -227,3 +227,70 @@ func TestSubscriptionBulkAssignAcceptsPlanIDWithoutGroupID(t *testing.T) {
 
 	assert.Equal(t, http.StatusOK, code)
 }
+
+func TestSubscriptionBulkExtendRequiresSubscriptionIDs(t *testing.T) {
+	h := &SubscriptionHandler{}
+	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/bulk-extend", map[string]any{
+		"days": 7,
+	}, h.BulkExtend)
+
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestSubscriptionBulkExtendAcceptsValidPayload(t *testing.T) {
+	h := newSubscriptionHandlerHarness(t)
+	user := h.createUser(t, "bulk-extend-handler@example.com")
+	group := h.createGroup(t, "bulk-extend-handler-group")
+	plan := h.createPlan(t, "Bulk Extend Handler Plan", group.ID)
+
+	sub, reused, err := h.handler.subscriptionService.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: plan.ID,
+		Notes:  "seed subscription",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+
+	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/bulk-extend", map[string]any{
+		"subscription_ids": []int64{sub.ID},
+		"days":             7,
+	}, h.handler.BulkExtend)
+
+	assert.Equal(t, http.StatusOK, code)
+}
+
+func TestSubscriptionBulkResetQuotaRequiresResetWindow(t *testing.T) {
+	h := &SubscriptionHandler{}
+	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/bulk-reset-quota", map[string]any{
+		"subscription_ids": []int64{1},
+		"daily":            false,
+		"weekly":           false,
+		"monthly":          false,
+	}, h.BulkResetQuota)
+
+	assert.Equal(t, http.StatusBadRequest, code)
+}
+
+func TestSubscriptionBulkResetQuotaAcceptsValidPayload(t *testing.T) {
+	h := newSubscriptionHandlerHarness(t)
+	user := h.createUser(t, "bulk-reset-handler@example.com")
+	group := h.createGroup(t, "bulk-reset-handler-group")
+	plan := h.createPlan(t, "Bulk Reset Handler Plan", group.ID)
+
+	sub, reused, err := h.handler.subscriptionService.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID: user.ID,
+		PlanID: plan.ID,
+		Notes:  "seed subscription",
+	})
+	require.NoError(t, err)
+	require.False(t, reused)
+
+	code := postSubscriptionAssignValidation(t, "/api/v1/admin/subscriptions/bulk-reset-quota", map[string]any{
+		"subscription_ids": []int64{sub.ID},
+		"daily":            true,
+		"weekly":           false,
+		"monthly":          true,
+	}, h.handler.BulkResetQuota)
+
+	assert.Equal(t, http.StatusOK, code)
+}

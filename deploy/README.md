@@ -62,7 +62,7 @@ docker compose -f docker-compose.local.yml logs -f sub2api
 docker compose -f docker-compose.local.yml logs sub2api | grep "admin password"
 
 # Access Web UI
-# http://localhost:8080
+# http://localhost:18080
 ```
 
 ### Method 2: Manual Deployment
@@ -94,7 +94,7 @@ docker compose -f docker-compose.local.yml up -d
 docker compose -f docker-compose.local.yml logs -f sub2api
 
 # Access Web UI
-# http://localhost:8080
+# http://localhost:18080
 ```
 
 ### Deployment Version Comparison
@@ -212,7 +212,7 @@ docker compose down -v
 | `POSTGRES_PASSWORD` | **Yes** | - | PostgreSQL password |
 | `JWT_SECRET` | **Recommended** | *(auto-generated)* | JWT secret (fixed for persistent sessions) |
 | `TOTP_ENCRYPTION_KEY` | **Recommended** | *(auto-generated)* | TOTP encryption key (fixed for persistent 2FA) |
-| `SERVER_PORT` | No | `8080` | Server port |
+| `SERVER_PORT` | No | `18080` | Server port |
 | `ADMIN_EMAIL` | No | `admin@sub2api.local` | Admin email |
 | `ADMIN_PASSWORD` | No | *(auto-generated)* | Admin password |
 | `TZ` | No | `Asia/Shanghai` | Timezone |

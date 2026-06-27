@@ -731,6 +731,17 @@ func UserSubscriptionFromServiceAdmin(sub *service.UserSubscription) *AdminUserS
 	}
 }
 
+func SimpleUserFromService(u *service.User) *SimpleUser {
+	if u == nil {
+		return nil
+	}
+	return &SimpleUser{
+		ID:       u.ID,
+		Email:    u.Email,
+		Username: u.Username,
+	}
+}
+
 func AdminUserSubscriptionDetailFromService(detail *service.AdminSubscriptionDetail) *AdminUserSubscriptionDetail {
 	if detail == nil || detail.Subscription == nil {
 		return nil
@@ -747,6 +758,104 @@ func AdminUserSubscriptionDetailFromService(detail *service.AdminSubscriptionDet
 		AdminUserSubscription: *subscription,
 		CurrentSettlementHead: SubscriptionSettlementOrderFromService(detail.CurrentSettlementHead),
 		SettlementHistory:     history,
+	}
+}
+
+func SubscriptionRefundAllocationFromService(allocation *service.SettlementRefundAllocationRecord) *SubscriptionRefundAllocation {
+	if allocation == nil {
+		return nil
+	}
+	return &SubscriptionRefundAllocation{
+		ID:                        allocation.ID,
+		RefundRequestID:           allocation.RefundRequestID,
+		PaymentOrderID:            allocation.PaymentOrderID,
+		PaymentProviderInstanceID: allocation.PaymentProviderInstanceID,
+		OrderAmount:               allocation.OrderAmount,
+		OrderPayAmount:            allocation.OrderPayAmount,
+		AlreadyRefundedAmount:     allocation.AlreadyRefundedAmount,
+		RefundableOrderAmount:     allocation.RefundableOrderAmount,
+		AllocatedRefundValue:      allocation.AllocatedRefundValue,
+		GatewayRefundAmount:       allocation.GatewayRefundAmount,
+		Currency:                  allocation.Currency,
+		Status:                    allocation.Status,
+		GatewayRefundTradeNo:      allocation.GatewayRefundTradeNo,
+		FailedReason:              allocation.FailedReason,
+		ProcessedAt:               allocation.ProcessedAt,
+		CreatedAt:                 allocation.CreatedAt,
+		UpdatedAt:                 allocation.UpdatedAt,
+	}
+}
+
+func subscriptionRefundRequestFromServiceBase(view *service.SettlementRefundRequestView) SubscriptionRefundRequest {
+	if view == nil || view.Request == nil {
+		return SubscriptionRefundRequest{}
+	}
+	req := view.Request
+	out := SubscriptionRefundRequest{
+		ID:                           req.ID,
+		UserID:                       req.UserID,
+		SubscriptionID:               req.SubscriptionID,
+		SettlementID:                 req.SettlementID,
+		ExpectedSettlementID:         req.ExpectedSettlementID,
+		Subscription:                 UserSubscriptionFromService(view.Subscription),
+		CurrentSettlementHead:        SubscriptionSettlementOrderFromService(view.CurrentSettlementHead),
+		ExpectedSettlementHead:       SubscriptionSettlementOrderFromService(view.ExpectedSettlementHead),
+		Status:                       req.Status,
+		RefundMode:                   req.RefundMode,
+		Currency:                     req.Currency,
+		Reason:                       req.Reason,
+		RefundResidualValue:          req.RefundResidualValue,
+		GatewayRefundableTotal:       req.GatewayRefundableTotal,
+		ManualTransferAmount:         req.ManualTransferAmount,
+		PreviewIssuedAt:              req.PreviewIssuedAt,
+		PreviewExpiresAt:             req.PreviewExpiresAt,
+		SubmittedAt:                  req.SubmittedAt,
+		FrozenAt:                     req.FrozenAt,
+		CompletedAt:                  req.CompletedAt,
+		CancelledAt:                  req.CancelledAt,
+		OriginalSubscriptionStatus:    req.OriginalSubscriptionStatus,
+		OriginalSubscriptionExpiresAt: req.OriginalSubscriptionExpiresAt,
+		ManualReceiverType:           req.ManualReceiverType,
+		ManualReceiverName:           req.ManualReceiverName,
+		ManualReceiverAccount:        req.ManualReceiverAccount,
+		ManualReceiverQRCodeImageURL: req.ManualReceiverQRCodeImageURL,
+		ManualReceiverRemark:         req.ManualReceiverRemark,
+		ManualTransferProofURL:       req.ManualTransferProofURL,
+		ManualTransferProofUploadedAt: req.ManualTransferProofUploadedAt,
+		ManualTransferOperatorUserID: req.ManualTransferOperatorUserID,
+		AdminNote:                    req.AdminNote,
+		GatewayRefundedTotal:         view.GatewayRefundedTotal,
+		SucceededAllocations:         view.SucceededAllocations,
+		FailedAllocations:            view.FailedAllocations,
+		SkippedAllocations:           view.SkippedAllocations,
+		ManualTransferRequired:       service.SettlementRefundManualTransferRequired(req.ManualTransferAmount, req.Currency),
+	}
+	if len(req.Allocations) > 0 {
+		out.Allocations = make([]SubscriptionRefundAllocation, 0, len(req.Allocations))
+		for i := range req.Allocations {
+			allocation := req.Allocations[i]
+			out.Allocations = append(out.Allocations, *SubscriptionRefundAllocationFromService(&allocation))
+		}
+	}
+	return out
+}
+
+func SubscriptionRefundRequestFromService(view *service.SettlementRefundRequestView) *SubscriptionRefundRequest {
+	if view == nil || view.Request == nil {
+		return nil
+	}
+	out := subscriptionRefundRequestFromServiceBase(view)
+	return &out
+}
+
+func AdminSubscriptionRefundRequestFromService(view *service.SettlementRefundRequestView) *AdminSubscriptionRefundRequest {
+	if view == nil || view.Request == nil {
+		return nil
+	}
+	out := subscriptionRefundRequestFromServiceBase(view)
+	return &AdminSubscriptionRefundRequest{
+		SubscriptionRefundRequest: out,
+		User:                      SimpleUserFromService(view.User),
 	}
 }
 
@@ -811,6 +920,9 @@ func userSubscriptionFromServiceBase(sub *service.UserSubscription) UserSubscrip
 		DailyUsedKnives:    sub.DailyUsedKnives,
 		WeeklyUsedKnives:   sub.WeeklyUsedKnives,
 		MonthlyUsedKnives:  sub.MonthlyUsedKnives,
+		RefundFreezeActive: sub.RefundFreezeActive,
+		ActiveRefundRequestID: sub.ActiveRefundRequestID,
+		ActiveRefundStatus: sub.ActiveRefundStatus,
 		CreatedAt:          sub.CreatedAt,
 		UpdatedAt:          sub.UpdatedAt,
 		User:               UserFromServiceShallow(sub.User),
@@ -833,6 +945,48 @@ func BulkAssignResultFromService(r *service.BulkAssignResult) *BulkAssignResult 
 		SuccessCount:  r.SuccessCount,
 		CreatedCount:  r.CreatedCount,
 		ReusedCount:   r.ReusedCount,
+		FailedCount:   r.FailedCount,
+		Subscriptions: subs,
+		Errors:        r.Errors,
+		Statuses:      statuses,
+	}
+}
+
+func BulkAdjustResultFromService(r *service.BulkAdjustResult) *BulkAdjustResult {
+	if r == nil {
+		return nil
+	}
+	subs := make([]AdminUserSubscription, 0, len(r.Subscriptions))
+	for i := range r.Subscriptions {
+		subs = append(subs, *UserSubscriptionFromServiceAdmin(&r.Subscriptions[i]))
+	}
+	statuses := make(map[string]string, len(r.Statuses))
+	for subscriptionID, status := range r.Statuses {
+		statuses[strconv.FormatInt(subscriptionID, 10)] = status
+	}
+	return &BulkAdjustResult{
+		SuccessCount:  r.SuccessCount,
+		FailedCount:   r.FailedCount,
+		Subscriptions: subs,
+		Errors:        r.Errors,
+		Statuses:      statuses,
+	}
+}
+
+func BulkResetSubscriptionQuotaResultFromService(r *service.BulkResetSubscriptionQuotaResult) *BulkResetSubscriptionQuotaResult {
+	if r == nil {
+		return nil
+	}
+	subs := make([]AdminUserSubscription, 0, len(r.Subscriptions))
+	for i := range r.Subscriptions {
+		subs = append(subs, *UserSubscriptionFromServiceAdmin(&r.Subscriptions[i]))
+	}
+	statuses := make(map[string]string, len(r.Statuses))
+	for subscriptionID, status := range r.Statuses {
+		statuses[strconv.FormatInt(subscriptionID, 10)] = status
+	}
+	return &BulkResetSubscriptionQuotaResult{
+		SuccessCount:  r.SuccessCount,
 		FailedCount:   r.FailedCount,
 		Subscriptions: subs,
 		Errors:        r.Errors,

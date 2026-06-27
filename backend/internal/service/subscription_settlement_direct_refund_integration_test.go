@@ -73,7 +73,7 @@ func TestRefundExchangeCodeSettlementHeadCreatesRefundSettlementOrder(t *testing
 	require.NoError(t, err)
 	require.Nil(t, head)
 
-	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID)
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, domain.SettlementActionPurchase, preview.Action)
 	require.InDelta(t, plan.Price, preview.OrderAmount, 1e-9)

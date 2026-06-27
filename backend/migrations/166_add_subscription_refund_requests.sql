@@ -33,6 +33,7 @@ CREATE TABLE IF NOT EXISTS subscription_refund_requests (
     manual_receiver_name                    VARCHAR(100),
     manual_receiver_account                 VARCHAR(255),
     manual_receiver_qr_image_url            TEXT,
+    manual_receiver_remark                  TEXT,
     manual_transfer_proof_url               TEXT,
     manual_transfer_proof_uploaded_at       TIMESTAMPTZ,
     manual_transfer_operator_user_id        BIGINT REFERENCES users(id) ON DELETE SET NULL,
@@ -89,9 +90,13 @@ CREATE INDEX IF NOT EXISTS idx_subscription_refund_requests_status
 CREATE INDEX IF NOT EXISTS idx_subscription_refund_requests_preview_expires_at
     ON subscription_refund_requests(preview_expires_at);
 
-CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_refund_requests_subscription_open
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_refund_requests_subscription_previewed
     ON subscription_refund_requests(subscription_id)
-    WHERE status IN ('previewed', 'submitted', 'gateway_processing', 'manual_pending', 'failed');
+    WHERE status = 'previewed';
+
+CREATE UNIQUE INDEX IF NOT EXISTS idx_subscription_refund_requests_subscription_processing
+    ON subscription_refund_requests(subscription_id)
+    WHERE status IN ('submitted', 'gateway_processing', 'manual_pending', 'failed');
 
 CREATE TABLE IF NOT EXISTS subscription_refund_allocations (
     id                                      BIGSERIAL PRIMARY KEY,

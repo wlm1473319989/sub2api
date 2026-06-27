@@ -34,3 +34,12 @@ func TestSettlementRefundPreviewTokenHashVerification(t *testing.T) {
 	require.False(t, verifySettlementRefundPreviewToken(token, ""))
 	require.False(t, verifySettlementRefundPreviewToken("", tokenHash))
 }
+
+func TestNewSettlementRefundPreviewIDUsesJavascriptSafeIntegerRange(t *testing.T) {
+	for i := 0; i < 128; i++ {
+		id, err := newSettlementRefundPreviewID()
+		require.NoError(t, err)
+		require.Greater(t, id, int64(0))
+		require.LessOrEqual(t, id, settlementRefundPreviewIDMaxSafeInteger)
+	}
+}

@@ -10,6 +10,7 @@ import type {
   PaymentChannel,
   SubscriptionPlan,
   ProviderInstance,
+  RefundPreview,
   RefundResult
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
@@ -121,8 +122,27 @@ export const adminPaymentAPI = {
   },
 
   /** Process a refund */
-  refundOrder(id: number, data: { amount: number; reason: string; deduct_balance?: boolean; force?: boolean }) {
+  refundOrder(id: number, data: {
+    amount: number
+    reason: string
+    deduct_balance?: boolean
+    force?: boolean
+    preview_id?: number
+    preview_token?: string
+    manual_transfer?: {
+      receiver_type: string
+      receiver_name: string
+      receiver_account: string
+      receiver_qr_image_url: string
+      remark?: string
+    }
+  }) {
     return apiClient.post<RefundResult>(`/admin/payment/orders/${id}/refund`, data)
+  },
+
+  /** Preview a refund without mutating the order */
+  previewRefund(id: number, data: { amount: number; reason?: string; deduct_balance?: boolean; force?: boolean }) {
+    return apiClient.post<RefundPreview>(`/admin/payment/orders/${id}/refund-preview`, data)
   },
 
   // ==================== Channels ====================

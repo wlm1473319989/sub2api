@@ -822,6 +822,16 @@ func TestGetServerAddressFromEnv(t *testing.T) {
 	}
 }
 
+func TestGetServerAddressUsesDefaultPort(t *testing.T) {
+	t.Setenv("SERVER_HOST", "")
+	t.Setenv("SERVER_PORT", "")
+
+	address := GetServerAddress()
+	if address != "0.0.0.0:18080" {
+		t.Fatalf("GetServerAddress() default = %q", address)
+	}
+}
+
 func TestValidateAbsoluteHTTPURL(t *testing.T) {
 	if err := ValidateAbsoluteHTTPURL("https://example.com/path"); err != nil {
 		t.Fatalf("ValidateAbsoluteHTTPURL valid url error: %v", err)

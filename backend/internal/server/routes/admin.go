@@ -538,9 +538,29 @@ func registerSubscriptionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		subscriptions.GET("/:id/progress", h.Admin.Subscription.GetProgress)
 		subscriptions.POST("/assign", h.Admin.Subscription.Assign)
 		subscriptions.POST("/bulk-assign", h.Admin.Subscription.BulkAssign)
+		subscriptions.POST("/bulk-extend", h.Admin.Subscription.BulkExtend)
+		subscriptions.POST("/bulk-reset-quota", h.Admin.Subscription.BulkResetQuota)
 		subscriptions.POST("/:id/extend", h.Admin.Subscription.Extend)
 		subscriptions.POST("/:id/reset-quota", h.Admin.Subscription.ResetQuota)
 		subscriptions.DELETE("/:id", h.Admin.Subscription.Revoke)
+
+		refundRequests := subscriptions.Group("/refund-requests")
+		{
+			refundRequests.POST("/:id/manual-proof", h.Admin.Subscription.UploadRefundProof)
+			refundRequests.POST("/:id/gateway-process", h.Admin.Subscription.ProcessRefundGateway)
+			refundRequests.POST("/:id/complete", h.Admin.Subscription.CompleteRefund)
+			refundRequests.POST("/:id/cancel", h.Admin.Subscription.CancelRefund)
+		}
+	}
+
+	adminRefundRequests := admin.Group("/subscription-refund-requests")
+	{
+		adminRefundRequests.GET("", h.Admin.Subscription.ListRefundRequests)
+		adminRefundRequests.GET("/:id", h.Admin.Subscription.GetRefundRequest)
+		adminRefundRequests.POST("/:id/manual-proof", h.Admin.Subscription.UploadRefundProof)
+		adminRefundRequests.POST("/:id/gateway-process", h.Admin.Subscription.ProcessRefundGateway)
+		adminRefundRequests.POST("/:id/complete", h.Admin.Subscription.CompleteRefund)
+		adminRefundRequests.POST("/:id/cancel", h.Admin.Subscription.CancelRefund)
 	}
 
 	// 分组下的订阅列表

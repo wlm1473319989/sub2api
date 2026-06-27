@@ -111,9 +111,18 @@ func RegisterUserRoutes(
 		subscriptions := authenticated.Group("/subscriptions")
 		{
 			subscriptions.GET("", h.Subscription.List)
+			subscriptions.GET("/ledger", h.Subscription.GetLedger)
 			subscriptions.GET("/active", h.Subscription.GetActive)
 			subscriptions.GET("/progress", h.Subscription.GetProgress)
 			subscriptions.GET("/summary", h.Subscription.GetSummary)
+			subscriptions.POST("/:id/refund-preview", h.Subscription.PreviewRefund)
+			subscriptions.POST("/:id/refund-request", h.Subscription.RequestRefund)
+		}
+
+		refundRequests := authenticated.Group("/subscription-refund-requests")
+		{
+			refundRequests.GET("", h.Subscription.ListRefundRequests)
+			refundRequests.GET("/:id", h.Subscription.GetRefundRequest)
 		}
 
 		// 渠道监控（用户只读）

@@ -173,6 +173,35 @@
                   </div>
                 </div>
               </div>
+              <div
+                v-if="selectedPlanAction === 'upgrade' && selectedUpgradeBreakdown"
+                class="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
+              >
+                <div class="font-medium text-amber-800 dark:text-amber-200">
+                  {{ t('payment.upgradeCalculationTitle') }}
+                </div>
+                <p>{{ t('payment.upgradeCalculationIntro') }}</p>
+                <div class="space-y-1 font-mono text-xs sm:text-sm">
+                  <p>
+                    {{ t('payment.upgradeCalculationCurrentFormula') }}:
+                    {{ formatSelectedPaymentAmount(selectedCurrentPlanPreview?.price || 0) }} / {{ formatQuotaKnives(selectedUpgradeBreakdown.theoretical_full_max_knives) }}
+                    = {{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.unit_cost) }}
+                  </p>
+                  <p>
+                    {{ t('payment.upgradeCalculationResidualFormula') }}:
+                    {{ formatQuotaKnives(selectedUpgradeBreakdown.residual_quota_knives) }} × {{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.unit_cost) }}
+                    = {{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.residual_value) }}
+                  </p>
+                  <p>
+                    {{ t('payment.upgradeCalculationDeltaFormula') }}:
+                    {{ formatSelectedPaymentAmount(selectedTargetPlanPreview?.price || selectedPlan.price) }} - {{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.residual_value) }}
+                    = {{ formatSelectedPaymentAmount(selectedUpgradeBreakdown.upgrade_delta) }}
+                  </p>
+                </div>
+                <p class="text-xs text-amber-700 dark:text-amber-300">
+                  {{ t('payment.upgradeCalculationRuleHint') }}
+                </p>
+              </div>
               <p v-if="subscriptionNotice" class="text-sm text-amber-600 dark:text-amber-300">{{ subscriptionNotice }}</p>
               <button :class="['btn w-full py-3 text-base font-medium', paymentButtonClass]" :disabled="!canSubmitSubscription || submitting" @click="confirmSubscribe">
                 <span v-if="submitting" class="flex items-center justify-center gap-2">
@@ -278,6 +307,7 @@ import PaymentStatusPanel from '@/components/payment/PaymentStatusPanel.vue'
 import Icon from '@/components/icons/Icon.vue'
 import { formatPaymentAmount, normalizePaymentCurrency } from '@/components/payment/currency'
 import type { PaymentMethodOption } from '@/components/payment/PaymentMethodSelector.vue'
+import { formatNumberLocaleString } from '@/utils/format'
 import { buildPaymentErrorToastMessage, describePaymentScenarioError } from './paymentUx'
 import { hasWechatResumeQuery, parseWechatResumeRoute, stripWechatResumeQuery } from './paymentWechatResume'
 
@@ -607,6 +637,11 @@ function formatSelectedPaymentAmount(value: number): string {
   return formatPaymentAmount(value, selectedCurrency.value, localeCode.value)
 }
 
+function formatQuotaKnives(value: number): string {
+  if (!Number.isFinite(value)) return '0'
+  return formatNumberLocaleString(Number(value.toFixed(2)))
+}
+
 const methodOptions = computed<PaymentMethodOption[]>(() =>
   enabledMethods.value.map((type) => {
     const ml = visibleMethods.value[type]
@@ -716,7 +751,7 @@ async function loadSubscriptionPreview(plan: SubscriptionPlan): Promise<Subscrip
   const requestId = ++previewRequestId
   previewLoading.value = true
   try {
-    const response = await paymentAPI.previewSubscription(plan.id)
+    const response = await paymentAPI.previewSubscription(plan.id, selectedMethod.value)
     if (requestId !== previewRequestId) {
       return null
     }
@@ -742,6 +777,15 @@ async function loadSubscriptionPreview(plan: SubscriptionPlan): Promise<Subscrip
     }
   }
 }
+
+watch(selectedMethod, async (next, prev) => {
+  if (!selectedPlan.value || !next || next === prev || submitting.value) return
+  try {
+    await loadSubscriptionPreview(selectedPlan.value)
+  } catch {
+    // Keep the last visible preview/error flow handled by the original caller.
+  }
+})
 
 async function selectPlan(plan: SubscriptionPlan) {
   try {

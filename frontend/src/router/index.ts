@@ -278,6 +278,42 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/subscription-ledger',
+    name: 'SubscriptionLedger',
+    component: () => import('@/views/user/SubscriptionLedgerView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Subscription Ledger',
+      titleKey: 'subscriptionLedger.title',
+      descriptionKey: 'subscriptionLedger.description'
+    }
+  },
+  {
+    path: '/subscription-refund-requests',
+    name: 'SubscriptionRefundRequests',
+    component: () => import('@/views/user/SubscriptionRefundRequestsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Refund Requests',
+      titleKey: 'subscriptionRefundRequests.title',
+      descriptionKey: 'subscriptionRefundRequests.description'
+    }
+  },
+  {
+    path: '/subscription-refund-requests/:id',
+    name: 'SubscriptionRefundRequestDetail',
+    component: () => import('@/views/user/SubscriptionRefundRequestDetailView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: false,
+      title: 'Refund Request Detail',
+      titleKey: 'subscriptionRefundRequests.title',
+      descriptionKey: 'subscriptionRefundRequests.description'
+    }
+  },
+  {
     path: '/purchase',
     name: 'PurchaseSubscription',
     component: () => import('@/views/user/PaymentView.vue'),
@@ -475,6 +511,30 @@ const routes: RouteRecordRaw[] = [
       title: 'Subscription Management',
       titleKey: 'admin.subscriptions.title',
       descriptionKey: 'admin.subscriptions.description'
+    }
+  },
+  {
+    path: '/admin/subscription-refund-requests',
+    name: 'AdminSubscriptionRefundRequests',
+    component: () => import('@/views/admin/SubscriptionRefundRequestsView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Refund Request Management',
+      titleKey: 'admin.subscriptionRefundRequests.title',
+      descriptionKey: 'admin.subscriptionRefundRequests.description'
+    }
+  },
+  {
+    path: '/admin/subscription-refund-requests/:id',
+    name: 'AdminSubscriptionRefundRequestDetail',
+    component: () => import('@/views/admin/SubscriptionRefundRequestDetailView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Refund Request Detail',
+      titleKey: 'admin.subscriptionRefundRequests.title',
+      descriptionKey: 'admin.subscriptionRefundRequests.description'
     }
   },
   {
@@ -835,8 +895,11 @@ router.beforeEach(async (to, _from, next) => {
     const restrictedPaths = [
       '/admin/groups',
       '/admin/subscriptions',
+      '/admin/subscription-refund-requests',
       '/admin/redeem',
       '/subscriptions',
+      '/subscription-ledger',
+      '/subscription-refund-requests',
       '/redeem'
     ]
 

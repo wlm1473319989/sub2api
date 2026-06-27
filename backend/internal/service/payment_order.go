@@ -133,7 +133,15 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 }
 
 func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRequest) (*dbent.SubscriptionPlan, *subscriptionOrderDecision, error) {
-	decision, err := s.prepareSubscriptionOrderDecision(ctx, req.UserID, req.PlanID)
+	currency := payment.DefaultPaymentCurrency
+	if s.configService != nil {
+		var err error
+		currency, err = s.configService.ValidateMethodCurrencyConsistency(ctx, req.PaymentType)
+		if err != nil {
+			return nil, nil, err
+		}
+	}
+	decision, err := s.prepareSubscriptionOrderDecision(ctx, req.UserID, req.PlanID, currency)
 	if err != nil {
 		return nil, nil, err
 	}

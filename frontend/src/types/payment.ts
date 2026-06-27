@@ -110,12 +110,77 @@ export interface RefundSettlementHeadInfo {
   refund_residual_value: number
 }
 
+export interface RefundPreviewAllocation {
+  payment_order_id: number
+  order_amount: number
+  pay_amount?: number
+  order_pay_amount?: number
+  payment_type?: string
+  payment_provider_key?: string
+  payment_provider_instance_id?: number | null
+  already_refunded_amount: number
+  refundable_order_amount: number
+  allocated_refund_value: number
+  gateway_refund_amount: number
+  currency: string
+  refund_channel_available?: boolean
+  skipped_reason?: string
+}
+
+export interface RefundManualTransfer {
+  receiver_type: string
+  receiver_name: string
+  receiver_account: string
+  receiver_qr_image_url: string
+  remark?: string
+}
+
 export interface RefundResult {
   success: boolean
   warning?: string
   require_force?: boolean
   balance_deducted?: number
   subscription_days_deducted?: number
+  settlement_head?: RefundSettlementHeadInfo
+}
+
+export interface RefundPreview {
+  order_amount: number
+  pay_amount: number
+  refund_amount: number
+  gateway_amount: number
+  currency?: string
+  deduction_type?: string
+  balance_to_deduct?: number
+  subscription_days_to_deduct?: number
+  warning?: string
+  require_force?: boolean
+  preview_id?: number
+  preview_token?: string
+  preview_issued_at?: string
+  preview_expires_at?: string
+  preview_ttl_seconds?: number
+  subscription_id?: number
+  user_id?: number
+  settlement_id?: number
+  expected_settlement_id?: number
+  action_source?: string
+  trigger_ref_type?: string
+  trigger_ref_id?: number | null
+  plan_name?: string
+  subscription_expires_at?: string
+  after_settlement_value?: number
+  theoretical_full_max_knives?: number
+  residual_quota_knives?: number
+  unit_cost?: number
+  refund_mode?: string
+  refund_residual_value?: number
+  gateway_refundable_total?: number
+  manual_transfer_amount?: number
+  manual_transfer_required?: boolean
+  after_submit_subscription_status?: string
+  after_complete_subscription_status?: string
+  allocations?: RefundPreviewAllocation[]
   settlement_head?: RefundSettlementHeadInfo
 }
 

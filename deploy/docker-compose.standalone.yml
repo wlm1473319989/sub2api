@@ -7,7 +7,7 @@
 # Usage:
 #   1. Copy .env.example to .env and configure database/redis connection
 #   2. docker-compose -f docker-compose.standalone.yml up -d
-#   3. Access: http://localhost:8080
+#   3. Access: http://localhost:18080
 # =============================================================================
 
 services:
@@ -20,7 +20,7 @@ services:
         soft: 100000
         hard: 100000
     ports:
-      - "${BIND_HOST:-0.0.0.0}:${SERVER_PORT:-8080}:8080"
+      - "${BIND_HOST:-0.0.0.0}:${SERVER_PORT:-18080}:18080"
     volumes:
       - sub2api_data:/app/data
     extra_hosts:
@@ -35,7 +35,7 @@ services:
       # Server Configuration
       # =======================================================================
       - SERVER_HOST=0.0.0.0
-      - SERVER_PORT=8080
+      - SERVER_PORT=18080
       - SERVER_MODE=${SERVER_MODE:-release}
       - RUN_MODE=${RUN_MODE:-standard}
 
@@ -113,7 +113,7 @@ services:
       - GATEWAY_IMAGE_CONCURRENCY_WAIT_TIMEOUT_SECONDS=${GATEWAY_IMAGE_CONCURRENCY_WAIT_TIMEOUT_SECONDS:-30}
       - GATEWAY_IMAGE_CONCURRENCY_MAX_WAITING_REQUESTS=${GATEWAY_IMAGE_CONCURRENCY_MAX_WAITING_REQUESTS:-100}
     healthcheck:
-      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://localhost:8080/health"]
+      test: ["CMD", "wget", "-q", "-T", "5", "-O", "/dev/null", "http://localhost:18080/health"]
       interval: 30s
       timeout: 10s
       retries: 3

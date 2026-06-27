@@ -2,8 +2,6 @@ package admin
 
 import (
 	"context"
-	"errors"
-	"net/http"
 	"strconv"
 	"strings"
 	"time"
@@ -15,6 +13,8 @@ import (
 
 	"github.com/gin-gonic/gin"
 )
+
+const systemUpdatesDisabledMessage = "automatic updates are disabled in this deployment"
 
 // SystemHandler handles system-related operations
 type SystemHandler struct {
@@ -48,88 +48,19 @@ func (h *SystemHandler) GetVersion(c *gin.Context) {
 // CheckUpdates checks for available updates
 // GET /api/v1/admin/system/check-updates
 func (h *SystemHandler) CheckUpdates(c *gin.Context) {
-	force := c.Query("force") == "true"
-	info, err := h.updateSvc.CheckUpdate(c.Request.Context(), force)
-	if err != nil {
-		response.Error(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-	response.Success(c, info)
+	response.Forbidden(c, systemUpdatesDisabledMessage)
 }
 
 // PerformUpdate downloads and applies the update
 // POST /api/v1/admin/system/update
 func (h *SystemHandler) PerformUpdate(c *gin.Context) {
-	operationID := buildSystemOperationID(c, "update")
-	payload := gin.H{"operation_id": operationID}
-	executeAdminIdempotentJSON(c, "admin.system.update", payload, service.DefaultSystemOperationIdempotencyTTL(), func(ctx context.Context) (any, error) {
-		lock, release, err := h.acquireSystemLock(ctx, operationID)
-		if err != nil {
-			return nil, err
-		}
-		var releaseReason string
-		succeeded := false
-		defer func() {
-			release(releaseReason, succeeded)
-		}()
-
-		if err := h.updateSvc.PerformUpdate(ctx); err != nil {
-			if errors.Is(err, service.ErrNoUpdateAvailable) {
-				info, checkErr := h.updateSvc.CheckUpdate(ctx, false)
-				if checkErr != nil {
-					releaseReason = "SYSTEM_UPDATE_FAILED"
-					return nil, checkErr
-				}
-				succeeded = true
-				return gin.H{
-					"message":            "Already up to date",
-					"already_up_to_date": true,
-					"current_version":    info.CurrentVersion,
-					"latest_version":     info.LatestVersion,
-					"operation_id":       lock.OperationID(),
-				}, nil
-			}
-			releaseReason = "SYSTEM_UPDATE_FAILED"
-			return nil, err
-		}
-		succeeded = true
-
-		return gin.H{
-			"message":      "Update completed. Please restart the service.",
-			"need_restart": true,
-			"operation_id": lock.OperationID(),
-		}, nil
-	})
+	response.Forbidden(c, systemUpdatesDisabledMessage)
 }
 
 // Rollback restores the previous version
 // POST /api/v1/admin/system/rollback
 func (h *SystemHandler) Rollback(c *gin.Context) {
-	operationID := buildSystemOperationID(c, "rollback")
-	payload := gin.H{"operation_id": operationID}
-	executeAdminIdempotentJSON(c, "admin.system.rollback", payload, service.DefaultSystemOperationIdempotencyTTL(), func(ctx context.Context) (any, error) {
-		lock, release, err := h.acquireSystemLock(ctx, operationID)
-		if err != nil {
-			return nil, err
-		}
-		var releaseReason string
-		succeeded := false
-		defer func() {
-			release(releaseReason, succeeded)
-		}()
-
-		if err := h.updateSvc.Rollback(); err != nil {
-			releaseReason = "SYSTEM_ROLLBACK_FAILED"
-			return nil, err
-		}
-		succeeded = true
-
-		return gin.H{
-			"message":      "Rollback completed. Please restart the service.",
-			"need_restart": true,
-			"operation_id": lock.OperationID(),
-		}, nil
-	})
+	response.Forbidden(c, systemUpdatesDisabledMessage)
 }
 
 // RestartService restarts the systemd service

@@ -67,6 +67,7 @@ const (
 	SubscriptionStatusSuspended  = "suspended"
 	SubscriptionStatusSuperseded = "superseded"
 	SubscriptionStatusRefunded   = "refunded"
+	SubscriptionStatusRevoked    = "revoked"
 )
 
 // DefaultAntigravityModelMapping 是 Antigravity 平台的默认模型映射

@@ -1534,13 +1534,21 @@ export interface ChangePasswordRequest {
 
 // ==================== User Subscription Types ====================
 
+export type UserSubscriptionStatus =
+  | 'active'
+  | 'expired'
+  | 'suspended'
+  | 'superseded'
+  | 'refunded'
+  | 'revoked'
+
 export interface UserSubscription {
   id: number
   user_id: number
   plan_id?: number | null
   plan_name_snapshot?: string | null
   plan_price_snapshot?: number | null
-  status: 'active' | 'expired' | 'revoked' | 'superseded' | 'refunded'
+  status: UserSubscriptionStatus
   starts_at: string
   daily_usage_usd: number
   weekly_usage_usd: number
@@ -1551,6 +1559,9 @@ export interface UserSubscription {
   daily_used_knives?: number
   weekly_used_knives?: number
   monthly_used_knives?: number
+  refund_freeze_active?: boolean
+  active_refund_request_id?: number | null
+  active_refund_status?: SubscriptionRefundStatus | string | null
   daily_window_start: string | null
   weekly_window_start: string | null
   monthly_window_start: string | null
@@ -1560,8 +1571,8 @@ export interface UserSubscription {
   user?: User
 }
 
-export type SubscriptionSettlementActionType = 'purchase' | 'renew' | 'upgrade' | 'refund'
-export type SubscriptionSettlementActionSource = 'user_purchase' | 'exchange_code' | 'subscription_assign'
+export type SubscriptionSettlementActionType = 'purchase' | 'renew' | 'upgrade' | 'refund' | 'revoke'
+export type SubscriptionSettlementActionSource = 'user_purchase' | 'exchange_code' | 'subscription_assign' | 'admin_revoke'
 export type SubscriptionSettlementStatus = 'effective' | 'closed'
 export type SubscriptionSettlementTriggerRefType = 'payment_order' | 'redeem_code' | 'admin_assignment' | 'direct_action'
 
@@ -1597,6 +1608,181 @@ export interface SubscriptionSettlementOrder {
   closed_at?: string | null
   created_at: string
   updated_at: string
+}
+
+export type SubscriptionRefundStatus =
+  | 'submitted'
+  | 'gateway_processing'
+  | 'manual_pending'
+  | 'completed'
+  | 'failed'
+  | 'cancelled'
+
+export type SubscriptionRefundMode = 'gateway_refund' | 'manual_transfer' | 'hybrid' | 'entitlement_only'
+export type SubscriptionRefundAllocationStatus = 'pending' | 'processing' | 'succeeded' | 'failed' | 'skipped'
+
+export interface SubscriptionRefundPreviewAllocation {
+  payment_order_id: number
+  order_amount: number
+  order_pay_amount: number
+  pay_amount?: number
+  payment_type?: string
+  payment_provider_key?: string
+  payment_provider_instance_id?: number | null
+  already_refunded_amount: number
+  refundable_order_amount: number
+  allocated_refund_value: number
+  gateway_refund_amount: number
+  currency: string
+  status: SubscriptionRefundAllocationStatus
+  gateway_refund_trade_no?: string | null
+  failed_reason?: string | null
+  processed_at?: string | null
+  created_at?: string
+  updated_at?: string
+  refund_channel_available?: boolean
+  skipped_reason?: string
+}
+
+export interface SubscriptionRefundPreviewResponse {
+  preview_id: number
+  preview_token: string
+  preview_issued_at: string
+  preview_expires_at: string
+  preview_ttl_seconds?: number
+  subscription_id: number
+  user_id: number
+  settlement_id: number
+  expected_settlement_id: number
+  action_source: SubscriptionSettlementActionSource
+  trigger_ref_type: SubscriptionSettlementTriggerRefType
+  trigger_ref_id?: number | null
+  plan_name?: string
+  subscription_expires_at?: string
+  after_settlement_value?: number
+  theoretical_full_max_knives?: number
+  residual_quota_knives?: number
+  unit_cost?: number
+  refund_mode: SubscriptionRefundMode
+  refund_residual_value: number
+  gateway_refundable_total: number
+  manual_transfer_amount: number
+  manual_transfer_required: boolean
+  currency: string
+  after_submit_subscription_status: UserSubscription['status']
+  after_complete_subscription_status: UserSubscription['status']
+  allocations: SubscriptionRefundPreviewAllocation[]
+}
+
+export interface SubscriptionRefundManualTransfer {
+  receiver_type: string
+  receiver_name: string
+  receiver_account: string
+  receiver_qr_image_url: string
+  remark?: string
+}
+
+export interface SubscriptionRefundAllocation {
+  id: number
+  refund_request_id: number
+  payment_order_id: number
+  payment_provider_instance_id?: number | null
+  order_amount: number
+  order_pay_amount: number
+  already_refunded_amount: number
+  refundable_order_amount: number
+  allocated_refund_value: number
+  gateway_refund_amount: number
+  currency: string
+  status: SubscriptionRefundAllocationStatus
+  gateway_refund_trade_no?: string | null
+  failed_reason?: string | null
+  processed_at?: string | null
+  created_at: string
+  updated_at: string
+}
+
+export interface SubscriptionRefundRequestUserSummary {
+  id: number
+  username: string
+  email: string
+  role: User['role']
+  status: User['status']
+}
+
+export interface SubscriptionRefundRequest {
+  id: number
+  user_id: number
+  subscription_id: number
+  settlement_id: number
+  expected_settlement_id: number
+  subscription?: UserSubscription | null
+  current_settlement_head?: SubscriptionSettlementOrder | null
+  expected_settlement_head?: SubscriptionSettlementOrder | null
+  status: SubscriptionRefundStatus
+  refund_mode: SubscriptionRefundMode
+  currency: string
+  reason?: string | null
+  refund_residual_value: number
+  gateway_refundable_total: number
+  manual_transfer_amount: number
+  preview_issued_at: string
+  preview_expires_at: string
+  submitted_at?: string | null
+  frozen_at?: string | null
+  completed_at?: string | null
+  cancelled_at?: string | null
+  original_subscription_status?: UserSubscription['status'] | null
+  original_subscription_expires_at?: string | null
+  manual_receiver_type?: string | null
+  manual_receiver_name?: string | null
+  manual_receiver_account?: string | null
+  manual_receiver_qr_image_url?: string | null
+  manual_receiver_remark?: string | null
+  manual_transfer_proof_url?: string | null
+  manual_transfer_proof_uploaded_at?: string | null
+  manual_transfer_operator_user_id?: number | null
+  admin_note?: string | null
+  gateway_refunded_total: number
+  succeeded_allocations: number
+  failed_allocations: number
+  skipped_allocations: number
+  manual_transfer_required: boolean
+  allocations?: SubscriptionRefundAllocation[]
+}
+
+export interface AdminSubscriptionRefundRequest extends SubscriptionRefundRequest {
+  user?: SubscriptionRefundRequestUserSummary | null
+}
+
+export interface SubscriptionRefundSubmitRequest {
+  preview_id: number
+  preview_token: string
+  reason?: string
+  manual_transfer?: SubscriptionRefundManualTransfer
+}
+
+export interface SubscriptionRefundSubmitResult {
+  success: boolean
+  refund_request_id: number
+  subscription_id: number
+  subscription_status: UserSubscription['status']
+  refund_status: SubscriptionRefundStatus
+  refund_residual_value: number
+  gateway_refundable_total: number
+  manual_transfer_amount: number
+  currency: string
+}
+
+export interface SubscriptionRefundListParams {
+  page?: number
+  page_size?: number
+}
+
+export interface AdminSubscriptionRefundListParams extends SubscriptionRefundListParams {
+  user_id?: number
+  subscription_id?: number
+  status?: string
 }
 
 export interface AdminUserSubscriptionDetail extends UserSubscription {
@@ -1663,6 +1849,37 @@ export interface BulkAssignSubscriptionRequest {
   user_ids: number[]
   plan_id: number
   validity_days?: number
+}
+
+export interface BulkAdjustSubscriptionRequest {
+  subscription_ids: number[]
+  days: number
+}
+
+export interface BulkAdjustSubscriptionResult {
+  success_count: number
+  failed_count: number
+  subscriptions: UserSubscription[]
+  errors: string[]
+  statuses?: Record<string, string>
+}
+
+export interface ResetSubscriptionQuotaRequest {
+  daily: boolean
+  weekly: boolean
+  monthly: boolean
+}
+
+export interface BulkResetSubscriptionQuotaRequest extends ResetSubscriptionQuotaRequest {
+  subscription_ids: number[]
+}
+
+export interface BulkResetSubscriptionQuotaResult {
+  success_count: number
+  failed_count: number
+  subscriptions: UserSubscription[]
+  errors: string[]
+  statuses?: Record<string, string>
 }
 
 export interface ExtendSubscriptionRequest {

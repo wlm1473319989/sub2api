@@ -17,6 +17,10 @@ import (
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 )
 
+var (
+	ErrSubscriptionRefundOrderRequiresCurrentSettlement = infraerrors.Conflict("SUBSCRIPTION_REFUND_REQUIRES_CURRENT_SETTLEMENT", "subscription refund must be requested from the current subscription settlement")
+)
+
 // --- Refund Flow ---
 
 // getOrderProviderInstance looks up the provider instance that processed this order.
@@ -152,28 +156,58 @@ func (s *PaymentService) RequestRefund(ctx context.Context, oid, uid int64, reas
 	if err != nil {
 		return err
 	}
-	u, err := s.userRepo.GetByID(ctx, o.UserID)
-	if err != nil {
-		return fmt.Errorf("get user: %w", err)
-	}
-	if u.Balance < o.Amount {
-		return infraerrors.BadRequest("BALANCE_NOT_ENOUGH", "refund amount exceeds balance")
-	}
 	nr := strings.TrimSpace(reason)
+	refundAmount := o.Amount
+	if o.OrderType == payment.OrderTypeBalance {
+		u, err := s.userRepo.GetByID(ctx, o.UserID)
+		if err != nil {
+			return fmt.Errorf("get user: %w", err)
+		}
+		if u.Balance < o.Amount {
+			return infraerrors.BadRequest("BALANCE_NOT_ENOUGH", "refund amount exceeds balance")
+		}
+	} else if o.OrderType == payment.OrderTypeSubscription {
+		preview, err := s.PreviewRefund(ctx, oid, 0, nr, false, true)
+		if err != nil {
+			return err
+		}
+		if preview.RequireForce {
+			msg := strings.TrimSpace(preview.Warning)
+			if msg == "" {
+				msg = "subscription refund requires admin review"
+			}
+			return infraerrors.Conflict("REFUND_REQUIRES_ADMIN_REVIEW", msg)
+		}
+		if preview.RefundAmount > 0 {
+			refundAmount = preview.RefundAmount
+		}
+	}
 	now := time.Now()
 	by := fmt.Sprintf("%d", uid)
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(oid), paymentorder.UserIDEQ(uid), paymentorder.StatusEQ(OrderStatusCompleted), paymentorder.OrderTypeEQ(payment.OrderTypeBalance)).SetStatus(OrderStatusRefundRequested).SetRefundRequestedAt(now).SetRefundRequestReason(nr).SetRefundRequestedBy(by).SetRefundAmount(o.Amount).Save(ctx)
+	c, err := s.entClient.PaymentOrder.Update().
+		Where(
+			paymentorder.IDEQ(oid),
+			paymentorder.UserIDEQ(uid),
+			paymentorder.StatusEQ(OrderStatusCompleted),
+			paymentorder.OrderTypeEQ(o.OrderType),
+		).
+		SetStatus(OrderStatusRefundRequested).
+		SetRefundRequestedAt(now).
+		SetRefundRequestReason(nr).
+		SetRefundRequestedBy(by).
+		SetRefundAmount(refundAmount).
+		Save(ctx)
 	if err != nil {
 		return fmt.Errorf("update: %w", err)
 	}
 	if c == 0 {
 		return infraerrors.Conflict("CONFLICT", "order status changed")
 	}
-	s.writeAuditLog(ctx, oid, "REFUND_REQUESTED", fmt.Sprintf("user:%d", uid), map[string]any{"amount": o.Amount, "reason": nr})
+	s.writeAuditLog(ctx, oid, "REFUND_REQUESTED", fmt.Sprintf("user:%d", uid), map[string]any{"amount": refundAmount, "reason": nr, "orderType": o.OrderType})
 	return nil
 }
 
-func (s *PaymentService) validateRefundRequest(ctx context.Context, oid, uid int64) (*dbent.PaymentOrder, error) {
+func (s *PaymentService) validateRefundRequestBase(ctx context.Context, oid, uid int64) (*dbent.PaymentOrder, error) {
 	o, err := s.entClient.PaymentOrder.Get(ctx, oid)
 	if err != nil {
 		return nil, infraerrors.NotFound("NOT_FOUND", "order not found")
@@ -181,24 +215,149 @@ func (s *PaymentService) validateRefundRequest(ctx context.Context, oid, uid int
 	if o.UserID != uid {
 		return nil, infraerrors.Forbidden("FORBIDDEN", "no permission")
 	}
-	if o.OrderType != payment.OrderTypeBalance {
-		return nil, infraerrors.BadRequest("INVALID_ORDER_TYPE", "only balance orders can request refund")
+	if o.OrderType != payment.OrderTypeBalance && o.OrderType != payment.OrderTypeSubscription {
+		return nil, infraerrors.BadRequest("INVALID_ORDER_TYPE", "only balance or subscription orders can request refund")
 	}
 	if o.Status != OrderStatusCompleted {
 		return nil, infraerrors.BadRequest("INVALID_STATUS", "only completed orders can request refund")
 	}
+	return o, nil
+}
+
+func (s *PaymentService) validateUserRefundProvider(ctx context.Context, o *dbent.PaymentOrder) error {
+	if o == nil {
+		return infraerrors.NotFound("NOT_FOUND", "order not found")
+	}
 	// Check provider instance allows user refund
 	inst, err := s.getRefundOrderProviderInstance(ctx, o)
 	if err != nil || inst == nil {
-		return nil, infraerrors.Forbidden("USER_REFUND_DISABLED", "refund is not available for this order")
+		return infraerrors.Forbidden("USER_REFUND_DISABLED", "refund is not available for this order")
 	}
 	if !inst.AllowUserRefund {
-		return nil, infraerrors.Forbidden("USER_REFUND_DISABLED", "user refund is not enabled for this provider")
+		return infraerrors.Forbidden("USER_REFUND_DISABLED", "user refund is not enabled for this provider")
+	}
+	return nil
+}
+
+func (s *PaymentService) validateRefundRequest(ctx context.Context, oid, uid int64) (*dbent.PaymentOrder, error) {
+	o, err := s.validateRefundRequestBase(ctx, oid, uid)
+	if err != nil {
+		return nil, err
+	}
+	if err := s.validateUserRefundProvider(ctx, o); err != nil {
+		return nil, err
 	}
 	return o, nil
 }
 
+func (s *PaymentService) ResolveSubscriptionRefundTarget(ctx context.Context, orderID, userID int64) (*dbent.PaymentOrder, *UserSubscription, error) {
+	order, err := s.validateRefundRequestBase(ctx, orderID, userID)
+	if err != nil {
+		return nil, nil, err
+	}
+	if order.OrderType != payment.OrderTypeSubscription {
+		if err := s.validateUserRefundProvider(ctx, order); err != nil {
+			return nil, nil, err
+		}
+	}
+	return s.resolveSubscriptionRefundTargetOrder(ctx, order)
+}
+
+func (s *PaymentService) ResolveAdminSubscriptionRefundTarget(ctx context.Context, orderID int64) (*dbent.PaymentOrder, *UserSubscription, error) {
+	order, err := s.GetOrderByID(ctx, orderID)
+	if err != nil {
+		return nil, nil, err
+	}
+	return s.resolveSubscriptionRefundTargetOrder(ctx, order)
+}
+
+func (s *PaymentService) resolveSubscriptionRefundTargetOrder(ctx context.Context, order *dbent.PaymentOrder) (*dbent.PaymentOrder, *UserSubscription, error) {
+	if order == nil {
+		return nil, nil, infraerrors.NotFound("NOT_FOUND", "order not found")
+	}
+	if order.OrderType != payment.OrderTypeSubscription {
+		return order, nil, nil
+	}
+	if s.subscriptionSvc == nil {
+		return nil, nil, infraerrors.InternalServer("SUBSCRIPTION_SERVICE_REQUIRED", "subscription service is required")
+	}
+
+	active, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, order.UserID)
+	if err != nil {
+		if errorsIsSubscriptionNotFound(err) {
+			return nil, nil, ErrSubscriptionRefundOrderRequiresCurrentSettlement
+		}
+		return nil, nil, err
+	}
+	if active == nil {
+		return nil, nil, ErrSubscriptionRefundOrderRequiresCurrentSettlement
+	}
+
+	settlementSvc := s.settlementSvc
+	if settlementSvc == nil && s.entClient != nil {
+		settlementSvc = NewSettlementService(s.entClient)
+	}
+	if settlementSvc == nil {
+		return nil, nil, ErrSettlementEntClientRequired
+	}
+
+	head, err := settlementSvc.GetEffectiveHead(ctx, order.UserID, time.Now())
+	if err != nil {
+		return nil, nil, err
+	}
+	if head == nil {
+		return nil, nil, ErrSubscriptionRefundOrderRequiresCurrentSettlement
+	}
+	if head.AfterUserSubscriptionID == nil || *head.AfterUserSubscriptionID != active.ID {
+		return nil, nil, ErrSubscriptionRefundOrderRequiresCurrentSettlement
+	}
+	if head.ActionSource != domain.SettlementActionSourceUserPurchase ||
+		head.TriggerRefType != domain.SettlementTriggerRefPaymentOrder ||
+		head.TriggerRefID == nil ||
+		*head.TriggerRefID != order.ID {
+		return nil, nil, ErrSubscriptionRefundOrderRequiresCurrentSettlement
+	}
+
+	return order, active, nil
+}
+
 func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float64, reason string, force, deduct bool) (*RefundPlan, *RefundResult, error) {
+	p, earlyResult, err := s.prepareRefundPlan(ctx, oid, amt, reason, force, deduct)
+	if err != nil {
+		return nil, nil, err
+	}
+	if earlyResult != nil {
+		return nil, earlyResult, nil
+	}
+	return p, nil, nil
+}
+
+func (s *PaymentService) PreviewRefund(ctx context.Context, oid int64, amt float64, reason string, force, deduct bool) (*RefundPreview, error) {
+	p, earlyResult, err := s.prepareRefundPlan(ctx, oid, amt, reason, force, deduct)
+	if err != nil {
+		return nil, err
+	}
+	return refundPreviewFromPlan(p, earlyResult), nil
+}
+
+func (s *PaymentService) PreviewUserRefund(ctx context.Context, oid, uid int64) (*RefundPreview, error) {
+	o, err := s.validateRefundRequest(ctx, oid, uid)
+	if err != nil {
+		return nil, err
+	}
+	if o.OrderType == payment.OrderTypeBalance {
+		u, err := s.userRepo.GetByID(ctx, o.UserID)
+		if err != nil {
+			return nil, fmt.Errorf("get user: %w", err)
+		}
+		if u.Balance < o.Amount {
+			return nil, infraerrors.BadRequest("BALANCE_NOT_ENOUGH", "refund amount exceeds balance")
+		}
+	}
+	return s.PreviewRefund(ctx, oid, 0, "", false, true)
+}
+
+func (s *PaymentService) prepareRefundPlan(ctx context.Context, oid int64, amt float64, reason string, force, deduct bool) (*RefundPlan, *RefundResult, error) {
 	o, err := s.entClient.PaymentOrder.Get(ctx, oid)
 	if err != nil {
 		return nil, nil, infraerrors.NotFound("NOT_FOUND", "order not found")
@@ -241,10 +400,45 @@ func (s *PaymentService) PrepareRefund(ctx context.Context, oid int64, amt float
 	p := &RefundPlan{OrderID: oid, Order: o, RefundAmount: amt, GatewayAmount: ga, Reason: rr, Force: force, DeductBalance: deduct, DeductionType: payment.DeductionTypeNone}
 	if deduct {
 		if er := s.prepDeduct(ctx, o, p, force); er != nil {
-			return nil, er, nil
+			return p, er, nil
 		}
 	}
 	return p, nil, nil
+}
+
+func refundPreviewFromPlan(p *RefundPlan, earlyResult *RefundResult) *RefundPreview {
+	if p == nil {
+		return nil
+	}
+	preview := &RefundPreview{
+		OrderAmount:     p.Order.Amount,
+		PayAmount:       p.Order.PayAmount,
+		RefundAmount:    p.RefundAmount,
+		GatewayAmount:   p.GatewayAmount,
+		Currency:        PaymentOrderCurrency(p.Order),
+		DeductionType:   p.DeductionType,
+		BalanceToDeduct: p.BalanceToDeduct,
+		SubDaysToDeduct: p.SubDaysToDeduct,
+		SettlementHead:  refundSettlementHeadInfo(p.SettlementHead, p.SettlementResidual),
+	}
+	if earlyResult != nil {
+		preview.Warning = earlyResult.Warning
+		preview.RequireForce = earlyResult.RequireForce
+		if earlyResult.BalanceDeducted > 0 {
+			preview.BalanceToDeduct = earlyResult.BalanceDeducted
+		}
+		if earlyResult.SubDaysDeducted > 0 {
+			preview.SubDaysToDeduct = earlyResult.SubDaysDeducted
+		}
+		if earlyResult.SettlementHead != nil {
+			preview.SettlementHead = earlyResult.SettlementHead
+			if earlyResult.SettlementHead.RefundResidualValue > 0 {
+				preview.RefundAmount = earlyResult.SettlementHead.RefundResidualValue
+				preview.GatewayAmount = calculateGatewayRefundAmount(p.Order.Amount, p.Order.PayAmount, preview.RefundAmount, PaymentOrderCurrency(p.Order))
+			}
+		}
+	}
+	return preview
 }
 
 func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, p *RefundPlan, force bool) *RefundResult {

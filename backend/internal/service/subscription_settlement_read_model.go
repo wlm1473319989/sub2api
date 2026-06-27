@@ -64,15 +64,45 @@ func (s *SubscriptionService) GetAdminSubscriptionDetail(ctx context.Context, su
 		client = tx.Client()
 	}
 
+	history, current, err := querySubscriptionSettlementHistory(ctx, client, subscription.UserID)
+	if err != nil {
+		return nil, fmt.Errorf("query subscription settlement history: %w", err)
+	}
+
+	return &AdminSubscriptionDetail{
+		Subscription:          subscription,
+		CurrentSettlementHead: current,
+		SettlementHistory:     history,
+	}, nil
+}
+
+func (s *SubscriptionService) ListUserSettlementHistory(ctx context.Context, userID int64) ([]SubscriptionSettlementOrderView, error) {
+	if s.entClient == nil {
+		return nil, ErrSettlementEntClientRequired
+	}
+
+	client := s.entClient
+	if tx := dbent.TxFromContext(ctx); tx != nil {
+		client = tx.Client()
+	}
+
+	history, _, err := querySubscriptionSettlementHistory(ctx, client, userID)
+	if err != nil {
+		return nil, fmt.Errorf("query subscription settlement history: %w", err)
+	}
+	return history, nil
+}
+
+func querySubscriptionSettlementHistory(ctx context.Context, client *dbent.Client, userID int64) ([]SubscriptionSettlementOrderView, *SubscriptionSettlementOrderView, error) {
 	settlements, err := client.SubscriptionSettlementOrder.Query().
-		Where(subscriptionsettlementorder.UserIDEQ(subscription.UserID)).
+		Where(subscriptionsettlementorder.UserIDEQ(userID)).
 		Order(
 			dbent.Asc(subscriptionsettlementorder.FieldEffectiveAt),
 			dbent.Asc(subscriptionsettlementorder.FieldID),
 		).
 		All(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("query subscription settlement history: %w", err)
+		return nil, nil, err
 	}
 
 	history := make([]SubscriptionSettlementOrderView, 0, len(settlements))
@@ -85,12 +115,7 @@ func (s *SubscriptionService) GetAdminSubscriptionDetail(ctx context.Context, su
 			current = &currentView
 		}
 	}
-
-	return &AdminSubscriptionDetail{
-		Subscription:          subscription,
-		CurrentSettlementHead: current,
-		SettlementHistory:     history,
-	}, nil
+	return history, current, nil
 }
 
 func subscriptionSettlementOrderViewFromEnt(settlement *dbent.SubscriptionSettlementOrder) SubscriptionSettlementOrderView {
@@ -108,15 +133,15 @@ func subscriptionSettlementOrderViewFromEnt(settlement *dbent.SubscriptionSettle
 		TriggerRefID:                    settlement.TriggerRefID,
 		OperatorUserID:                  settlement.OperatorUserID,
 		ActionNote:                      settlement.ActionNote,
-		CarryInResidualValue:            settlement.CarryInResidualValue,
-		ActionDeltaValue:                settlement.ActionDeltaValue,
-		AfterSettlementValue:            settlement.AfterSettlementValue,
-		RefundResidualValue:             settlement.RefundResidualValue,
-		WriteoffValue:                   settlement.WriteoffValue,
+		CarryInResidualValue:            roundSettlementAmountValue(settlement.CarryInResidualValue),
+		ActionDeltaValue:                roundSettlementAmountValue(settlement.ActionDeltaValue),
+		AfterSettlementValue:            roundSettlementAmountValue(settlement.AfterSettlementValue),
+		RefundResidualValue:             roundSettlementAmountPointer(settlement.RefundResidualValue),
+		WriteoffValue:                   roundSettlementAmountValue(settlement.WriteoffValue),
 		AfterUserSubscriptionID:         settlement.AfterUserSubscriptionID,
 		AfterPlanID:                     settlement.AfterPlanID,
 		AfterPlanNameSnapshot:           settlement.AfterPlanNameSnapshot,
-		AfterPlanPriceSnapshot:          settlement.AfterPlanPriceSnapshot,
+		AfterPlanPriceSnapshot:          roundSettlementAmountPointer(settlement.AfterPlanPriceSnapshot),
 		AfterValidityDaysSnapshot:       settlement.AfterValidityDaysSnapshot,
 		AfterValidityUnitSnapshot:       settlement.AfterValidityUnitSnapshot,
 		AfterStartsAt:                   settlement.AfterStartsAt,

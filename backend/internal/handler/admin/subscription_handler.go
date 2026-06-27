@@ -3,6 +3,7 @@ package admin
 import (
 	"context"
 	"strconv"
+	"strings"
 
 	"github.com/Wei-Shaw/sub2api/internal/handler/dto"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
@@ -28,7 +29,8 @@ func toResponsePagination(p *pagination.PaginationResult) *response.PaginationRe
 
 // SubscriptionHandler handles admin subscription management
 type SubscriptionHandler struct {
-	subscriptionService *service.SubscriptionService
+	subscriptionService     *service.SubscriptionService
+	settlementRefundService *service.SettlementRefundService
 }
 
 // NewSubscriptionHandler creates a new admin subscription handler
@@ -36,6 +38,11 @@ func NewSubscriptionHandler(subscriptionService *service.SubscriptionService) *S
 	return &SubscriptionHandler{
 		subscriptionService: subscriptionService,
 	}
+}
+
+// SetSettlementRefundService injects the subscription settlement refund service.
+func (h *SubscriptionHandler) SetSettlementRefundService(settlementRefundService *service.SettlementRefundService) {
+	h.settlementRefundService = settlementRefundService
 }
 
 // AssignSubscriptionRequest represents assign subscription request
@@ -57,6 +64,20 @@ type BulkAssignSubscriptionRequest struct {
 // AdjustSubscriptionRequest represents adjust subscription request (extend or shorten)
 type AdjustSubscriptionRequest struct {
 	Days int `json:"days" binding:"required,min=-36500,max=36500"` // negative to shorten, positive to extend
+}
+
+// BulkAdjustSubscriptionRequest represents bulk adjust subscription request.
+type BulkAdjustSubscriptionRequest struct {
+	SubscriptionIDs []int64 `json:"subscription_ids" binding:"required,min=1"`
+	Days            int     `json:"days" binding:"required,min=-36500,max=36500"`
+}
+
+// BulkResetSubscriptionQuotaRequest represents bulk reset quota request.
+type BulkResetSubscriptionQuotaRequest struct {
+	SubscriptionIDs []int64 `json:"subscription_ids" binding:"required,min=1"`
+	Daily           bool    `json:"daily"`
+	Weekly          bool    `json:"weekly"`
+	Monthly         bool    `json:"monthly"`
 }
 
 // List handles listing all subscriptions with pagination and filters
@@ -82,6 +103,7 @@ func (h *SubscriptionHandler) List(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
+	applySettlementRefundMarkersToSubscriptions(c, h.settlementRefundService, subscriptions)
 
 	out := make([]dto.AdminUserSubscription, 0, len(subscriptions))
 	for i := range subscriptions {
@@ -106,6 +128,31 @@ func (h *SubscriptionHandler) GetByID(c *gin.Context) {
 	}
 
 	response.Success(c, dto.AdminUserSubscriptionDetailFromService(detail))
+}
+
+func applySettlementRefundMarkersToSubscriptions(c *gin.Context, settlementRefundService *service.SettlementRefundService, subscriptions []service.UserSubscription) {
+	if settlementRefundService == nil || len(subscriptions) == 0 {
+		return
+	}
+
+	subscriptionIDs := make([]int64, 0, len(subscriptions))
+	for i := range subscriptions {
+		subscriptionIDs = append(subscriptionIDs, subscriptions[i].ID)
+	}
+	markers, err := settlementRefundService.GetActiveRefundMarkersBySubscriptionIDs(c.Request.Context(), subscriptionIDs)
+	if err != nil {
+		return
+	}
+	for i := range subscriptions {
+		marker, ok := markers[subscriptions[i].ID]
+		if !ok {
+			continue
+		}
+		subscriptions[i].RefundFreezeActive = true
+		subscriptions[i].ActiveRefundRequestID = &marker.RefundRequestID
+		status := marker.Status
+		subscriptions[i].ActiveRefundStatus = &status
+	}
 }
 
 // GetProgress handles getting subscription usage progress
@@ -188,6 +235,54 @@ func (h *SubscriptionHandler) BulkAssign(c *gin.Context) {
 	response.Success(c, dto.BulkAssignResultFromService(result))
 }
 
+// BulkExtend handles adjusting multiple subscriptions (extend or shorten).
+// POST /api/v1/admin/subscriptions/bulk-extend
+func (h *SubscriptionHandler) BulkExtend(c *gin.Context) {
+	var req BulkAdjustSubscriptionRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	executeAdminIdempotentJSON(c, "admin.subscriptions.bulk_extend", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
+		result, err := h.subscriptionService.BulkAdjustSubscription(ctx, &service.BulkAdjustSubscriptionInput{
+			SubscriptionIDs: req.SubscriptionIDs,
+			Days:            req.Days,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return dto.BulkAdjustResultFromService(result), nil
+	})
+}
+
+// BulkResetQuota handles resetting usage quota windows for multiple subscriptions.
+// POST /api/v1/admin/subscriptions/bulk-reset-quota
+func (h *SubscriptionHandler) BulkResetQuota(c *gin.Context) {
+	var req BulkResetSubscriptionQuotaRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	if !req.Daily && !req.Weekly && !req.Monthly {
+		response.BadRequest(c, "At least one of 'daily', 'weekly', or 'monthly' must be true")
+		return
+	}
+
+	executeAdminIdempotentJSON(c, "admin.subscriptions.bulk_reset_quota", req, service.DefaultWriteIdempotencyTTL(), func(ctx context.Context) (any, error) {
+		result, err := h.subscriptionService.BulkResetQuota(ctx, &service.BulkResetSubscriptionQuotaInput{
+			SubscriptionIDs: req.SubscriptionIDs,
+			Daily:           req.Daily,
+			Weekly:          req.Weekly,
+			Monthly:         req.Monthly,
+		})
+		if err != nil {
+			return nil, err
+		}
+		return dto.BulkResetSubscriptionQuotaResultFromService(result), nil
+	})
+}
+
 // Extend handles adjusting a subscription (extend or shorten)
 // POST /api/v1/admin/subscriptions/:id/extend
 func (h *SubscriptionHandler) Extend(c *gin.Context) {
@@ -260,13 +355,207 @@ func (h *SubscriptionHandler) Revoke(c *gin.Context) {
 		return
 	}
 
-	err = h.subscriptionService.RevokeSubscription(c.Request.Context(), subscriptionID)
+	_, err = h.subscriptionService.RevokeSubscription(c.Request.Context(), &service.RevokeSubscriptionInput{
+		SubscriptionID: subscriptionID,
+		OperatorUserID: getAdminIDFromContext(c),
+	})
 	if err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 
 	response.Success(c, gin.H{"message": "Subscription revoked successfully"})
+}
+
+// ListRefundRequests returns settlement refund requests for admin review.
+// GET /api/v1/admin/subscription-refund-requests
+func (h *SubscriptionHandler) ListRefundRequests(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	page, pageSize := response.ParsePagination(c)
+	var userID *int64
+	if userIDStr := strings.TrimSpace(c.Query("user_id")); userIDStr != "" {
+		if id, err := strconv.ParseInt(userIDStr, 10, 64); err == nil && id > 0 {
+			userID = &id
+		}
+	}
+	var subscriptionID *int64
+	if subscriptionIDStr := strings.TrimSpace(c.Query("subscription_id")); subscriptionIDStr != "" {
+		if id, err := strconv.ParseInt(subscriptionIDStr, 10, 64); err == nil && id > 0 {
+			subscriptionID = &id
+		}
+	}
+	filter := &service.SettlementRefundListFilter{
+		UserID:        userID,
+		SubscriptionID: subscriptionID,
+		Status:        strings.TrimSpace(c.Query("status")),
+	}
+
+	items, paginationResult, err := h.settlementRefundService.ListSettlementRefundRequests(c.Request.Context(), pagination.PaginationParams{
+		Page:     page,
+		PageSize: pageSize,
+	}, filter)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	out := make([]dto.AdminSubscriptionRefundRequest, 0, len(items))
+	for i := range items {
+		out = append(out, *dto.AdminSubscriptionRefundRequestFromService(&items[i]))
+	}
+	response.PaginatedWithResult(c, out, toResponsePagination(paginationResult))
+}
+
+// GetRefundRequest returns a single settlement refund request for admin review.
+// GET /api/v1/admin/subscription-refund-requests/:id
+func (h *SubscriptionHandler) GetRefundRequest(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	refundRequestID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	view, err := h.settlementRefundService.GetSettlementRefundRequestView(c.Request.Context(), refundRequestID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, dto.AdminSubscriptionRefundRequestFromService(view))
+}
+
+type SettlementRefundManualProofRequest struct {
+	ProofURL  string `json:"proof_url"`
+	AdminNote string `json:"admin_note"`
+}
+
+type SettlementRefundCancelRequest struct {
+	AdminNote string `json:"admin_note"`
+}
+
+// UploadRefundProof records manual transfer proof for a settlement refund request.
+// POST /api/v1/admin/subscriptions/refund-requests/:id/manual-proof
+func (h *SubscriptionHandler) UploadRefundProof(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	refundRequestID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	var req SettlementRefundManualProofRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	proofURL := strings.TrimSpace(req.ProofURL)
+	if proofURL == "" {
+		response.BadRequest(c, "proof_url is required")
+		return
+	}
+
+	result, err := h.settlementRefundService.UploadSettlementRefundManualProof(c.Request.Context(), service.SettlementRefundManualProofInput{
+		RefundRequestID: refundRequestID,
+		OperatorUserID:  getAdminIDFromContext(c),
+		ProofURL:        proofURL,
+		AdminNote:       req.AdminNote,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// ProcessRefundGateway runs the gateway refund step for a settlement refund request.
+// POST /api/v1/admin/subscriptions/refund-requests/:id/gateway-process
+func (h *SubscriptionHandler) ProcessRefundGateway(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	refundRequestID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	result, err := h.settlementRefundService.ProcessSettlementRefundGateway(c.Request.Context(), service.SettlementRefundGatewayInput{
+		RefundRequestID: refundRequestID,
+		OperatorUserID:  getAdminIDFromContext(c),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// CompleteRefund finalizes a settlement refund request and creates the refund settlement order.
+// POST /api/v1/admin/subscriptions/refund-requests/:id/complete
+func (h *SubscriptionHandler) CompleteRefund(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	refundRequestID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	result, err := h.settlementRefundService.CompleteSettlementRefund(c.Request.Context(), service.SettlementRefundCompleteInput{
+		RefundRequestID: refundRequestID,
+		OperatorUserID:  getAdminIDFromContext(c),
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
+}
+
+// CancelRefund cancels a settlement refund request and restores the subscription state.
+// POST /api/v1/admin/subscriptions/refund-requests/:id/cancel
+func (h *SubscriptionHandler) CancelRefund(c *gin.Context) {
+	if h == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	refundRequestID, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+
+	var req SettlementRefundCancelRequest
+	if c.Request != nil && c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(c, "Invalid request: "+err.Error())
+			return
+		}
+	}
+
+	result, err := h.settlementRefundService.CancelSettlementRefund(c.Request.Context(), service.SettlementRefundCancelInput{
+		RefundRequestID: refundRequestID,
+		OperatorUserID:  getAdminIDFromContext(c),
+		AdminNote:       req.AdminNote,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, result)
 }
 
 // ListByUser handles listing subscriptions for a specific user

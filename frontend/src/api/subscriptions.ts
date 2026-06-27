@@ -7,7 +7,14 @@ import { apiClient } from './client'
 import type {
   UserSubscription,
   SubscriptionSummary,
-  UserSubscriptionProgressInfo
+  UserSubscriptionProgressInfo,
+  SubscriptionSettlementOrder,
+  SubscriptionRefundRequest,
+  SubscriptionRefundPreviewResponse,
+  SubscriptionRefundSubmitRequest,
+  SubscriptionRefundSubmitResult,
+  PaginatedResponse,
+  SubscriptionRefundListParams
 } from '@/types'
 
 /**
@@ -42,9 +49,73 @@ export async function getSubscriptionSummary(): Promise<SubscriptionSummary> {
   return response.data
 }
 
+/**
+ * Get current user's subscription settlement ledger
+ */
+export async function getSubscriptionLedger(): Promise<SubscriptionSettlementOrder[]> {
+  const response = await apiClient.get<SubscriptionSettlementOrder[]>('/subscriptions/ledger')
+  return response.data
+}
+
+/**
+ * Get current user's settlement refund requests
+ */
+export async function getSubscriptionRefundRequests(
+  params: SubscriptionRefundListParams = {}
+): Promise<PaginatedResponse<SubscriptionRefundRequest>> {
+  const response = await apiClient.get<PaginatedResponse<SubscriptionRefundRequest>>(
+    '/subscription-refund-requests',
+    { params }
+  )
+  return response.data
+}
+
+/**
+ * Get a single settlement refund request
+ */
+export async function getSubscriptionRefundRequest(
+  id: number
+): Promise<SubscriptionRefundRequest> {
+  const response = await apiClient.get<SubscriptionRefundRequest>(`/subscription-refund-requests/${id}`)
+  return response.data
+}
+
+/**
+ * Preview a settlement-based refund for a subscription
+ */
+export async function previewSubscriptionRefund(
+  subscriptionId: number,
+  reason = ''
+): Promise<SubscriptionRefundPreviewResponse> {
+  const response = await apiClient.post<SubscriptionRefundPreviewResponse>(
+    `/subscriptions/${subscriptionId}/refund-preview`,
+    reason ? { reason } : {}
+  )
+  return response.data
+}
+
+/**
+ * Submit a settlement-based refund request
+ */
+export async function requestSubscriptionRefund(
+  subscriptionId: number,
+  request: SubscriptionRefundSubmitRequest
+): Promise<SubscriptionRefundSubmitResult> {
+  const response = await apiClient.post<SubscriptionRefundSubmitResult>(
+    `/subscriptions/${subscriptionId}/refund-request`,
+    request
+  )
+  return response.data
+}
+
 export default {
   getMySubscriptions,
   getActiveSubscriptions,
   getSubscriptionsProgress,
-  getSubscriptionSummary
+  getSubscriptionSummary,
+  getSubscriptionLedger,
+  getSubscriptionRefundRequests,
+  getSubscriptionRefundRequest,
+  previewSubscriptionRefund,
+  requestSubscriptionRefund
 }

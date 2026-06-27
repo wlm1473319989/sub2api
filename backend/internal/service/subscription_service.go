@@ -11,6 +11,7 @@ import (
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/Wei-Shaw/sub2api/internal/domain"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 	"github.com/dgraph-io/ristretto"
@@ -25,17 +26,18 @@ var MaxExpiresAt = time.Date(2099, 12, 31, 23, 59, 59, 0, time.UTC)
 const MaxValidityDays = 36500
 
 var (
-	ErrSubscriptionNotFound        = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
-	ErrSubscriptionExpired         = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
-	ErrSubscriptionSuspended       = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
-	ErrSubscriptionAlreadyExists   = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user")
-	ErrMultipleActiveSubscriptions = infraerrors.Conflict("MULTIPLE_ACTIVE_SUBSCRIPTIONS", "multiple active subscriptions found for user")
-	ErrInvalidInput                = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
-	ErrDailyLimitExceeded          = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
-	ErrWeeklyLimitExceeded         = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
-	ErrMonthlyLimitExceeded        = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
-	ErrSubscriptionNilInput        = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
-	ErrAdjustWouldExpire           = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
+	ErrSubscriptionNotFound             = infraerrors.NotFound("SUBSCRIPTION_NOT_FOUND", "subscription not found")
+	ErrSubscriptionExpired              = infraerrors.Forbidden("SUBSCRIPTION_EXPIRED", "subscription has expired")
+	ErrSubscriptionSuspended            = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
+	ErrSubscriptionAlreadyExists        = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user")
+	ErrMultipleActiveSubscriptions      = infraerrors.Conflict("MULTIPLE_ACTIVE_SUBSCRIPTIONS", "multiple active subscriptions found for user")
+	ErrInvalidInput                     = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
+	ErrDailyLimitExceeded               = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
+	ErrWeeklyLimitExceeded              = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
+	ErrMonthlyLimitExceeded             = infraerrors.TooManyRequests("MONTHLY_LIMIT_EXCEEDED", "monthly usage limit exceeded")
+	ErrSubscriptionNilInput             = infraerrors.BadRequest("SUBSCRIPTION_NIL_INPUT", "subscription input cannot be nil")
+	ErrAdjustWouldExpire                = infraerrors.BadRequest("ADJUST_WOULD_EXPIRE", "adjustment would result in expired subscription (remaining days must be > 0)")
+	ErrRevokeActiveSubscriptionRequired = infraerrors.BadRequest("SUBSCRIPTION_REVOKE_ACTIVE_REQUIRED", "only active subscriptions can be revoked")
 )
 
 // SubscriptionService 订阅服务
@@ -151,6 +153,12 @@ type AssignSubscriptionInput struct {
 	Notes        string
 }
 
+type RevokeSubscriptionInput struct {
+	SubscriptionID int64
+	OperatorUserID int64
+	Notes          string
+}
+
 // AssignSubscription 分配订阅给用户（不允许重复分配）
 func (s *SubscriptionService) AssignSubscription(ctx context.Context, input *AssignSubscriptionInput) (*UserSubscription, error) {
 	sub, _, err := s.AssignUserLevelSubscription(ctx, input)
@@ -216,6 +224,38 @@ type BulkAssignResult struct {
 	Statuses      map[int64]string
 }
 
+// BulkAdjustSubscriptionInput 批量调整订阅输入
+type BulkAdjustSubscriptionInput struct {
+	SubscriptionIDs []int64
+	Days            int
+}
+
+// BulkResetSubscriptionQuotaInput 批量重置订阅用量窗口输入
+type BulkResetSubscriptionQuotaInput struct {
+	SubscriptionIDs []int64
+	Daily           bool
+	Weekly          bool
+	Monthly         bool
+}
+
+// BulkAdjustResult 批量调整结果
+type BulkAdjustResult struct {
+	SuccessCount  int
+	FailedCount   int
+	Subscriptions []UserSubscription
+	Errors        []string
+	Statuses      map[int64]string
+}
+
+// BulkResetSubscriptionQuotaResult 批量重置订阅用量窗口结果
+type BulkResetSubscriptionQuotaResult struct {
+	SuccessCount  int
+	FailedCount   int
+	Subscriptions []UserSubscription
+	Errors        []string
+	Statuses      map[int64]string
+}
+
 // BulkAssignSubscription 批量分配订阅
 func (s *SubscriptionService) BulkAssignSubscription(ctx context.Context, input *BulkAssignSubscriptionInput) (*BulkAssignResult, error) {
 	result := &BulkAssignResult{
@@ -258,30 +298,159 @@ func (s *SubscriptionService) BulkAssignSubscription(ctx context.Context, input 
 	return result, nil
 }
 
-// RevokeSubscription 撤销订阅
-func (s *SubscriptionService) RevokeSubscription(ctx context.Context, subscriptionID int64) error {
-	// 先获取订阅信息用于失效缓存
-	sub, err := s.userSubRepo.GetByID(ctx, subscriptionID)
-	if err != nil {
-		return err
+// BulkAdjustSubscription 批量调整订阅有效期。
+// 复用单条 ExtendSubscription 的语义，确保过期恢复、负向缩短校验等规则一致。
+func (s *SubscriptionService) BulkAdjustSubscription(ctx context.Context, input *BulkAdjustSubscriptionInput) (*BulkAdjustResult, error) {
+	result := &BulkAdjustResult{
+		Subscriptions: make([]UserSubscription, 0),
+		Errors:        make([]string, 0),
+		Statuses:      make(map[int64]string),
+	}
+	if input == nil {
+		result.FailedCount = 1
+		result.Errors = append(result.Errors, ErrSubscriptionNilInput.Error())
+		return result, nil
 	}
 
-	if err := s.userSubRepo.Delete(ctx, subscriptionID); err != nil {
-		return err
+	for _, subscriptionID := range input.SubscriptionIDs {
+		subscription, err := s.ExtendSubscription(ctx, subscriptionID, input.Days)
+		if err != nil {
+			result.FailedCount++
+			result.Errors = append(result.Errors, fmt.Sprintf("subscription %d: %v", subscriptionID, err))
+			result.Statuses[subscriptionID] = "failed"
+			continue
+		}
+
+		result.SuccessCount++
+		result.Subscriptions = append(result.Subscriptions, *subscription)
+		result.Statuses[subscriptionID] = "adjusted"
 	}
 
-	// 失效订阅缓存
-	s.InvalidateSubCache(sub.UserID)
-	if s.billingCacheService != nil {
-		userID := sub.UserID
-		go func() {
-			cacheCtx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-			defer cancel()
-			_ = s.billingCacheService.InvalidateSubscription(cacheCtx, userID)
-		}()
+	return result, nil
+}
+
+// BulkResetQuota 批量重置订阅日/周/月用量窗口。
+// 复用单条 AdminResetQuota 的语义，确保窗口起始时间和缓存失效逻辑保持一致。
+func (s *SubscriptionService) BulkResetQuota(ctx context.Context, input *BulkResetSubscriptionQuotaInput) (*BulkResetSubscriptionQuotaResult, error) {
+	if input == nil {
+		return nil, ErrSubscriptionNilInput
+	}
+	if !input.Daily && !input.Weekly && !input.Monthly {
+		return nil, ErrInvalidInput
 	}
 
-	return nil
+	result := &BulkResetSubscriptionQuotaResult{
+		Subscriptions: make([]UserSubscription, 0),
+		Errors:        make([]string, 0),
+		Statuses:      make(map[int64]string),
+	}
+
+	for _, subscriptionID := range input.SubscriptionIDs {
+		subscription, err := s.AdminResetQuota(ctx, subscriptionID, input.Daily, input.Weekly, input.Monthly)
+		if err != nil {
+			result.FailedCount++
+			result.Errors = append(result.Errors, fmt.Sprintf("subscription %d: %v", subscriptionID, err))
+			result.Statuses[subscriptionID] = "failed"
+			continue
+		}
+
+		result.SuccessCount++
+		result.Subscriptions = append(result.Subscriptions, *subscription)
+		result.Statuses[subscriptionID] = "reset"
+	}
+
+	return result, nil
+}
+
+// RevokeSubscription marks the current active subscription as revoked and records
+// a settlement node for the remaining entitlement value.
+func (s *SubscriptionService) RevokeSubscription(ctx context.Context, input *RevokeSubscriptionInput) (*UserSubscription, error) {
+	if input == nil || input.SubscriptionID <= 0 {
+		return nil, ErrSubscriptionNilInput
+	}
+	if s.entClient == nil {
+		return nil, infraerrors.InternalServer("SUBSCRIPTION_ENT_CLIENT_REQUIRED", "subscription revoke requires database access")
+	}
+
+	now := time.Now()
+	settlementSvc := NewSettlementService(s.entClient)
+	var (
+		revokedSubscriptionID int64
+		userID                int64
+	)
+	if err := s.withSubscriptionUpdateTx(ctx, func(txCtx context.Context) error {
+		target, err := s.userSubRepo.GetByID(txCtx, input.SubscriptionID)
+		if err != nil {
+			return err
+		}
+		userID = target.UserID
+		if target.Status != SubscriptionStatusActive || !target.ExpiresAt.After(now) {
+			return ErrRevokeActiveSubscriptionRequired
+		}
+
+		active, err := s.userSubRepo.GetActiveByUserID(txCtx, target.UserID)
+		if err != nil {
+			if errorsIsSubscriptionNotFound(err) {
+				return ErrRevokeActiveSubscriptionRequired
+			}
+			return err
+		}
+		if active.ID != target.ID {
+			return ErrRevokeActiveSubscriptionRequired
+		}
+
+		head, err := settlementSvc.GetEffectiveHead(txCtx, target.UserID, now)
+		if err != nil {
+			return err
+		}
+		if head != nil && head.AfterUserSubscriptionID != nil && *head.AfterUserSubscriptionID != active.ID {
+			return ErrSettlementHeadSubscriptionMismatch
+		}
+
+		fallbackBasis := 0.0
+		if active.PlanPriceSnapshot != nil {
+			fallbackBasis = *active.PlanPriceSnapshot
+		}
+		writeoff := settlementResidualValue(active, settlementResidualBasisValue(head, active, fallbackBasis))
+
+		revoked := *active
+		revoked.Status = SubscriptionStatusRevoked
+		revoked.ExpiresAt = now
+		revoked.Notes = appendSubscriptionNotes(active.Notes, input.Notes)
+		if err := s.userSubRepo.Update(txCtx, &revoked); err != nil {
+			return err
+		}
+
+		operatorUserID := input.OperatorUserID
+		if operatorUserID <= 0 {
+			operatorUserID = target.UserID
+		}
+		if _, err := settlementSvc.CreateSettlementOrder(txCtx, SettlementOrderInput{
+			UserID:                  target.UserID,
+			OperatorUserID:          operatorUserID,
+			ActionType:              domain.SettlementActionRevoke,
+			ActionSource:            domain.SettlementActionSourceAdminRevoke,
+			TriggerRefType:          domain.SettlementTriggerRefDirectAction,
+			ActionNote:              input.Notes,
+			CarryInResidualValue:    writeoff,
+			ActionDeltaValue:        0,
+			AfterSettlementValue:    0,
+			WriteoffValue:           writeoff,
+			AfterUserSubscription:   &revoked,
+			AfterSubscriptionStatus: domain.SubscriptionStatusRevoked,
+			EffectiveAt:             now,
+		}); err != nil {
+			return err
+		}
+
+		revokedSubscriptionID = revoked.ID
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+
+	s.invalidateSubscriptionCaches(userID)
+	return s.userSubRepo.GetByID(ctx, revokedSubscriptionID)
 }
 
 // ExtendSubscription 调整订阅时长（正数延长，负数缩短）

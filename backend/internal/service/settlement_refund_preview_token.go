@@ -4,6 +4,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"crypto/subtle"
+	"encoding/binary"
 	"encoding/base64"
 	"encoding/hex"
 	"strings"
@@ -12,6 +13,7 @@ import (
 
 const settlementRefundPreviewTTL = 2 * time.Minute
 const settlementRefundPreviewTokenBytes = 32
+const settlementRefundPreviewIDMaxSafeInteger int64 = 9007199254740991
 
 type settlementRefundPreviewWindow struct {
 	IssuedAt  time.Time
@@ -60,4 +62,16 @@ func verifySettlementRefundPreviewToken(token, expectedHash string) bool {
 	}
 	actualHash := hashSettlementRefundPreviewToken(token)
 	return subtle.ConstantTimeCompare([]byte(actualHash), []byte(expectedHash)) == 1
+}
+
+func newSettlementRefundPreviewID() (int64, error) {
+	var raw [8]byte
+	if _, err := rand.Read(raw[:]); err != nil {
+		return 0, err
+	}
+	id := int64(binary.BigEndian.Uint64(raw[:]) % uint64(settlementRefundPreviewIDMaxSafeInteger))
+	if id == 0 {
+		return 1, nil
+	}
+	return id, nil
 }

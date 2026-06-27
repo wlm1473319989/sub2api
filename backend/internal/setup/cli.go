@@ -58,7 +58,7 @@ func RunCLI() error {
 	cfg := &SetupConfig{
 		Server: ServerConfig{
 			Host: "0.0.0.0",
-			Port: 8080,
+			Port: 18080,
 			Mode: "release",
 		},
 		JWT: JWTConfig{
@@ -195,7 +195,7 @@ func RunCLI() error {
 	fmt.Println("── Server Configuration ──")
 
 	for {
-		cfg.Server.Port = promptInt(reader, "Server Port", 8080)
+		cfg.Server.Port = promptInt(reader, "Server Port", 18080)
 		if cliValidatePort(cfg.Server.Port) {
 			break
 		}

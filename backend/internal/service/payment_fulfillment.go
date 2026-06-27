@@ -593,6 +593,7 @@ func settlementResidualValue(active *UserSubscription, currentPrice float64) flo
 	if active == nil || currentPrice <= 0 {
 		return 0
 	}
+	currentPrice = roundSettlementAmountValue(currentPrice)
 	breakdown, err := CalculateUpgradeResidual(UpgradeResidualInput{
 		Now:                time.Now(),
 		StartsAt:           active.StartsAt,
@@ -612,7 +613,7 @@ func settlementResidualValue(active *UserSubscription, currentPrice float64) flo
 	if err != nil {
 		return 0
 	}
-	return breakdown.ResidualValue
+	return roundSettlementRefundValue(breakdown.ResidualValue)
 }
 
 func derefString(v *string) string {

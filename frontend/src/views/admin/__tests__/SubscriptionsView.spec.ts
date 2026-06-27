@@ -7,6 +7,9 @@ import SubscriptionsView from '../SubscriptionsView.vue'
 const {
   listSubscriptions,
   assignSubscription,
+  bulkExtendSubscription,
+  bulkResetQuotaSubscription,
+  resetQuotaSubscription,
   searchUsers,
   getGroups,
   getPlans,
@@ -15,6 +18,9 @@ const {
 } = vi.hoisted(() => ({
   listSubscriptions: vi.fn(),
   assignSubscription: vi.fn(),
+  bulkExtendSubscription: vi.fn(),
+  bulkResetQuotaSubscription: vi.fn(),
+  resetQuotaSubscription: vi.fn(),
   searchUsers: vi.fn(),
   getGroups: vi.fn(),
   getPlans: vi.fn(),
@@ -24,10 +30,19 @@ const {
 
 vi.mock('vue-i18n', async () => {
   const actual = await vi.importActual<typeof import('vue-i18n')>('vue-i18n')
+  const translations: Record<string, string> = {
+    'admin.subscriptions.status.active': 'Active',
+    'admin.subscriptions.status.expired': 'Expired',
+    'admin.subscriptions.status.suspended': 'Suspended',
+    'admin.subscriptions.status.superseded': 'Superseded',
+    'admin.subscriptions.status.refunded': 'Refunded',
+    'admin.subscriptions.status.revoked': 'Revoked',
+    'userSubscriptions.status.suspended_refund': '退款处理中（已冻结）',
+  }
   return {
     ...actual,
     useI18n: () => ({
-      t: (key: string) => key,
+      t: (key: string) => translations[key] ?? key,
     }),
   }
 })
@@ -57,9 +72,11 @@ vi.mock('@/api/admin', () => ({
     subscriptions: {
       list: listSubscriptions,
       assign: assignSubscription,
+      bulkExtend: bulkExtendSubscription,
+      bulkResetQuota: bulkResetQuotaSubscription,
       extend: vi.fn(),
       revoke: vi.fn(),
-      resetQuota: vi.fn(),
+      resetQuota: resetQuotaSubscription,
     },
     usage: {
       searchUsers,
@@ -124,7 +141,7 @@ const SelectStub = defineComponent({
     const onChange = (event: Event) => {
       const target = event.target as HTMLSelectElement
       const value = target.value
-      emit('update:modelValue', value === '' ? null : Number(value))
+      emit('update:modelValue', value === '' ? null : (Number.isNaN(Number(value)) ? value : Number(value)))
       emit('change', value)
     }
 
@@ -136,7 +153,6 @@ const SelectStub = defineComponent({
         'data-placeholder': props.placeholder,
         onChange,
       }, [
-        h('option', { value: '' }, props.placeholder),
         ...(props.options as Array<Record<string, unknown>>).map((option) =>
           h('option', { key: String(option.value), value: option.value as string | number }, String(option.label)),
         ),
@@ -182,12 +198,24 @@ const DataTableStub = defineComponent({
       h(
         'div',
         { class: 'data-table-stub' },
-        (props.data as Array<Record<string, unknown>>).map((row, index) =>
-          h('div', { key: index, class: 'table-row-stub' }, [
-            slots['cell-group']?.({ row }),
-            slots['cell-usage']?.({ row }),
+        [
+          h('div', { class: 'table-header-stub' }, [
+            slots['header-select']?.({
+              column: { key: 'select' },
+              sortKey: '',
+              sortOrder: 'asc',
+            }),
           ]),
-        ),
+          ...(props.data as Array<Record<string, unknown>>).map((row, index) =>
+            h('div', { key: index, class: 'table-row-stub' }, [
+              slots['cell-select']?.({ row, value: undefined }),
+              slots['cell-group']?.({ row }),
+              slots['cell-usage']?.({ row }),
+              slots['cell-status']?.({ row, value: row.status }),
+              slots['cell-actions']?.({ row, value: undefined }),
+            ]),
+          ),
+        ],
       )
   },
 })
@@ -197,6 +225,9 @@ describe('admin SubscriptionsView', () => {
     vi.useFakeTimers()
     listSubscriptions.mockReset()
     assignSubscription.mockReset()
+    bulkExtendSubscription.mockReset()
+    bulkResetQuotaSubscription.mockReset()
+    resetQuotaSubscription.mockReset()
     searchUsers.mockReset()
     getGroups.mockReset()
     getPlans.mockReset()
@@ -268,6 +299,8 @@ describe('admin SubscriptionsView', () => {
         deleted: false,
       },
     ])
+
+    resetQuotaSubscription.mockResolvedValue({})
   })
 
   afterEach(() => {
@@ -377,5 +410,264 @@ describe('admin SubscriptionsView', () => {
 
     expect(assignSubscription).not.toHaveBeenCalled()
     expect(showError).toHaveBeenCalledWith('admin.subscriptions.pleaseSelectPlan')
+  })
+
+  it('renders all subscription status filter options and sends the selected enum value', async () => {
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          DataTable: DataTableStub,
+          Pagination: PaginationStub,
+          BaseDialog: BaseDialogStub,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: EmptyStateStub,
+          Select: SelectStub,
+          GroupBadge: GroupBadgeStub,
+          GroupOptionItem: GroupOptionItemStub,
+          Icon: IconStub,
+          RouterLink: RouterLinkStub,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    const statusSelect = wrapper.find('select.select-stub')
+    const optionLabels = statusSelect.findAll('option').map((option) => option.text())
+    expect(optionLabels).toEqual([
+      'admin.subscriptions.allStatus',
+      'Active',
+      'Expired',
+      'Suspended',
+      'Superseded',
+      'Refunded',
+      'Revoked',
+    ])
+
+    await statusSelect.setValue('revoked')
+    await flushPromises()
+
+    expect(listSubscriptions).toHaveBeenLastCalledWith(
+      1,
+      20,
+      {
+        status: 'revoked',
+        user_id: undefined,
+        sort_by: 'created_at',
+        sort_order: 'desc',
+      },
+      expect.objectContaining({
+        signal: expect.any(AbortSignal),
+      }),
+    )
+  })
+
+  it('renders refund frozen suspended subscription with dedicated label', async () => {
+    listSubscriptions.mockResolvedValue({
+      items: [
+        {
+          id: 8,
+          user_id: 2,
+          plan_id: 7,
+          plan_name_snapshot: 'Refund Hold',
+          status: 'suspended',
+          refund_freeze_active: true,
+          active_refund_request_id: 77,
+          active_refund_status: 'gateway_processing',
+          starts_at: '2099-01-01T00:00:00Z',
+          expires_at: '2099-01-31T00:00:00Z',
+          daily_usage_usd: 0,
+          weekly_usage_usd: 0,
+          monthly_usage_usd: 0,
+          daily_quota_knives: null,
+          weekly_quota_knives: null,
+          monthly_quota_knives: null,
+          daily_window_start: null,
+          weekly_window_start: null,
+          monthly_window_start: null,
+          created_at: '2099-01-01T00:00:00Z',
+          updated_at: '2099-01-01T00:00:00Z',
+          user: {
+            id: 2,
+            email: 'refund@example.com',
+            username: 'refund-user',
+          },
+        },
+      ],
+      total: 1,
+      pages: 1,
+      page: 1,
+      page_size: 20,
+    })
+
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          DataTable: DataTableStub,
+          Pagination: PaginationStub,
+          BaseDialog: BaseDialogStub,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: EmptyStateStub,
+          Select: SelectStub,
+          GroupBadge: GroupBadgeStub,
+          GroupOptionItem: GroupOptionItemStub,
+          Icon: IconStub,
+          RouterLink: RouterLinkStub,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('退款处理中（已冻结）')
+  })
+
+  it('submits batch adjust for selected subscriptions', async () => {
+    bulkExtendSubscription.mockResolvedValue({
+      success_count: 1,
+      failed_count: 0,
+      subscriptions: [],
+      errors: [],
+      statuses: { '5': 'adjusted' },
+    })
+
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          DataTable: DataTableStub,
+          Pagination: PaginationStub,
+          BaseDialog: BaseDialogStub,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: EmptyStateStub,
+          Select: SelectStub,
+          GroupBadge: GroupBadgeStub,
+          GroupOptionItem: GroupOptionItemStub,
+          Icon: IconStub,
+          RouterLink: RouterLinkStub,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-test="subscription-select"]').setValue(true)
+    await flushPromises()
+
+    await wrapper.get('[data-test="batch-adjust-open"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.get('[data-test="batch-adjust-days-input"]').setValue('15')
+    await wrapper.get('[data-test="batch-adjust-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(bulkExtendSubscription).toHaveBeenCalledWith({
+      subscription_ids: [5],
+      days: 15,
+    })
+    expect(showSuccess).toHaveBeenCalledWith('admin.subscriptions.batchAdjustSummary')
+  })
+
+  it('submits selective quota reset for a single subscription', async () => {
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          DataTable: DataTableStub,
+          Pagination: PaginationStub,
+          BaseDialog: BaseDialogStub,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: EmptyStateStub,
+          Select: SelectStub,
+          GroupBadge: GroupBadgeStub,
+          GroupOptionItem: GroupOptionItemStub,
+          Icon: IconStub,
+          RouterLink: RouterLinkStub,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-test="reset-quota-open"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.get('[data-test="reset-daily-checkbox"]').setValue(false)
+    await wrapper.get('[data-test="reset-monthly-checkbox"]').setValue(false)
+    await wrapper.get('[data-test="reset-quota-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(resetQuotaSubscription).toHaveBeenCalledWith(5, {
+      daily: false,
+      weekly: true,
+      monthly: false,
+    })
+    expect(showSuccess).toHaveBeenCalledWith('admin.subscriptions.quotaResetSuccess')
+  })
+
+  it('submits batch quota reset for selected active subscriptions', async () => {
+    bulkResetQuotaSubscription.mockResolvedValue({
+      success_count: 1,
+      failed_count: 0,
+      subscriptions: [],
+      errors: [],
+      statuses: { '5': 'reset' },
+    })
+
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          TablePageLayout: TablePageLayoutStub,
+          DataTable: DataTableStub,
+          Pagination: PaginationStub,
+          BaseDialog: BaseDialogStub,
+          ConfirmDialog: ConfirmDialogStub,
+          EmptyState: EmptyStateStub,
+          Select: SelectStub,
+          GroupBadge: GroupBadgeStub,
+          GroupOptionItem: GroupOptionItemStub,
+          Icon: IconStub,
+          RouterLink: RouterLinkStub,
+          Teleport: true,
+          Transition: false,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    await wrapper.get('[data-test="subscription-select"]').setValue(true)
+    await flushPromises()
+
+    await wrapper.get('[data-test="batch-reset-open"]').trigger('click')
+    await flushPromises()
+
+    await wrapper.get('[data-test="reset-daily-checkbox"]').setValue(false)
+    await wrapper.get('[data-test="reset-weekly-checkbox"]').setValue(false)
+    await wrapper.get('[data-test="batch-reset-form"]').trigger('submit')
+    await flushPromises()
+
+    expect(bulkResetQuotaSubscription).toHaveBeenCalledWith({
+      subscription_ids: [5],
+      daily: false,
+      weekly: false,
+      monthly: true,
+    })
+    expect(showSuccess).toHaveBeenCalledWith('admin.subscriptions.batchResetQuotaSummary')
   })
 })

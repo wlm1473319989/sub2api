@@ -1,14 +1,17 @@
 package service_test
 
 import (
+	"fmt"
 	"strconv"
 	"testing"
+	"time"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/stretchr/testify/require"
 )
 
@@ -90,7 +93,7 @@ func TestExecuteSubscriptionRefundCreatesSettlementOrder(t *testing.T) {
 	require.InDelta(t, 0, settlements[1].AfterSettlementValue, 1e-9)
 	require.Equal(t, domain.SubscriptionStatusRefunded, settlements[1].AfterSubscriptionStatus)
 
-	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID)
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, domain.SettlementActionPurchase, preview.Action)
 	require.InDelta(t, plan.Price, preview.OrderAmount, 1e-9)
@@ -142,4 +145,137 @@ func TestPrepareSubscriptionRefundMismatchReturnsSettlementHeadInfo(t *testing.T
 	require.Equal(t, headOrder.ID, *earlyResult.SettlementHead.TriggerRefID)
 	require.Greater(t, earlyResult.SettlementHead.CurrentResidualValue, 0.0)
 	require.Greater(t, earlyResult.SettlementHead.RefundResidualValue, 0.0)
+}
+
+func TestResolveSubscriptionRefundTargetAllowsSubscriptionOrderWhenUserRefundDisabled(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, nil, nil)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, nil, nil, nil)
+
+	user := h.createUser(t, "resolve-sub-refund@test.com")
+	group := h.createGroup(t, "resolve-sub-refund-group")
+	groupID := group.ID
+	monthly := 100.0
+	plan := h.createPlan(t, "Resolve Subscription Refund", 100, 30, "day", &groupID, nil, nil, &monthly)
+
+	inst, err := h.client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("subscription-user-refund-disabled").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		SetAllowUserRefund(false).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	order := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, plan.ID, plan.Name, plan.Price)
+	instID := strconv.FormatInt(inst.ID, 10)
+	order, err = h.client.PaymentOrder.UpdateOneID(order.ID).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	require.NoError(t, paymentSvc.ExecuteSubscriptionFulfillment(h.ctx, order.ID))
+
+	resolvedOrder, subscription, err := paymentSvc.ResolveSubscriptionRefundTarget(h.ctx, order.ID, user.ID)
+	require.NoError(t, err)
+	require.NotNil(t, resolvedOrder)
+	require.Equal(t, order.ID, resolvedOrder.ID)
+	require.NotNil(t, subscription)
+}
+
+func TestResolveSubscriptionRefundTargetRejectsNonCurrentSettlementSourceOrder(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, nil, nil)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, nil, nil, nil)
+
+	user := h.createUser(t, "resolve-sub-refund-mismatch@test.com")
+	group := h.createGroup(t, "resolve-sub-refund-mismatch-group")
+	groupID := group.ID
+	monthly := 100.0
+	plan := h.createPlan(t, "Resolve Subscription Refund Mismatch", 100, 30, "day", &groupID, nil, nil, &monthly)
+
+	inst, err := h.client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("subscription-user-refund-disabled-mismatch").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		SetAllowUserRefund(false).
+		Save(h.ctx)
+	require.NoError(t, err)
+	instID := strconv.FormatInt(inst.ID, 10)
+
+	headOrder := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, plan.ID, plan.Name, plan.Price)
+	headOrder, err = h.client.PaymentOrder.UpdateOneID(headOrder.ID).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		Save(h.ctx)
+	require.NoError(t, err)
+	require.NoError(t, paymentSvc.ExecuteSubscriptionFulfillment(h.ctx, headOrder.ID))
+
+	mismatchedOrder := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, plan.ID, plan.Name, plan.Price)
+	mismatchedOrder, err = h.client.PaymentOrder.UpdateOneID(mismatchedOrder.ID).
+		SetStatus(service.OrderStatusCompleted).
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	_, _, err = paymentSvc.ResolveSubscriptionRefundTarget(h.ctx, mismatchedOrder.ID, user.ID)
+	require.Error(t, err)
+	require.Equal(t, infraerrors.Reason(service.ErrSubscriptionRefundOrderRequiresCurrentSettlement), infraerrors.Reason(err))
+}
+
+func TestResolveSubscriptionRefundTargetKeepsBalanceOrderUserRefundGuard(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, nil, nil)
+
+	user := h.createUser(t, "resolve-balance-refund@test.com")
+
+	inst, err := h.client.PaymentProviderInstance.Create().
+		SetProviderKey(payment.TypeAlipay).
+		SetName("balance-user-refund-disabled").
+		SetConfig("{}").
+		SetSupportedTypes(payment.TypeAlipay).
+		SetEnabled(true).
+		SetRefundEnabled(true).
+		SetAllowUserRefund(false).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	instID := strconv.FormatInt(inst.ID, 10)
+	orderNo := fmt.Sprintf("sub2_balance_refund_%d", time.Now().UnixNano())
+	order, err := h.client.PaymentOrder.Create().
+		SetUserID(user.ID).
+		SetUserEmail(user.Email).
+		SetUserName(user.Email).
+		SetAmount(88).
+		SetPayAmount(88).
+		SetFeeRate(0).
+		SetRechargeCode(orderNo).
+		SetOutTradeNo(orderNo).
+		SetPaymentType(payment.TypeAlipay).
+		SetPaymentTradeNo("trade-balance-refund-disabled").
+		SetOrderType(payment.OrderTypeBalance).
+		SetStatus(service.OrderStatusCompleted).
+		SetExpiresAt(time.Now().Add(time.Hour)).
+		SetPaidAt(time.Now()).
+		SetClientIP("127.0.0.1").
+		SetSrcHost("api.example.com").
+		SetProviderInstanceID(instID).
+		SetProviderKey(payment.TypeAlipay).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	svc := service.NewPaymentService(h.client, nil, nil, nil, nil, configSvc, nil, nil, nil)
+
+	resolvedOrder, subscription, err := svc.ResolveSubscriptionRefundTarget(h.ctx, order.ID, user.ID)
+	require.Error(t, err)
+	require.Nil(t, resolvedOrder)
+	require.Nil(t, subscription)
+	require.Equal(t, "USER_REFUND_DISABLED", infraerrors.Reason(err))
 }

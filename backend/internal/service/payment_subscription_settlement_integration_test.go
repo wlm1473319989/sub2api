@@ -107,7 +107,7 @@ func TestCreateOrderZeroDeltaUpgradeCompletesDirectly(t *testing.T) {
 
 	active := seedRenewedSettlementHead(t, h, user.ID, basePlan.ID, basePlan.Name, basePlan.Price)
 
-	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID)
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, "upgrade", preview.Action)
 	require.True(t, preview.CanCompleteDirectly)
@@ -153,6 +153,66 @@ func TestCreateOrderZeroDeltaUpgradeCompletesDirectly(t *testing.T) {
 	require.InDelta(t, 160, settlements[1].AfterSettlementValue, 1e-9)
 	require.InDelta(t, 40, settlements[1].WriteoffValue, 1e-9)
 	require.NotEqual(t, active.ID, current.ID)
+}
+
+func TestCreateOrderZeroDeltaUpgradeAfterAdminRenewCompletesDirectly(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, &paymentDirectSettingRepoStub{
+		values: map[string]string{service.SettingPaymentEnabled: "true"},
+	}, nil)
+	userRepo := repository.NewUserRepository(h.client, h.db)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, userRepo, nil, nil)
+
+	operator := h.createUser(t, "direct-admin-renew-operator@test.com")
+	user := h.createUser(t, "direct-admin-renew-user@test.com")
+	group := h.createGroup(t, "direct-admin-renew-group")
+	groupID := group.ID
+	monthly := 100.0
+	basePlan := h.createPlan(t, "Direct Admin Base", 1, 30, "day", &groupID, nil, nil, &monthly)
+	targetPlan := h.createPlan(t, "Direct Admin Pro", 2, 30, "day", &groupID, nil, nil, &monthly)
+	order := createPaidSettlementSubscriptionOrder(t, h, user.ID, user.Email, basePlan.ID, basePlan.Name, basePlan.Price)
+
+	require.NoError(t, paymentSvc.ExecuteSubscriptionFulfillment(h.ctx, order.ID))
+	_, reused, err := h.svc.AssignUserLevelSubscription(h.ctx, &service.AssignSubscriptionInput{
+		UserID:     user.ID,
+		PlanID:     basePlan.ID,
+		AssignedBy: operator.ID,
+		Notes:      "admin renew same plan",
+	})
+	require.NoError(t, err)
+	require.True(t, reused)
+
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
+	require.NoError(t, err)
+	require.Equal(t, "upgrade", preview.Action)
+	require.True(t, preview.CanCompleteDirectly)
+	require.InDelta(t, 0, preview.OrderAmount, 0.01)
+
+	resp, err := paymentSvc.CreateOrder(h.ctx, service.CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      0,
+		PaymentType: payment.TypeAlipay,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      targetPlan.ID,
+		ClientIP:    "127.0.0.1",
+		SrcHost:     "example.com",
+	})
+	require.NoError(t, err)
+	require.Equal(t, payment.CreatePaymentResultCompletedDirectly, resp.ResultType)
+
+	settlements, err := h.client.SubscriptionSettlementOrder.Query().
+		Where(subscriptionsettlementorder.UserIDEQ(user.ID)).
+		Order(dbent.Asc(subscriptionsettlementorder.FieldID)).
+		All(h.ctx)
+	require.NoError(t, err)
+	require.Len(t, settlements, 3)
+	require.Nil(t, settlements[0].PrevSettlementID)
+	require.NotNil(t, settlements[1].PrevSettlementID)
+	require.Equal(t, settlements[0].ID, *settlements[1].PrevSettlementID)
+	require.NotNil(t, settlements[2].PrevSettlementID)
+	require.Equal(t, settlements[1].ID, *settlements[2].PrevSettlementID)
+	require.Equal(t, domain.SettlementActionUpgrade, settlements[2].ActionType)
+	require.Equal(t, domain.SettlementStatusEffective, settlements[2].Status)
 }
 
 func seedRenewedSettlementHead(t *testing.T, h *subscriptionOpsHarness, userID, planID int64, planName string, planPrice float64) *service.UserSubscription {

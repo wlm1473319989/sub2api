@@ -36,6 +36,12 @@ type User struct {
 	Subscriptions []UserSubscription `json:"subscriptions,omitempty"`
 }
 
+type SimpleUser struct {
+	ID       int64  `json:"id"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+}
+
 // AdminUser 是管理员接口使用的 user DTO（包含敏感/内部字段）。
 // 注意：普通用户接口不得返回 notes 等管理员备注信息。
 type AdminUser struct {
@@ -584,11 +590,80 @@ type UserSubscription struct {
 	DailyUsedKnives    float64  `json:"daily_used_knives"`
 	WeeklyUsedKnives   float64  `json:"weekly_used_knives"`
 	MonthlyUsedKnives  float64  `json:"monthly_used_knives"`
+	RefundFreezeActive bool     `json:"refund_freeze_active,omitempty"`
+	ActiveRefundRequestID *int64 `json:"active_refund_request_id,omitempty"`
+	ActiveRefundStatus *string  `json:"active_refund_status,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
 
 	User *User `json:"user,omitempty"`
+}
+
+type SubscriptionRefundAllocation struct {
+	ID                        int64      `json:"id"`
+	RefundRequestID           int64      `json:"refund_request_id"`
+	PaymentOrderID            int64      `json:"payment_order_id"`
+	PaymentProviderInstanceID *int64     `json:"payment_provider_instance_id,omitempty"`
+	OrderAmount               float64    `json:"order_amount"`
+	OrderPayAmount            float64    `json:"order_pay_amount"`
+	AlreadyRefundedAmount     float64    `json:"already_refunded_amount"`
+	RefundableOrderAmount     float64    `json:"refundable_order_amount"`
+	AllocatedRefundValue      float64    `json:"allocated_refund_value"`
+	GatewayRefundAmount       float64    `json:"gateway_refund_amount"`
+	Currency                  string     `json:"currency"`
+	Status                    string     `json:"status"`
+	GatewayRefundTradeNo      *string    `json:"gateway_refund_trade_no,omitempty"`
+	FailedReason              *string    `json:"failed_reason,omitempty"`
+	ProcessedAt               *time.Time `json:"processed_at,omitempty"`
+	CreatedAt                 time.Time  `json:"created_at"`
+	UpdatedAt                 time.Time  `json:"updated_at"`
+}
+
+type SubscriptionRefundRequest struct {
+	ID                        int64                        `json:"id"`
+	UserID                    int64                        `json:"user_id"`
+	SubscriptionID            int64                        `json:"subscription_id"`
+	SettlementID              int64                        `json:"settlement_id"`
+	ExpectedSettlementID      int64                        `json:"expected_settlement_id"`
+	Subscription              *UserSubscription            `json:"subscription,omitempty"`
+	CurrentSettlementHead     *SubscriptionSettlementOrder `json:"current_settlement_head,omitempty"`
+	ExpectedSettlementHead    *SubscriptionSettlementOrder `json:"expected_settlement_head,omitempty"`
+	Status                    string                       `json:"status"`
+	RefundMode                string                       `json:"refund_mode"`
+	Currency                  string                       `json:"currency"`
+	Reason                    *string                      `json:"reason,omitempty"`
+	RefundResidualValue       float64                      `json:"refund_residual_value"`
+	GatewayRefundableTotal    float64                      `json:"gateway_refundable_total"`
+	ManualTransferAmount      float64                      `json:"manual_transfer_amount"`
+	PreviewIssuedAt           time.Time                    `json:"preview_issued_at"`
+	PreviewExpiresAt          time.Time                    `json:"preview_expires_at"`
+	SubmittedAt               *time.Time                   `json:"submitted_at,omitempty"`
+	FrozenAt                  *time.Time                   `json:"frozen_at,omitempty"`
+	CompletedAt               *time.Time                   `json:"completed_at,omitempty"`
+	CancelledAt               *time.Time                   `json:"cancelled_at,omitempty"`
+	OriginalSubscriptionStatus *string                      `json:"original_subscription_status,omitempty"`
+	OriginalSubscriptionExpiresAt *time.Time               `json:"original_subscription_expires_at,omitempty"`
+	ManualReceiverType        *string                      `json:"manual_receiver_type,omitempty"`
+	ManualReceiverName        *string                      `json:"manual_receiver_name,omitempty"`
+	ManualReceiverAccount     *string                      `json:"manual_receiver_account,omitempty"`
+	ManualReceiverQRCodeImageURL *string                   `json:"manual_receiver_qr_image_url,omitempty"`
+	ManualReceiverRemark      *string                      `json:"manual_receiver_remark,omitempty"`
+	ManualTransferProofURL    *string                      `json:"manual_transfer_proof_url,omitempty"`
+	ManualTransferProofUploadedAt *time.Time               `json:"manual_transfer_proof_uploaded_at,omitempty"`
+	ManualTransferOperatorUserID *int64                    `json:"manual_transfer_operator_user_id,omitempty"`
+	AdminNote                 *string                      `json:"admin_note,omitempty"`
+	GatewayRefundedTotal      float64                      `json:"gateway_refunded_total"`
+	SucceededAllocations      int                          `json:"succeeded_allocations"`
+	FailedAllocations         int                          `json:"failed_allocations"`
+	SkippedAllocations        int                          `json:"skipped_allocations"`
+	ManualTransferRequired    bool                         `json:"manual_transfer_required"`
+	Allocations               []SubscriptionRefundAllocation `json:"allocations,omitempty"`
+}
+
+type AdminSubscriptionRefundRequest struct {
+	SubscriptionRefundRequest
+	User *SimpleUser `json:"user,omitempty"`
 }
 
 // AdminUserSubscription 是管理员接口使用的订阅 DTO（包含分配信息/备注等字段）。
@@ -648,6 +723,22 @@ type BulkAssignResult struct {
 	SuccessCount  int                     `json:"success_count"`
 	CreatedCount  int                     `json:"created_count"`
 	ReusedCount   int                     `json:"reused_count"`
+	FailedCount   int                     `json:"failed_count"`
+	Subscriptions []AdminUserSubscription `json:"subscriptions"`
+	Errors        []string                `json:"errors"`
+	Statuses      map[string]string       `json:"statuses,omitempty"`
+}
+
+type BulkAdjustResult struct {
+	SuccessCount  int                     `json:"success_count"`
+	FailedCount   int                     `json:"failed_count"`
+	Subscriptions []AdminUserSubscription `json:"subscriptions"`
+	Errors        []string                `json:"errors"`
+	Statuses      map[string]string       `json:"statuses,omitempty"`
+}
+
+type BulkResetSubscriptionQuotaResult struct {
+	SuccessCount  int                     `json:"success_count"`
 	FailedCount   int                     `json:"failed_count"`
 	Subscriptions []AdminUserSubscription `json:"subscriptions"`
 	Errors        []string                `json:"errors"`

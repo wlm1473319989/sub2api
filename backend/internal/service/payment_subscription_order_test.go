@@ -210,7 +210,7 @@ func TestPrepareSubscriptionOrderDecision_NoActivePurchase(t *testing.T) {
 	groupID := group.ID
 	plan := h.createPlan(t, "Starter", 19.99, 30, "day", &groupID, nil, nil, floatPtr(100))
 
-	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID)
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionPurchase, decision.Action)
 	require.Equal(t, plan.ID, decision.Plan.ID)
@@ -228,7 +228,7 @@ func TestPrepareSubscriptionOrderDecision_RenewSamePlan(t *testing.T) {
 	_, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: plan})
 	require.NoError(t, err)
 
-	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID)
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionRenew, decision.Action)
 	require.NotNil(t, decision.ActiveSubscription)
@@ -253,11 +253,38 @@ func TestPrepareSubscriptionOrderDecision_UpgradeUsesResidualDelta(t *testing.T)
 	stored.MonthlyWindowStart = &monthlyStart
 	stored.MonthlyUsedKnives = 40
 
-	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID)
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionUpgrade, decision.Action)
 	require.NotNil(t, decision.UpgradeBreakdown)
 	require.InDelta(t, 100, decision.OrderAmount, 1e-9)
+}
+
+func TestPrepareSubscriptionOrderDecision_UpgradeRoundsDeltaToCurrencyPrecision(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	user := h.createUser(t, "upgrade-rounding@example.com")
+	group := h.createGroup(t, "upgrade-rounding-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	basePlan := h.createPlan(t, "Starter", 70, 15, "day", &groupID, nil, floatPtr(70), nil)
+	targetPlan := h.createPlan(t, "Pro", 140, 15, "day", &groupID, nil, floatPtr(70), nil)
+
+	sub, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: basePlan})
+	require.NoError(t, err)
+	weeklyStart := startOfDay(time.Now().Add(-5 * 24 * time.Hour))
+	stored := h.userSubRepo.byID[sub.ID]
+	require.NotNil(t, stored)
+	stored.StartsAt = weeklyStart
+	stored.ExpiresAt = weeklyStart.Add(15 * 24 * time.Hour)
+	stored.WeeklyWindowStart = &weeklyStart
+	stored.WeeklyUsedKnives = 70
+
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
+	require.NoError(t, err)
+	require.Equal(t, subscriptionActionUpgrade, decision.Action)
+	require.NotNil(t, decision.UpgradeBreakdown)
+	require.InDelta(t, 93.33, decision.OrderAmount, 1e-9)
+	require.InDelta(t, 46.67, decision.UpgradeBreakdown.ResidualValue, 1e-9)
+	require.InDelta(t, 93.33, decision.UpgradeBreakdown.UpgradeDelta, 1e-9)
 }
 
 func TestPrepareSubscriptionOrderDecision_UsesSettlementHeadWhenPresent(t *testing.T) {
@@ -282,7 +309,7 @@ func TestPrepareSubscriptionOrderDecision_UsesSettlementHeadWhenPresent(t *testi
 	}
 	_ = settlementHarness.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusActive, time.Now().Add(24*time.Hour))
 
-	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID)
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionUpgrade, decision.Action)
 	require.NotNil(t, decision.UpgradeBreakdown)
@@ -302,7 +329,7 @@ func TestPrepareSubscriptionOrderDecision_LegacyActiveWithoutPlanFallsBackToUpgr
 
 	_ = h.createSubscriptionOrder(t, user, plan, subscriptionActionPurchase, OrderStatusCompleted, now.Add(-24*time.Hour))
 
-	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID)
+	decision, err := h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionUpgrade, decision.Action)
 	require.Nil(t, decision.UpgradeBreakdown)
@@ -320,7 +347,7 @@ func TestPrepareSubscriptionOrderDecision_LowerPriceRejected(t *testing.T) {
 	_, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: plan})
 	require.NoError(t, err)
 
-	_, err = h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, lowerPlan.ID)
+	_, err = h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, lowerPlan.ID, payment.DefaultPaymentCurrency)
 	require.ErrorIs(t, err, ErrSubscriptionOrderActionInvalid)
 }
 
@@ -342,7 +369,7 @@ func TestPreviewSubscriptionOrder_Upgrade(t *testing.T) {
 	stored.MonthlyWindowStart = &monthlyStart
 	stored.MonthlyUsedKnives = 40
 
-	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID)
+	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionUpgrade, preview.Action)
 	require.InDelta(t, 100, preview.OrderAmount, 1e-9)
@@ -365,7 +392,7 @@ func TestPreviewSubscriptionOrder_LowerPriceReturnsUnavailable(t *testing.T) {
 	_, err := h.subscriptionSvc.PurchaseNewPlan(h.ctx, &PurchaseNewPlanInput{UserID: user.ID, Plan: activePlan})
 	require.NoError(t, err)
 
-	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, lowerPlan.ID)
+	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, lowerPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, subscriptionActionUnavailable, preview.Action)
 	require.Equal(t, subscriptionPreviewBlockedReasonDowngradeOrSwitch, preview.BlockedReason)

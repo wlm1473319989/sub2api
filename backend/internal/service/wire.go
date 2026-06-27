@@ -601,6 +601,7 @@ var ProviderSet = wire.NewSet(
 	NewAffiliateService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
+	ProvideSettlementRefundService,
 	ProvidePaymentOrderExpiryService,
 	ProvideBalanceNotifyService,
 	ProvideChannelMonitorService,
@@ -633,6 +634,13 @@ func ProvideBalanceNotifyService(emailService *EmailService, settingRepo Setting
 func ProvidePaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService, notificationEmailService *NotificationEmailService) *PaymentService {
 	svc := NewPaymentService(entClient, registry, loadBalancer, redeemService, subscriptionSvc, configService, userRepo, groupRepo, affiliateService)
 	svc.SetNotificationEmailService(notificationEmailService)
+	return svc
+}
+
+// ProvideSettlementRefundService wires settlement refund closed-loop processing.
+func ProvideSettlementRefundService(entClient *dbent.Client, subscriptionSvc *SubscriptionService, paymentSvc *PaymentService, previewCache SettlementRefundPreviewCache) *SettlementRefundService {
+	svc := NewSettlementRefundService(entClient, subscriptionSvc, previewCache)
+	svc.SetPaymentService(paymentSvc)
 	return svc
 }
 

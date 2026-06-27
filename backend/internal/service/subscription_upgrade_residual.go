@@ -3,7 +3,9 @@ package service
 import (
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -37,6 +39,26 @@ type UpgradeResidualBreakdown struct {
 	DailyFamilyMax           *float64 `json:"daily_family_max,omitempty"`
 	WeeklyFamilyMax          *float64 `json:"weekly_family_max,omitempty"`
 	MonthlyFamilyMax         *float64 `json:"monthly_family_max,omitempty"`
+}
+
+func roundUpgradeAmountForCurrency(value float64, currency string) float64 {
+	if value <= 0 {
+		return 0
+	}
+	return decimal.NewFromFloat(value).
+		Round(int32(payment.CurrencyMaxFractionDigits(currency))).
+		InexactFloat64()
+}
+
+func roundUpgradeBreakdownForCurrency(breakdown *UpgradeResidualBreakdown, currency string) *UpgradeResidualBreakdown {
+	if breakdown == nil {
+		return nil
+	}
+	targetPlanPrice := breakdown.ResidualValue + breakdown.UpgradeDelta
+	rounded := *breakdown
+	rounded.UpgradeDelta = roundUpgradeAmountForCurrency(rounded.UpgradeDelta, currency)
+	rounded.ResidualValue = roundUpgradeAmountForCurrency(targetPlanPrice-rounded.UpgradeDelta, currency)
+	return &rounded
 }
 
 func CalculateUpgradeResidual(input UpgradeResidualInput) (*UpgradeResidualBreakdown, error) {

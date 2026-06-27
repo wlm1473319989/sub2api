@@ -475,7 +475,9 @@ describe('PaymentView subscription preview', () => {
     await flushPromises()
     await flushPromises()
 
-    expect(previewSubscription).toHaveBeenCalledWith(7)
+    expect(previewSubscription).toHaveBeenCalledWith(7, 'wxpay')
     expect((wrapper.vm as unknown as { selectedPlanOrderAmount: number }).selectedPlanOrderAmount).toBe(42)
+    expect(wrapper.text()).toContain('payment.upgradeCalculationTitle')
+    expect(wrapper.text()).toContain('payment.upgradeCalculationRuleHint')
   })
 })

@@ -60,7 +60,7 @@ type SubscriptionPreviewPlan struct {
 	ExpiresAt    *time.Time `json:"expires_at,omitempty"`
 }
 
-func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, userID int64, planID int64) (*subscriptionOrderDecision, error) {
+func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, userID int64, planID int64, currency string) (*subscriptionOrderDecision, error) {
 	if planID == 0 {
 		return nil, infraerrors.BadRequest("INVALID_INPUT", "subscription order requires a plan")
 	}
@@ -69,7 +69,7 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		return nil, infraerrors.NotFound("PLAN_NOT_AVAILABLE", "plan not found or not for sale")
 	}
 
-	if decision, usedSettlementHead, settlementErr := s.prepareSubscriptionOrderDecisionFromSettlementHead(ctx, userID, plan); usedSettlementHead || settlementErr != nil {
+	if decision, usedSettlementHead, settlementErr := s.prepareSubscriptionOrderDecisionFromSettlementHead(ctx, userID, plan, currency); usedSettlementHead || settlementErr != nil {
 		return decision, settlementErr
 	}
 
@@ -114,6 +114,7 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		if err != nil {
 			return nil, err
 		}
+		breakdown = roundUpgradeBreakdownForCurrency(breakdown, currency)
 		upgradeAmount = breakdown.UpgradeDelta
 	}
 	if upgradeAmount <= 0 {
@@ -136,7 +137,7 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 	}, nil
 }
 
-func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan) (*subscriptionOrderDecision, bool, error) {
+func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan, currency string) (*subscriptionOrderDecision, bool, error) {
 	if s == nil || s.settlementSvc == nil {
 		return nil, false, nil
 	}
@@ -185,6 +186,7 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 		if calcErr != nil {
 			return nil, true, calcErr
 		}
+		breakdown = roundUpgradeBreakdownForCurrency(breakdown, currency)
 		if breakdown.UpgradeDelta <= 0 {
 			return &subscriptionOrderDecision{
 				Plan:                plan,
@@ -209,8 +211,8 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 	}
 }
 
-func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID int64, planID int64) (*SubscriptionOrderPreview, error) {
-	decision, err := s.prepareSubscriptionOrderDecision(ctx, userID, planID)
+func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID int64, planID int64, currency string) (*SubscriptionOrderPreview, error) {
+	decision, err := s.prepareSubscriptionOrderDecision(ctx, userID, planID, currency)
 	if err == nil {
 		return s.buildSubscriptionOrderPreview(ctx, decision.Action, decision.OrderAmount, decision.Plan, decision.ActiveSubscription, decision.UpgradeBreakdown, decision.CanCompleteDirectly, "")
 	}

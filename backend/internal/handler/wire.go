@@ -113,9 +113,22 @@ func ProvideHandlers(
 	paymentHandler *PaymentHandler,
 	paymentWebhookHandler *PaymentWebhookHandler,
 	availableChannelHandler *AvailableChannelHandler,
+	settlementRefundService *service.SettlementRefundService,
 	_ *service.IdempotencyCoordinator,
 	_ *service.IdempotencyCleanupService,
 ) *Handlers {
+	if subscriptionHandler != nil {
+		subscriptionHandler.SetSettlementRefundService(settlementRefundService)
+	}
+	if paymentHandler != nil {
+		paymentHandler.SetSettlementRefundService(settlementRefundService)
+	}
+	if adminHandlers != nil && adminHandlers.Subscription != nil {
+		adminHandlers.Subscription.SetSettlementRefundService(settlementRefundService)
+	}
+	if adminHandlers != nil && adminHandlers.Payment != nil {
+		adminHandlers.Payment.SetSettlementRefundService(settlementRefundService)
+	}
 	return &Handlers{
 		Auth:             authHandler,
 		User:             userHandler,

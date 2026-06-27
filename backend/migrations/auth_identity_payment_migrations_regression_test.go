@@ -179,9 +179,21 @@ func TestMigration166AddsSubscriptionRefundRequestTables(t *testing.T) {
 	require.Contains(t, sql, "preview_expires_at                      TIMESTAMPTZ NOT NULL")
 	require.Contains(t, sql, "manual_transfer_proof_url               TEXT")
 	require.Contains(t, sql, "CHECK (preview_expires_at > preview_issued_at)")
-	require.Contains(t, sql, "status IN ('previewed', 'submitted', 'gateway_processing', 'manual_pending', 'failed')")
+	require.Contains(t, sql, "idx_subscription_refund_requests_subscription_previewed")
+	require.Contains(t, sql, "WHERE status = 'previewed'")
+	require.Contains(t, sql, "idx_subscription_refund_requests_subscription_processing")
+	require.Contains(t, sql, "status IN ('submitted', 'gateway_processing', 'manual_pending', 'failed')")
 	require.Contains(t, sql, "allocated_refund_value <= refundable_order_amount")
 	require.Contains(t, sql, "gateway_refund_amount <= order_pay_amount")
 	require.Contains(t, sql, "REFERENCES subscription_settlement_orders(id)")
 	require.Contains(t, sql, "REFERENCES payment_orders(id)")
+}
+
+func TestMigration167AddsSubscriptionRefundPreviewFingerprint(t *testing.T) {
+	content, err := FS.ReadFile("167_add_subscription_refund_preview_fingerprint.sql")
+	require.NoError(t, err)
+
+	sql := string(content)
+	require.Contains(t, sql, "ALTER TABLE subscription_refund_requests")
+	require.Contains(t, sql, "ADD COLUMN IF NOT EXISTS preview_fingerprint VARCHAR(128)")
 }

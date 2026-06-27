@@ -70,7 +70,7 @@ func TestRedeemSubscriptionRenewEnablesZeroDeltaUpgrade(t *testing.T) {
 	require.NoError(t, err)
 	require.Equal(t, service.StatusUsed, result.Status)
 
-	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID)
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
 	require.NoError(t, err)
 	require.Equal(t, "upgrade", preview.Action)
 	require.True(t, preview.CanCompleteDirectly)

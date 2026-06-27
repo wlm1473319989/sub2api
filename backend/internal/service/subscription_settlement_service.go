@@ -110,10 +110,33 @@ func (s *SettlementService) CreateSettlementOrder(ctx context.Context, input Set
 	if input.EffectiveAt.IsZero() {
 		input.EffectiveAt = time.Now()
 	}
+	input.CarryInResidualValue = roundSettlementAmountValue(input.CarryInResidualValue)
+	input.ActionDeltaValue = roundSettlementAmountValue(input.ActionDeltaValue)
+	input.AfterSettlementValue = roundSettlementAmountValue(input.AfterSettlementValue)
+	input.RefundResidualValue = roundSettlementAmountPointer(input.RefundResidualValue)
+	input.WriteoffValue = roundSettlementAmountValue(input.WriteoffValue)
+
+	afterStatus := input.AfterSubscriptionStatus
+	if afterStatus == "" {
+		afterStatus = input.AfterUserSubscription.Status
+	}
+	if afterStatus == "" {
+		afterStatus = domain.SubscriptionStatusActive
+	}
 
 	openHead, err := s.getOpenHead(ctx, client, input.UserID)
 	if err != nil {
 		return nil, err
+	}
+	appendPrev := settlementOrderCanAppend(openHead, input.EffectiveAt)
+	if input.ActionType == domain.SettlementActionPurchase && appendPrev {
+		return nil, infraerrors.Conflict("SETTLEMENT_CHAIN_ACTIVE", "purchase cannot start a new settlement chain while an active chain exists")
+	}
+	if settlementOrderMustAppend(input.ActionType) && !appendPrev {
+		return nil, infraerrors.Conflict("SETTLEMENT_CHAIN_HEAD_MISSING", "active subscription settlement chain head is missing")
+	}
+	if settlementOrderRequiresActiveCursor(input.ActionType) && openHead != nil && !appendPrev {
+		return nil, infraerrors.Conflict("SETTLEMENT_CHAIN_HEAD_MISSING", "active subscription settlement chain head is missing")
 	}
 	if openHead != nil {
 		updated, updateErr := client.SubscriptionSettlementOrder.Update().
@@ -131,14 +154,16 @@ func (s *SettlementService) CreateSettlementOrder(ctx context.Context, input Set
 		if updated != 1 {
 			return nil, infraerrors.Conflict("SETTLEMENT_HEAD_CHANGED", "effective settlement head changed during settlement creation")
 		}
+		if appendPrev {
+			if err := s.clearStaleReverseSettlementLinks(ctx, client, input.UserID, openHead.ID, input.EffectiveAt); err != nil {
+				return nil, err
+			}
+		}
 	}
 
-	afterStatus := input.AfterSubscriptionStatus
-	if afterStatus == "" {
-		afterStatus = input.AfterUserSubscription.Status
-	}
-	if afterStatus == "" {
-		afterStatus = domain.SubscriptionStatusActive
+	var prevSettlementID *int64
+	if appendPrev {
+		prevSettlementID = &openHead.ID
 	}
 
 	builder := client.SubscriptionSettlementOrder.Create().
@@ -162,9 +187,6 @@ func (s *SettlementService) CreateSettlementOrder(ctx context.Context, input Set
 		SetNillableAfterMonthlyQuotaKnivesSnapshot(input.AfterUserSubscription.MonthlyQuotaKnives).
 		SetAfterSubscriptionStatus(afterStatus).
 		SetEffectiveAt(input.EffectiveAt)
-	if openHead != nil {
-		builder.SetPrevSettlementID(openHead.ID)
-	}
 	if input.ActionNote != "" {
 		builder.SetActionNote(input.ActionNote)
 	}
@@ -172,21 +194,99 @@ func (s *SettlementService) CreateSettlementOrder(ctx context.Context, input Set
 		builder.
 			SetAfterPlanID(input.AfterPlan.ID).
 			SetAfterPlanNameSnapshot(input.AfterPlan.Name).
-			SetAfterPlanPriceSnapshot(input.AfterPlan.Price).
+			SetAfterPlanPriceSnapshot(roundSettlementAmountValue(input.AfterPlan.Price)).
 			SetAfterValidityDaysSnapshot(input.AfterPlan.ValidityDays).
 			SetAfterValidityUnitSnapshot(input.AfterPlan.ValidityUnit)
 	} else {
 		builder.
 			SetNillableAfterPlanID(input.AfterUserSubscription.PlanID).
 			SetNillableAfterPlanNameSnapshot(input.AfterUserSubscription.PlanNameSnapshot).
-			SetNillableAfterPlanPriceSnapshot(input.AfterUserSubscription.PlanPriceSnapshot)
+			SetNillableAfterPlanPriceSnapshot(roundSettlementAmountPointer(input.AfterUserSubscription.PlanPriceSnapshot))
 	}
 
 	order, err := builder.Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("create settlement order: %w", err)
 	}
+	if prevSettlementID != nil {
+		if err := s.setSettlementPrevID(ctx, client, order.ID, *prevSettlementID); err != nil {
+			return nil, err
+		}
+		order.PrevSettlementID = prevSettlementID
+	}
 	return order, nil
+}
+
+func settlementOrderCanAppend(order *dbent.SubscriptionSettlementOrder, at time.Time) bool {
+	if order == nil {
+		return false
+	}
+	if at.IsZero() {
+		at = time.Now()
+	}
+	if order.Status != domain.SettlementStatusEffective {
+		return false
+	}
+	if order.AfterSubscriptionStatus != domain.SubscriptionStatusActive {
+		return false
+	}
+	return order.AfterExpiresAt != nil && order.AfterExpiresAt.After(at)
+}
+
+func settlementOrderMustAppend(actionType string) bool {
+	switch actionType {
+	case domain.SettlementActionRefund, domain.SettlementActionRevoke:
+		return true
+	default:
+		return false
+	}
+}
+
+func settlementOrderRequiresActiveCursor(actionType string) bool {
+	switch actionType {
+	case domain.SettlementActionRenew, domain.SettlementActionUpgrade:
+		return true
+	default:
+		return false
+	}
+}
+
+func (s *SettlementService) clearStaleReverseSettlementLinks(ctx context.Context, client *dbent.Client, userID, headID int64, updatedAt time.Time) error {
+	_, err := client.ExecContext(
+		ctx,
+		`UPDATE subscription_settlement_orders
+SET prev_settlement_id = NULL, updated_at = $1
+WHERE user_id = $2 AND prev_settlement_id = $3 AND id < $3`,
+		updatedAt,
+		userID,
+		headID,
+	)
+	if err != nil {
+		return fmt.Errorf("clear stale reverse settlement links: %w", err)
+	}
+	return nil
+}
+
+func (s *SettlementService) setSettlementPrevID(ctx context.Context, client *dbent.Client, orderID, prevID int64) error {
+	result, err := client.ExecContext(
+		ctx,
+		`UPDATE subscription_settlement_orders
+SET prev_settlement_id = $1
+WHERE id = $2`,
+		prevID,
+		orderID,
+	)
+	if err != nil {
+		return fmt.Errorf("set settlement previous link: %w", err)
+	}
+	updated, err := result.RowsAffected()
+	if err != nil {
+		return fmt.Errorf("set settlement previous link rows affected: %w", err)
+	}
+	if updated != 1 {
+		return infraerrors.Conflict("SETTLEMENT_ORDER_CHANGED", "settlement order changed during previous link update")
+	}
+	return nil
 }
 
 func (s *SettlementService) getOpenHead(ctx context.Context, client *dbent.Client, userID int64) (*dbent.SubscriptionSettlementOrder, error) {

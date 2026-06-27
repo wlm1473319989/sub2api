@@ -571,7 +571,7 @@ func AutoSetupFromEnv() error {
 		},
 		Server: ServerConfig{
 			Host: getEnvOrDefault("SERVER_HOST", "0.0.0.0"),
-			Port: getEnvIntOrDefault("SERVER_PORT", 8080),
+			Port: getEnvIntOrDefault("SERVER_PORT", 18080),
 			Mode: getEnvOrDefault("SERVER_MODE", "release"),
 		},
 		JWT: JWTConfig{

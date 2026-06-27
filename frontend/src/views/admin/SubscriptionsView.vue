@@ -143,6 +143,26 @@
             >
               <Icon name="questionCircle" size="md" />
             </button>
+            <button
+              v-if="selectedAdjustableCount > 0"
+              @click="openBulkExtendModal"
+              class="btn btn-secondary"
+              data-test="batch-adjust-open"
+            >
+              <Icon name="calendar" size="md" class="mr-2" />
+              {{ t('admin.subscriptions.batchAdjustSubscription') }}
+              <span class="ml-1">{{ t('common.selectedCount', { count: selectedAdjustableCount }) }}</span>
+            </button>
+            <button
+              v-if="selectedResettableCount > 0"
+              @click="openBulkResetQuotaModal"
+              class="btn btn-secondary"
+              data-test="batch-reset-open"
+            >
+              <Icon name="refresh" size="md" class="mr-2" />
+              {{ t('admin.subscriptions.batchResetQuota') }}
+              <span class="ml-1">{{ t('common.selectedCount', { count: selectedResettableCount }) }}</span>
+            </button>
             <button @click="showAssignModal = true" class="btn btn-primary">
               <Icon name="plus" size="md" class="mr-2" />
               {{ t('admin.subscriptions.assignSubscription') }}
@@ -162,6 +182,32 @@
           default-sort-order="desc"
           @sort="handleSort"
         >
+          <template #header-select>
+            <div class="flex items-center justify-center">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+                :checked="allAdjustableSelected"
+                :disabled="adjustableSubscriptions.length === 0"
+                data-test="select-all-subscriptions"
+                @change="handleSelectAllChange"
+              />
+            </div>
+          </template>
+
+          <template #cell-select="{ row }">
+            <div class="flex items-center justify-center">
+              <input
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500 disabled:cursor-not-allowed disabled:opacity-50"
+                :checked="isSubscriptionSelected(row.id)"
+                :disabled="!canAdjustSubscription(row)"
+                data-test="subscription-select"
+                @change="handleSubscriptionSelectionChange(row, $event)"
+              />
+            </div>
+          </template>
+
           <template #cell-user="{ row }">
             <div class="flex items-center gap-2">
               <div
@@ -334,25 +380,21 @@
             }}</span>
           </template>
 
-          <template #cell-status="{ value }">
+          <template #cell-status="{ row, value }">
             <span
               :class="[
                 'badge',
-                value === 'active'
-                  ? 'badge-success'
-                  : value === 'expired'
-                    ? 'badge-warning'
-                    : 'badge-danger'
+                subscriptionStatusBadgeClass(value)
               ]"
             >
-              {{ t(`admin.subscriptions.status.${value}`) }}
+              {{ subscriptionStatusLabel(row) }}
             </span>
           </template>
 
           <template #cell-actions="{ row }">
             <div class="flex items-center gap-1">
               <button
-                v-if="row.status === 'active' || row.status === 'expired'"
+                v-if="canAdjustSubscription(row)"
                 @click="handleExtend(row)"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-blue-50 hover:text-blue-600 dark:hover:bg-blue-900/20 dark:hover:text-blue-400"
               >
@@ -360,9 +402,10 @@
                 <span class="text-xs">{{ t('admin.subscriptions.adjust') }}</span>
               </button>
               <button
-                v-if="row.status === 'active'"
+                v-if="canResetSubscription(row)"
                 @click="handleResetQuota(row)"
                 :disabled="resettingQuota && resettingSubscription?.id === row.id"
+                data-test="reset-quota-open"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-orange-50 hover:text-orange-600 dark:hover:bg-orange-900/20 dark:hover:text-orange-400 disabled:cursor-not-allowed disabled:opacity-50"
               >
                 <Icon name="refresh" size="sm" />
@@ -582,6 +625,167 @@
       </template>
     </BaseDialog>
 
+    <!-- Batch Adjust Subscription Modal -->
+    <BaseDialog
+      :show="showBulkExtendModal"
+      :title="t('admin.subscriptions.batchAdjustSubscription')"
+      width="narrow"
+      @close="closeBulkExtendModal"
+    >
+      <form
+        v-if="selectedAdjustableCount > 0"
+        id="bulk-extend-subscription-form"
+        data-test="batch-adjust-form"
+        @submit.prevent="handleBulkExtendSubscription"
+        class="space-y-5"
+      >
+        <div class="rounded-lg bg-gray-50 p-4 dark:bg-dark-700">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ t('admin.subscriptions.adjustingSelectedCount', { count: selectedAdjustableCount }) }}
+          </p>
+          <div class="mt-3">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {{ t('admin.subscriptions.selectedSubscriptions') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span
+                v-for="subscription in selectedAdjustableSubscriptionsPreview"
+                :key="subscription.id"
+                class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm dark:bg-dark-800 dark:text-gray-200"
+              >
+                {{ selectedSubscriptionLabel(subscription) }}
+              </span>
+            </div>
+            <p
+              v-if="selectedAdjustableRemainingCount > 0"
+              class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+            >
+              {{ t('admin.subscriptions.moreSelectedSubscriptions', { count: selectedAdjustableRemainingCount }) }}
+            </p>
+          </div>
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.subscriptions.form.adjustDays') }}</label>
+          <div class="flex items-center gap-2">
+            <input
+              v-model.number="bulkExtendForm.days"
+              type="number"
+              required
+              class="input text-center"
+              :placeholder="t('admin.subscriptions.adjustDaysPlaceholder')"
+              data-test="batch-adjust-days-input"
+            />
+          </div>
+          <p class="input-hint">{{ t('admin.subscriptions.adjustHint') }}</p>
+        </div>
+      </form>
+      <template #footer>
+        <div v-if="selectedAdjustableCount > 0" class="flex justify-end gap-3">
+          <button @click="closeBulkExtendModal" type="button" class="btn btn-secondary">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            form="bulk-extend-subscription-form"
+            :disabled="submitting"
+            class="btn btn-primary"
+          >
+            {{ submitting ? t('admin.subscriptions.adjusting') : t('admin.subscriptions.batchAdjustSubscription') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
+    <!-- Batch Reset Quota Modal -->
+    <BaseDialog
+      :show="showBulkResetQuotaModal"
+      :title="t('admin.subscriptions.batchResetQuota')"
+      width="narrow"
+      @close="closeBulkResetQuotaModal"
+    >
+      <form
+        v-if="selectedResettableCount > 0"
+        id="bulk-reset-quota-form"
+        data-test="batch-reset-form"
+        @submit.prevent="handleBulkResetQuota"
+        class="space-y-5"
+      >
+        <div class="rounded-lg bg-gray-50 p-4 dark:bg-dark-700">
+          <p class="text-sm text-gray-600 dark:text-gray-400">
+            {{ t('admin.subscriptions.resettingSelectedCount', { count: selectedResettableCount }) }}
+          </p>
+          <div class="mt-3">
+            <p class="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-gray-400">
+              {{ t('admin.subscriptions.selectedSubscriptions') }}
+            </p>
+            <div class="mt-2 flex flex-wrap gap-2">
+              <span
+                v-for="subscription in selectedResettableSubscriptionsPreview"
+                :key="subscription.id"
+                class="inline-flex items-center rounded-full bg-white px-3 py-1 text-xs font-medium text-gray-700 shadow-sm dark:bg-dark-800 dark:text-gray-200"
+              >
+                {{ selectedSubscriptionLabel(subscription) }}
+              </span>
+            </div>
+            <p
+              v-if="selectedResettableRemainingCount > 0"
+              class="mt-2 text-xs text-gray-500 dark:text-gray-400"
+            >
+              {{ t('admin.subscriptions.moreSelectedSubscriptions', { count: selectedResettableRemainingCount }) }}
+            </p>
+          </div>
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.subscriptions.resetQuotaOptions') }}</label>
+          <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.daily"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-daily-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetDailyQuota') }}</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.weekly"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-weekly-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetWeeklyQuota') }}</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.monthly"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-monthly-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetMonthlyQuota') }}</span>
+            </label>
+          </div>
+          <p class="input-hint">{{ t('admin.subscriptions.resetQuotaHint') }}</p>
+        </div>
+      </form>
+      <template #footer>
+        <div v-if="selectedResettableCount > 0" class="flex justify-end gap-3">
+          <button @click="closeBulkResetQuotaModal" type="button" class="btn btn-secondary">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            form="bulk-reset-quota-form"
+            :disabled="submitting"
+            class="btn btn-primary"
+          >
+            {{ t('admin.subscriptions.batchResetQuota') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
     <!-- Revoke Confirmation Dialog -->
     <ConfirmDialog
       :show="showRevokeDialog"
@@ -594,16 +798,73 @@
       @cancel="showRevokeDialog = false"
     />
 
-    <!-- Reset Quota Confirmation Dialog -->
-    <ConfirmDialog
-      :show="showResetQuotaConfirm"
+    <!-- Reset Quota Dialog -->
+    <BaseDialog
+      :show="showResetQuotaModal"
       :title="t('admin.subscriptions.resetQuotaTitle')"
-      :message="t('admin.subscriptions.resetQuotaConfirm', { user: resettingSubscription?.user?.email })"
-      :confirm-text="t('admin.subscriptions.resetQuota')"
-      :cancel-text="t('common.cancel')"
-      @confirm="confirmResetQuota"
-      @cancel="showResetQuotaConfirm = false"
-    />
+      width="narrow"
+      @close="closeResetQuotaModal"
+    >
+      <form
+        v-if="resettingSubscription"
+        id="reset-quota-form"
+        data-test="reset-quota-form"
+        @submit.prevent="confirmResetQuota"
+        class="space-y-5"
+      >
+        <div class="rounded-lg bg-gray-50 p-4 text-sm text-gray-600 dark:bg-dark-700 dark:text-gray-300">
+          {{ t('admin.subscriptions.resetQuotaDescription', { user: resettingSubscription.user?.email || t('admin.redeem.userPrefix', { id: resettingSubscription.user_id }) }) }}
+        </div>
+        <div>
+          <label class="input-label">{{ t('admin.subscriptions.resetQuotaOptions') }}</label>
+          <div class="space-y-3 rounded-lg border border-gray-200 p-4 dark:border-dark-600">
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.daily"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-daily-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetDailyQuota') }}</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.weekly"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-weekly-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetWeeklyQuota') }}</span>
+            </label>
+            <label class="flex items-center gap-3">
+              <input
+                v-model="resetQuotaForm.monthly"
+                type="checkbox"
+                class="h-4 w-4 rounded border-gray-300 text-primary-600 focus:ring-primary-500"
+                data-test="reset-monthly-checkbox"
+              />
+              <span class="text-sm text-gray-700 dark:text-gray-200">{{ t('admin.subscriptions.resetMonthlyQuota') }}</span>
+            </label>
+          </div>
+          <p class="input-hint">{{ t('admin.subscriptions.resetQuotaHint') }}</p>
+        </div>
+      </form>
+      <template #footer>
+        <div v-if="resettingSubscription" class="flex justify-end gap-3">
+          <button @click="closeResetQuotaModal" type="button" class="btn btn-secondary">
+            {{ t('common.cancel') }}
+          </button>
+          <button
+            type="submit"
+            form="reset-quota-form"
+            :disabled="resettingQuota"
+            class="btn btn-primary"
+          >
+            {{ t('admin.subscriptions.resetQuota') }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
     <!-- Subscription Guide Modal -->
     <teleport to="body">
       <transition name="modal">
@@ -691,7 +952,7 @@ import { ref, reactive, computed, onMounted, onUnmounted } from 'vue'
 import { useI18n } from 'vue-i18n'
 import { useAppStore } from '@/stores/app'
 import { adminAPI } from '@/api/admin'
-import type { UserSubscription } from '@/types'
+import type { UserSubscription, UserSubscriptionStatus } from '@/types'
 import type { SimpleUser } from '@/api/admin/usage'
 import type { Column } from '@/components/common/types'
 import type { SubscriptionPlan } from '@/types/payment'
@@ -717,10 +978,14 @@ interface PlanOption extends Record<string, unknown> {
   description: string
 }
 
+const MAX_ADJUST_DAYS = 36500
+const BULK_PREVIEW_LIMIT = 5
+
 // Guide modal state
 const showGuideModal = ref(false)
 
 const guideActionRows = computed(() => [
+  { action: t('admin.subscriptions.guide.actions.batchAdjust'), desc: t('admin.subscriptions.guide.actions.batchAdjustDesc') },
   { action: t('admin.subscriptions.guide.actions.adjust'), desc: t('admin.subscriptions.guide.actions.adjustDesc') },
   { action: t('admin.subscriptions.guide.actions.resetQuota'), desc: t('admin.subscriptions.guide.actions.resetQuotaDesc') },
   { action: t('admin.subscriptions.guide.actions.revoke'), desc: t('admin.subscriptions.guide.actions.revokeDesc') }
@@ -754,8 +1019,18 @@ const setUserColumnMode = (mode: 'email' | 'username') => {
   saveUserColumnMode()
 }
 
+const canAdjustSubscription = (subscription: UserSubscription): boolean =>
+  subscription.status === 'active' || subscription.status === 'expired'
+
+const canResetSubscription = (subscription: UserSubscription): boolean =>
+  subscription.status === 'active'
+
+const selectedSubscriptionLabel = (subscription: UserSubscription): string =>
+  subscription.user?.email || t('admin.redeem.userPrefix', { id: subscription.user_id })
+
 // All available columns
 const allColumns = computed<Column[]>(() => [
+  { key: 'select', label: '', sortable: false, class: 'w-12' },
   {
     key: 'user',
     label: userColumnMode.value === 'email'
@@ -772,7 +1047,7 @@ const allColumns = computed<Column[]>(() => [
 
 // Columns that can be toggled (exclude user and actions which are always visible)
 const toggleableColumns = computed(() =>
-  allColumns.value.filter(col => col.key !== 'user' && col.key !== 'actions')
+  allColumns.value.filter(col => col.key !== 'select' && col.key !== 'user' && col.key !== 'actions')
 )
 
 // Hidden columns set
@@ -825,7 +1100,7 @@ const isColumnVisible = (key: string) => !hiddenColumns.has(key)
 // Filtered columns for display
 const columns = computed<Column[]>(() =>
   allColumns.value.filter(col =>
-    col.key === 'user' || col.key === 'actions' || !hiddenColumns.has(col.key)
+    col.key === 'select' || col.key === 'user' || col.key === 'actions' || !hiddenColumns.has(col.key)
   )
 )
 
@@ -834,11 +1109,21 @@ const showColumnDropdown = ref(false)
 const columnDropdownRef = ref<HTMLElement | null>(null)
 
 // Filter options
+const subscriptionStatusValues: UserSubscriptionStatus[] = [
+  'active',
+  'expired',
+  'suspended',
+  'superseded',
+  'refunded',
+  'revoked',
+]
+
 const statusOptions = computed(() => [
   { value: '', label: t('admin.subscriptions.allStatus') },
-  { value: 'active', label: t('admin.subscriptions.status.active') },
-  { value: 'expired', label: t('admin.subscriptions.status.expired') },
-  { value: 'revoked', label: t('admin.subscriptions.status.revoked') }
+  ...subscriptionStatusValues.map((status) => ({
+    value: status,
+    label: t(`admin.subscriptions.status.${status}`),
+  })),
 ])
 
 const subscriptions = ref<UserSubscription[]>([])
@@ -863,7 +1148,7 @@ const selectedUser = ref<SimpleUser | null>(null)
 let userSearchTimeout: ReturnType<typeof setTimeout> | null = null
 
 const filters = reactive({
-  status: 'active',
+  status: 'active' as UserSubscriptionStatus | '',
   user_id: null as number | null
 })
 
@@ -882,13 +1167,16 @@ const pagination = reactive({
 
 const showAssignModal = ref(false)
 const showExtendModal = ref(false)
+const showBulkExtendModal = ref(false)
+const showBulkResetQuotaModal = ref(false)
 const showRevokeDialog = ref(false)
-const showResetQuotaConfirm = ref(false)
+const showResetQuotaModal = ref(false)
 const submitting = ref(false)
 const resettingSubscription = ref<UserSubscription | null>(null)
 const resettingQuota = ref(false)
 const extendingSubscription = ref<UserSubscription | null>(null)
 const revokingSubscription = ref<UserSubscription | null>(null)
+const selectedSubscriptionIds = ref<number[]>([])
 
 const assignForm = reactive({
   user_id: null as number | null,
@@ -898,6 +1186,16 @@ const assignForm = reactive({
 
 const extendForm = reactive({
   days: 30
+})
+
+const bulkExtendForm = reactive({
+  days: 30
+})
+
+const resetQuotaForm = reactive({
+  daily: true,
+  weekly: true,
+  monthly: true
 })
 
 const subscriptionPlanOptions = computed<PlanOption[]>(() =>
@@ -911,6 +1209,129 @@ const subscriptionPlanOptions = computed<PlanOption[]>(() =>
 const selectedAssignPlan = computed(() =>
   subscriptionPlans.value.find((plan) => plan.id === assignForm.plan_id) ?? null
 )
+
+const adjustableSubscriptions = computed(() =>
+  subscriptions.value.filter(canAdjustSubscription)
+)
+
+const selectedAdjustableSubscriptions = computed(() => {
+  const selectedIDs = new Set(selectedSubscriptionIds.value)
+  return subscriptions.value.filter(subscription => selectedIDs.has(subscription.id) && canAdjustSubscription(subscription))
+})
+
+const selectedResettableSubscriptions = computed(() => {
+  const selectedIDs = new Set(selectedSubscriptionIds.value)
+  return subscriptions.value.filter(subscription => selectedIDs.has(subscription.id) && canResetSubscription(subscription))
+})
+
+const selectedAdjustableCount = computed(() => selectedAdjustableSubscriptions.value.length)
+
+const selectedResettableCount = computed(() => selectedResettableSubscriptions.value.length)
+
+const selectedAdjustableSubscriptionsPreview = computed(() =>
+  selectedAdjustableSubscriptions.value.slice(0, BULK_PREVIEW_LIMIT)
+)
+
+const selectedResettableSubscriptionsPreview = computed(() =>
+  selectedResettableSubscriptions.value.slice(0, BULK_PREVIEW_LIMIT)
+)
+
+const selectedAdjustableRemainingCount = computed(() =>
+  Math.max(0, selectedAdjustableCount.value - selectedAdjustableSubscriptionsPreview.value.length)
+)
+
+const selectedResettableRemainingCount = computed(() =>
+  Math.max(0, selectedResettableCount.value - selectedResettableSubscriptionsPreview.value.length)
+)
+
+const allAdjustableSelected = computed(() =>
+  adjustableSubscriptions.value.length > 0 &&
+  adjustableSubscriptions.value.every(subscription => selectedSubscriptionIds.value.includes(subscription.id))
+)
+
+const validateAdjustDays = (days: number): boolean => {
+  if (!Number.isFinite(days) || days < -MAX_ADJUST_DAYS || days > MAX_ADJUST_DAYS) {
+    appStore.showError(t('admin.subscriptions.adjustOutOfRange'))
+    return false
+  }
+  return true
+}
+
+const resetResetQuotaForm = () => {
+  resetQuotaForm.daily = true
+  resetQuotaForm.weekly = true
+  resetQuotaForm.monthly = true
+}
+
+const hasSelectedResetQuotaWindow = (): boolean =>
+  resetQuotaForm.daily || resetQuotaForm.weekly || resetQuotaForm.monthly
+
+const getResetQuotaPayload = () => ({
+  daily: resetQuotaForm.daily,
+  weekly: resetQuotaForm.weekly,
+  monthly: resetQuotaForm.monthly
+})
+
+const validateResetQuotaSelection = (): boolean => {
+  if (!hasSelectedResetQuotaWindow()) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectResetQuotaWindow'))
+    return false
+  }
+  return true
+}
+
+const syncBulkActionModals = () => {
+  if (selectedAdjustableCount.value === 0) {
+    showBulkExtendModal.value = false
+  }
+  if (selectedResettableCount.value === 0) {
+    showBulkResetQuotaModal.value = false
+  }
+}
+
+const syncSelectedSubscriptionIDs = (items: UserSubscription[]) => {
+  const adjustableIDs = new Set(items.filter(canAdjustSubscription).map(subscription => subscription.id))
+  selectedSubscriptionIds.value = selectedSubscriptionIds.value.filter(id => adjustableIDs.has(id))
+  syncBulkActionModals()
+}
+
+const isSubscriptionSelected = (subscriptionID: number): boolean =>
+  selectedSubscriptionIds.value.includes(subscriptionID)
+
+const toggleSubscriptionSelection = (subscription: UserSubscription, checked: boolean) => {
+  if (!canAdjustSubscription(subscription)) return
+
+  if (checked) {
+    if (!selectedSubscriptionIds.value.includes(subscription.id)) {
+      selectedSubscriptionIds.value = [...selectedSubscriptionIds.value, subscription.id]
+    }
+    syncBulkActionModals()
+    return
+  }
+
+  selectedSubscriptionIds.value = selectedSubscriptionIds.value.filter(id => id !== subscription.id)
+  syncBulkActionModals()
+}
+
+const clearSelectedSubscriptions = () => {
+  selectedSubscriptionIds.value = []
+  syncBulkActionModals()
+}
+
+const toggleSelectAllAdjustable = (checked: boolean) => {
+  selectedSubscriptionIds.value = checked
+    ? adjustableSubscriptions.value.map(subscription => subscription.id)
+    : []
+  syncBulkActionModals()
+}
+
+const handleSelectAllChange = (event: Event) => {
+  toggleSelectAllAdjustable((event.target as HTMLInputElement).checked)
+}
+
+const handleSubscriptionSelectionChange = (subscription: UserSubscription, event: Event) => {
+  toggleSubscriptionSelection(subscription, (event.target as HTMLInputElement).checked)
+}
 
 const applyFilters = () => {
   pagination.page = 1
@@ -931,7 +1352,7 @@ const loadSubscriptions = async () => {
       pagination.page,
       pagination.page_size,
       {
-        status: (filters.status as any) || undefined,
+        status: filters.status || undefined,
         user_id: filters.user_id || undefined,
         sort_by: sortState.sort_by,
         sort_order: sortState.sort_order
@@ -942,6 +1363,7 @@ const loadSubscriptions = async () => {
     )
     if (signal.aborted || abortController !== requestController) return
     subscriptions.value = response.items
+    syncSelectedSubscriptionIDs(response.items)
     pagination.total = response.total
     pagination.pages = response.pages
   } catch (error: any) {
@@ -1139,8 +1561,42 @@ const closeExtendModal = () => {
   extendingSubscription.value = null
 }
 
+const openBulkExtendModal = () => {
+  if (selectedAdjustableCount.value === 0) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectSubscriptions'))
+    return
+  }
+  bulkExtendForm.days = 30
+  showBulkExtendModal.value = true
+}
+
+const closeBulkExtendModal = () => {
+  showBulkExtendModal.value = false
+}
+
+const openBulkResetQuotaModal = () => {
+  if (selectedResettableCount.value === 0) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectSubscriptionsToReset'))
+    return
+  }
+  resetResetQuotaForm()
+  showBulkResetQuotaModal.value = true
+}
+
+const closeBulkResetQuotaModal = () => {
+  showBulkResetQuotaModal.value = false
+  resetResetQuotaForm()
+}
+
+const closeResetQuotaModal = () => {
+  showResetQuotaModal.value = false
+  resettingSubscription.value = null
+  resetResetQuotaForm()
+}
+
 const handleExtendSubscription = async () => {
   if (!extendingSubscription.value) return
+  if (!validateAdjustDays(extendForm.days)) return
 
   // 前端验证：调整后的过期时间必须在未来
   if (extendingSubscription.value.expires_at) {
@@ -1168,6 +1624,82 @@ const handleExtendSubscription = async () => {
   }
 }
 
+const handleBulkExtendSubscription = async () => {
+  if (selectedAdjustableCount.value === 0) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectSubscriptions'))
+    return
+  }
+  if (!validateAdjustDays(bulkExtendForm.days)) return
+
+  submitting.value = true
+  try {
+    const result = await adminAPI.subscriptions.bulkExtend({
+      subscription_ids: selectedAdjustableSubscriptions.value.map(subscription => subscription.id),
+      days: bulkExtendForm.days
+    })
+    const summary = t('admin.subscriptions.batchAdjustSummary', {
+      success: result.success_count,
+      failed: result.failed_count
+    })
+
+    if (result.success_count > 0) {
+      appStore.showSuccess(summary)
+      if (result.failed_count > 0 && result.errors.length > 0) {
+        appStore.showError(result.errors[0])
+      }
+      closeBulkExtendModal()
+      clearSelectedSubscriptions()
+      await loadSubscriptions()
+      return
+    }
+
+    appStore.showError(result.errors[0] || summary)
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.subscriptions.failedToBatchAdjust'))
+    console.error('Error batch adjusting subscriptions:', error)
+  } finally {
+    submitting.value = false
+  }
+}
+
+const handleBulkResetQuota = async () => {
+  if (selectedResettableCount.value === 0) {
+    appStore.showError(t('admin.subscriptions.pleaseSelectSubscriptionsToReset'))
+    return
+  }
+  if (!validateResetQuotaSelection()) return
+
+  submitting.value = true
+  try {
+    const result = await adminAPI.subscriptions.bulkResetQuota({
+      subscription_ids: selectedResettableSubscriptions.value.map(subscription => subscription.id),
+      ...getResetQuotaPayload()
+    })
+    const summary = t('admin.subscriptions.batchResetQuotaSummary', {
+      success: result.success_count,
+      failed: result.failed_count
+    })
+
+    if (result.success_count > 0) {
+      appStore.showSuccess(summary)
+      if (result.failed_count > 0 && result.errors.length > 0) {
+        appStore.showError(result.errors[0])
+      }
+      closeBulkResetQuotaModal()
+      clearSelectedSubscriptions()
+      await loadSubscriptions()
+      return
+    }
+
+    appStore.showError(result.errors[0] || summary)
+  } catch (error: any) {
+    appStore.showError(error.response?.data?.detail || t('admin.subscriptions.failedToBatchResetQuota'))
+    console.error('Error batch resetting subscriptions:', error)
+  } finally {
+    submitting.value = false
+  }
+}
+
 const handleRevoke = (subscription: UserSubscription) => {
   revokingSubscription.value = subscription
   showRevokeDialog.value = true
@@ -1190,18 +1722,19 @@ const confirmRevoke = async () => {
 
 const handleResetQuota = (subscription: UserSubscription) => {
   resettingSubscription.value = subscription
-  showResetQuotaConfirm.value = true
+  resetResetQuotaForm()
+  showResetQuotaModal.value = true
 }
 
 const confirmResetQuota = async () => {
   if (!resettingSubscription.value) return
   if (resettingQuota.value) return
+  if (!validateResetQuotaSelection()) return
   resettingQuota.value = true
   try {
-    await adminAPI.subscriptions.resetQuota(resettingSubscription.value.id, { daily: true, weekly: true, monthly: true })
+    await adminAPI.subscriptions.resetQuota(resettingSubscription.value.id, getResetQuotaPayload())
     appStore.showSuccess(t('admin.subscriptions.quotaResetSuccess'))
-    showResetQuotaConfirm.value = false
-    resettingSubscription.value = null
+    closeResetQuotaModal()
     await loadSubscriptions()
   } catch (error: any) {
     appStore.showError(error.response?.data?.detail || t('admin.subscriptions.failedToResetQuota'))
@@ -1212,6 +1745,35 @@ const confirmResetQuota = async () => {
 }
 
 // Helper functions
+const subscriptionStatusLabel = (subscription: UserSubscription): string => {
+  if (!subscription?.status) return '-'
+  if (subscription.status === 'suspended' && subscription.refund_freeze_active) {
+    const refundLabel = t('userSubscriptions.status.suspended_refund')
+    if (refundLabel !== 'userSubscriptions.status.suspended_refund') {
+      return refundLabel
+    }
+  }
+  return t(`admin.subscriptions.status.${subscription.status}`)
+}
+
+const subscriptionStatusBadgeClass = (status: UserSubscriptionStatus | string): string => {
+  switch (status) {
+    case 'active':
+      return 'badge-success'
+    case 'expired':
+    case 'suspended':
+      return 'badge-warning'
+    case 'superseded':
+      return 'badge-gray'
+    case 'refunded':
+      return 'badge-purple'
+    case 'revoked':
+      return 'badge-danger'
+    default:
+      return 'badge-gray'
+  }
+}
+
 const getDaysRemaining = (expiresAt: string): number | null => {
   const now = new Date()
   const expires = new Date(expiresAt)

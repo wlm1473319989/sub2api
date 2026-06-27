@@ -5,6 +5,14 @@ import SubscriptionsView from '../SubscriptionsView.vue'
 const push = vi.hoisted(() => vi.fn())
 const showError = vi.hoisted(() => vi.fn())
 const getMySubscriptions = vi.hoisted(() => vi.fn())
+const i18nMessages = vi.hoisted<Record<string, string>>(() => ({
+  'userSubscriptions.status.active': '有效',
+  'userSubscriptions.status.suspended_refund': '退款处理中（已冻结）',
+  'userSubscriptions.status.expired': '已过期',
+  'userSubscriptions.status.revoked': '已撤销',
+  'userSubscriptions.status.superseded': '已被替代',
+  'userSubscriptions.status.refunded': '已退款',
+}))
 
 vi.mock('vue-router', async () => {
   const actual = await vi.importActual<typeof import('vue-router')>('vue-router')
@@ -22,7 +30,9 @@ vi.mock('vue-i18n', async () => {
     ...actual,
     useI18n: () => ({
       t: (key: string, params?: Record<string, unknown>) =>
-        params && typeof params.days === 'number' ? `${key}:${params.days}` : key,
+        params && typeof params.days === 'number'
+          ? `${key}:${params.days}`
+          : (i18nMessages[key] ?? key),
     }),
   }
 })
@@ -147,5 +157,85 @@ describe('user SubscriptionsView', () => {
     expect(wrapper.text()).toContain('payment.plan #11')
     expect(wrapper.findAll('button').some((node) => node.text() === 'payment.renewNow')).toBe(false)
     expect(push).not.toHaveBeenCalled()
+  })
+
+  it('renders superseded subscription status as a localized label', async () => {
+    getMySubscriptions.mockResolvedValue([
+      {
+        id: 12,
+        user_id: 1,
+        plan_id: 7,
+        plan_name_snapshot: 'Old Plan',
+        status: 'superseded',
+        starts_at: '2099-01-01T00:00:00Z',
+        expires_at: '2099-01-31T00:00:00Z',
+        daily_usage_usd: 0,
+        weekly_usage_usd: 0,
+        monthly_usage_usd: 0,
+        daily_quota_knives: null,
+        weekly_quota_knives: null,
+        monthly_quota_knives: null,
+        daily_window_start: null,
+        weekly_window_start: null,
+        monthly_window_start: null,
+        created_at: '2099-01-01T00:00:00Z',
+        updated_at: '2099-01-01T00:00:00Z',
+      },
+    ])
+
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Icon: IconStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('已被替代')
+    expect(wrapper.text()).not.toContain('userSubscriptions.status.superseded')
+  })
+
+  it('renders refund frozen suspended subscription with dedicated label', async () => {
+    getMySubscriptions.mockResolvedValue([
+      {
+        id: 13,
+        user_id: 1,
+        plan_id: 7,
+        plan_name_snapshot: 'Refunded Plan',
+        status: 'suspended',
+        refund_freeze_active: true,
+        active_refund_request_id: 91,
+        active_refund_status: 'submitted',
+        starts_at: '2099-01-01T00:00:00Z',
+        expires_at: '2099-01-31T00:00:00Z',
+        daily_usage_usd: 0,
+        weekly_usage_usd: 0,
+        monthly_usage_usd: 0,
+        daily_quota_knives: null,
+        weekly_quota_knives: null,
+        monthly_quota_knives: null,
+        daily_window_start: null,
+        weekly_window_start: null,
+        monthly_window_start: null,
+        created_at: '2099-01-01T00:00:00Z',
+        updated_at: '2099-01-01T00:00:00Z',
+      },
+    ])
+
+    const wrapper = mount(SubscriptionsView, {
+      global: {
+        stubs: {
+          AppLayout: AppLayoutStub,
+          Icon: IconStub,
+        },
+      },
+    })
+
+    await flushPromises()
+
+    expect(wrapper.text()).toContain('退款处理中（已冻结）')
   })
 })

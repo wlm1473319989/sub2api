@@ -214,9 +214,125 @@ func TestSettlementService_CreateSettlementOrderClosesPreviousHead(t *testing.T)
 	require.NoError(t, err)
 	require.Equal(t, domain.SettlementStatusClosed, reloadedPrev.Status)
 	require.NotNil(t, reloadedPrev.ClosedAt)
+	require.Nil(t, reloadedPrev.PrevSettlementID)
 
 	head, err := h.svc.GetEffectiveHead(h.ctx, user.ID, now)
 	require.NoError(t, err)
 	require.NotNil(t, head)
 	require.Equal(t, created.ID, head.ID)
+}
+
+func TestSettlementService_CreateSettlementOrderStartsNewChainAfterInactiveCursor(t *testing.T) {
+	h := newSettlementServiceHarness(t)
+	now := time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC)
+	user := h.createSettlementUser(t, "settlement-new-chain@example.com")
+	plan := h.createSettlementPlan(t, "Starter", 100)
+	oldCursor := h.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusRevoked, now.Add(24*time.Hour))
+	afterSub := h.createSettlementSubscription(t, user, plan, now, now.Add(30*24*time.Hour))
+
+	created, err := h.svc.CreateSettlementOrder(h.ctx, SettlementOrderInput{
+		UserID:                  user.ID,
+		OperatorUserID:          user.ID,
+		ActionType:              domain.SettlementActionPurchase,
+		ActionSource:            domain.SettlementActionSourceUserPurchase,
+		TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+		CarryInResidualValue:    0,
+		ActionDeltaValue:        100,
+		AfterSettlementValue:    100,
+		AfterUserSubscription:   afterSub,
+		AfterPlan:               plan,
+		AfterSubscriptionStatus: domain.SubscriptionStatusActive,
+		EffectiveAt:             now,
+	})
+	require.NoError(t, err)
+	require.Nil(t, created.PrevSettlementID)
+
+	reloadedOldCursor, err := h.client.SubscriptionSettlementOrder.Get(h.ctx, oldCursor.ID)
+	require.NoError(t, err)
+	require.Equal(t, domain.SettlementStatusClosed, reloadedOldCursor.Status)
+}
+
+func TestSettlementService_CreateSettlementOrderRejectsPurchaseDuringActiveChain(t *testing.T) {
+	h := newSettlementServiceHarness(t)
+	now := time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC)
+	user := h.createSettlementUser(t, "settlement-active-purchase@example.com")
+	plan := h.createSettlementPlan(t, "Starter", 100)
+	activeCursor := h.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusActive, now.Add(24*time.Hour))
+	afterSub := h.createSettlementSubscription(t, user, plan, now, now.Add(30*24*time.Hour))
+
+	_, err := h.svc.CreateSettlementOrder(h.ctx, SettlementOrderInput{
+		UserID:                  user.ID,
+		OperatorUserID:          user.ID,
+		ActionType:              domain.SettlementActionPurchase,
+		ActionSource:            domain.SettlementActionSourceUserPurchase,
+		TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+		CarryInResidualValue:    0,
+		ActionDeltaValue:        100,
+		AfterSettlementValue:    100,
+		AfterUserSubscription:   afterSub,
+		AfterPlan:               plan,
+		AfterSubscriptionStatus: domain.SubscriptionStatusActive,
+		EffectiveAt:             now,
+	})
+	require.Error(t, err)
+
+	reloadedActiveCursor, reloadErr := h.client.SubscriptionSettlementOrder.Get(h.ctx, activeCursor.ID)
+	require.NoError(t, reloadErr)
+	require.Equal(t, domain.SettlementStatusEffective, reloadedActiveCursor.Status)
+}
+
+func TestSettlementService_CreateSettlementOrderRepairsStaleReverseLink(t *testing.T) {
+	h := newSettlementServiceHarness(t)
+	now := time.Date(2026, 6, 23, 12, 0, 0, 0, time.UTC)
+	user := h.createSettlementUser(t, "settlement-repair@example.com")
+	plan := h.createSettlementPlan(t, "Starter", 100)
+	prev := h.createSettlementHead(t, user, plan, domain.SettlementStatusEffective, domain.SubscriptionStatusActive, now.Add(24*time.Hour))
+	afterSub := h.createSettlementSubscription(t, user, plan, now, now.Add(30*24*time.Hour))
+
+	current, err := h.svc.CreateSettlementOrder(h.ctx, SettlementOrderInput{
+		UserID:                  user.ID,
+		OperatorUserID:          user.ID,
+		ActionType:              domain.SettlementActionRenew,
+		ActionSource:            domain.SettlementActionSourceUserPurchase,
+		TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+		CarryInResidualValue:    20,
+		ActionDeltaValue:        100,
+		AfterSettlementValue:    120,
+		AfterUserSubscription:   afterSub,
+		AfterPlan:               plan,
+		AfterSubscriptionStatus: domain.SubscriptionStatusActive,
+		EffectiveAt:             now,
+	})
+	require.NoError(t, err)
+
+	_, err = h.client.ExecContext(
+		h.ctx,
+		"UPDATE subscription_settlement_orders SET prev_settlement_id = $1 WHERE id = $2",
+		current.ID,
+		prev.ID,
+	)
+	require.NoError(t, err)
+
+	nextSub := h.createSettlementSubscription(t, user, plan, now.Add(time.Hour), now.Add(31*24*time.Hour))
+	next, err := h.svc.CreateSettlementOrder(h.ctx, SettlementOrderInput{
+		UserID:                  user.ID,
+		OperatorUserID:          user.ID,
+		ActionType:              domain.SettlementActionRenew,
+		ActionSource:            domain.SettlementActionSourceUserPurchase,
+		TriggerRefType:          domain.SettlementTriggerRefPaymentOrder,
+		CarryInResidualValue:    120,
+		ActionDeltaValue:        100,
+		AfterSettlementValue:    220,
+		AfterUserSubscription:   nextSub,
+		AfterPlan:               plan,
+		AfterSubscriptionStatus: domain.SubscriptionStatusActive,
+		EffectiveAt:             now.Add(time.Hour),
+	})
+	require.NoError(t, err)
+	require.NotNil(t, next.PrevSettlementID)
+	require.Equal(t, current.ID, *next.PrevSettlementID)
+
+	reloadedPrev, err := h.client.SubscriptionSettlementOrder.Get(h.ctx, prev.ID)
+	require.NoError(t, err)
+	require.Nil(t, reloadedPrev.PrevSettlementID)
 }

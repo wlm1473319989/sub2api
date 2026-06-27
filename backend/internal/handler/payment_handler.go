@@ -19,9 +19,10 @@ import (
 
 // PaymentHandler handles user-facing payment requests.
 type PaymentHandler struct {
-	channelService *service.ChannelService
-	paymentService *service.PaymentService
-	configService  *service.PaymentConfigService
+	channelService          *service.ChannelService
+	paymentService          *service.PaymentService
+	configService           *service.PaymentConfigService
+	settlementRefundService *service.SettlementRefundService
 }
 
 // NewPaymentHandler creates a new PaymentHandler.
@@ -31,6 +32,10 @@ func NewPaymentHandler(paymentService *service.PaymentService, configService *se
 		paymentService: paymentService,
 		configService:  configService,
 	}
+}
+
+func (h *PaymentHandler) SetSettlementRefundService(settlementRefundService *service.SettlementRefundService) {
+	h.settlementRefundService = settlementRefundService
 }
 
 // GetPaymentConfig returns the payment system configuration.
@@ -188,7 +193,8 @@ func (h *PaymentHandler) GetLimits(c *gin.Context) {
 }
 
 type SubscriptionPreviewRequest struct {
-	PlanID int64 `json:"plan_id" binding:"required"`
+	PlanID      int64  `json:"plan_id" binding:"required"`
+	PaymentType string `json:"payment_type"`
 }
 
 // PreviewSubscriptionOrder returns the effective purchase / renew / upgrade action for a plan.
@@ -205,9 +211,19 @@ func (h *PaymentHandler) PreviewSubscriptionOrder(c *gin.Context) {
 		return
 	}
 
-	result, err := h.paymentService.PreviewSubscriptionOrder(c.Request.Context(), subject.UserID, req.PlanID)
-	if err != nil {
-		response.ErrorFrom(c, err)
+	currency := payment.DefaultPaymentCurrency
+	if h.configService != nil {
+		resolvedCurrency, currencyErr := h.configService.ValidateMethodCurrencyConsistency(c.Request.Context(), req.PaymentType)
+		if currencyErr != nil {
+			response.ErrorFrom(c, currencyErr)
+			return
+		}
+		currency = resolvedCurrency
+	}
+
+	result, resultErr := h.paymentService.PreviewSubscriptionOrder(c.Request.Context(), subject.UserID, req.PlanID, currency)
+	if resultErr != nil {
+		response.ErrorFrom(c, resultErr)
 		return
 	}
 	response.Success(c, result)
@@ -386,9 +402,69 @@ func (h *PaymentHandler) CancelOrder(c *gin.Context) {
 	response.Success(c, gin.H{"message": msg})
 }
 
+type RefundPreviewRequestBody struct {
+	Reason string `json:"reason"`
+}
+
 // RefundRequestBody is the request body for requesting a refund.
 type RefundRequestBody struct {
-	Reason string `json:"reason"`
+	PreviewID      int64                                  `json:"preview_id"`
+	PreviewToken   string                                 `json:"preview_token"`
+	Reason         string                                 `json:"reason"`
+	ManualTransfer *SettlementRefundManualTransferRequest `json:"manual_transfer"`
+}
+
+// PreviewRefund previews the refundable amount for the authenticated user's order.
+// POST /api/v1/payment/orders/:id/refund-preview
+func (h *PaymentHandler) PreviewRefund(c *gin.Context) {
+	subject, ok := requireAuth(c)
+	if !ok {
+		return
+	}
+
+	orderID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid order ID")
+		return
+	}
+
+	var req RefundPreviewRequestBody
+	if c.Request != nil && c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(c, "Invalid request: "+err.Error())
+			return
+		}
+	}
+
+	order, subscription, err := h.paymentService.ResolveSubscriptionRefundTarget(c.Request.Context(), orderID, subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if order != nil && order.OrderType == payment.OrderTypeSubscription {
+		if h == nil || h.settlementRefundService == nil {
+			response.InternalError(c, "Settlement refund service is unavailable")
+			return
+		}
+		preview, previewErr := h.settlementRefundService.PreviewSettlementRefund(c.Request.Context(), service.SettlementRefundPreviewInput{
+			SubscriptionID: subscription.ID,
+			UserID:         subject.UserID,
+			Reason:         req.Reason,
+		})
+		if previewErr != nil {
+			response.ErrorFrom(c, previewErr)
+			return
+		}
+		response.Success(c, buildLegacySubscriptionRefundPreviewResponse(order, preview))
+		return
+	}
+
+	preview, err := h.paymentService.PreviewUserRefund(c.Request.Context(), orderID, subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, preview)
 }
 
 // RequestRefund submits a refund request for a completed order.
@@ -411,11 +487,102 @@ func (h *PaymentHandler) RequestRefund(c *gin.Context) {
 		return
 	}
 
+	order, subscription, err := h.paymentService.ResolveSubscriptionRefundTarget(c.Request.Context(), orderID, subject.UserID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	if order != nil && order.OrderType == payment.OrderTypeSubscription {
+		if h == nil || h.settlementRefundService == nil {
+			response.InternalError(c, "Settlement refund service is unavailable")
+			return
+		}
+		if req.PreviewID <= 0 || strings.TrimSpace(req.PreviewToken) == "" {
+			response.ErrorFrom(c, service.ErrSettlementRefundSubmitInput)
+			return
+		}
+		var manualTransfer *service.ManualTransferInput
+		if req.ManualTransfer != nil {
+			manualTransfer = &service.ManualTransferInput{
+				ReceiverType:           req.ManualTransfer.ReceiverType,
+				ReceiverName:           req.ManualTransfer.ReceiverName,
+				ReceiverAccount:        req.ManualTransfer.ReceiverAccount,
+				ReceiverQRCodeImageURL: req.ManualTransfer.ReceiverQRCodeImageURL,
+				Remark:                 req.ManualTransfer.Remark,
+			}
+		}
+		result, submitErr := h.settlementRefundService.SubmitSettlementRefund(c.Request.Context(), service.SettlementRefundSubmitInput{
+			SubscriptionID: subscription.ID,
+			UserID:         subject.UserID,
+			PreviewID:      req.PreviewID,
+			PreviewToken:   req.PreviewToken,
+			Reason:         req.Reason,
+			ManualTransfer: manualTransfer,
+		})
+		if submitErr != nil {
+			response.ErrorFrom(c, submitErr)
+			return
+		}
+		response.Success(c, gin.H{
+			"message":             "refund requested",
+			"refund_request_id":   result.RefundRequestID,
+			"subscription_id":     result.SubscriptionID,
+			"subscription_status": result.SubscriptionStatus,
+			"refund_status":       result.RefundStatus,
+		})
+		return
+	}
+
 	if err := h.paymentService.RequestRefund(c.Request.Context(), orderID, subject.UserID, req.Reason); err != nil {
 		response.ErrorFrom(c, err)
 		return
 	}
 	response.Success(c, gin.H{"message": "refund requested"})
+}
+
+func buildLegacySubscriptionRefundPreviewResponse(order *dbent.PaymentOrder, preview *service.SettlementRefundPreview) gin.H {
+	return gin.H{
+		"order_amount":                       order.Amount,
+		"pay_amount":                         order.PayAmount,
+		"refund_amount":                      preview.RefundResidualValue,
+		"gateway_amount":                     preview.GatewayRefundableTotal,
+		"currency":                           preview.Currency,
+		"deduction_type":                     "subscription",
+		"preview_id":                         preview.PreviewID,
+		"preview_token":                      preview.PreviewToken,
+		"preview_issued_at":                  preview.PreviewIssuedAt,
+		"preview_expires_at":                 preview.PreviewExpiresAt,
+		"preview_ttl_seconds":                preview.PreviewTTLSeconds,
+		"subscription_id":                    preview.SubscriptionID,
+		"user_id":                            preview.UserID,
+		"settlement_id":                      preview.SettlementID,
+		"expected_settlement_id":             preview.ExpectedSettlementID,
+		"action_source":                      preview.ActionSource,
+		"trigger_ref_type":                   preview.TriggerRefType,
+		"trigger_ref_id":                     preview.TriggerRefID,
+		"plan_name":                          preview.PlanName,
+		"subscription_expires_at":            preview.SubscriptionExpiresAt,
+		"after_settlement_value":             preview.AfterSettlementValue,
+		"theoretical_full_max_knives":        preview.TheoreticalFullMaxKnives,
+		"residual_quota_knives":              preview.ResidualQuotaKnives,
+		"unit_cost":                          preview.UnitCost,
+		"refund_mode":                        preview.RefundMode,
+		"refund_residual_value":              preview.RefundResidualValue,
+		"gateway_refundable_total":           preview.GatewayRefundableTotal,
+		"manual_transfer_amount":             preview.ManualTransferAmount,
+		"manual_transfer_required":           preview.ManualTransferRequired,
+		"after_submit_subscription_status":   preview.AfterSubmitSubscriptionStatus,
+		"after_complete_subscription_status": preview.AfterCompleteSubscriptionStatus,
+		"allocations":                        preview.Allocations,
+		"settlement_head": gin.H{
+			"head_id":                preview.SettlementID,
+			"action_source":          preview.ActionSource,
+			"trigger_ref_type":       preview.TriggerRefType,
+			"trigger_ref_id":         preview.TriggerRefID,
+			"current_residual_value": preview.AfterSettlementValue,
+			"refund_residual_value":  preview.RefundResidualValue,
+		},
+	}
 }
 
 // GetRefundEligibleProviders returns provider instance IDs that allow user refund.

@@ -147,6 +147,20 @@ type RefundResult struct {
 	SettlementHead  *RefundSettlementHeadInfo `json:"settlement_head,omitempty"`
 }
 
+type RefundPreview struct {
+	OrderAmount     float64                   `json:"order_amount"`
+	PayAmount       float64                   `json:"pay_amount"`
+	RefundAmount    float64                   `json:"refund_amount"`
+	GatewayAmount   float64                   `json:"gateway_amount"`
+	Currency        string                    `json:"currency,omitempty"`
+	DeductionType   string                    `json:"deduction_type,omitempty"`
+	BalanceToDeduct float64                   `json:"balance_to_deduct,omitempty"`
+	SubDaysToDeduct int                       `json:"subscription_days_to_deduct,omitempty"`
+	Warning         string                    `json:"warning,omitempty"`
+	RequireForce    bool                      `json:"require_force,omitempty"`
+	SettlementHead  *RefundSettlementHeadInfo `json:"settlement_head,omitempty"`
+}
+
 type RefundSettlementHeadInfo struct {
 	HeadID               int64   `json:"head_id"`
 	ActionSource         string  `json:"action_source"`

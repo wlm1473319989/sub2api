@@ -87,7 +87,7 @@ func requireSystemLockStatus(t *testing.T, repo *memoryIdempotencyRepoStub, want
 	t.Fatalf("system lock status %q not found in records: %#v", wantStatus, repo.data)
 }
 
-func TestSystemHandlerPerformUpdateAlreadyUpToDateReturnsOK(t *testing.T) {
+func TestSystemHandlerPerformUpdateDisabledReturnsForbidden(t *testing.T) {
 	updateSvc := &systemHandlerUpdateServiceStub{
 		performErr: service.ErrNoUpdateAvailable,
 		updateInfo: &service.UpdateInfo{
@@ -104,23 +104,17 @@ func TestSystemHandlerPerformUpdateAlreadyUpToDateReturnsOK(t *testing.T) {
 	req.Header.Set("Idempotency-Key", "already-up-to-date")
 	router.ServeHTTP(rec, req)
 
-	require.Equal(t, http.StatusOK, rec.Code)
-	require.Equal(t, 1, updateSvc.performCall)
-	require.Equal(t, []bool{false}, updateSvc.checkForces)
-	requireSystemLockStatus(t, repo, service.IdempotencyStatusSucceeded)
+	require.Equal(t, http.StatusForbidden, rec.Code)
+	require.Equal(t, 0, updateSvc.performCall)
+	require.Empty(t, updateSvc.checkForces)
 
-	var body systemUpdateResponseEnvelope
+	var body systemUpdateErrorEnvelope
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
-	require.Equal(t, 0, body.Code)
-	require.Equal(t, "success", body.Message)
-	require.Equal(t, "Already up to date", body.Data.Message)
-	require.True(t, body.Data.AlreadyUpToDate)
-	require.Equal(t, "0.1.132", body.Data.CurrentVersion)
-	require.Equal(t, "0.1.132", body.Data.LatestVersion)
-	require.NotEmpty(t, body.Data.OperationID)
+	require.Equal(t, http.StatusForbidden, body.Code)
+	require.Equal(t, systemUpdatesDisabledMessage, body.Message)
 }
 
-func TestSystemHandlerPerformUpdateFailureStillReturnsInternalError(t *testing.T) {
+func TestSystemHandlerPerformUpdateFailureStillReturnsForbidden(t *testing.T) {
 	updateSvc := &systemHandlerUpdateServiceStub{
 		performErr: errors.New("download failed"),
 	}
@@ -132,13 +126,12 @@ func TestSystemHandlerPerformUpdateFailureStillReturnsInternalError(t *testing.T
 	req.Header.Set("Idempotency-Key", "real-failure")
 	router.ServeHTTP(rec, req)
 
-	require.Equal(t, http.StatusInternalServerError, rec.Code)
-	require.Equal(t, 1, updateSvc.performCall)
+	require.Equal(t, http.StatusForbidden, rec.Code)
+	require.Equal(t, 0, updateSvc.performCall)
 	require.Empty(t, updateSvc.checkForces)
-	requireSystemLockStatus(t, repo, service.IdempotencyStatusFailedRetryable)
 
 	var body systemUpdateErrorEnvelope
 	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &body))
-	require.Equal(t, http.StatusInternalServerError, body.Code)
-	require.Equal(t, "internal error", body.Message)
+	require.Equal(t, http.StatusForbidden, body.Code)
+	require.Equal(t, systemUpdatesDisabledMessage, body.Message)
 }

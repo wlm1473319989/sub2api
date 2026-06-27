@@ -28,6 +28,9 @@ type UserSubscription struct {
 	DailyUsedKnives    float64
 	WeeklyUsedKnives   float64
 	MonthlyUsedKnives  float64
+	RefundFreezeActive bool
+	ActiveRefundRequestID *int64
+	ActiveRefundStatus *string
 
 	SupersededByID *int64
 

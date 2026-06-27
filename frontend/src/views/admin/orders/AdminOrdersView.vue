@@ -114,6 +114,7 @@
 <script setup lang="ts">
 import { ref, reactive, computed, onMounted } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import { adminPaymentAPI } from '@/api/admin/payment'
 import { extractI18nErrorMessage } from '@/utils/apiError'
@@ -137,6 +138,7 @@ interface AuditLog {
 }
 
 const { t } = useI18n()
+const router = useRouter()
 const appStore = useAppStore()
 
 const ordersLoading = ref(false)
@@ -223,7 +225,15 @@ async function handleRetryOrder(order: PaymentOrder) {
   catch (err: unknown) { appStore.showError(extractI18nErrorMessage(err, t, 'payment.errors', t('common.error'))) }
 }
 
-function openRefundDialog(order: PaymentOrder) { selectedOrder.value = order; showRefundDialog.value = true }
+async function openRefundDialog(order: PaymentOrder) {
+  if (order.order_type === 'subscription') {
+    appStore.showInfo(t('payment.admin.subscriptionRefundRedirect'))
+    await router.push('/admin/subscription-refund-requests')
+    return
+  }
+  selectedOrder.value = order
+  showRefundDialog.value = true
+}
 
 async function handleRefund(data: { amount: number; reason: string; deduct_balance: boolean; force: boolean }) {
   if (!selectedOrder.value) return

@@ -6,12 +6,20 @@
 import { apiClient } from '../client'
 import type {
   UserSubscription,
+  UserSubscriptionStatus,
   AdminUserSubscriptionDetail,
+  AdminSubscriptionRefundRequest,
   SubscriptionProgress,
   AssignSubscriptionRequest,
   BulkAssignSubscriptionRequest,
+  BulkAdjustSubscriptionRequest,
+  BulkAdjustSubscriptionResult,
+  BulkResetSubscriptionQuotaRequest,
+  BulkResetSubscriptionQuotaResult,
   ExtendSubscriptionRequest,
-  PaginatedResponse
+  PaginatedResponse,
+  ResetSubscriptionQuotaRequest,
+  AdminSubscriptionRefundListParams
 } from '@/types'
 
 /**
@@ -25,7 +33,7 @@ export async function list(
   page: number = 1,
   pageSize: number = 20,
   filters?: {
-    status?: 'active' | 'expired' | 'revoked'
+    status?: UserSubscriptionStatus
     user_id?: number
     sort_by?: string
     sort_order?: 'asc' | 'desc'
@@ -55,6 +63,33 @@ export async function list(
  */
 export async function getById(id: number): Promise<AdminUserSubscriptionDetail> {
   const { data } = await apiClient.get<AdminUserSubscriptionDetail>(`/admin/subscriptions/${id}`)
+  return data
+}
+
+/**
+ * List settlement refund requests for admin review
+ */
+export async function listRefundRequests(
+  params: AdminSubscriptionRefundListParams = {},
+  options?: { signal?: AbortSignal }
+): Promise<PaginatedResponse<AdminSubscriptionRefundRequest>> {
+  const { data } = await apiClient.get<PaginatedResponse<AdminSubscriptionRefundRequest>>(
+    '/admin/subscription-refund-requests',
+    {
+      params,
+      signal: options?.signal,
+    }
+  )
+  return data
+}
+
+/**
+ * Get a single settlement refund request for admin review
+ */
+export async function getRefundRequest(id: number): Promise<AdminSubscriptionRefundRequest> {
+  const { data } = await apiClient.get<AdminSubscriptionRefundRequest>(
+    `/admin/subscription-refund-requests/${id}`
+  )
   return data
 }
 
@@ -94,6 +129,36 @@ export async function bulkAssign(
 }
 
 /**
+ * Bulk adjust subscription validity
+ * @param request - Bulk adjust request with subscription ids and days delta
+ * @returns Bulk adjust result summary
+ */
+export async function bulkExtend(
+  request: BulkAdjustSubscriptionRequest
+): Promise<BulkAdjustSubscriptionResult> {
+  const { data } = await apiClient.post<BulkAdjustSubscriptionResult>(
+    '/admin/subscriptions/bulk-extend',
+    request
+  )
+  return data
+}
+
+/**
+ * Bulk reset daily, weekly, and/or monthly usage quota for subscriptions
+ * @param request - Bulk reset request with subscription ids and selected windows
+ * @returns Bulk reset result summary
+ */
+export async function bulkResetQuota(
+  request: BulkResetSubscriptionQuotaRequest
+): Promise<BulkResetSubscriptionQuotaResult> {
+  const { data } = await apiClient.post<BulkResetSubscriptionQuotaResult>(
+    '/admin/subscriptions/bulk-reset-quota',
+    request
+  )
+  return data
+}
+
+/**
  * Extend subscription validity
  * @param id - Subscription ID
  * @param request - Extension request with days
@@ -121,6 +186,41 @@ export async function revoke(id: number): Promise<{ message: string }> {
 }
 
 /**
+ * Upload manual refund proof for a settlement refund request
+ */
+export async function uploadRefundProof(
+  id: number,
+  request: { proof_url: string; admin_note?: string }
+): Promise<unknown> {
+  const { data } = await apiClient.post(`/admin/subscription-refund-requests/${id}/manual-proof`, request)
+  return data
+}
+
+/**
+ * Run gateway refund processing for a settlement refund request
+ */
+export async function processRefundGateway(id: number): Promise<unknown> {
+  const { data } = await apiClient.post(`/admin/subscription-refund-requests/${id}/gateway-process`)
+  return data
+}
+
+/**
+ * Complete a settlement refund request
+ */
+export async function completeRefund(id: number): Promise<unknown> {
+  const { data } = await apiClient.post(`/admin/subscription-refund-requests/${id}/complete`)
+  return data
+}
+
+/**
+ * Cancel a settlement refund request
+ */
+export async function cancelRefund(id: number, request?: { admin_note?: string }): Promise<unknown> {
+  const { data } = await apiClient.post(`/admin/subscription-refund-requests/${id}/cancel`, request || {})
+  return data
+}
+
+/**
  * Reset daily, weekly, and/or monthly usage quota for a subscription
  * @param id - Subscription ID
  * @param options - Which windows to reset
@@ -128,7 +228,7 @@ export async function revoke(id: number): Promise<{ message: string }> {
  */
 export async function resetQuota(
   id: number,
-  options: { daily: boolean; weekly: boolean; monthly: boolean }
+  options: ResetSubscriptionQuotaRequest
 ): Promise<UserSubscription> {
   const { data } = await apiClient.post<UserSubscription>(
     `/admin/subscriptions/${id}/reset-quota`,
@@ -161,11 +261,19 @@ export async function listByUser(
 export const subscriptionsAPI = {
   list,
   getById,
+  listRefundRequests,
+  getRefundRequest,
   getProgress,
   assign,
   bulkAssign,
+  bulkExtend,
+  bulkResetQuota,
   extend,
   revoke,
+  uploadRefundProof,
+  processRefundGateway,
+  completeRefund,
+  cancelRefund,
   resetQuota,
   listByUser
 }
