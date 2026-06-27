@@ -18,6 +18,11 @@ on:
         required: true
         default: docker-compose.local.yml
         type: string
+      wait_seconds:
+        description: 'How long to wait for the sub2api container health check'
+        required: true
+        default: '180'
+        type: string
 
 permissions:
   contents: read
@@ -37,6 +42,7 @@ jobs:
           DEPLOY_PATH: ${{ secrets.DEPLOY_PATH }}
           COMPOSE_FILE: ${{ github.event.inputs.compose_file }}
           RAW_IMAGE_TAG: ${{ github.event.inputs.image_tag }}
+          WAIT_SECONDS: ${{ github.event.inputs.wait_seconds }}
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
@@ -45,7 +51,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
-          envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN
+          envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,WAIT_SECONDS,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN
           command_timeout: 30m
           script_stop: true
           script: |
@@ -68,4 +74,23 @@ jobs:
             export IMAGE
             docker compose -f "$COMPOSE_FILE" pull
             docker compose -f "$COMPOSE_FILE" up -d
+
+            end_time=$(( $(date +%s) + WAIT_SECONDS ))
+            while true; do
+              status=$(docker inspect --format='{{if .State.Health}}{{.State.Health.Status}}{{else}}{{.State.Status}}{{end}}' sub2api 2>/dev/null || true)
+              if [ "$status" = "healthy" ] || [ "$status" = "running" ]; then
+                break
+              fi
+
+              if [ "$(date +%s)" -ge "$end_time" ]; then
+                echo "sub2api failed to become healthy, last status: ${status}"
+                docker compose -f "$COMPOSE_FILE" ps
+                docker compose -f "$COMPOSE_FILE" logs --tail 100 sub2api
+                exit 1
+              fi
+
+              sleep 5
+            done
+
+            echo "Deployed image: $IMAGE"
             docker compose -f "$COMPOSE_FILE" ps

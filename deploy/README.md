@@ -290,6 +290,35 @@ Suggested GitHub Environment secrets for Docker deployment:
 - `GHCR_USERNAME` (optional, needed when the package is private)
 - `GHCR_TOKEN` (optional, needed when the package is private)
 
+GitHub setup checklist:
+
+1. Open `Settings` -> `Environments` -> create `production`.
+2. Add the secrets listed above into that environment.
+3. If this is a production server, enable required reviewers for the `production` environment.
+4. Open `Actions` and confirm both workflows exist:
+   - `Release`
+   - `Deploy Docker`
+5. Make sure the package visibility in GitHub Container Registry matches your plan:
+   - Public package: no extra registry login needed on the server.
+   - Private package: keep `GHCR_USERNAME` and `GHCR_TOKEN` in the environment secrets.
+
+First release and deploy flow:
+
+```bash
+git tag -a v1.0.0 -m "first personal release"
+git push origin v1.0.0
+```
+
+Then in GitHub:
+
+1. Wait for the `Release` workflow to finish.
+2. Run `Deploy Docker`.
+3. Use:
+   - `environment=production`
+   - `image_tag=v1.0.0` or `1.0.0`
+   - `compose_file=docker-compose.local.yml`
+   - `wait_seconds=180`
+
 Initial server bootstrap example:
 
 ```bash
