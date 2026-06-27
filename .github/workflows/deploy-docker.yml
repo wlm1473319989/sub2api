@@ -51,6 +51,7 @@ jobs:
           port: ${{ secrets.SSH_PORT || '22' }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
+          password: ${{ secrets.SSH_PASSWORD }}
           envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,WAIT_SECONDS,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN
           command_timeout: 30m
           script: |
