@@ -53,7 +53,6 @@ jobs:
           key: ${{ secrets.SSH_KEY }}
           envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,WAIT_SECONDS,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN
           command_timeout: 30m
-          script_stop: true
           script: |
             set -e
 
