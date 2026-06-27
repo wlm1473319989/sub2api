@@ -35,10 +35,10 @@ Use the automated preparation script for the easiest setup:
 
 ```bash
 # Download and run the preparation script
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh | bash
+curl -sSL https://raw.githubusercontent.com/wlm1473319989/sub2api/main/deploy/docker-deploy.sh | bash
 
 # Or download first, then run
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/docker-deploy.sh -o docker-deploy.sh
+curl -sSL https://raw.githubusercontent.com/wlm1473319989/sub2api/main/deploy/docker-deploy.sh -o docker-deploy.sh
 chmod +x docker-deploy.sh
 ./docker-deploy.sh
 ```
@@ -71,7 +71,7 @@ If you prefer manual control:
 
 ```bash
 # Clone repository
-git clone https://github.com/Wei-Shaw/sub2api.git
+git clone https://github.com/wlm1473319989/sub2api.git
 cd sub2api/deploy
 
 # Configure environment
@@ -225,6 +225,90 @@ See `.env.example` for all available options.
 
 > **Note:** The `docker-deploy.sh` script automatically generates `JWT_SECRET`, `TOTP_ENCRYPTION_KEY`, and `POSTGRES_PASSWORD` for you.
 
+### Where To Put Server Environment Info
+
+Keep server runtime configuration on the server, not in the GitHub release workflow.
+
+- Docker deployment:
+  Use `deploy/.env` on the server for secrets and runtime environment variables such as `POSTGRES_PASSWORD`, `JWT_SECRET`, `TOTP_ENCRYPTION_KEY`, `ADMIN_PASSWORD`, and port settings.
+- Docker deployment with fixed app config:
+  If you need stable structured config, create `deploy/config.yaml` from `deploy/config.example.yaml` on the server and mount it into the container.
+- Binary/systemd deployment:
+  Keep the main app config in `/etc/sub2api/config.yaml`. Put process-level environment values in the systemd unit or an `EnvironmentFile`.
+- GitHub Actions secrets:
+  Use these only for release/deploy credentials, such as `GITHUB_TOKEN`, SSH host/user/key, or registry credentials. Do not treat Actions secrets as the primary home for your app's long-lived server runtime config unless you explicitly want the workflow to rewrite server files.
+
+Recommended split:
+
+- GitHub Actions stores deployment credentials.
+- The server stores application runtime configuration.
+
+### GitHub Actions + Docker Server
+
+For a personal repository, the recommended flow is:
+
+1. Tag a release and let GitHub Actions publish `ghcr.io/<your-github-user>/sub2api:<tag>`.
+2. Keep `deploy/.env`, optional `deploy/config.yaml`, and data directories on the server.
+3. Use a deployment workflow to SSH into the server and run `docker compose pull && docker compose up -d`.
+
+Recommended server directory:
+
+```text
+/opt/sub2api/deploy
+├── .env
+├── docker-compose.local.yml
+├── config.yaml              # optional
+├── data/
+├── postgres_data/
+└── redis_data/
+```
+
+Important notes:
+
+- The deployment workflow should update the image and restart containers only.
+- It should not overwrite the server's `.env` by default.
+- The workflow can inject a temporary `IMAGE=ghcr.io/<your-github-user>/sub2api:<tag>` at deploy time, so you can switch versions without rewriting the server's `.env`.
+- Set the app image in the server's `.env`, for example:
+
+```bash
+IMAGE=ghcr.io/<your-github-user>/sub2api:latest
+```
+
+- If you want to pin a specific release instead of following `latest`, use:
+
+```bash
+IMAGE=ghcr.io/<your-github-user>/sub2api:1.2.3
+```
+
+Suggested GitHub Environment secrets for Docker deployment:
+
+- `SSH_HOST`
+- `SSH_PORT`
+- `SSH_USER`
+- `SSH_KEY`
+- `DEPLOY_PATH` (example: `/opt/sub2api/deploy`)
+- `GHCR_USERNAME` (optional, needed when the package is private)
+- `GHCR_TOKEN` (optional, needed when the package is private)
+
+Initial server bootstrap example:
+
+```bash
+mkdir -p /opt/sub2api/deploy
+cd /opt/sub2api/deploy
+
+# Copy deployment files from this repository
+cp /path/to/repo/deploy/docker-compose.local.yml .
+cp /path/to/repo/deploy/.env.example .env
+
+# Edit .env:
+# - set IMAGE=ghcr.io/<your-github-user>/sub2api:latest
+# - set POSTGRES_PASSWORD / JWT_SECRET / TOTP_ENCRYPTION_KEY
+# - adjust ADMIN_EMAIL / ADMIN_PASSWORD / SERVER_PORT as needed
+
+mkdir -p data postgres_data redis_data
+docker compose -f docker-compose.local.yml up -d
+```
+
 ### Easy Migration (Local Directory Version)
 
 When using `docker-compose.local.yml`, all data is stored in local directories, making migration simple:
@@ -353,12 +437,12 @@ For production servers using systemd.
 ### One-Line Installation
 
 ```bash
-curl -sSL https://raw.githubusercontent.com/Wei-Shaw/sub2api/main/deploy/install.sh | sudo bash
+curl -sSL https://raw.githubusercontent.com/wlm1473319989/sub2api/main/deploy/install.sh | sudo bash
 ```
 
 ### Manual Installation
 
-1. Download the latest release from [GitHub Releases](https://github.com/Wei-Shaw/sub2api/releases)
+1. Download the latest release from [GitHub Releases](https://github.com/wlm1473319989/sub2api/releases)
 2. Extract and copy the binary to `/opt/sub2api/`
 3. Copy `sub2api.service` to `/etc/systemd/system/`
 4. Run:

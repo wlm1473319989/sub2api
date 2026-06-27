@@ -10,7 +10,7 @@ docker run -d \
   -p 18080:18080 \
   -e DATABASE_URL="postgres://user:pass@host:5432/sub2api" \
   -e REDIS_URL="redis://host:6379" \
-  weishaw/sub2api:latest
+  ghcr.io/wlm1473319989/sub2api:latest
 ```
 
 ## Docker Compose
@@ -20,7 +20,7 @@ version: '3.8'
 
 services:
   sub2api:
-    image: weishaw/sub2api:latest
+    image: ghcr.io/wlm1473319989/sub2api:latest
     ports:
       - "18080:18080"
     environment:
@@ -61,16 +61,13 @@ volumes:
 ## Supported Architectures
 
 - `linux/amd64`
-- `linux/arm64`
 
 ## Tags
 
 - `latest` - Latest stable release
 - `x.y.z` - Specific version
-- `x.y` - Latest patch of minor version
-- `x` - Latest minor of major version
 
 ## Links
 
-- [GitHub Repository](https://github.com/weishaw/sub2api)
-- [Documentation](https://github.com/weishaw/sub2api#readme)
+- [GitHub Repository](https://github.com/wlm1473319989/sub2api)
+- [Documentation](https://github.com/wlm1473319989/sub2api#readme)
