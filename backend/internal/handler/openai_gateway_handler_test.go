@@ -1,9 +1,11 @@
 package handler
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
+	"io"
 	"net/http"
 	"net/http/httptest"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/config"
 	pkghttputil "github.com/Wei-Shaw/sub2api/internal/pkg/httputil"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
+	"github.com/Wei-Shaw/sub2api/internal/pkg/tlsfingerprint"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
 	"github.com/Wei-Shaw/sub2api/internal/service"
 	coderws "github.com/coder/websocket"
@@ -559,36 +562,52 @@ func TestOpenAIResponses_RejectsMessageIDAsPreviousResponseID(t *testing.T) {
 	require.Contains(t, w.Body.String(), "previous_response_id must be a response.id")
 }
 
-func TestOpenAIResponses_RejectsHTTPContinuationPreviousResponseID(t *testing.T) {
-	gin.SetMode(gin.TestMode)
+func TestOpenAIResponses_HTTPContinuationPreviousResponseIDSafetyFallback(t *testing.T) {
+	body := []byte(`{"model":"gpt-5.1","stream":false,"previous_response_id":"resp_123456","input":[{"type":"input_text","text":"hello"}]}`)
 
-	w := httptest.NewRecorder()
-	c, _ := gin.CreateTestContext(w)
-	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", strings.NewReader(
-		`{"model":"gpt-5.1","stream":false,"previous_response_id":"resp_123456","input":[{"type":"input_text","text":"hello"}]}`,
-	))
-	c.Request.Header.Set("Content-Type", "application/json")
+	stickyBody, stripped := openAIResponsesForwardBodyForSchedule(body, "resp_123456", service.OpenAIAccountScheduleDecision{StickyPreviousHit: true})
+	require.False(t, stripped)
+	require.Equal(t, "resp_123456", gjson.GetBytes(stickyBody, "previous_response_id").String())
 
-	groupID := int64(2)
-	c.Set(string(middleware.ContextKeyAPIKey), &service.APIKey{
-		ID:      101,
-		GroupID: &groupID,
-		User:    &service.User{ID: 1},
-	})
-	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{
-		UserID:      1,
-		Concurrency: 1,
-	})
+	replayBody, stripped := openAIResponsesForwardBodyForSchedule(body, "resp_123456", service.OpenAIAccountScheduleDecision{StickyPreviousHit: false})
+	require.True(t, stripped)
+	require.False(t, gjson.GetBytes(replayBody, "previous_response_id").Exists())
 
-	h := newOpenAIHandlerForPreviousResponseIDValidation(t, nil)
-	h.Responses(c)
-
-	require.Equal(t, http.StatusBadRequest, w.Code)
-	require.Contains(t, w.Body.String(), "Responses WebSocket v2")
-	require.Contains(t, w.Body.String(), "previous_response_id")
+	toolOutputBody := []byte(`{"model":"gpt-5.1","stream":false,"previous_response_id":"resp_tool_123","input":[{"type":"function_call_output","call_id":"call_1","output":"{}"}]}`)
+	toolBody, stripped := openAIResponsesForwardBodyForSchedule(toolOutputBody, "resp_tool_123", service.OpenAIAccountScheduleDecision{StickyPreviousHit: false})
+	require.False(t, stripped)
+	require.Equal(t, "resp_tool_123", gjson.GetBytes(toolBody, "previous_response_id").String())
 }
 
-func TestOpenAIResponses_FunctionCallOutputHTTPGuidanceDoesNotSuggestPreviousResponseReuse(t *testing.T) {
+func TestOpenAIResponses_StripsHTTPContinuationPreviousResponseIDOnStickyMiss(t *testing.T) {
+	h, upstream, apiKey := newOpenAIResponsesHTTPContinuationTestHandler(t)
+
+	w := httptest.NewRecorder()
+	c := newOpenAIResponsesHTTPContinuationTestContext(t, w, apiKey,
+		`{"model":"gpt-5.1","stream":false,"previous_response_id":"resp_123456","input":[{"type":"input_text","text":"hello"}]}`,
+	)
+
+	h.Responses(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.False(t, gjson.GetBytes(upstream.lastBodyBytes(t), "previous_response_id").Exists())
+}
+
+func TestOpenAIResponses_PreservesHTTPContinuationPreviousResponseIDForFunctionCallOutput(t *testing.T) {
+	h, upstream, apiKey := newOpenAIResponsesHTTPContinuationTestHandler(t)
+
+	w := httptest.NewRecorder()
+	c := newOpenAIResponsesHTTPContinuationTestContext(t, w, apiKey,
+		`{"model":"gpt-5.1","stream":false,"previous_response_id":"resp_tool_123","input":[{"type":"function_call_output","call_id":"call_1","output":"{}"}]}`,
+	)
+
+	h.Responses(c)
+
+	require.Equal(t, http.StatusOK, w.Code)
+	require.Equal(t, "resp_tool_123", gjson.GetBytes(upstream.lastBodyBytes(t), "previous_response_id").String())
+}
+
+func TestOpenAIResponses_FunctionCallOutputHTTPGuidanceAllowsPreviousResponseID(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 
 	w := httptest.NewRecorder()
@@ -613,7 +632,8 @@ func TestOpenAIResponses_FunctionCallOutputHTTPGuidanceDoesNotSuggestPreviousRes
 	h.Responses(c)
 
 	require.Equal(t, http.StatusBadRequest, w.Code)
-	require.Contains(t, w.Body.String(), "Responses WebSocket v2")
+	require.Contains(t, w.Body.String(), "include previous_response_id")
+	require.NotContains(t, w.Body.String(), "Responses WebSocket v2")
 	require.NotContains(t, w.Body.String(), "reuse previous_response_id")
 }
 
@@ -1082,6 +1102,219 @@ func newOpenAIHandlerForPreviousResponseIDValidation(t *testing.T, cache *concur
 		apiKeyService:       &service.APIKeyService{},
 		concurrencyHelper:   NewConcurrencyHelper(service.NewConcurrencyService(cache), SSEPingFormatNone, time.Second),
 	}
+}
+
+type openAIResponsesHandlerAccountRepo struct {
+	service.AccountRepository
+	accounts []service.Account
+}
+
+func (r *openAIResponsesHandlerAccountRepo) GetByID(ctx context.Context, id int64) (*service.Account, error) {
+	for i := range r.accounts {
+		if r.accounts[i].ID == id {
+			account := r.accounts[i]
+			return &account, nil
+		}
+	}
+	return nil, errors.New("account not found")
+}
+
+func (r *openAIResponsesHandlerAccountRepo) ListSchedulableByGroupIDAndPlatform(ctx context.Context, groupID int64, platform string) ([]service.Account, error) {
+	return r.listByPlatform(platform), nil
+}
+
+func (r *openAIResponsesHandlerAccountRepo) ListSchedulableByPlatform(ctx context.Context, platform string) ([]service.Account, error) {
+	return r.listByPlatform(platform), nil
+}
+
+func (r *openAIResponsesHandlerAccountRepo) ListSchedulableUngroupedByPlatform(ctx context.Context, platform string) ([]service.Account, error) {
+	return r.listByPlatform(platform), nil
+}
+
+func (r *openAIResponsesHandlerAccountRepo) listByPlatform(platform string) []service.Account {
+	result := make([]service.Account, 0, len(r.accounts))
+	for _, account := range r.accounts {
+		if account.Platform == platform {
+			result = append(result, account)
+		}
+	}
+	return result
+}
+
+type openAIResponsesHandlerGatewayCache struct {
+	mu              sync.Mutex
+	sessionBindings map[string]int64
+}
+
+func (c *openAIResponsesHandlerGatewayCache) GetSessionAccountID(ctx context.Context, groupID int64, sessionHash string) (int64, error) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.sessionBindings != nil {
+		if accountID, ok := c.sessionBindings[sessionHash]; ok {
+			return accountID, nil
+		}
+	}
+	return 0, errors.New("not found")
+}
+
+func (c *openAIResponsesHandlerGatewayCache) SetSessionAccountID(ctx context.Context, groupID int64, sessionHash string, accountID int64, ttl time.Duration) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	if c.sessionBindings == nil {
+		c.sessionBindings = make(map[string]int64)
+	}
+	c.sessionBindings[sessionHash] = accountID
+	return nil
+}
+
+func (c *openAIResponsesHandlerGatewayCache) RefreshSessionTTL(ctx context.Context, groupID int64, sessionHash string, ttl time.Duration) error {
+	return nil
+}
+
+func (c *openAIResponsesHandlerGatewayCache) DeleteSessionAccountID(ctx context.Context, groupID int64, sessionHash string) error {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	delete(c.sessionBindings, sessionHash)
+	return nil
+}
+
+type openAIResponsesHandlerHTTPUpstreamRecorder struct {
+	mu       sync.Mutex
+	lastBody []byte
+}
+
+func (u *openAIResponsesHandlerHTTPUpstreamRecorder) Do(req *http.Request, proxyURL string, accountID int64, accountConcurrency int) (*http.Response, error) {
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	if req != nil && req.Body != nil {
+		body, _ := io.ReadAll(req.Body)
+		u.lastBody = append([]byte(nil), body...)
+		_ = req.Body.Close()
+		req.Body = io.NopCloser(bytes.NewReader(body))
+	}
+	return &http.Response{
+		StatusCode: http.StatusOK,
+		Header:     http.Header{"Content-Type": []string{"application/json"}},
+		Body: io.NopCloser(strings.NewReader(
+			`{"id":"resp_handler_ok","model":"gpt-5.1","usage":{"input_tokens":1,"output_tokens":1,"input_tokens_details":{"cached_tokens":0}},"output":[]}`,
+		)),
+	}, nil
+}
+
+func (u *openAIResponsesHandlerHTTPUpstreamRecorder) DoWithTLS(req *http.Request, proxyURL string, accountID int64, accountConcurrency int, profile *tlsfingerprint.Profile) (*http.Response, error) {
+	return u.Do(req, proxyURL, accountID, accountConcurrency)
+}
+
+func (u *openAIResponsesHandlerHTTPUpstreamRecorder) lastBodyBytes(t *testing.T) []byte {
+	t.Helper()
+	u.mu.Lock()
+	defer u.mu.Unlock()
+	require.NotEmpty(t, u.lastBody)
+	return append([]byte(nil), u.lastBody...)
+}
+
+func newOpenAIResponsesHTTPContinuationTestHandler(t *testing.T) (*OpenAIGatewayHandler, *openAIResponsesHandlerHTTPUpstreamRecorder, *service.APIKey) {
+	t.Helper()
+	gin.SetMode(gin.TestMode)
+
+	cfg := &config.Config{}
+	cfg.RunMode = config.RunModeSimple
+	cfg.Default.RateMultiplier = 1
+	cfg.Security.URLAllowlist.Enabled = false
+	cfg.Gateway.OpenAIWS.Enabled = true
+	cfg.Gateway.OpenAIWS.APIKeyEnabled = true
+	cfg.Gateway.OpenAIWS.ResponsesWebsocketsV2 = true
+	cfg.Gateway.OpenAIWS.StickyResponseIDTTLSeconds = 3600
+
+	groupID := int64(4202)
+	account := service.Account{
+		ID:          9701,
+		Name:        "openai-http-continuation-test",
+		Platform:    service.PlatformOpenAI,
+		Type:        service.AccountTypeAPIKey,
+		Status:      service.StatusActive,
+		Schedulable: true,
+		Concurrency: 1,
+		GroupIDs:    []int64{groupID},
+		Credentials: map[string]any{
+			"api_key":  "sk-test",
+			"base_url": "https://api.openai.com/v1",
+		},
+		Extra: map[string]any{
+			"openai_apikey_responses_websockets_v2_enabled": true,
+		},
+	}
+	accountRepo := &openAIResponsesHandlerAccountRepo{accounts: []service.Account{account}}
+	cache := &openAIResponsesHandlerGatewayCache{sessionBindings: make(map[string]int64)}
+
+	settingRepo := &contentModerationHandlerSettingRepo{values: map[string]string{
+		"openai_advanced_scheduler_enabled": "true",
+	}}
+	settingService := service.NewSettingService(settingRepo, cfg)
+	rateLimitService := service.NewRateLimitService(accountRepo, nil, cfg, nil, nil)
+	rateLimitService.SetSettingService(settingService)
+	billingCacheService := service.NewBillingCacheService(nil, nil, nil, nil, nil, nil, cfg, nil)
+	concurrencyService := service.NewConcurrencyService(&concurrencyCacheMock{
+		acquireUserSlotFn: func(ctx context.Context, userID int64, maxConcurrency int, requestID string) (bool, error) {
+			return true, nil
+		},
+		acquireAccountSlotFn: func(ctx context.Context, accountID int64, maxConcurrency int, requestID string) (bool, error) {
+			return true, nil
+		},
+	})
+	upstream := &openAIResponsesHandlerHTTPUpstreamRecorder{}
+	gatewayService := service.NewOpenAIGatewayService(
+		accountRepo,
+		nil,
+		nil,
+		nil,
+		nil,
+		nil,
+		cache,
+		cfg,
+		nil,
+		concurrencyService,
+		service.NewBillingService(cfg, nil),
+		rateLimitService,
+		billingCacheService,
+		upstream,
+		&service.DeferredService{},
+		nil,
+		nil,
+		nil,
+		nil,
+		settingService,
+		nil,
+	)
+
+	apiKey := &service.APIKey{
+		ID:      8801,
+		GroupID: &groupID,
+		User:    &service.User{ID: 7701, Status: service.StatusActive, Balance: 10},
+		Group:   &service.Group{ID: groupID, Platform: service.PlatformOpenAI, Status: service.StatusActive},
+	}
+	return &OpenAIGatewayHandler{
+		gatewayService:      gatewayService,
+		billingCacheService: billingCacheService,
+		apiKeyService:       &service.APIKeyService{},
+		concurrencyHelper:   NewConcurrencyHelper(concurrencyService, SSEPingFormatNone, time.Second),
+		maxAccountSwitches:  1,
+		cfg:                 cfg,
+	}, upstream, apiKey
+}
+
+func newOpenAIResponsesHTTPContinuationTestContext(t *testing.T, w *httptest.ResponseRecorder, apiKey *service.APIKey, body string) *gin.Context {
+	t.Helper()
+	c, _ := gin.CreateTestContext(w)
+	c.Request = httptest.NewRequest(http.MethodPost, "/openai/v1/responses", strings.NewReader(body))
+	c.Request.Header.Set("Content-Type", "application/json")
+	c.Request.Header.Set("User-Agent", "custom-client/1.0")
+	c.Set(string(middleware.ContextKeyAPIKey), apiKey)
+	c.Set(string(middleware.ContextKeyUser), middleware.AuthSubject{
+		UserID:      apiKey.User.ID,
+		Concurrency: 1,
+	})
+	return c
 }
 
 func newOpenAIWSHandlerTestServer(t *testing.T, h *OpenAIGatewayHandler, subject middleware.AuthSubject) *httptest.Server {
