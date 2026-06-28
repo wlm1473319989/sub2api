@@ -277,12 +277,12 @@ func TestApplyUsageBilling_InvalidatesAuthCacheByUserWhenCommittedBalanceNonPosi
 type finalizeBillingCacheStub struct {
 	BillingCache
 
-	setCalls             int64
-	setIfLowerCalls      int64
-	deductCalls          int64
-	invalidateCalls      int64
-	setErr               error
-	lastSetBalance       float64
+	setCalls              int64
+	setIfLowerCalls       int64
+	deductCalls           int64
+	invalidateCalls       int64
+	setErr                error
+	lastSetBalance        float64
 	lastSetIfLowerBalance float64
 }
 
@@ -331,6 +331,39 @@ func TestFinalizePostUsageBilling_SyncsCommittedNonPositiveBalanceCache(t *testi
 	require.Equal(t, newBalance, cache.lastSetBalance)
 	require.Equal(t, int64(0), atomic.LoadInt64(&cache.deductCalls))
 	require.Equal(t, int64(0), atomic.LoadInt64(&cache.invalidateCalls))
+}
+
+func TestApplyUsageBilling_UsesActualBalanceDeductedFromRepo(t *testing.T) {
+	t.Parallel()
+
+	newBalance := 0.0
+	deducted := 0.25
+	log := &UsageLog{
+		RequestID:  "req-balance-floor-log",
+		Model:      "gpt-5",
+		TotalCost:  1.0,
+		ActualCost: 1.0,
+	}
+
+	applied, err := applyUsageBilling(context.Background(), log.RequestID, log, &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 1},
+		APIKey:                &APIKey{ID: 2},
+		Account:               &Account{ID: 3},
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{}, &openAIRecordUsageBillingRepoStub{
+		result: &UsageBillingApplyResult{
+			Applied:         true,
+			NewBalance:      &newBalance,
+			BalanceDeducted: &deducted,
+		},
+	})
+
+	require.NoError(t, err)
+	require.True(t, applied)
+	require.InDelta(t, deducted, log.BalanceCost, 1e-12)
+	require.InDelta(t, deducted, log.ActualCost, 1e-12)
+	require.Equal(t, BillingTypeBalance, log.BillingType)
 }
 
 func TestFinalizePostUsageBilling_QueuesExactPositiveBalanceCacheUpdate(t *testing.T) {

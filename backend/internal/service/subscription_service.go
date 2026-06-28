@@ -787,14 +787,14 @@ func (s *SubscriptionService) ValidateAndCheckLimits(sub *UserSubscription, grou
 		needsMaintenance = true
 	}
 
-	// 3. 检查用量限额
-	if !sub.CheckDailyLimit(0) {
+	// 3. 检查下一次请求是否仍有可用订阅额度。
+	if !sub.CheckDailyLimitForNextRequest() {
 		return needsMaintenance, ErrDailyLimitExceeded
 	}
-	if !sub.CheckWeeklyLimit(0) {
+	if !sub.CheckWeeklyLimitForNextRequest() {
 		return needsMaintenance, ErrWeeklyLimitExceeded
 	}
-	if !sub.CheckMonthlyLimit(0) {
+	if !sub.CheckMonthlyLimitForNextRequest() {
 		return needsMaintenance, ErrMonthlyLimitExceeded
 	}
 

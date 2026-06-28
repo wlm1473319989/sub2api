@@ -8903,6 +8903,39 @@ type usageBillingSplit struct {
 	EffectiveRateMultiplier    float64
 }
 
+func balanceCostApplied(split usageBillingSplit, result *UsageBillingApplyResult) float64 {
+	if result != nil && result.BalanceDeducted != nil {
+		if *result.BalanceDeducted < 0 {
+			return 0
+		}
+		return *result.BalanceDeducted
+	}
+	return split.BalanceCost
+}
+
+func applyUsageBillingResultToUsageLog(usageLog *UsageLog, result *UsageBillingApplyResult) {
+	if usageLog == nil || result == nil || result.BalanceDeducted == nil {
+		return
+	}
+	deducted := *result.BalanceDeducted
+	if deducted < 0 {
+		deducted = 0
+	}
+	usageLog.BalanceCost = deducted
+	usageLog.ActualCost = usageLog.SubscriptionCost + usageLog.BalanceCost
+	if usageLog.TotalCost > 0 {
+		usageLog.RateMultiplier = usageLog.ActualCost / usageLog.TotalCost
+	}
+	switch {
+	case usageLog.SubscriptionCost > 0 && usageLog.BalanceCost > 0:
+		usageLog.BillingType = BillingTypeMixed
+	case usageLog.SubscriptionCost > 0:
+		usageLog.BillingType = BillingTypeSubscription
+	case usageLog.BalanceCost > 0:
+		usageLog.BillingType = BillingTypeBalance
+	}
+}
+
 func (s usageBillingSplit) hasSubscriptionCost() bool {
 	return s.SubscriptionCost > 0
 }
@@ -9261,6 +9294,7 @@ func applyUsageBilling(ctx context.Context, requestID string, usageLog *UsageLog
 			invalidator.InvalidateAuthCacheByUserID(billingCtx, p.User.ID)
 		}
 	}
+	applyUsageBillingResultToUsageLog(usageLog, result)
 
 	finalizePostUsageBilling(billingCtx, p, deps, result)
 	return true, nil
@@ -9272,6 +9306,7 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 	}
 
 	split := resolveUsageBillingSplit(p)
+	appliedBalanceCost := balanceCostApplied(split, result)
 
 	if split.hasBalanceCost() && p.User != nil && deps.billingCacheService != nil {
 		if result == nil || result.NewBalance == nil {
@@ -9304,13 +9339,13 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 	//     限制在并发 in-flight 请求数量内（旧实现的异步入队会让超支无限累积直到 worker 处理）
 	//   - DB 异步(flusher_enabled=false):在独立 goroutine 中走 detached context,失败用 ALERT log 触发 oncall 对账
 	//   - flusher_enabled=true:不直写 DB,由 flusher 异步批量刷（markDirty 已在 IncrementUserPlatformQuotaUsage 内部完成）
-	if split.hasBalanceCost() && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil && deps.billingCacheService != nil {
+	if appliedBalanceCost > 0 && p.Platform != "" && p.User != nil && deps.userPlatformQuotaRepo != nil && deps.billingCacheService != nil {
 		if deps.billingCacheService.HasUserPlatformQuotaLimit(ctx, p.User.ID, p.Platform) {
-			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, split.BalanceCost)
+			deps.billingCacheService.IncrementUserPlatformQuotaUsage(p.User.ID, p.Platform, appliedBalanceCost)
 			if deps.cfg == nil || !deps.cfg.Database.UserPlatformQuotaFlusherEnabled {
 				// 降级路径:flusher 未启用时保留原有异步直写 DB
 				dbCtx, dbCancel := detachUpstreamContext(ctx)
-				userID, platform, cost := p.User.ID, p.Platform, split.BalanceCost
+				userID, platform, cost := p.User.ID, p.Platform, appliedBalanceCost
 				go func() {
 					defer func() {
 						if r := recover(); r != nil {
@@ -9347,10 +9382,11 @@ func notifyBalanceLow(p *postUsageBillingParams, deps *billingDeps, result *Usag
 		}
 	}()
 	split := resolveUsageBillingSplit(p)
-	if !split.hasBalanceCost() || p.User == nil || deps.balanceNotifyService == nil {
+	appliedBalanceCost := balanceCostApplied(split, result)
+	if appliedBalanceCost <= 0 || p.User == nil || deps.balanceNotifyService == nil {
 		slog.Debug("notifyBalanceLow: skipped",
 			"has_subscription_cost", split.hasSubscriptionCost(),
-			"balance_cost", split.BalanceCost,
+			"balance_cost", appliedBalanceCost,
 			"user_nil", p.User == nil,
 			"service_nil", deps.balanceNotifyService == nil,
 		)
@@ -9361,12 +9397,12 @@ func notifyBalanceLow(p *postUsageBillingParams, deps *billingDeps, result *Usag
 	slog.Debug("notifyBalanceLow: calling CheckBalanceAfterDeduction",
 		"user_id", p.User.ID,
 		"old_balance", oldBalance,
-		"cost", split.BalanceCost,
+		"cost", appliedBalanceCost,
 		"notify_enabled", p.User.BalanceNotifyEnabled,
 		"threshold", p.User.BalanceNotifyThreshold,
 		"result_has_new_balance", result != nil && result.NewBalance != nil,
 	)
-	deps.balanceNotifyService.CheckBalanceAfterDeduction(context.Background(), p.User, oldBalance, split.BalanceCost)
+	deps.balanceNotifyService.CheckBalanceAfterDeduction(context.Background(), p.User, oldBalance, appliedBalanceCost)
 }
 
 // resolveOldBalance returns the pre-deduction balance.
@@ -9374,7 +9410,7 @@ func notifyBalanceLow(p *postUsageBillingParams, deps *billingDeps, result *Usag
 func resolveOldBalance(p *postUsageBillingParams, result *UsageBillingApplyResult) float64 {
 	split := resolveUsageBillingSplit(p)
 	if result != nil && result.NewBalance != nil {
-		return *result.NewBalance + split.BalanceCost
+		return *result.NewBalance + balanceCostApplied(split, result)
 	}
 	// Legacy fallback: snapshot balance from request context
 	return p.User.Balance

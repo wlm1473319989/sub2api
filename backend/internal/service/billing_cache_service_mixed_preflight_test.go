@@ -117,6 +117,42 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 			},
 			wantErr: ErrSubscriptionInvalid,
 		},
+		{
+			name:  "exactly_exhausted_subscription_with_empty_balance_rejects",
+			cache: &mixedPreflightCache{balance: 0},
+			subscription: func() *UserSubscription {
+				now := time.Now().UTC()
+				quota := 10.0
+				return &UserSubscription{
+					ID:               88,
+					UserID:           42,
+					Status:           SubscriptionStatusActive,
+					ExpiresAt:        now.Add(24 * time.Hour),
+					DailyWindowStart: &now,
+					DailyQuotaKnives: &quota,
+					DailyUsedKnives:  quota,
+				}
+			}(),
+			wantErr: ErrDailyLimitExceeded,
+		},
+		{
+			name:  "exactly_exhausted_subscription_falls_back_to_positive_balance",
+			cache: &mixedPreflightCache{balance: 12},
+			subscription: func() *UserSubscription {
+				now := time.Now().UTC()
+				quota := 10.0
+				return &UserSubscription{
+					ID:               88,
+					UserID:           42,
+					Status:           SubscriptionStatusActive,
+					ExpiresAt:        now.Add(24 * time.Hour),
+					DailyWindowStart: &now,
+					DailyQuotaKnives: &quota,
+					DailyUsedKnives:  quota,
+				}
+			}(),
+			wantSubResolved: false,
+		},
 	}
 
 	for _, tc := range cases {

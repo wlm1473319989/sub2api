@@ -22,15 +22,15 @@ type UserSubscription struct {
 	WeeklyUsageUSD  float64
 	MonthlyUsageUSD float64
 
-	DailyQuotaKnives   *float64
-	WeeklyQuotaKnives  *float64
-	MonthlyQuotaKnives *float64
-	DailyUsedKnives    float64
-	WeeklyUsedKnives   float64
-	MonthlyUsedKnives  float64
-	RefundFreezeActive bool
+	DailyQuotaKnives      *float64
+	WeeklyQuotaKnives     *float64
+	MonthlyQuotaKnives    *float64
+	DailyUsedKnives       float64
+	WeeklyUsedKnives      float64
+	MonthlyUsedKnives     float64
+	RefundFreezeActive    bool
 	ActiveRefundRequestID *int64
-	ActiveRefundStatus *string
+	ActiveRefundStatus    *string
 
 	SupersededByID *int64
 
@@ -134,6 +134,13 @@ func (s *UserSubscription) CheckDailyLimit(additionalCost float64) bool {
 	return s.DailyUsedKnives+additionalCost <= *s.DailyQuotaKnives
 }
 
+func (s *UserSubscription) CheckDailyLimitForNextRequest() bool {
+	if s.DailyQuotaKnives == nil || *s.DailyQuotaKnives <= 0 {
+		return true
+	}
+	return s.DailyUsedKnives < *s.DailyQuotaKnives
+}
+
 func (s *UserSubscription) CheckWeeklyLimit(additionalCost float64) bool {
 	if s.WeeklyQuotaKnives == nil || *s.WeeklyQuotaKnives <= 0 {
 		return true
@@ -141,11 +148,25 @@ func (s *UserSubscription) CheckWeeklyLimit(additionalCost float64) bool {
 	return s.WeeklyUsedKnives+additionalCost <= *s.WeeklyQuotaKnives
 }
 
+func (s *UserSubscription) CheckWeeklyLimitForNextRequest() bool {
+	if s.WeeklyQuotaKnives == nil || *s.WeeklyQuotaKnives <= 0 {
+		return true
+	}
+	return s.WeeklyUsedKnives < *s.WeeklyQuotaKnives
+}
+
 func (s *UserSubscription) CheckMonthlyLimit(additionalCost float64) bool {
 	if s.MonthlyQuotaKnives == nil || *s.MonthlyQuotaKnives <= 0 {
 		return true
 	}
 	return s.MonthlyUsedKnives+additionalCost <= *s.MonthlyQuotaKnives
+}
+
+func (s *UserSubscription) CheckMonthlyLimitForNextRequest() bool {
+	if s.MonthlyQuotaKnives == nil || *s.MonthlyQuotaKnives <= 0 {
+		return true
+	}
+	return s.MonthlyUsedKnives < *s.MonthlyQuotaKnives
 }
 
 func (s *UserSubscription) CheckAllLimits(additionalCost float64) (daily, weekly, monthly bool) {

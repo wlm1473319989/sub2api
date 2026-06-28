@@ -1011,13 +1011,13 @@ func (s *BillingCacheService) checkSubscriptionEligibility(ctx context.Context, 
 		subCopy.MonthlyUsedKnives = 0
 	}
 
-	if !subCopy.CheckDailyLimit(0) {
+	if !subCopy.CheckDailyLimitForNextRequest() {
 		return ErrDailyLimitExceeded
 	}
-	if !subCopy.CheckWeeklyLimit(0) {
+	if !subCopy.CheckWeeklyLimitForNextRequest() {
 		return ErrWeeklyLimitExceeded
 	}
-	if !subCopy.CheckMonthlyLimit(0) {
+	if !subCopy.CheckMonthlyLimitForNextRequest() {
 		return ErrMonthlyLimitExceeded
 	}
 

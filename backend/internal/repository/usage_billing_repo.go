@@ -113,11 +113,12 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 	}
 
 	if cmd.BalanceCost > 0 {
-		newBalance, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
+		newBalance, deducted, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
 		if err != nil {
 			return err
 		}
 		result.NewBalance = &newBalance
+		result.BalanceDeducted = &deducted
 	}
 
 	if cmd.APIKeyQuotaCost > 0 {
@@ -173,22 +174,41 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	return service.ErrSubscriptionNotFound
 }
 
-func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, error) {
+func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, float64, error) {
 	var newBalance float64
+	var deducted float64
 	err := tx.QueryRowContext(ctx, `
-		UPDATE users
-		SET balance = balance - $1,
-			updated_at = NOW()
-		WHERE id = $2 AND deleted_at IS NULL
-		RETURNING balance
-	`, amount, userID).Scan(&newBalance)
+		WITH target AS (
+			SELECT id, balance AS old_balance
+			FROM users
+			WHERE id = $2 AND deleted_at IS NULL
+			FOR UPDATE
+		), updated AS (
+			UPDATE users u
+			SET balance = CASE
+					WHEN target.old_balance > $1 THEN target.old_balance - $1
+					ELSE 0
+				END,
+				updated_at = NOW()
+			FROM target
+			WHERE u.id = target.id
+			RETURNING
+				u.balance AS new_balance,
+				CASE
+					WHEN target.old_balance <= 0 THEN 0
+					WHEN target.old_balance >= $1 THEN $1
+					ELSE target.old_balance
+				END AS deducted
+		)
+		SELECT new_balance, deducted FROM updated
+	`, amount, userID).Scan(&newBalance, &deducted)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, service.ErrUserNotFound
+		return 0, 0, service.ErrUserNotFound
 	}
 	if err != nil {
-		return 0, err
+		return 0, 0, err
 	}
-	return newBalance, nil
+	return newBalance, deducted, nil
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

@@ -160,3 +160,23 @@ func TestValidateAndCheckLimits_DailyCardDoesNotAllowSecondQuotaAfterMidnight(t 
 	require.True(t, errors.Is(err, ErrDailyLimitExceeded))
 	require.Equal(t, dailyLimit+0.01, sub.DailyUsageUSD, "hot path should not clear already-used daily card quota")
 }
+
+func TestValidateAndCheckLimits_ExactQuotaExhaustedRejectsNextRequest(t *testing.T) {
+	start := time.Now().Add(-time.Hour)
+	dailyWindowStart := start
+	dailyLimit := 10.0
+	sub := &UserSubscription{
+		Status:           SubscriptionStatusActive,
+		StartsAt:         start,
+		ExpiresAt:        start.Add(24 * time.Hour),
+		DailyWindowStart: &dailyWindowStart,
+		DailyUsedKnives:  dailyLimit,
+		DailyQuotaKnives: &dailyLimit,
+	}
+	svc := NewSubscriptionService(groupRepoNoop{}, userSubRepoNoop{}, nil, nil, nil)
+
+	needsMaintenance, err := svc.ValidateAndCheckLimits(sub, &Group{})
+
+	require.False(t, needsMaintenance)
+	require.True(t, errors.Is(err, ErrDailyLimitExceeded))
+}
