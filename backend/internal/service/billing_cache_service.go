@@ -49,11 +49,17 @@ type subscriptionCacheData struct {
 	Version      int64
 }
 
+type balanceFloorState struct {
+	value     float64
+	expiresAt time.Time
+}
+
 // 缓存写入任务类型
 type cacheWriteKind int
 
 const (
 	cacheWriteSetBalance cacheWriteKind = iota
+	cacheWriteSyncCommittedBalance
 	cacheWriteSetSubscription
 	cacheWriteUpdateSubscriptionUsage
 	cacheWriteDeductBalance
@@ -79,6 +85,7 @@ const (
 	cacheWriteTimeout         = 2 * time.Second // 单个写入操作超时
 	cacheWriteDropLogInterval = 5 * time.Second // 丢弃日志节流间隔
 	balanceLoadTimeout        = 3 * time.Second
+	balanceFloorTTL           = 5 * time.Minute
 )
 
 // cacheWriteTask 缓存写入任务
@@ -116,6 +123,8 @@ type BillingCacheService struct {
 	stopped            atomic.Bool
 	balanceLoadSF      singleflight.Group
 	quotaLoadSF        singleflight.Group
+	balanceFloorMu     sync.Mutex
+	balanceFloors      map[int64]balanceFloorState
 	// 丢弃日志节流计数器（减少高负载下日志噪音）
 	cacheWriteDropFullCount     uint64
 	cacheWriteDropFullLastLog   int64
@@ -143,6 +152,7 @@ func NewBillingCacheService(
 		userGroupRateRepo:     userGroupRateRepo,
 		cfg:                   cfg,
 		userPlatformQuotaRepo: userPlatformQuotaRepo,
+		balanceFloors:         make(map[int64]balanceFloorState),
 	}
 	svc.circuitBreaker = newBillingCircuitBreaker(cfg.Billing.CircuitBreaker)
 	svc.startCacheWriteWorkers()
@@ -214,7 +224,9 @@ func (s *BillingCacheService) cacheWriteWorker(ch <-chan cacheWriteTask) {
 		ctx, cancel := context.WithTimeout(context.Background(), cacheWriteTimeout)
 		switch task.kind {
 		case cacheWriteSetBalance:
-			s.setBalanceCache(ctx, task.userID, task.balance)
+			s.setBalanceCacheIfLower(ctx, task.userID, task.balance)
+		case cacheWriteSyncCommittedBalance:
+			s.setBalanceCacheIfLower(ctx, task.userID, task.balance)
 		case cacheWriteSetSubscription:
 			s.setSubscriptionCache(ctx, task.userID, task.subscriptionData)
 		case cacheWriteUpdateSubscriptionUsage:
@@ -245,6 +257,8 @@ func cacheWriteKindName(kind cacheWriteKind) string {
 	switch kind {
 	case cacheWriteSetBalance:
 		return "set_balance"
+	case cacheWriteSyncCommittedBalance:
+		return "sync_committed_balance"
 	case cacheWriteSetSubscription:
 		return "set_subscription"
 	case cacheWriteUpdateSubscriptionUsage:
@@ -311,7 +325,7 @@ func (s *BillingCacheService) GetUserBalance(ctx context.Context, userID int64) 
 	// 尝试从缓存读取
 	balance, err := s.cache.GetUserBalance(ctx, userID)
 	if err == nil {
-		return balance, nil
+		return s.applyBalanceFloor(userID, balance), nil
 	}
 
 	// 缓存未命中：singleflight 合并同一 userID 的并发回源请求。
@@ -361,6 +375,53 @@ func (s *BillingCacheService) setBalanceCache(ctx context.Context, userID int64,
 	}
 }
 
+func (s *BillingCacheService) setBalanceCacheIfLower(ctx context.Context, userID int64, balance float64) {
+	if s.cache == nil {
+		return
+	}
+	if err := s.cache.SetUserBalanceIfLower(ctx, userID, balance); err != nil {
+		logger.LegacyPrintf("service.billing_cache", "Warning: set lower balance cache failed for user %d: %v", userID, err)
+	}
+}
+
+// SyncCommittedUserBalance overwrites the cached balance with the exact
+// committed DB value. Callers should reserve this for boundary cases where
+// stale cached positives would incorrectly keep requests flowing.
+func (s *BillingCacheService) SyncCommittedUserBalance(ctx context.Context, userID int64, balance float64) error {
+	if s.cache == nil {
+		return nil
+	}
+	if balance <= 0 {
+		s.rememberBalanceFloor(userID, balance)
+	}
+	if err := s.cache.SetUserBalance(ctx, userID, balance); err != nil {
+		logger.LegacyPrintf("service.billing_cache", "Warning: sync committed balance cache failed for user %d: %v", userID, err)
+		return err
+	}
+	return nil
+}
+
+// QueueSyncCommittedUserBalance 异步写入已提交的新余额。
+// 该路径只允许将缓存写到更低余额，避免旧异步任务把更低/非正余额回抬。
+func (s *BillingCacheService) QueueSyncCommittedUserBalance(userID int64, balance float64) {
+	if s.cache == nil {
+		return
+	}
+	if balance <= 0 {
+		s.rememberBalanceFloor(userID, balance)
+	}
+	if s.enqueueCacheWrite(cacheWriteTask{
+		kind:    cacheWriteSyncCommittedBalance,
+		userID:  userID,
+		balance: balance,
+	}) {
+		return
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), cacheWriteTimeout)
+	defer cancel()
+	s.setBalanceCacheIfLower(ctx, userID, balance)
+}
+
 // DeductBalanceCache 扣减余额缓存（同步调用）
 func (s *BillingCacheService) DeductBalanceCache(ctx context.Context, userID int64, amount float64) error {
 	if s.cache == nil {
@@ -392,13 +453,70 @@ func (s *BillingCacheService) QueueDeductBalance(userID int64, amount float64) {
 // InvalidateUserBalance 失效用户余额缓存
 func (s *BillingCacheService) InvalidateUserBalance(ctx context.Context, userID int64) error {
 	if s.cache == nil {
+		s.clearBalanceFloor(userID)
 		return nil
 	}
 	if err := s.cache.InvalidateUserBalance(ctx, userID); err != nil {
 		logger.LegacyPrintf("service.billing_cache", "Warning: invalidate balance cache failed for user %d: %v", userID, err)
 		return err
 	}
+	s.clearBalanceFloor(userID)
 	return nil
+}
+
+func (s *BillingCacheService) rememberBalanceFloor(userID int64, balance float64) {
+	if balance > 0 {
+		return
+	}
+	now := time.Now()
+	expiresAt := now.Add(balanceFloorTTL)
+
+	s.balanceFloorMu.Lock()
+	defer s.balanceFloorMu.Unlock()
+
+	if s.balanceFloors == nil {
+		s.balanceFloors = make(map[int64]balanceFloorState)
+	}
+	if state, ok := s.balanceFloors[userID]; ok && state.expiresAt.After(now) && state.value < balance {
+		state.expiresAt = expiresAt
+		s.balanceFloors[userID] = state
+		return
+	}
+	s.balanceFloors[userID] = balanceFloorState{
+		value:     balance,
+		expiresAt: expiresAt,
+	}
+}
+
+func (s *BillingCacheService) applyBalanceFloor(userID int64, balance float64) float64 {
+	floor, ok := s.getBalanceFloor(userID)
+	if !ok || balance <= floor {
+		return balance
+	}
+	return floor
+}
+
+func (s *BillingCacheService) getBalanceFloor(userID int64) (float64, bool) {
+	now := time.Now()
+
+	s.balanceFloorMu.Lock()
+	defer s.balanceFloorMu.Unlock()
+
+	state, ok := s.balanceFloors[userID]
+	if !ok {
+		return 0, false
+	}
+	if !state.expiresAt.After(now) {
+		delete(s.balanceFloors, userID)
+		return 0, false
+	}
+	return state.value, true
+}
+
+func (s *BillingCacheService) clearBalanceFloor(userID int64) {
+	s.balanceFloorMu.Lock()
+	defer s.balanceFloorMu.Unlock()
+	delete(s.balanceFloors, userID)
 }
 
 // ============================================

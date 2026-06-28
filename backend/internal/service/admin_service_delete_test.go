@@ -437,6 +437,10 @@ func (s *billingCacheStub) SetUserBalance(ctx context.Context, userID int64, bal
 	panic("unexpected SetUserBalance call")
 }
 
+func (s *billingCacheStub) SetUserBalanceIfLower(ctx context.Context, userID int64, balance float64) error {
+	panic("unexpected SetUserBalanceIfLower call")
+}
+
 func (s *billingCacheStub) DeductUserBalance(ctx context.Context, userID int64, amount float64) error {
 	panic("unexpected DeductUserBalance call")
 }

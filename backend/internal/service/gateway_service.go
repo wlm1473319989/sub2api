@@ -9268,7 +9268,19 @@ func finalizePostUsageBilling(ctx context.Context, p *postUsageBillingParams, de
 	split := resolveUsageBillingSplit(p)
 
 	if split.hasBalanceCost() && p.User != nil && deps.billingCacheService != nil {
-		deps.billingCacheService.QueueDeductBalance(p.User.ID, split.BalanceCost)
+		if result == nil || result.NewBalance == nil {
+			deps.billingCacheService.QueueDeductBalance(p.User.ID, split.BalanceCost)
+		} else if *result.NewBalance <= 0 {
+			cacheCtx, cancel := context.WithTimeout(context.Background(), cacheWriteTimeout)
+			if err := deps.billingCacheService.SyncCommittedUserBalance(cacheCtx, p.User.ID, *result.NewBalance); err != nil {
+				fallbackCtx, fallbackCancel := context.WithTimeout(context.Background(), cacheWriteTimeout)
+				_ = deps.billingCacheService.InvalidateUserBalance(fallbackCtx, p.User.ID)
+				fallbackCancel()
+			}
+			cancel()
+		} else {
+			deps.billingCacheService.QueueSyncCommittedUserBalance(p.User.ID, *result.NewBalance)
+		}
 	}
 
 	if p.Cost.ActualCost > 0 && p.APIKey != nil && p.APIKey.HasRateLimits() && deps.billingCacheService != nil {

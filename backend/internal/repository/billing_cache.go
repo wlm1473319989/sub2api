@@ -72,6 +72,23 @@ const (
 )
 
 var (
+	setBalanceIfLowerScript = redis.NewScript(`
+		local newVal = tonumber(ARGV[1])
+		local current = redis.call('GET', KEYS[1])
+		if current == false then
+			redis.call('SET', KEYS[1], newVal)
+			redis.call('EXPIRE', KEYS[1], ARGV[2])
+			return 1
+		end
+		local currentNum = tonumber(current)
+		if currentNum == nil or newVal <= currentNum then
+			redis.call('SET', KEYS[1], newVal)
+			redis.call('EXPIRE', KEYS[1], ARGV[2])
+			return 1
+		end
+		return 0
+	`)
+
 	deductBalanceScript = redis.NewScript(`
 		local current = redis.call('GET', KEYS[1])
 		if current == false then
@@ -155,6 +172,16 @@ func (c *billingCache) GetUserBalance(ctx context.Context, userID int64) (float6
 func (c *billingCache) SetUserBalance(ctx context.Context, userID int64, balance float64) error {
 	key := billingBalanceKey(userID)
 	return c.rdb.Set(ctx, key, balance, jitteredTTL()).Err()
+}
+
+func (c *billingCache) SetUserBalanceIfLower(ctx context.Context, userID int64, balance float64) error {
+	key := billingBalanceKey(userID)
+	_, err := setBalanceIfLowerScript.Run(ctx, c.rdb, []string{key}, balance, int(jitteredTTL().Seconds())).Result()
+	if err != nil && !errors.Is(err, redis.Nil) {
+		log.Printf("Warning: set lower balance cache failed for user %d: %v", userID, err)
+		return err
+	}
+	return nil
 }
 
 func (c *billingCache) DeductUserBalance(ctx context.Context, userID int64, amount float64) error {
