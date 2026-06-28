@@ -70,6 +70,10 @@ const (
 	FieldBalanceCost = "balance_cost"
 	// FieldRateMultiplier holds the string denoting the rate_multiplier field in the database.
 	FieldRateMultiplier = "rate_multiplier"
+	// FieldSubscriptionRateMultiplier holds the string denoting the subscription_rate_multiplier field in the database.
+	FieldSubscriptionRateMultiplier = "subscription_rate_multiplier"
+	// FieldBalanceRateMultiplier holds the string denoting the balance_rate_multiplier field in the database.
+	FieldBalanceRateMultiplier = "balance_rate_multiplier"
 	// FieldAccountRateMultiplier holds the string denoting the account_rate_multiplier field in the database.
 	FieldAccountRateMultiplier = "account_rate_multiplier"
 	// FieldBillingType holds the string denoting the billing_type field in the database.
@@ -180,6 +184,8 @@ var Columns = []string{
 	FieldSubscriptionCost,
 	FieldBalanceCost,
 	FieldRateMultiplier,
+	FieldSubscriptionRateMultiplier,
+	FieldBalanceRateMultiplier,
 	FieldAccountRateMultiplier,
 	FieldBillingType,
 	FieldStream,
@@ -252,6 +258,10 @@ var (
 	DefaultBalanceCost float64
 	// DefaultRateMultiplier holds the default value on creation for the "rate_multiplier" field.
 	DefaultRateMultiplier float64
+	// DefaultSubscriptionRateMultiplier holds the default value on creation for the "subscription_rate_multiplier" field.
+	DefaultSubscriptionRateMultiplier float64
+	// DefaultBalanceRateMultiplier holds the default value on creation for the "balance_rate_multiplier" field.
+	DefaultBalanceRateMultiplier float64
 	// DefaultBillingType holds the default value on creation for the "billing_type" field.
 	DefaultBillingType int8
 	// DefaultStream holds the default value on creation for the "stream" field.
@@ -422,6 +432,16 @@ func ByBalanceCost(opts ...sql.OrderTermOption) OrderOption {
 // ByRateMultiplier orders the results by the rate_multiplier field.
 func ByRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRateMultiplier, opts...).ToFunc()
+}
+
+// BySubscriptionRateMultiplier orders the results by the subscription_rate_multiplier field.
+func BySubscriptionRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldSubscriptionRateMultiplier, opts...).ToFunc()
+}
+
+// ByBalanceRateMultiplier orders the results by the balance_rate_multiplier field.
+func ByBalanceRateMultiplier(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBalanceRateMultiplier, opts...).ToFunc()
 }
 
 // ByAccountRateMultiplier orders the results by the account_rate_multiplier field.

@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
 )
 
 // PaymentProviderInstanceCreate is the builder for creating a PaymentProviderInstance entity.
@@ -172,6 +173,21 @@ func (_c *PaymentProviderInstanceCreate) SetNillableUpdatedAt(v *time.Time) *Pay
 		_c.SetUpdatedAt(*v)
 	}
 	return _c
+}
+
+// AddSubscriptionRefundAllocationIDs adds the "subscription_refund_allocations" edge to the SubscriptionRefundAllocation entity by IDs.
+func (_c *PaymentProviderInstanceCreate) AddSubscriptionRefundAllocationIDs(ids ...int64) *PaymentProviderInstanceCreate {
+	_c.mutation.AddSubscriptionRefundAllocationIDs(ids...)
+	return _c
+}
+
+// AddSubscriptionRefundAllocations adds the "subscription_refund_allocations" edges to the SubscriptionRefundAllocation entity.
+func (_c *PaymentProviderInstanceCreate) AddSubscriptionRefundAllocations(v ...*SubscriptionRefundAllocation) *PaymentProviderInstanceCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubscriptionRefundAllocationIDs(ids...)
 }
 
 // Mutation returns the PaymentProviderInstanceMutation object of the builder.
@@ -383,6 +399,22 @@ func (_c *PaymentProviderInstanceCreate) createSpec() (*PaymentProviderInstance,
 	if value, ok := _c.mutation.UpdatedAt(); ok {
 		_spec.SetField(paymentproviderinstance.FieldUpdatedAt, field.TypeTime, value)
 		_node.UpdatedAt = value
+	}
+	if nodes := _c.mutation.SubscriptionRefundAllocationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec
 }

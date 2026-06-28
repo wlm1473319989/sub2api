@@ -130,6 +130,8 @@ func (User) Edges() []ent.Edge {
 		edge.To("payment_orders", PaymentOrder.Type),
 		edge.To("subscription_settlement_orders", SubscriptionSettlementOrder.Type),
 		edge.To("operated_subscription_settlement_orders", SubscriptionSettlementOrder.Type),
+		edge.To("subscription_refund_requests", SubscriptionRefundRequest.Type),
+		edge.To("operated_subscription_refund_requests", SubscriptionRefundRequest.Type),
 		edge.To("auth_identities", AuthIdentity.Type).
 			Annotations(entsql.OnDelete(entsql.Cascade)),
 		edge.To("pending_auth_sessions", PendingAuthSession.Type),

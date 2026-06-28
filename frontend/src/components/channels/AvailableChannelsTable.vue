@@ -91,6 +91,7 @@
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
                   :rate-multiplier="g.rate_multiplier"
+                  :subscription-rate-multiplier="g.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
                 />
               </div>
@@ -111,6 +112,7 @@
                   :name="g.name"
                   :platform="g.platform as GroupPlatform"
                   :rate-multiplier="g.rate_multiplier"
+                  :subscription-rate-multiplier="g.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
                 />
               </div>

@@ -117,9 +117,11 @@ type PaymentOrder struct {
 type PaymentOrderEdges struct {
 	// User holds the value of the user edge.
 	User *User `json:"user,omitempty"`
+	// SubscriptionRefundAllocations holds the value of the subscription_refund_allocations edge.
+	SubscriptionRefundAllocations []*SubscriptionRefundAllocation `json:"subscription_refund_allocations,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [1]bool
+	loadedTypes [2]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -131,6 +133,15 @@ func (e PaymentOrderEdges) UserOrErr() (*User, error) {
 		return nil, &NotFoundError{label: user.Label}
 	}
 	return nil, &NotLoadedError{edge: "user"}
+}
+
+// SubscriptionRefundAllocationsOrErr returns the SubscriptionRefundAllocations value or an error if the edge
+// was not loaded in eager-loading.
+func (e PaymentOrderEdges) SubscriptionRefundAllocationsOrErr() ([]*SubscriptionRefundAllocation, error) {
+	if e.loadedTypes[1] {
+		return e.SubscriptionRefundAllocations, nil
+	}
+	return nil, &NotLoadedError{edge: "subscription_refund_allocations"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -477,6 +488,11 @@ func (_m *PaymentOrder) Value(name string) (ent.Value, error) {
 // QueryUser queries the "user" edge of the PaymentOrder entity.
 func (_m *PaymentOrder) QueryUser() *UserQuery {
 	return NewPaymentOrderClient(_m.config).QueryUser(_m)
+}
+
+// QuerySubscriptionRefundAllocations queries the "subscription_refund_allocations" edge of the PaymentOrder entity.
+func (_m *PaymentOrder) QuerySubscriptionRefundAllocations() *SubscriptionRefundAllocationQuery {
+	return NewPaymentOrderClient(_m.config).QuerySubscriptionRefundAllocations(_m)
 }
 
 // Update returns a builder for updating this PaymentOrder.

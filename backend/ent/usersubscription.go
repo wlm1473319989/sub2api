@@ -86,9 +86,11 @@ type UserSubscriptionEdges struct {
 	UsageLogs []*UsageLog `json:"usage_logs,omitempty"`
 	// SettlementOrders holds the value of the settlement_orders edge.
 	SettlementOrders []*SubscriptionSettlementOrder `json:"settlement_orders,omitempty"`
+	// RefundRequests holds the value of the refund_requests edge.
+	RefundRequests []*SubscriptionRefundRequest `json:"refund_requests,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [4]bool
+	loadedTypes [5]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -129,6 +131,15 @@ func (e UserSubscriptionEdges) SettlementOrdersOrErr() ([]*SubscriptionSettlemen
 		return e.SettlementOrders, nil
 	}
 	return nil, &NotLoadedError{edge: "settlement_orders"}
+}
+
+// RefundRequestsOrErr returns the RefundRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserSubscriptionEdges) RefundRequestsOrErr() ([]*SubscriptionRefundRequest, error) {
+	if e.loadedTypes[4] {
+		return e.RefundRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "refund_requests"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -365,6 +376,11 @@ func (_m *UserSubscription) QueryUsageLogs() *UsageLogQuery {
 // QuerySettlementOrders queries the "settlement_orders" edge of the UserSubscription entity.
 func (_m *UserSubscription) QuerySettlementOrders() *SubscriptionSettlementOrderQuery {
 	return NewUserSubscriptionClient(_m.config).QuerySettlementOrders(_m)
+}
+
+// QueryRefundRequests queries the "refund_requests" edge of the UserSubscription entity.
+func (_m *UserSubscription) QueryRefundRequests() *SubscriptionRefundRequestQuery {
+	return NewUserSubscriptionClient(_m.config).QueryRefundRequests(_m)
 }
 
 // Update returns a builder for updating this UserSubscription.

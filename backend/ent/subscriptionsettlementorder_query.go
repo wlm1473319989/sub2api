@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -14,6 +15,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -22,17 +24,19 @@ import (
 // SubscriptionSettlementOrderQuery is the builder for querying SubscriptionSettlementOrder entities.
 type SubscriptionSettlementOrderQuery struct {
 	config
-	ctx                       *QueryContext
-	order                     []subscriptionsettlementorder.OrderOption
-	inters                    []Interceptor
-	predicates                []predicate.SubscriptionSettlementOrder
-	withUser                  *UserQuery
-	withOperator              *UserQuery
-	withNext                  *SubscriptionSettlementOrderQuery
-	withPrevious              *SubscriptionSettlementOrderQuery
-	withAfterUserSubscription *UserSubscriptionQuery
-	withAfterPlan             *SubscriptionPlanQuery
-	modifiers                 []func(*sql.Selector)
+	ctx                        *QueryContext
+	order                      []subscriptionsettlementorder.OrderOption
+	inters                     []Interceptor
+	predicates                 []predicate.SubscriptionSettlementOrder
+	withUser                   *UserQuery
+	withOperator               *UserQuery
+	withNext                   *SubscriptionSettlementOrderQuery
+	withPrevious               *SubscriptionSettlementOrderQuery
+	withAfterUserSubscription  *UserSubscriptionQuery
+	withAfterPlan              *SubscriptionPlanQuery
+	withRefundRequests         *SubscriptionRefundRequestQuery
+	withExpectedRefundRequests *SubscriptionRefundRequestQuery
+	modifiers                  []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -194,6 +198,50 @@ func (_q *SubscriptionSettlementOrderQuery) QueryAfterPlan() *SubscriptionPlanQu
 			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, selector),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.AfterPlanTable, subscriptionsettlementorder.AfterPlanColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryRefundRequests chains the current query on the "refund_requests" edge.
+func (_q *SubscriptionSettlementOrderQuery) QueryRefundRequests() *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, selector),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionsettlementorder.RefundRequestsTable, subscriptionsettlementorder.RefundRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryExpectedRefundRequests chains the current query on the "expected_refund_requests" edge.
+func (_q *SubscriptionSettlementOrderQuery) QueryExpectedRefundRequests() *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, selector),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionsettlementorder.ExpectedRefundRequestsTable, subscriptionsettlementorder.ExpectedRefundRequestsColumn),
 		)
 		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
 		return fromU, nil
@@ -388,17 +436,19 @@ func (_q *SubscriptionSettlementOrderQuery) Clone() *SubscriptionSettlementOrder
 		return nil
 	}
 	return &SubscriptionSettlementOrderQuery{
-		config:                    _q.config,
-		ctx:                       _q.ctx.Clone(),
-		order:                     append([]subscriptionsettlementorder.OrderOption{}, _q.order...),
-		inters:                    append([]Interceptor{}, _q.inters...),
-		predicates:                append([]predicate.SubscriptionSettlementOrder{}, _q.predicates...),
-		withUser:                  _q.withUser.Clone(),
-		withOperator:              _q.withOperator.Clone(),
-		withNext:                  _q.withNext.Clone(),
-		withPrevious:              _q.withPrevious.Clone(),
-		withAfterUserSubscription: _q.withAfterUserSubscription.Clone(),
-		withAfterPlan:             _q.withAfterPlan.Clone(),
+		config:                     _q.config,
+		ctx:                        _q.ctx.Clone(),
+		order:                      append([]subscriptionsettlementorder.OrderOption{}, _q.order...),
+		inters:                     append([]Interceptor{}, _q.inters...),
+		predicates:                 append([]predicate.SubscriptionSettlementOrder{}, _q.predicates...),
+		withUser:                   _q.withUser.Clone(),
+		withOperator:               _q.withOperator.Clone(),
+		withNext:                   _q.withNext.Clone(),
+		withPrevious:               _q.withPrevious.Clone(),
+		withAfterUserSubscription:  _q.withAfterUserSubscription.Clone(),
+		withAfterPlan:              _q.withAfterPlan.Clone(),
+		withRefundRequests:         _q.withRefundRequests.Clone(),
+		withExpectedRefundRequests: _q.withExpectedRefundRequests.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
@@ -468,6 +518,28 @@ func (_q *SubscriptionSettlementOrderQuery) WithAfterPlan(opts ...func(*Subscrip
 		opt(query)
 	}
 	_q.withAfterPlan = query
+	return _q
+}
+
+// WithRefundRequests tells the query-builder to eager-load the nodes that are connected to
+// the "refund_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubscriptionSettlementOrderQuery) WithRefundRequests(opts ...func(*SubscriptionRefundRequestQuery)) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withRefundRequests = query
+	return _q
+}
+
+// WithExpectedRefundRequests tells the query-builder to eager-load the nodes that are connected to
+// the "expected_refund_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *SubscriptionSettlementOrderQuery) WithExpectedRefundRequests(opts ...func(*SubscriptionRefundRequestQuery)) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withExpectedRefundRequests = query
 	return _q
 }
 
@@ -549,13 +621,15 @@ func (_q *SubscriptionSettlementOrderQuery) sqlAll(ctx context.Context, hooks ..
 	var (
 		nodes       = []*SubscriptionSettlementOrder{}
 		_spec       = _q.querySpec()
-		loadedTypes = [6]bool{
+		loadedTypes = [8]bool{
 			_q.withUser != nil,
 			_q.withOperator != nil,
 			_q.withNext != nil,
 			_q.withPrevious != nil,
 			_q.withAfterUserSubscription != nil,
 			_q.withAfterPlan != nil,
+			_q.withRefundRequests != nil,
+			_q.withExpectedRefundRequests != nil,
 		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
@@ -612,6 +686,24 @@ func (_q *SubscriptionSettlementOrderQuery) sqlAll(ctx context.Context, hooks ..
 	if query := _q.withAfterPlan; query != nil {
 		if err := _q.loadAfterPlan(ctx, query, nodes, nil,
 			func(n *SubscriptionSettlementOrder, e *SubscriptionPlan) { n.Edges.AfterPlan = e }); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withRefundRequests; query != nil {
+		if err := _q.loadRefundRequests(ctx, query, nodes,
+			func(n *SubscriptionSettlementOrder) { n.Edges.RefundRequests = []*SubscriptionRefundRequest{} },
+			func(n *SubscriptionSettlementOrder, e *SubscriptionRefundRequest) {
+				n.Edges.RefundRequests = append(n.Edges.RefundRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withExpectedRefundRequests; query != nil {
+		if err := _q.loadExpectedRefundRequests(ctx, query, nodes,
+			func(n *SubscriptionSettlementOrder) { n.Edges.ExpectedRefundRequests = []*SubscriptionRefundRequest{} },
+			func(n *SubscriptionSettlementOrder, e *SubscriptionRefundRequest) {
+				n.Edges.ExpectedRefundRequests = append(n.Edges.ExpectedRefundRequests, e)
+			}); err != nil {
 			return nil, err
 		}
 	}
@@ -801,6 +893,66 @@ func (_q *SubscriptionSettlementOrderQuery) loadAfterPlan(ctx context.Context, q
 		for i := range nodes {
 			assign(nodes[i], n)
 		}
+	}
+	return nil
+}
+func (_q *SubscriptionSettlementOrderQuery) loadRefundRequests(ctx context.Context, query *SubscriptionRefundRequestQuery, nodes []*SubscriptionSettlementOrder, init func(*SubscriptionSettlementOrder), assign func(*SubscriptionSettlementOrder, *SubscriptionRefundRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*SubscriptionSettlementOrder)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionrefundrequest.FieldSettlementID)
+	}
+	query.Where(predicate.SubscriptionRefundRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(subscriptionsettlementorder.RefundRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.SettlementID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "settlement_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *SubscriptionSettlementOrderQuery) loadExpectedRefundRequests(ctx context.Context, query *SubscriptionRefundRequestQuery, nodes []*SubscriptionSettlementOrder, init func(*SubscriptionSettlementOrder), assign func(*SubscriptionSettlementOrder, *SubscriptionRefundRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*SubscriptionSettlementOrder)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionrefundrequest.FieldExpectedSettlementID)
+	}
+	query.Where(predicate.SubscriptionRefundRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(subscriptionsettlementorder.ExpectedRefundRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ExpectedSettlementID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "expected_settlement_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
 	}
 	return nil
 }

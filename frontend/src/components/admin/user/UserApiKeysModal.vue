@@ -31,6 +31,7 @@
                   :name="key.group.name"
                   :platform="key.group.platform"
                   :rate-multiplier="key.group.rate_multiplier"
+                  :subscription-rate-multiplier="key.group.subscription_rate_multiplier"
                 />
                 <span v-else class="text-gray-400 italic">{{ t('admin.users.none') }}</span>
                 <svg v-if="updatingKeyIds.has(key.id)" class="h-3 w-3 animate-spin text-primary-500" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg>
@@ -86,6 +87,7 @@
             :name="group.name"
             :platform="group.platform"
             :rate-multiplier="group.rate_multiplier"
+            :subscription-rate-multiplier="group.subscription_rate_multiplier"
             :description="group.description"
             :selected="selectedKeyForGroup?.group_id === group.id"
           />

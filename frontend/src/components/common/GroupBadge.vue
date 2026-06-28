@@ -8,9 +8,9 @@
     <PlatformIcon v-if="platform" :platform="platform" size="sm" />
     <span class="truncate">{{ name }}</span>
     <span v-if="showLabel" :class="labelClass">
-      <template v-if="hasCustomRate">
+      <template v-if="hasCustomRate && !hasSplitRate">
         <span class="mr-0.5 line-through opacity-50">{{ rateMultiplier }}x</span>
-        <span class="font-bold">{{ userRateMultiplier }}x</span>
+        <span class="font-bold">{{ displayBalanceRate }}x</span>
       </template>
       <template v-else>
         {{ labelText }}
@@ -29,6 +29,7 @@ interface Props {
   name: string
   platform?: GroupPlatform
   rateMultiplier?: number
+  subscriptionRateMultiplier?: number | null
   userRateMultiplier?: number | null
   showRate?: boolean
   daysRemaining?: number | null
@@ -51,10 +52,42 @@ const hasCustomRate = computed(() => {
   )
 })
 
+const displayBalanceRate = computed(() => {
+  if (props.userRateMultiplier !== null && props.userRateMultiplier !== undefined) {
+    return props.userRateMultiplier
+  }
+  return props.rateMultiplier
+})
+
+const displaySubscriptionRate = computed(() => {
+  if (props.subscriptionRateMultiplier !== null && props.subscriptionRateMultiplier !== undefined) {
+    return props.subscriptionRateMultiplier
+  }
+  if (props.rateMultiplier !== undefined) {
+    return props.rateMultiplier
+  }
+  if (props.userRateMultiplier !== null && props.userRateMultiplier !== undefined) {
+    return props.userRateMultiplier
+  }
+  return undefined
+})
+
+const hasSplitRate = computed(() => {
+  return (
+    displayBalanceRate.value !== undefined &&
+    displaySubscriptionRate.value !== undefined &&
+    displaySubscriptionRate.value !== displayBalanceRate.value
+  )
+})
+
 const showLabel = computed(() => {
   if (props.daysRemaining !== null && props.daysRemaining !== undefined) return true
   if (!props.showRate) return false
-  return props.rateMultiplier !== undefined || hasCustomRate.value
+  return (
+    displayBalanceRate.value !== undefined ||
+    displaySubscriptionRate.value !== undefined ||
+    hasCustomRate.value
+  )
 })
 
 const labelText = computed(() => {
@@ -64,7 +97,14 @@ const labelText = computed(() => {
     }
     return t('admin.users.daysRemaining', { days: props.daysRemaining })
   }
-  return props.rateMultiplier !== undefined ? `${props.rateMultiplier}x` : ''
+  if (hasSplitRate.value) {
+    return t('admin.groups.rateMultiplierSplitSummary', {
+      balance: `${displayBalanceRate.value}x`,
+      subscription: `${displaySubscriptionRate.value}x`
+    })
+  }
+  const rate = displayBalanceRate.value ?? displaySubscriptionRate.value
+  return rate !== undefined ? `${rate}x` : ''
 })
 
 const labelClass = computed(() => {

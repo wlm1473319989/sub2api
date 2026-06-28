@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
@@ -461,6 +462,36 @@ func (_c *SubscriptionSettlementOrderCreate) SetAfterPlan(v *SubscriptionPlan) *
 	return _c.SetAfterPlanID(v.ID)
 }
 
+// AddRefundRequestIDs adds the "refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_c *SubscriptionSettlementOrderCreate) AddRefundRequestIDs(ids ...int64) *SubscriptionSettlementOrderCreate {
+	_c.mutation.AddRefundRequestIDs(ids...)
+	return _c
+}
+
+// AddRefundRequests adds the "refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_c *SubscriptionSettlementOrderCreate) AddRefundRequests(v ...*SubscriptionRefundRequest) *SubscriptionSettlementOrderCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddRefundRequestIDs(ids...)
+}
+
+// AddExpectedRefundRequestIDs adds the "expected_refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_c *SubscriptionSettlementOrderCreate) AddExpectedRefundRequestIDs(ids ...int64) *SubscriptionSettlementOrderCreate {
+	_c.mutation.AddExpectedRefundRequestIDs(ids...)
+	return _c
+}
+
+// AddExpectedRefundRequests adds the "expected_refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_c *SubscriptionSettlementOrderCreate) AddExpectedRefundRequests(v ...*SubscriptionRefundRequest) *SubscriptionSettlementOrderCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddExpectedRefundRequestIDs(ids...)
+}
+
 // Mutation returns the SubscriptionSettlementOrderMutation object of the builder.
 func (_c *SubscriptionSettlementOrderCreate) Mutation() *SubscriptionSettlementOrderMutation {
 	return _c.mutation
@@ -842,6 +873,38 @@ func (_c *SubscriptionSettlementOrderCreate) createSpec() (*SubscriptionSettleme
 			edge.Target.Nodes = append(edge.Target.Nodes, k)
 		}
 		_node.AfterPlanID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.RefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionsettlementorder.RefundRequestsTable,
+			Columns: []string{subscriptionsettlementorder.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.ExpectedRefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   subscriptionsettlementorder.ExpectedRefundRequestsTable,
+			Columns: []string{subscriptionsettlementorder.ExpectedRefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
 	return _node, _spec

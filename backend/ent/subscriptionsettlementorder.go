@@ -100,9 +100,13 @@ type SubscriptionSettlementOrderEdges struct {
 	AfterUserSubscription *UserSubscription `json:"after_user_subscription,omitempty"`
 	// AfterPlan holds the value of the after_plan edge.
 	AfterPlan *SubscriptionPlan `json:"after_plan,omitempty"`
+	// RefundRequests holds the value of the refund_requests edge.
+	RefundRequests []*SubscriptionRefundRequest `json:"refund_requests,omitempty"`
+	// ExpectedRefundRequests holds the value of the expected_refund_requests edge.
+	ExpectedRefundRequests []*SubscriptionRefundRequest `json:"expected_refund_requests,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [6]bool
+	loadedTypes [8]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -169,6 +173,24 @@ func (e SubscriptionSettlementOrderEdges) AfterPlanOrErr() (*SubscriptionPlan, e
 		return nil, &NotFoundError{label: subscriptionplan.Label}
 	}
 	return nil, &NotLoadedError{edge: "after_plan"}
+}
+
+// RefundRequestsOrErr returns the RefundRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionSettlementOrderEdges) RefundRequestsOrErr() ([]*SubscriptionRefundRequest, error) {
+	if e.loadedTypes[6] {
+		return e.RefundRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "refund_requests"}
+}
+
+// ExpectedRefundRequestsOrErr returns the ExpectedRefundRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e SubscriptionSettlementOrderEdges) ExpectedRefundRequestsOrErr() ([]*SubscriptionRefundRequest, error) {
+	if e.loadedTypes[7] {
+		return e.ExpectedRefundRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "expected_refund_requests"}
 }
 
 // scanValues returns the types for scanning values from sql.Rows.
@@ -442,6 +464,16 @@ func (_m *SubscriptionSettlementOrder) QueryAfterUserSubscription() *UserSubscri
 // QueryAfterPlan queries the "after_plan" edge of the SubscriptionSettlementOrder entity.
 func (_m *SubscriptionSettlementOrder) QueryAfterPlan() *SubscriptionPlanQuery {
 	return NewSubscriptionSettlementOrderClient(_m.config).QueryAfterPlan(_m)
+}
+
+// QueryRefundRequests queries the "refund_requests" edge of the SubscriptionSettlementOrder entity.
+func (_m *SubscriptionSettlementOrder) QueryRefundRequests() *SubscriptionRefundRequestQuery {
+	return NewSubscriptionSettlementOrderClient(_m.config).QueryRefundRequests(_m)
+}
+
+// QueryExpectedRefundRequests queries the "expected_refund_requests" edge of the SubscriptionSettlementOrder entity.
+func (_m *SubscriptionSettlementOrder) QueryExpectedRefundRequests() *SubscriptionRefundRequestQuery {
+	return NewSubscriptionSettlementOrderClient(_m.config).QueryExpectedRefundRequests(_m)
 }
 
 // Update returns a builder for updating this SubscriptionSettlementOrder.

@@ -154,6 +154,8 @@ func (SubscriptionSettlementOrder) Edges() []ent.Edge {
 			Ref("settlement_orders").
 			Field("after_plan_id").
 			Unique(),
+		edge.To("refund_requests", SubscriptionRefundRequest.Type),
+		edge.To("expected_refund_requests", SubscriptionRefundRequest.Type),
 	}
 }
 

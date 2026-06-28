@@ -201,6 +201,7 @@ func (PaymentOrder) Edges() []ent.Edge {
 			Field("user_id").
 			Unique().
 			Required(),
+		edge.To("subscription_refund_allocations", SubscriptionRefundAllocation.Type),
 	}
 }
 

@@ -19,6 +19,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/pendingauthsession"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -519,6 +520,36 @@ func (_c *UserCreate) AddOperatedSubscriptionSettlementOrders(v ...*Subscription
 		ids[i] = v[i].ID
 	}
 	return _c.AddOperatedSubscriptionSettlementOrderIDs(ids...)
+}
+
+// AddSubscriptionRefundRequestIDs adds the "subscription_refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_c *UserCreate) AddSubscriptionRefundRequestIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddSubscriptionRefundRequestIDs(ids...)
+	return _c
+}
+
+// AddSubscriptionRefundRequests adds the "subscription_refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_c *UserCreate) AddSubscriptionRefundRequests(v ...*SubscriptionRefundRequest) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddSubscriptionRefundRequestIDs(ids...)
+}
+
+// AddOperatedSubscriptionRefundRequestIDs adds the "operated_subscription_refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_c *UserCreate) AddOperatedSubscriptionRefundRequestIDs(ids ...int64) *UserCreate {
+	_c.mutation.AddOperatedSubscriptionRefundRequestIDs(ids...)
+	return _c
+}
+
+// AddOperatedSubscriptionRefundRequests adds the "operated_subscription_refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_c *UserCreate) AddOperatedSubscriptionRefundRequests(v ...*SubscriptionRefundRequest) *UserCreate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _c.AddOperatedSubscriptionRefundRequestIDs(ids...)
 }
 
 // AddAuthIdentityIDs adds the "auth_identities" edge to the AuthIdentity entity by IDs.
@@ -1063,6 +1094,38 @@ func (_c *UserCreate) createSpec() (*User, *sqlgraph.CreateSpec) {
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.SubscriptionRefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.SubscriptionRefundRequestsTable,
+			Columns: []string{user.SubscriptionRefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges = append(_spec.Edges, edge)
+	}
+	if nodes := _c.mutation.OperatedSubscriptionRefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   user.OperatedSubscriptionRefundRequestsTable,
+			Columns: []string{user.OperatedSubscriptionRefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

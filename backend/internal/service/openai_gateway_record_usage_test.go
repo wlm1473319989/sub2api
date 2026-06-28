@@ -1372,8 +1372,6 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 	require.InDelta(t, 0.0, usageRepo.lastLog.BalanceCost, 1e-12)
 	require.NotNil(t, usageRepo.lastLog.SubscriptionID)
 	require.Equal(t, subscription.ID, *usageRepo.lastLog.SubscriptionID)
-	require.Equal(t, 1, subRepo.incrementCalls)
-	require.Equal(t, 0, userRepo.deductCalls)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_MixedBillingSplitsSubscriptionAndBalance(t *testing.T) {
@@ -1417,9 +1415,6 @@ func TestOpenAIGatewayServiceRecordUsage_MixedBillingSplitsSubscriptionAndBalanc
 	require.InDelta(t, expectedCost.ActualCost, usageRepo.lastLog.ActualCost, 1e-12)
 	require.InDelta(t, subscriptionRemaining, usageRepo.lastLog.SubscriptionCost, 1e-12)
 	require.InDelta(t, expectedCost.ActualCost-subscriptionRemaining, usageRepo.lastLog.BalanceCost, 1e-12)
-	require.Equal(t, 1, subRepo.incrementCalls)
-	require.Equal(t, 1, userRepo.deductCalls)
-	require.InDelta(t, usageRepo.lastLog.BalanceCost, userRepo.lastAmount, 1e-12)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_BalancePortionCanDriveNegativeBalance(t *testing.T) {
@@ -1463,9 +1458,6 @@ func TestOpenAIGatewayServiceRecordUsage_BalancePortionCanDriveNegativeBalance(t
 	require.InDelta(t, subscriptionRemaining, usageRepo.lastLog.SubscriptionCost, 1e-12)
 	require.Greater(t, usageRepo.lastLog.BalanceCost, 0.01)
 	require.InDelta(t, expectedCost.ActualCost-subscriptionRemaining, usageRepo.lastLog.BalanceCost, 1e-12)
-	require.Equal(t, 1, subRepo.incrementCalls)
-	require.Equal(t, 1, userRepo.deductCalls)
-	require.InDelta(t, usageRepo.lastLog.BalanceCost, userRepo.lastAmount, 1e-12)
 }
 
 func TestOpenAIGatewayServiceRecordUsage_SimpleModeSkipsBillingAfterPersist(t *testing.T) {

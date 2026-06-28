@@ -114,9 +114,9 @@
             </span>
           </template>
 
-          <template #cell-rate_multiplier="{ value }">
+          <template #cell-rate_multiplier="{ row, value }">
             <span class="text-sm text-gray-700 dark:text-gray-300"
-              >{{ value }}x</span
+              >{{ formatGroupRateSummary(row, value) }}</span
             >
           </template>
 
@@ -431,6 +431,22 @@
             data-tour="group-form-multiplier"
           />
           <p class="input-hint">{{ t("admin.groups.rateMultiplierHint") }}</p>
+        </div>
+        <div>
+          <label class="input-label">{{
+            t("admin.groups.form.subscriptionRateMultiplier")
+          }}</label>
+          <input
+            v-model.number="createForm.subscription_rate_multiplier"
+            type="number"
+            step="0.001"
+            min="0.001"
+            required
+            class="input"
+          />
+          <p class="input-hint">
+            {{ t("admin.groups.subscriptionRateMultiplierHint") }}
+          </p>
         </div>
         <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
@@ -1649,6 +1665,23 @@
             class="input"
             data-tour="group-form-multiplier"
           />
+          <p class="input-hint">{{ t("admin.groups.rateMultiplierHint") }}</p>
+        </div>
+        <div>
+          <label class="input-label">{{
+            t("admin.groups.form.subscriptionRateMultiplier")
+          }}</label>
+          <input
+            v-model.number="editForm.subscription_rate_multiplier"
+            type="number"
+            step="0.001"
+            min="0.001"
+            required
+            class="input"
+          />
+          <p class="input-hint">
+            {{ t("admin.groups.subscriptionRateMultiplierHint") }}
+          </p>
         </div>
         <div>
           <label class="input-label">{{ t("admin.groups.form.rpmLimit") }}</label>
@@ -3117,6 +3150,7 @@ const createForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  subscription_rate_multiplier: 1.0,
   is_exclusive: false,
   // 图片生成计费配置
   allow_image_generation: false,
@@ -3443,6 +3477,7 @@ const editForm = reactive({
   description: "",
   platform: "anthropic" as GroupPlatform,
   rate_multiplier: 1.0,
+  subscription_rate_multiplier: 1.0,
   is_exclusive: false,
   status: "active" as "active" | "inactive",
   // 图片生成计费配置
@@ -3595,6 +3630,32 @@ const formatCost = (cost: number): string => {
   return cost.toFixed(2);
 };
 
+const normalizeGroupRateMultiplier = (
+  value: number | string | null | undefined,
+  fallback: number,
+): number => {
+  if (value === null || value === undefined || value === "") {
+    return fallback;
+  }
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const formatGroupRateSummary = (
+  group: Pick<AdminGroup, "rate_multiplier" | "subscription_rate_multiplier">,
+  fallbackRate?: number,
+): string => {
+  const balanceRate = group.rate_multiplier ?? fallbackRate ?? 1;
+  const subscriptionRate = group.subscription_rate_multiplier ?? balanceRate;
+  if (subscriptionRate === balanceRate) {
+    return `${balanceRate}x`;
+  }
+  return t("admin.groups.rateMultiplierSplitSummary", {
+    balance: `${balanceRate}x`,
+    subscription: `${subscriptionRate}x`,
+  });
+};
+
 const loadUsageSummary = async () => {
   usageLoading.value = true;
   try {
@@ -3687,6 +3748,7 @@ const closeCreateModal = () => {
   createForm.description = "";
   createForm.platform = "anthropic";
   createForm.rate_multiplier = 1.0;
+  createForm.subscription_rate_multiplier = 1.0;
   createForm.is_exclusive = false;
   createForm.allow_image_generation = false;
   createForm.image_rate_independent = false;
@@ -3747,6 +3809,10 @@ const handleCreateGroup = async () => {
             })
           : undefined,
     };
+    requestData.subscription_rate_multiplier = normalizeGroupRateMultiplier(
+      requestData.subscription_rate_multiplier,
+      normalizeGroupRateMultiplier(requestData.rate_multiplier, 1),
+    );
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     requestData.image_rate_multiplier = normalizeImageRateMultiplier(
       requestData.image_rate_multiplier,
@@ -3776,6 +3842,8 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.description = group.description || "";
   editForm.platform = group.platform;
   editForm.rate_multiplier = group.rate_multiplier;
+  editForm.subscription_rate_multiplier =
+    group.subscription_rate_multiplier ?? group.rate_multiplier;
   editForm.is_exclusive = group.is_exclusive;
   editForm.status = group.status;
   editForm.allow_image_generation = group.allow_image_generation ?? false;
@@ -3869,6 +3937,10 @@ const handleUpdateGroup = async () => {
             })
           : undefined,
     };
+    payload.subscription_rate_multiplier = normalizeGroupRateMultiplier(
+      payload.subscription_rate_multiplier,
+      normalizeGroupRateMultiplier(payload.rate_multiplier, 1),
+    );
     // v-model.number 清空输入框时产生 ""，转为 null 让后端设为无限制
     payload.image_rate_multiplier = normalizeImageRateMultiplier(
       payload.image_rate_multiplier,

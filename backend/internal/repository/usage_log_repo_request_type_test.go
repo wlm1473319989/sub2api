@@ -67,6 +67,8 @@ func TestUsageLogRepositoryCreateSyncRequestTypeAndLegacyFields(t *testing.T) {
 			log.SubscriptionCost,
 			log.BalanceCost,
 			log.RateMultiplier,
+			log.SubscriptionRateMultiplier,
+			log.BalanceRateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
 			int16(service.RequestTypeWSV2),
@@ -152,6 +154,8 @@ func TestUsageLogRepositoryCreate_PersistsServiceTier(t *testing.T) {
 			log.SubscriptionCost,
 			log.BalanceCost,
 			log.RateMultiplier,
+			log.SubscriptionRateMultiplier,
+			log.BalanceRateMultiplier,
 			log.AccountRateMultiplier,
 			log.BillingType,
 			int16(service.RequestTypeSync),
@@ -263,11 +267,11 @@ func TestPrepareUsageLogInsert_PersistsImageSizeMetadata(t *testing.T) {
 		CreatedAt:          time.Date(2025, 1, 6, 12, 0, 0, 0, time.UTC),
 	})
 
-	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[36])
-	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[37])
-	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[38])
-	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[39])
-	breakdownJSON, ok := prepared.args[40].(string)
+	require.Equal(t, sql.NullString{String: imageSize, Valid: true}, prepared.args[38])
+	require.Equal(t, sql.NullString{String: inputSize, Valid: true}, prepared.args[39])
+	require.Equal(t, sql.NullString{String: outputSize, Valid: true}, prepared.args[40])
+	require.Equal(t, sql.NullString{String: source, Valid: true}, prepared.args[41])
+	breakdownJSON, ok := prepared.args[42].(string)
 	require.True(t, ok)
 	require.JSONEq(t, `{"1K":1,"4K":1}`, breakdownJSON)
 }
@@ -638,6 +642,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.0, 0.0, 0.0, 0.0, 0.8, 0.8, 0.0, 0.8,
 			1.0,
+			1.0,
+			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
 			int16(service.RequestTypeSync),
@@ -708,6 +714,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0.0,               // subscription_cost
 			0.9,               // balance_cost
 			1.0,               // rate_multiplier
+			1.0,               // subscription_rate_multiplier
+			1.0,               // balance_rate_multiplier
 			sql.NullFloat64{}, // account_rate_multiplier
 			int16(service.BillingTypeBalance),
 			int16(service.RequestTypeWSV2),
@@ -759,6 +767,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			1, 2, 3, 4, 5, 6,
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.0, 0.9,
+			1.0,
+			1.0,
 			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
@@ -812,6 +822,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0, 0.0, // image_output_tokens, image_output_cost
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.0, 0.9,
 			1.0,
+			1.0,
+			1.0,
 			sql.NullFloat64{},
 			int16(service.BillingTypeBalance),
 			int16(service.RequestTypeSync),
@@ -861,6 +873,8 @@ func TestScanUsageLogRequestTypeAndLegacyFallback(t *testing.T) {
 			0, 0.0,
 			0.1, 0.2, 0.3, 0.4, 1.0, 0.9, 0.4, 0.5,
 			1.0,
+			0.8,
+			1.2,
 			sql.NullFloat64{},
 			int16(service.BillingTypeMixed),
 			int16(service.RequestTypeSync),

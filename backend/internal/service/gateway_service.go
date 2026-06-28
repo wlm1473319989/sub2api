@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	mathrand "math/rand"
 	"net"
 	"net/http"
@@ -8844,15 +8845,17 @@ type usageLogBestEffortWriter interface {
 
 // postUsageBillingParams 统一扣费所需的参数
 type postUsageBillingParams struct {
-	Cost                  *CostBreakdown
-	User                  *User
-	APIKey                *APIKey
-	Account               *Account
-	Subscription          *UserSubscription
-	RequestPayloadHash    string
-	AccountRateMultiplier float64
-	APIKeyService         APIKeyQuotaUpdater
-	Platform              string // 来自 APIKey 关联 Group 的平台标识
+	Cost                       *CostBreakdown
+	User                       *User
+	APIKey                     *APIKey
+	Account                    *Account
+	Subscription               *UserSubscription
+	RequestPayloadHash         string
+	BalanceRateMultiplier      float64
+	SubscriptionRateMultiplier float64
+	AccountRateMultiplier      float64
+	APIKeyService              APIKeyQuotaUpdater
+	Platform                   string // 来自 APIKey 关联 Group 的平台标识
 }
 
 // PlatformFromAPIKey 从 APIKey 关联的 Group 推导 platform 名称。
@@ -8892,8 +8895,11 @@ func (p *postUsageBillingParams) shouldUpdateAccountQuota() bool {
 }
 
 type usageBillingSplit struct {
-	SubscriptionCost float64
-	BalanceCost      float64
+	SubscriptionCost           float64
+	BalanceCost                float64
+	SubscriptionRateMultiplier float64
+	BalanceRateMultiplier      float64
+	EffectiveRateMultiplier    float64
 }
 
 func (s usageBillingSplit) hasSubscriptionCost() bool {
@@ -8902,6 +8908,10 @@ func (s usageBillingSplit) hasSubscriptionCost() bool {
 
 func (s usageBillingSplit) hasBalanceCost() bool {
 	return s.BalanceCost > 0
+}
+
+func (s usageBillingSplit) actualCost() float64 {
+	return s.SubscriptionCost + s.BalanceCost
 }
 
 func (s usageBillingSplit) billingType() int8 {
@@ -8918,27 +8928,62 @@ func (s usageBillingSplit) billingType() int8 {
 }
 
 func resolveUsageBillingSplit(p *postUsageBillingParams) usageBillingSplit {
-	if p == nil || p.Cost == nil || p.Cost.ActualCost <= 0 {
+	if p == nil || p.Cost == nil {
 		return usageBillingSplit{}
 	}
+	return resolveUsageBillingSplitFromRawCost(
+		p.Cost.TotalCost,
+		p.Subscription,
+		p.SubscriptionRateMultiplier,
+		p.BalanceRateMultiplier,
+	)
+}
 
-	actualCost := p.Cost.ActualCost
-	subscriptionCost := 0.0
-	if p.Subscription != nil {
-		remaining := resolveSubscriptionRemainingQuota(p.Subscription)
+func resolveUsageBillingSplitFromRawCost(totalCost float64, subscription *UserSubscription, subscriptionRateMultiplier, balanceRateMultiplier float64) usageBillingSplit {
+	balanceRateMultiplier = normalizeUsageRateMultiplier(balanceRateMultiplier, 1)
+	subscriptionRateMultiplier = normalizeUsageRateMultiplier(subscriptionRateMultiplier, balanceRateMultiplier)
+
+	split := usageBillingSplit{
+		SubscriptionRateMultiplier: subscriptionRateMultiplier,
+		BalanceRateMultiplier:      balanceRateMultiplier,
+	}
+	if totalCost <= 0 {
+		return split
+	}
+
+	rawSubscriptionCost := 0.0
+	if subscription != nil {
+		remaining := resolveSubscriptionRemainingQuota(subscription)
 		if remaining > 0 {
-			subscriptionCost = minFloat64(actualCost, remaining)
+			if subscriptionRateMultiplier <= 0 {
+				rawSubscriptionCost = totalCost
+			} else {
+				rawSubscriptionCost = minFloat64(totalCost, remaining/subscriptionRateMultiplier)
+			}
 		}
 	}
 
-	balanceCost := actualCost - subscriptionCost
-	if balanceCost < 0 {
-		balanceCost = 0
-	}
+	split.SubscriptionCost = rawSubscriptionCost * subscriptionRateMultiplier
 
-	return usageBillingSplit{
-		SubscriptionCost: subscriptionCost,
-		BalanceCost:      balanceCost,
+	rawBalanceCost := totalCost - rawSubscriptionCost
+	if rawBalanceCost < 0 {
+		rawBalanceCost = 0
+	}
+	split.BalanceCost = rawBalanceCost * balanceRateMultiplier
+	split.EffectiveRateMultiplier = split.actualCost() / totalCost
+
+	return split
+}
+
+func normalizeUsageRateMultiplier(value, fallback float64) float64 {
+	switch {
+	case math.IsNaN(value), math.IsInf(value, 0), value < 0:
+		if fallback < 0 || math.IsNaN(fallback) || math.IsInf(fallback, 0) {
+			return 1
+		}
+		return fallback
+	default:
+		return value
 	}
 }
 
@@ -9018,8 +9063,8 @@ func postUsageBilling(ctx context.Context, p *postUsageBillingParams, deps *bill
 	split := resolveUsageBillingSplit(p)
 
 	if split.hasSubscriptionCost() {
-		// Subscription usage tracked by ActualCost so group rate multiplier
-		// consumes the quota at the expected speed.
+		// Subscription usage tracks the subscription-side actual cost so
+		// subscription quota and balance billing can use different multipliers.
 		if deps.userSubRepo != nil {
 			if err := deps.userSubRepo.IncrementUsage(billingCtx, p.Subscription.ID, split.SubscriptionCost); err != nil {
 				slog.Error("increment subscription usage failed", "subscription_id", p.Subscription.ID, "error", err)
@@ -9145,10 +9190,6 @@ func buildUsageBillingCommand(requestID string, usageLog *UsageLog, p *postUsage
 
 	split := resolveUsageBillingSplit(p)
 
-	// Record subscription / balance cost using ActualCost so the group (and any
-	// user-specific) rate multiplier consumes subscription quota at the expected
-	// speed. TotalCost remains the raw (pre-multiplier) value; downstream guards
-	// on "> 0" still correctly skip free subscriptions (RateMultiplier == 0).
 	if split.hasSubscriptionCost() && p.Subscription != nil && p.Cost.TotalCost > 0 {
 		cmd.SubscriptionID = &p.Subscription.ID
 		cmd.SubscriptionCost = split.SubscriptionCost
@@ -9552,6 +9593,7 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 		groupDefault := apiKey.Group.RateMultiplier
 		multiplier = s.getUserGroupRateMultiplier(ctx, user.ID, *apiKey.GroupID, groupDefault)
 	}
+	subscriptionMultiplier := resolveGroupSubscriptionRateMultiplier(apiKey, multiplier)
 	imageMultiplier := resolveImageRateMultiplier(apiKey, multiplier)
 
 	// 确定计费模型
@@ -9571,17 +9613,16 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 
 	// 计算费用
 	cost := s.calculateRecordUsageCost(ctx, result, apiKey, billingModel, multiplier, imageMultiplier, opts)
+	balanceRateMultiplier := resolveUsageBalanceRateMultiplier(result.ImageCount, cost.BillingMode, multiplier, imageMultiplier)
+	split := resolveUsageBillingSplitFromRawCost(cost.TotalCost, subscription, subscriptionMultiplier, balanceRateMultiplier)
+	cost.ActualCost = split.actualCost()
 
-	// 判断计费方式：订阅模式 vs 余额模式
-	billingType := BillingTypeBalance
-	if subscription != nil {
-		billingType = BillingTypeSubscription
-	}
+	billingType := split.billingType()
 
 	// 创建使用日志
 	accountRateMultiplier := account.BillingRateMultiplier()
 	usageLog := s.buildRecordUsageLog(ctx, input, result, apiKey, user, account, subscription,
-		requestedModel, multiplier, imageMultiplier, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
+		requestedModel, split, accountRateMultiplier, billingType, cacheTTLOverridden, cost, opts)
 
 	// 计算账号统计定价费用（使用最终上游模型匹配自定义规则）
 	if apiKey.GroupID != nil {
@@ -9616,15 +9657,17 @@ func (s *GatewayService) recordUsageCore(ctx context.Context, input *recordUsage
 	}
 	requestID := usageLog.RequestID
 	_, billingErr := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-		Cost:                  cost,
-		User:                  user,
-		APIKey:                apiKey,
-		Account:               account,
-		Subscription:          subscription,
-		RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-		AccountRateMultiplier: accountRateMultiplier,
-		APIKeyService:         input.APIKeyService,
-		Platform:              quotaPlatform,
+		Cost:                       cost,
+		User:                       user,
+		APIKey:                     apiKey,
+		Account:                    account,
+		Subscription:               subscription,
+		RequestPayloadHash:         resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
+		BalanceRateMultiplier:      balanceRateMultiplier,
+		SubscriptionRateMultiplier: subscriptionMultiplier,
+		AccountRateMultiplier:      accountRateMultiplier,
+		APIKeyService:              input.APIKeyService,
+		Platform:                   quotaPlatform,
 	}, s.billingDeps(), s.usageBillingRepo)
 
 	if billingErr != nil {
@@ -9777,8 +9820,7 @@ func (s *GatewayService) buildRecordUsageLog(
 	account *Account,
 	subscription *UserSubscription,
 	requestedModel string,
-	multiplier float64,
-	imageMultiplier float64,
+	split usageBillingSplit,
 	accountRateMultiplier float64,
 	billingType int8,
 	cacheTTLOverridden bool,
@@ -9788,47 +9830,46 @@ func (s *GatewayService) buildRecordUsageLog(
 	durationMs := int(result.Duration.Milliseconds())
 	requestID := resolveUsageBillingRequestID(ctx, result.RequestID)
 	usageLog := &UsageLog{
-		UserID:                user.ID,
-		APIKeyID:              apiKey.ID,
-		AccountID:             account.ID,
-		RequestID:             requestID,
-		Model:                 result.Model,
-		RequestedModel:        requestedModel,
-		UpstreamModel:         optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
-		ReasoningEffort:       result.ReasoningEffort,
-		InboundEndpoint:       optionalTrimmedStringPtr(input.InboundEndpoint),
-		UpstreamEndpoint:      optionalTrimmedStringPtr(input.UpstreamEndpoint),
-		InputTokens:           result.Usage.InputTokens,
-		OutputTokens:          result.Usage.OutputTokens,
-		CacheCreationTokens:   result.Usage.CacheCreationInputTokens,
-		CacheReadTokens:       result.Usage.CacheReadInputTokens,
-		CacheCreation5mTokens: result.Usage.CacheCreation5mTokens,
-		CacheCreation1hTokens: result.Usage.CacheCreation1hTokens,
-		ImageOutputTokens:     result.Usage.ImageOutputTokens,
-		RateMultiplier:        multiplier,
-		AccountRateMultiplier: &accountRateMultiplier,
-		BillingType:           billingType,
-		BillingMode:           resolveBillingMode(result, cost),
-		Stream:                result.Stream,
-		DurationMs:            &durationMs,
-		FirstTokenMs:          result.FirstTokenMs,
-		ImageCount:            result.ImageCount,
-		ImageSize:             optionalTrimmedStringPtr(result.ImageSize),
-		ImageInputSize:        optionalTrimmedStringPtr(result.ImageInputSize),
-		ImageOutputSize:       optionalTrimmedStringPtr(result.ImageOutputSize),
-		ImageSizeSource:       optionalTrimmedStringPtr(result.ImageSizeSource),
-		ImageSizeBreakdown:    result.ImageSizeBreakdown,
-		CacheTTLOverridden:    cacheTTLOverridden,
-		ChannelID:             optionalInt64Ptr(input.ChannelID),
-		ModelMappingChain:     optionalTrimmedStringPtr(input.ModelMappingChain),
-		UserAgent:             optionalTrimmedStringPtr(input.UserAgent),
-		IPAddress:             optionalTrimmedStringPtr(input.IPAddress),
-		GroupID:               apiKey.GroupID,
-		SubscriptionID:        optionalSubscriptionID(subscription),
-		CreatedAt:             time.Now(),
-	}
-	if result.ImageCount > 0 && (cost == nil || cost.BillingMode != string(BillingModeToken)) {
-		usageLog.RateMultiplier = imageMultiplier
+		UserID:                     user.ID,
+		APIKeyID:                   apiKey.ID,
+		AccountID:                  account.ID,
+		RequestID:                  requestID,
+		Model:                      result.Model,
+		RequestedModel:             requestedModel,
+		UpstreamModel:              optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
+		ReasoningEffort:            result.ReasoningEffort,
+		InboundEndpoint:            optionalTrimmedStringPtr(input.InboundEndpoint),
+		UpstreamEndpoint:           optionalTrimmedStringPtr(input.UpstreamEndpoint),
+		InputTokens:                result.Usage.InputTokens,
+		OutputTokens:               result.Usage.OutputTokens,
+		CacheCreationTokens:        result.Usage.CacheCreationInputTokens,
+		CacheReadTokens:            result.Usage.CacheReadInputTokens,
+		CacheCreation5mTokens:      result.Usage.CacheCreation5mTokens,
+		CacheCreation1hTokens:      result.Usage.CacheCreation1hTokens,
+		ImageOutputTokens:          result.Usage.ImageOutputTokens,
+		RateMultiplier:             split.EffectiveRateMultiplier,
+		SubscriptionRateMultiplier: split.SubscriptionRateMultiplier,
+		BalanceRateMultiplier:      split.BalanceRateMultiplier,
+		AccountRateMultiplier:      &accountRateMultiplier,
+		BillingType:                billingType,
+		BillingMode:                resolveBillingMode(result, cost),
+		Stream:                     result.Stream,
+		DurationMs:                 &durationMs,
+		FirstTokenMs:               result.FirstTokenMs,
+		ImageCount:                 result.ImageCount,
+		ImageSize:                  optionalTrimmedStringPtr(result.ImageSize),
+		ImageInputSize:             optionalTrimmedStringPtr(result.ImageInputSize),
+		ImageOutputSize:            optionalTrimmedStringPtr(result.ImageOutputSize),
+		ImageSizeSource:            optionalTrimmedStringPtr(result.ImageSizeSource),
+		ImageSizeBreakdown:         result.ImageSizeBreakdown,
+		CacheTTLOverridden:         cacheTTLOverridden,
+		ChannelID:                  optionalInt64Ptr(input.ChannelID),
+		ModelMappingChain:          optionalTrimmedStringPtr(input.ModelMappingChain),
+		UserAgent:                  optionalTrimmedStringPtr(input.UserAgent),
+		IPAddress:                  optionalTrimmedStringPtr(input.IPAddress),
+		GroupID:                    apiKey.GroupID,
+		SubscriptionID:             optionalSubscriptionID(subscription),
+		CreatedAt:                  time.Now(),
 	}
 	if cost != nil {
 		usageLog.InputCost = cost.InputCost
@@ -9839,6 +9880,8 @@ func (s *GatewayService) buildRecordUsageLog(
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
 	}
+	usageLog.SubscriptionCost = split.SubscriptionCost
+	usageLog.BalanceCost = split.BalanceCost
 
 	return usageLog
 }
@@ -9862,6 +9905,20 @@ func optionalSubscriptionID(subscription *UserSubscription) *int64 {
 		return &subscription.ID
 	}
 	return nil
+}
+
+func resolveGroupSubscriptionRateMultiplier(apiKey *APIKey, fallback float64) float64 {
+	if apiKey == nil || apiKey.Group == nil {
+		return normalizeUsageRateMultiplier(fallback, 1)
+	}
+	return normalizeUsageRateMultiplier(apiKey.Group.SubscriptionRateMultiplier, fallback)
+}
+
+func resolveUsageBalanceRateMultiplier(imageCount int, billingMode string, defaultMultiplier, imageMultiplier float64) float64 {
+	if imageCount > 0 && billingMode != string(BillingModeToken) {
+		return normalizeUsageRateMultiplier(imageMultiplier, defaultMultiplier)
+	}
+	return normalizeUsageRateMultiplier(defaultMultiplier, 1)
 }
 
 // ResolveChannelMapping 委托渠道服务解析模型映射

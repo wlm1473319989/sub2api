@@ -584,6 +584,48 @@ func (_u *UsageLogUpdate) AddRateMultiplier(v float64) *UsageLogUpdate {
 	return _u
 }
 
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (_u *UsageLogUpdate) SetSubscriptionRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.ResetSubscriptionRateMultiplier()
+	_u.mutation.SetSubscriptionRateMultiplier(v)
+	return _u
+}
+
+// SetNillableSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableSubscriptionRateMultiplier(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetSubscriptionRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionRateMultiplier adds value to the "subscription_rate_multiplier" field.
+func (_u *UsageLogUpdate) AddSubscriptionRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.AddSubscriptionRateMultiplier(v)
+	return _u
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (_u *UsageLogUpdate) SetBalanceRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.ResetBalanceRateMultiplier()
+	_u.mutation.SetBalanceRateMultiplier(v)
+	return _u
+}
+
+// SetNillableBalanceRateMultiplier sets the "balance_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableBalanceRateMultiplier(v *float64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetBalanceRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBalanceRateMultiplier adds value to the "balance_rate_multiplier" field.
+func (_u *UsageLogUpdate) AddBalanceRateMultiplier(v float64) *UsageLogUpdate {
+	_u.mutation.AddBalanceRateMultiplier(v)
+	return _u
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_u *UsageLogUpdate) SetAccountRateMultiplier(v float64) *UsageLogUpdate {
 	_u.mutation.ResetAccountRateMultiplier()
@@ -1179,6 +1221,18 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SubscriptionRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldSubscriptionRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldSubscriptionRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BalanceRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldBalanceRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBalanceRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldBalanceRateMultiplier, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
@@ -1984,6 +2038,48 @@ func (_u *UsageLogUpdateOne) AddRateMultiplier(v float64) *UsageLogUpdateOne {
 	return _u
 }
 
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) SetSubscriptionRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetSubscriptionRateMultiplier()
+	_u.mutation.SetSubscriptionRateMultiplier(v)
+	return _u
+}
+
+// SetNillableSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableSubscriptionRateMultiplier(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetSubscriptionRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddSubscriptionRateMultiplier adds value to the "subscription_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) AddSubscriptionRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddSubscriptionRateMultiplier(v)
+	return _u
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) SetBalanceRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.ResetBalanceRateMultiplier()
+	_u.mutation.SetBalanceRateMultiplier(v)
+	return _u
+}
+
+// SetNillableBalanceRateMultiplier sets the "balance_rate_multiplier" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableBalanceRateMultiplier(v *float64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetBalanceRateMultiplier(*v)
+	}
+	return _u
+}
+
+// AddBalanceRateMultiplier adds value to the "balance_rate_multiplier" field.
+func (_u *UsageLogUpdateOne) AddBalanceRateMultiplier(v float64) *UsageLogUpdateOne {
+	_u.mutation.AddBalanceRateMultiplier(v)
+	return _u
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_u *UsageLogUpdateOne) SetAccountRateMultiplier(v float64) *UsageLogUpdateOne {
 	_u.mutation.ResetAccountRateMultiplier()
@@ -2609,6 +2705,18 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if value, ok := _u.mutation.AddedRateMultiplier(); ok {
 		_spec.AddField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.SubscriptionRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldSubscriptionRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedSubscriptionRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldSubscriptionRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.BalanceRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldBalanceRateMultiplier, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedBalanceRateMultiplier(); ok {
+		_spec.AddField(usagelog.FieldBalanceRateMultiplier, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)

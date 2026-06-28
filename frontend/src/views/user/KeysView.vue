@@ -110,6 +110,7 @@
                   :name="row.group.name"
                   :platform="row.group.platform"
                   :rate-multiplier="row.group.rate_multiplier"
+                  :subscription-rate-multiplier="row.group.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[row.group.id]"
                 />
                 <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{
@@ -419,6 +420,7 @@
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :rate-multiplier="(option as unknown as GroupOption).rate"
+                :subscription-rate-multiplier="(option as unknown as GroupOption).subscriptionRate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
               />
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
@@ -428,6 +430,7 @@
                 :name="(option as unknown as GroupOption).label"
                 :platform="(option as unknown as GroupOption).platform"
                 :rate-multiplier="(option as unknown as GroupOption).rate"
+                :subscription-rate-multiplier="(option as unknown as GroupOption).subscriptionRate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
                 :description="(option as unknown as GroupOption).description"
                 :selected="selected"
@@ -1022,6 +1025,7 @@
               :name="option.label"
               :platform="option.platform"
               :rate-multiplier="option.rate"
+              :subscription-rate-multiplier="option.subscriptionRate"
               :user-rate-multiplier="option.userRate"
               :description="option.description"
               :selected="
@@ -1086,6 +1090,7 @@ interface GroupOption {
   label: string
   description: string | null
   rate: number
+  subscriptionRate: number
   userRate: number | null
   platform: GroupPlatform
 }
@@ -1243,6 +1248,7 @@ const groupOptions = computed(() =>
     label: group.name,
     description: group.description,
     rate: group.rate_multiplier,
+    subscriptionRate: group.subscription_rate_multiplier,
     userRate: userGroupRates.value[group.id] ?? null,
     platform: group.platform
   }))

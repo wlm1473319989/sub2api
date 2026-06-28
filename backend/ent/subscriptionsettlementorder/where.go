@@ -1803,6 +1803,52 @@ func HasAfterPlanWith(preds ...predicate.SubscriptionPlan) predicate.Subscriptio
 	})
 }
 
+// HasRefundRequests applies the HasEdge predicate on the "refund_requests" edge.
+func HasRefundRequests() predicate.SubscriptionSettlementOrder {
+	return predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RefundRequestsTable, RefundRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRefundRequestsWith applies the HasEdge predicate on the "refund_requests" edge with a given conditions (other predicates).
+func HasRefundRequestsWith(preds ...predicate.SubscriptionRefundRequest) predicate.SubscriptionSettlementOrder {
+	return predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		step := newRefundRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasExpectedRefundRequests applies the HasEdge predicate on the "expected_refund_requests" edge.
+func HasExpectedRefundRequests() predicate.SubscriptionSettlementOrder {
+	return predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, ExpectedRefundRequestsTable, ExpectedRefundRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasExpectedRefundRequestsWith applies the HasEdge predicate on the "expected_refund_requests" edge with a given conditions (other predicates).
+func HasExpectedRefundRequestsWith(preds ...predicate.SubscriptionRefundRequest) predicate.SubscriptionSettlementOrder {
+	return predicate.SubscriptionSettlementOrder(func(s *sql.Selector) {
+		step := newExpectedRefundRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.SubscriptionSettlementOrder) predicate.SubscriptionSettlementOrder {
 	return predicate.SubscriptionSettlementOrder(sql.AndPredicates(predicates...))

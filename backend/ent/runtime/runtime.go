@@ -32,6 +32,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
@@ -797,82 +799,86 @@ func init() {
 	groupDescRateMultiplier := groupFields[2].Descriptor()
 	// group.DefaultRateMultiplier holds the default value on creation for the rate_multiplier field.
 	group.DefaultRateMultiplier = groupDescRateMultiplier.Default.(float64)
+	// groupDescSubscriptionRateMultiplier is the schema descriptor for subscription_rate_multiplier field.
+	groupDescSubscriptionRateMultiplier := groupFields[3].Descriptor()
+	// group.DefaultSubscriptionRateMultiplier holds the default value on creation for the subscription_rate_multiplier field.
+	group.DefaultSubscriptionRateMultiplier = groupDescSubscriptionRateMultiplier.Default.(float64)
 	// groupDescIsExclusive is the schema descriptor for is_exclusive field.
-	groupDescIsExclusive := groupFields[3].Descriptor()
+	groupDescIsExclusive := groupFields[4].Descriptor()
 	// group.DefaultIsExclusive holds the default value on creation for the is_exclusive field.
 	group.DefaultIsExclusive = groupDescIsExclusive.Default.(bool)
 	// groupDescStatus is the schema descriptor for status field.
-	groupDescStatus := groupFields[4].Descriptor()
+	groupDescStatus := groupFields[5].Descriptor()
 	// group.DefaultStatus holds the default value on creation for the status field.
 	group.DefaultStatus = groupDescStatus.Default.(string)
 	// group.StatusValidator is a validator for the "status" field. It is called by the builders before save.
 	group.StatusValidator = groupDescStatus.Validators[0].(func(string) error)
 	// groupDescPlatform is the schema descriptor for platform field.
-	groupDescPlatform := groupFields[5].Descriptor()
+	groupDescPlatform := groupFields[6].Descriptor()
 	// group.DefaultPlatform holds the default value on creation for the platform field.
 	group.DefaultPlatform = groupDescPlatform.Default.(string)
 	// group.PlatformValidator is a validator for the "platform" field. It is called by the builders before save.
 	group.PlatformValidator = groupDescPlatform.Validators[0].(func(string) error)
 	// groupDescAllowImageGeneration is the schema descriptor for allow_image_generation field.
-	groupDescAllowImageGeneration := groupFields[6].Descriptor()
+	groupDescAllowImageGeneration := groupFields[7].Descriptor()
 	// group.DefaultAllowImageGeneration holds the default value on creation for the allow_image_generation field.
 	group.DefaultAllowImageGeneration = groupDescAllowImageGeneration.Default.(bool)
 	// groupDescImageRateIndependent is the schema descriptor for image_rate_independent field.
-	groupDescImageRateIndependent := groupFields[7].Descriptor()
+	groupDescImageRateIndependent := groupFields[8].Descriptor()
 	// group.DefaultImageRateIndependent holds the default value on creation for the image_rate_independent field.
 	group.DefaultImageRateIndependent = groupDescImageRateIndependent.Default.(bool)
 	// groupDescImageRateMultiplier is the schema descriptor for image_rate_multiplier field.
-	groupDescImageRateMultiplier := groupFields[8].Descriptor()
+	groupDescImageRateMultiplier := groupFields[9].Descriptor()
 	// group.DefaultImageRateMultiplier holds the default value on creation for the image_rate_multiplier field.
 	group.DefaultImageRateMultiplier = groupDescImageRateMultiplier.Default.(float64)
 	// groupDescClaudeCodeOnly is the schema descriptor for claude_code_only field.
-	groupDescClaudeCodeOnly := groupFields[12].Descriptor()
+	groupDescClaudeCodeOnly := groupFields[13].Descriptor()
 	// group.DefaultClaudeCodeOnly holds the default value on creation for the claude_code_only field.
 	group.DefaultClaudeCodeOnly = groupDescClaudeCodeOnly.Default.(bool)
 	// groupDescModelRoutingEnabled is the schema descriptor for model_routing_enabled field.
-	groupDescModelRoutingEnabled := groupFields[16].Descriptor()
+	groupDescModelRoutingEnabled := groupFields[17].Descriptor()
 	// group.DefaultModelRoutingEnabled holds the default value on creation for the model_routing_enabled field.
 	group.DefaultModelRoutingEnabled = groupDescModelRoutingEnabled.Default.(bool)
 	// groupDescMcpXMLInject is the schema descriptor for mcp_xml_inject field.
-	groupDescMcpXMLInject := groupFields[17].Descriptor()
+	groupDescMcpXMLInject := groupFields[18].Descriptor()
 	// group.DefaultMcpXMLInject holds the default value on creation for the mcp_xml_inject field.
 	group.DefaultMcpXMLInject = groupDescMcpXMLInject.Default.(bool)
 	// groupDescSupportedModelScopes is the schema descriptor for supported_model_scopes field.
-	groupDescSupportedModelScopes := groupFields[18].Descriptor()
+	groupDescSupportedModelScopes := groupFields[19].Descriptor()
 	// group.DefaultSupportedModelScopes holds the default value on creation for the supported_model_scopes field.
 	group.DefaultSupportedModelScopes = groupDescSupportedModelScopes.Default.([]string)
 	// groupDescSortOrder is the schema descriptor for sort_order field.
-	groupDescSortOrder := groupFields[19].Descriptor()
+	groupDescSortOrder := groupFields[20].Descriptor()
 	// group.DefaultSortOrder holds the default value on creation for the sort_order field.
 	group.DefaultSortOrder = groupDescSortOrder.Default.(int)
 	// groupDescAllowMessagesDispatch is the schema descriptor for allow_messages_dispatch field.
-	groupDescAllowMessagesDispatch := groupFields[20].Descriptor()
+	groupDescAllowMessagesDispatch := groupFields[21].Descriptor()
 	// group.DefaultAllowMessagesDispatch holds the default value on creation for the allow_messages_dispatch field.
 	group.DefaultAllowMessagesDispatch = groupDescAllowMessagesDispatch.Default.(bool)
 	// groupDescRequireOauthOnly is the schema descriptor for require_oauth_only field.
-	groupDescRequireOauthOnly := groupFields[21].Descriptor()
+	groupDescRequireOauthOnly := groupFields[22].Descriptor()
 	// group.DefaultRequireOauthOnly holds the default value on creation for the require_oauth_only field.
 	group.DefaultRequireOauthOnly = groupDescRequireOauthOnly.Default.(bool)
 	// groupDescRequirePrivacySet is the schema descriptor for require_privacy_set field.
-	groupDescRequirePrivacySet := groupFields[22].Descriptor()
+	groupDescRequirePrivacySet := groupFields[23].Descriptor()
 	// group.DefaultRequirePrivacySet holds the default value on creation for the require_privacy_set field.
 	group.DefaultRequirePrivacySet = groupDescRequirePrivacySet.Default.(bool)
 	// groupDescDefaultMappedModel is the schema descriptor for default_mapped_model field.
-	groupDescDefaultMappedModel := groupFields[23].Descriptor()
+	groupDescDefaultMappedModel := groupFields[24].Descriptor()
 	// group.DefaultDefaultMappedModel holds the default value on creation for the default_mapped_model field.
 	group.DefaultDefaultMappedModel = groupDescDefaultMappedModel.Default.(string)
 	// group.DefaultMappedModelValidator is a validator for the "default_mapped_model" field. It is called by the builders before save.
 	group.DefaultMappedModelValidator = groupDescDefaultMappedModel.Validators[0].(func(string) error)
 	// groupDescMessagesDispatchModelConfig is the schema descriptor for messages_dispatch_model_config field.
-	groupDescMessagesDispatchModelConfig := groupFields[24].Descriptor()
+	groupDescMessagesDispatchModelConfig := groupFields[25].Descriptor()
 	// group.DefaultMessagesDispatchModelConfig holds the default value on creation for the messages_dispatch_model_config field.
 	group.DefaultMessagesDispatchModelConfig = groupDescMessagesDispatchModelConfig.Default.(domain.OpenAIMessagesDispatchModelConfig)
 	// groupDescModelsListConfig is the schema descriptor for models_list_config field.
-	groupDescModelsListConfig := groupFields[25].Descriptor()
+	groupDescModelsListConfig := groupFields[26].Descriptor()
 	// group.DefaultModelsListConfig holds the default value on creation for the models_list_config field.
 	group.DefaultModelsListConfig = groupDescModelsListConfig.Default.(domain.GroupModelsListConfig)
 	// groupDescRpmLimit is the schema descriptor for rpm_limit field.
-	groupDescRpmLimit := groupFields[26].Descriptor()
+	groupDescRpmLimit := groupFields[27].Descriptor()
 	// group.DefaultRpmLimit holds the default value on creation for the rpm_limit field.
 	group.DefaultRpmLimit = groupDescRpmLimit.Default.(int)
 	idempotencyrecordMixin := schema.IdempotencyRecord{}.Mixin()
@@ -1542,6 +1548,122 @@ func init() {
 	subscriptionplan.DefaultUpdatedAt = subscriptionplanDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionplan.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
 	subscriptionplan.UpdateDefaultUpdatedAt = subscriptionplanDescUpdatedAt.UpdateDefault.(func() time.Time)
+	subscriptionrefundallocationFields := schema.SubscriptionRefundAllocation{}.Fields()
+	_ = subscriptionrefundallocationFields
+	// subscriptionrefundallocationDescOrderAmount is the schema descriptor for order_amount field.
+	subscriptionrefundallocationDescOrderAmount := subscriptionrefundallocationFields[3].Descriptor()
+	// subscriptionrefundallocation.DefaultOrderAmount holds the default value on creation for the order_amount field.
+	subscriptionrefundallocation.DefaultOrderAmount = subscriptionrefundallocationDescOrderAmount.Default.(float64)
+	// subscriptionrefundallocationDescOrderPayAmount is the schema descriptor for order_pay_amount field.
+	subscriptionrefundallocationDescOrderPayAmount := subscriptionrefundallocationFields[4].Descriptor()
+	// subscriptionrefundallocation.DefaultOrderPayAmount holds the default value on creation for the order_pay_amount field.
+	subscriptionrefundallocation.DefaultOrderPayAmount = subscriptionrefundallocationDescOrderPayAmount.Default.(float64)
+	// subscriptionrefundallocationDescAlreadyRefundedAmount is the schema descriptor for already_refunded_amount field.
+	subscriptionrefundallocationDescAlreadyRefundedAmount := subscriptionrefundallocationFields[5].Descriptor()
+	// subscriptionrefundallocation.DefaultAlreadyRefundedAmount holds the default value on creation for the already_refunded_amount field.
+	subscriptionrefundallocation.DefaultAlreadyRefundedAmount = subscriptionrefundallocationDescAlreadyRefundedAmount.Default.(float64)
+	// subscriptionrefundallocationDescRefundableOrderAmount is the schema descriptor for refundable_order_amount field.
+	subscriptionrefundallocationDescRefundableOrderAmount := subscriptionrefundallocationFields[6].Descriptor()
+	// subscriptionrefundallocation.DefaultRefundableOrderAmount holds the default value on creation for the refundable_order_amount field.
+	subscriptionrefundallocation.DefaultRefundableOrderAmount = subscriptionrefundallocationDescRefundableOrderAmount.Default.(float64)
+	// subscriptionrefundallocationDescAllocatedRefundValue is the schema descriptor for allocated_refund_value field.
+	subscriptionrefundallocationDescAllocatedRefundValue := subscriptionrefundallocationFields[7].Descriptor()
+	// subscriptionrefundallocation.DefaultAllocatedRefundValue holds the default value on creation for the allocated_refund_value field.
+	subscriptionrefundallocation.DefaultAllocatedRefundValue = subscriptionrefundallocationDescAllocatedRefundValue.Default.(float64)
+	// subscriptionrefundallocationDescGatewayRefundAmount is the schema descriptor for gateway_refund_amount field.
+	subscriptionrefundallocationDescGatewayRefundAmount := subscriptionrefundallocationFields[8].Descriptor()
+	// subscriptionrefundallocation.DefaultGatewayRefundAmount holds the default value on creation for the gateway_refund_amount field.
+	subscriptionrefundallocation.DefaultGatewayRefundAmount = subscriptionrefundallocationDescGatewayRefundAmount.Default.(float64)
+	// subscriptionrefundallocationDescCurrency is the schema descriptor for currency field.
+	subscriptionrefundallocationDescCurrency := subscriptionrefundallocationFields[9].Descriptor()
+	// subscriptionrefundallocation.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	subscriptionrefundallocation.CurrencyValidator = subscriptionrefundallocationDescCurrency.Validators[0].(func(string) error)
+	// subscriptionrefundallocationDescStatus is the schema descriptor for status field.
+	subscriptionrefundallocationDescStatus := subscriptionrefundallocationFields[10].Descriptor()
+	// subscriptionrefundallocation.DefaultStatus holds the default value on creation for the status field.
+	subscriptionrefundallocation.DefaultStatus = subscriptionrefundallocationDescStatus.Default.(string)
+	// subscriptionrefundallocation.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	subscriptionrefundallocation.StatusValidator = subscriptionrefundallocationDescStatus.Validators[0].(func(string) error)
+	// subscriptionrefundallocationDescGatewayRefundTradeNo is the schema descriptor for gateway_refund_trade_no field.
+	subscriptionrefundallocationDescGatewayRefundTradeNo := subscriptionrefundallocationFields[11].Descriptor()
+	// subscriptionrefundallocation.GatewayRefundTradeNoValidator is a validator for the "gateway_refund_trade_no" field. It is called by the builders before save.
+	subscriptionrefundallocation.GatewayRefundTradeNoValidator = subscriptionrefundallocationDescGatewayRefundTradeNo.Validators[0].(func(string) error)
+	// subscriptionrefundallocationDescCreatedAt is the schema descriptor for created_at field.
+	subscriptionrefundallocationDescCreatedAt := subscriptionrefundallocationFields[14].Descriptor()
+	// subscriptionrefundallocation.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscriptionrefundallocation.DefaultCreatedAt = subscriptionrefundallocationDescCreatedAt.Default.(func() time.Time)
+	// subscriptionrefundallocationDescUpdatedAt is the schema descriptor for updated_at field.
+	subscriptionrefundallocationDescUpdatedAt := subscriptionrefundallocationFields[15].Descriptor()
+	// subscriptionrefundallocation.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	subscriptionrefundallocation.DefaultUpdatedAt = subscriptionrefundallocationDescUpdatedAt.Default.(func() time.Time)
+	// subscriptionrefundallocation.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	subscriptionrefundallocation.UpdateDefaultUpdatedAt = subscriptionrefundallocationDescUpdatedAt.UpdateDefault.(func() time.Time)
+	subscriptionrefundrequestFields := schema.SubscriptionRefundRequest{}.Fields()
+	_ = subscriptionrefundrequestFields
+	// subscriptionrefundrequestDescStatus is the schema descriptor for status field.
+	subscriptionrefundrequestDescStatus := subscriptionrefundrequestFields[4].Descriptor()
+	// subscriptionrefundrequest.DefaultStatus holds the default value on creation for the status field.
+	subscriptionrefundrequest.DefaultStatus = subscriptionrefundrequestDescStatus.Default.(string)
+	// subscriptionrefundrequest.StatusValidator is a validator for the "status" field. It is called by the builders before save.
+	subscriptionrefundrequest.StatusValidator = subscriptionrefundrequestDescStatus.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescRefundMode is the schema descriptor for refund_mode field.
+	subscriptionrefundrequestDescRefundMode := subscriptionrefundrequestFields[5].Descriptor()
+	// subscriptionrefundrequest.RefundModeValidator is a validator for the "refund_mode" field. It is called by the builders before save.
+	subscriptionrefundrequest.RefundModeValidator = subscriptionrefundrequestDescRefundMode.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescCurrency is the schema descriptor for currency field.
+	subscriptionrefundrequestDescCurrency := subscriptionrefundrequestFields[6].Descriptor()
+	// subscriptionrefundrequest.CurrencyValidator is a validator for the "currency" field. It is called by the builders before save.
+	subscriptionrefundrequest.CurrencyValidator = subscriptionrefundrequestDescCurrency.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescRefundResidualValue is the schema descriptor for refund_residual_value field.
+	subscriptionrefundrequestDescRefundResidualValue := subscriptionrefundrequestFields[8].Descriptor()
+	// subscriptionrefundrequest.DefaultRefundResidualValue holds the default value on creation for the refund_residual_value field.
+	subscriptionrefundrequest.DefaultRefundResidualValue = subscriptionrefundrequestDescRefundResidualValue.Default.(float64)
+	// subscriptionrefundrequestDescGatewayRefundableTotal is the schema descriptor for gateway_refundable_total field.
+	subscriptionrefundrequestDescGatewayRefundableTotal := subscriptionrefundrequestFields[9].Descriptor()
+	// subscriptionrefundrequest.DefaultGatewayRefundableTotal holds the default value on creation for the gateway_refundable_total field.
+	subscriptionrefundrequest.DefaultGatewayRefundableTotal = subscriptionrefundrequestDescGatewayRefundableTotal.Default.(float64)
+	// subscriptionrefundrequestDescManualTransferAmount is the schema descriptor for manual_transfer_amount field.
+	subscriptionrefundrequestDescManualTransferAmount := subscriptionrefundrequestFields[10].Descriptor()
+	// subscriptionrefundrequest.DefaultManualTransferAmount holds the default value on creation for the manual_transfer_amount field.
+	subscriptionrefundrequest.DefaultManualTransferAmount = subscriptionrefundrequestDescManualTransferAmount.Default.(float64)
+	// subscriptionrefundrequestDescPreviewTokenHash is the schema descriptor for preview_token_hash field.
+	subscriptionrefundrequestDescPreviewTokenHash := subscriptionrefundrequestFields[11].Descriptor()
+	// subscriptionrefundrequest.PreviewTokenHashValidator is a validator for the "preview_token_hash" field. It is called by the builders before save.
+	subscriptionrefundrequest.PreviewTokenHashValidator = subscriptionrefundrequestDescPreviewTokenHash.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescPreviewFingerprint is the schema descriptor for preview_fingerprint field.
+	subscriptionrefundrequestDescPreviewFingerprint := subscriptionrefundrequestFields[12].Descriptor()
+	// subscriptionrefundrequest.PreviewFingerprintValidator is a validator for the "preview_fingerprint" field. It is called by the builders before save.
+	subscriptionrefundrequest.PreviewFingerprintValidator = subscriptionrefundrequestDescPreviewFingerprint.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescPreviewIssuedAt is the schema descriptor for preview_issued_at field.
+	subscriptionrefundrequestDescPreviewIssuedAt := subscriptionrefundrequestFields[13].Descriptor()
+	// subscriptionrefundrequest.DefaultPreviewIssuedAt holds the default value on creation for the preview_issued_at field.
+	subscriptionrefundrequest.DefaultPreviewIssuedAt = subscriptionrefundrequestDescPreviewIssuedAt.Default.(func() time.Time)
+	// subscriptionrefundrequestDescOriginalSubscriptionStatus is the schema descriptor for original_subscription_status field.
+	subscriptionrefundrequestDescOriginalSubscriptionStatus := subscriptionrefundrequestFields[19].Descriptor()
+	// subscriptionrefundrequest.OriginalSubscriptionStatusValidator is a validator for the "original_subscription_status" field. It is called by the builders before save.
+	subscriptionrefundrequest.OriginalSubscriptionStatusValidator = subscriptionrefundrequestDescOriginalSubscriptionStatus.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescManualReceiverType is the schema descriptor for manual_receiver_type field.
+	subscriptionrefundrequestDescManualReceiverType := subscriptionrefundrequestFields[21].Descriptor()
+	// subscriptionrefundrequest.ManualReceiverTypeValidator is a validator for the "manual_receiver_type" field. It is called by the builders before save.
+	subscriptionrefundrequest.ManualReceiverTypeValidator = subscriptionrefundrequestDescManualReceiverType.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescManualReceiverName is the schema descriptor for manual_receiver_name field.
+	subscriptionrefundrequestDescManualReceiverName := subscriptionrefundrequestFields[22].Descriptor()
+	// subscriptionrefundrequest.ManualReceiverNameValidator is a validator for the "manual_receiver_name" field. It is called by the builders before save.
+	subscriptionrefundrequest.ManualReceiverNameValidator = subscriptionrefundrequestDescManualReceiverName.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescManualReceiverAccount is the schema descriptor for manual_receiver_account field.
+	subscriptionrefundrequestDescManualReceiverAccount := subscriptionrefundrequestFields[23].Descriptor()
+	// subscriptionrefundrequest.ManualReceiverAccountValidator is a validator for the "manual_receiver_account" field. It is called by the builders before save.
+	subscriptionrefundrequest.ManualReceiverAccountValidator = subscriptionrefundrequestDescManualReceiverAccount.Validators[0].(func(string) error)
+	// subscriptionrefundrequestDescCreatedAt is the schema descriptor for created_at field.
+	subscriptionrefundrequestDescCreatedAt := subscriptionrefundrequestFields[30].Descriptor()
+	// subscriptionrefundrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
+	subscriptionrefundrequest.DefaultCreatedAt = subscriptionrefundrequestDescCreatedAt.Default.(func() time.Time)
+	// subscriptionrefundrequestDescUpdatedAt is the schema descriptor for updated_at field.
+	subscriptionrefundrequestDescUpdatedAt := subscriptionrefundrequestFields[31].Descriptor()
+	// subscriptionrefundrequest.DefaultUpdatedAt holds the default value on creation for the updated_at field.
+	subscriptionrefundrequest.DefaultUpdatedAt = subscriptionrefundrequestDescUpdatedAt.Default.(func() time.Time)
+	// subscriptionrefundrequest.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.
+	subscriptionrefundrequest.UpdateDefaultUpdatedAt = subscriptionrefundrequestDescUpdatedAt.UpdateDefault.(func() time.Time)
 	subscriptionsettlementorderFields := schema.SubscriptionSettlementOrder{}.Fields()
 	_ = subscriptionsettlementorderFields
 	// subscriptionsettlementorderDescActionType is the schema descriptor for action_type field.
@@ -1796,48 +1918,56 @@ func init() {
 	usagelogDescRateMultiplier := usagelogFields[27].Descriptor()
 	// usagelog.DefaultRateMultiplier holds the default value on creation for the rate_multiplier field.
 	usagelog.DefaultRateMultiplier = usagelogDescRateMultiplier.Default.(float64)
+	// usagelogDescSubscriptionRateMultiplier is the schema descriptor for subscription_rate_multiplier field.
+	usagelogDescSubscriptionRateMultiplier := usagelogFields[28].Descriptor()
+	// usagelog.DefaultSubscriptionRateMultiplier holds the default value on creation for the subscription_rate_multiplier field.
+	usagelog.DefaultSubscriptionRateMultiplier = usagelogDescSubscriptionRateMultiplier.Default.(float64)
+	// usagelogDescBalanceRateMultiplier is the schema descriptor for balance_rate_multiplier field.
+	usagelogDescBalanceRateMultiplier := usagelogFields[29].Descriptor()
+	// usagelog.DefaultBalanceRateMultiplier holds the default value on creation for the balance_rate_multiplier field.
+	usagelog.DefaultBalanceRateMultiplier = usagelogDescBalanceRateMultiplier.Default.(float64)
 	// usagelogDescBillingType is the schema descriptor for billing_type field.
-	usagelogDescBillingType := usagelogFields[29].Descriptor()
+	usagelogDescBillingType := usagelogFields[31].Descriptor()
 	// usagelog.DefaultBillingType holds the default value on creation for the billing_type field.
 	usagelog.DefaultBillingType = usagelogDescBillingType.Default.(int8)
 	// usagelogDescStream is the schema descriptor for stream field.
-	usagelogDescStream := usagelogFields[30].Descriptor()
+	usagelogDescStream := usagelogFields[32].Descriptor()
 	// usagelog.DefaultStream holds the default value on creation for the stream field.
 	usagelog.DefaultStream = usagelogDescStream.Default.(bool)
 	// usagelogDescUserAgent is the schema descriptor for user_agent field.
-	usagelogDescUserAgent := usagelogFields[33].Descriptor()
+	usagelogDescUserAgent := usagelogFields[35].Descriptor()
 	// usagelog.UserAgentValidator is a validator for the "user_agent" field. It is called by the builders before save.
 	usagelog.UserAgentValidator = usagelogDescUserAgent.Validators[0].(func(string) error)
 	// usagelogDescIPAddress is the schema descriptor for ip_address field.
-	usagelogDescIPAddress := usagelogFields[34].Descriptor()
+	usagelogDescIPAddress := usagelogFields[36].Descriptor()
 	// usagelog.IPAddressValidator is a validator for the "ip_address" field. It is called by the builders before save.
 	usagelog.IPAddressValidator = usagelogDescIPAddress.Validators[0].(func(string) error)
 	// usagelogDescImageCount is the schema descriptor for image_count field.
-	usagelogDescImageCount := usagelogFields[35].Descriptor()
+	usagelogDescImageCount := usagelogFields[37].Descriptor()
 	// usagelog.DefaultImageCount holds the default value on creation for the image_count field.
 	usagelog.DefaultImageCount = usagelogDescImageCount.Default.(int)
 	// usagelogDescImageSize is the schema descriptor for image_size field.
-	usagelogDescImageSize := usagelogFields[36].Descriptor()
+	usagelogDescImageSize := usagelogFields[38].Descriptor()
 	// usagelog.ImageSizeValidator is a validator for the "image_size" field. It is called by the builders before save.
 	usagelog.ImageSizeValidator = usagelogDescImageSize.Validators[0].(func(string) error)
 	// usagelogDescImageInputSize is the schema descriptor for image_input_size field.
-	usagelogDescImageInputSize := usagelogFields[37].Descriptor()
+	usagelogDescImageInputSize := usagelogFields[39].Descriptor()
 	// usagelog.ImageInputSizeValidator is a validator for the "image_input_size" field. It is called by the builders before save.
 	usagelog.ImageInputSizeValidator = usagelogDescImageInputSize.Validators[0].(func(string) error)
 	// usagelogDescImageOutputSize is the schema descriptor for image_output_size field.
-	usagelogDescImageOutputSize := usagelogFields[38].Descriptor()
+	usagelogDescImageOutputSize := usagelogFields[40].Descriptor()
 	// usagelog.ImageOutputSizeValidator is a validator for the "image_output_size" field. It is called by the builders before save.
 	usagelog.ImageOutputSizeValidator = usagelogDescImageOutputSize.Validators[0].(func(string) error)
 	// usagelogDescImageSizeSource is the schema descriptor for image_size_source field.
-	usagelogDescImageSizeSource := usagelogFields[39].Descriptor()
+	usagelogDescImageSizeSource := usagelogFields[41].Descriptor()
 	// usagelog.ImageSizeSourceValidator is a validator for the "image_size_source" field. It is called by the builders before save.
 	usagelog.ImageSizeSourceValidator = usagelogDescImageSizeSource.Validators[0].(func(string) error)
 	// usagelogDescCacheTTLOverridden is the schema descriptor for cache_ttl_overridden field.
-	usagelogDescCacheTTLOverridden := usagelogFields[41].Descriptor()
+	usagelogDescCacheTTLOverridden := usagelogFields[43].Descriptor()
 	// usagelog.DefaultCacheTTLOverridden holds the default value on creation for the cache_ttl_overridden field.
 	usagelog.DefaultCacheTTLOverridden = usagelogDescCacheTTLOverridden.Default.(bool)
 	// usagelogDescCreatedAt is the schema descriptor for created_at field.
-	usagelogDescCreatedAt := usagelogFields[42].Descriptor()
+	usagelogDescCreatedAt := usagelogFields[44].Descriptor()
 	// usagelog.DefaultCreatedAt holds the default value on creation for the created_at field.
 	usagelog.DefaultCreatedAt = usagelogDescCreatedAt.Default.(func() time.Time)
 	userMixin := schema.User{}.Mixin()

@@ -502,6 +502,7 @@ export interface Group {
   description: string | null
   platform: GroupPlatform
   rate_multiplier: number
+  subscription_rate_multiplier: number
   rpm_limit?: number // Group-level RPM cap (0 = unlimited); overrides user-level rpm_limit when set
   is_exclusive: boolean
   status: 'active' | 'inactive'
@@ -619,6 +620,7 @@ export interface CreateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  subscription_rate_multiplier?: number
   is_exclusive?: boolean
   allow_image_generation?: boolean
   image_rate_independent?: boolean
@@ -649,6 +651,7 @@ export interface UpdateGroupRequest {
   description?: string | null
   platform?: GroupPlatform
   rate_multiplier?: number
+  subscription_rate_multiplier?: number
   is_exclusive?: boolean
   status?: 'active' | 'inactive'
   allow_image_generation?: boolean
@@ -1222,6 +1225,8 @@ export interface UsageLog {
   total_cost: number
   actual_cost: number
   rate_multiplier: number
+  subscription_rate_multiplier: number
+  balance_rate_multiplier: number
   billing_type: number
 
   request_type?: UsageRequestType

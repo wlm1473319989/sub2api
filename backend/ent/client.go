@@ -41,6 +41,8 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionplan"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/tlsfingerprintprofile"
 	"github.com/Wei-Shaw/sub2api/ent/usagecleanuptask"
@@ -112,6 +114,10 @@ type Client struct {
 	Setting *SettingClient
 	// SubscriptionPlan is the client for interacting with the SubscriptionPlan builders.
 	SubscriptionPlan *SubscriptionPlanClient
+	// SubscriptionRefundAllocation is the client for interacting with the SubscriptionRefundAllocation builders.
+	SubscriptionRefundAllocation *SubscriptionRefundAllocationClient
+	// SubscriptionRefundRequest is the client for interacting with the SubscriptionRefundRequest builders.
+	SubscriptionRefundRequest *SubscriptionRefundRequestClient
 	// SubscriptionSettlementOrder is the client for interacting with the SubscriptionSettlementOrder builders.
 	SubscriptionSettlementOrder *SubscriptionSettlementOrderClient
 	// TLSFingerprintProfile is the client for interacting with the TLSFingerprintProfile builders.
@@ -169,6 +175,8 @@ func (c *Client) init() {
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
 	c.SubscriptionPlan = NewSubscriptionPlanClient(c.config)
+	c.SubscriptionRefundAllocation = NewSubscriptionRefundAllocationClient(c.config)
+	c.SubscriptionRefundRequest = NewSubscriptionRefundRequestClient(c.config)
 	c.SubscriptionSettlementOrder = NewSubscriptionSettlementOrderClient(c.config)
 	c.TLSFingerprintProfile = NewTLSFingerprintProfileClient(c.config)
 	c.UsageCleanupTask = NewUsageCleanupTaskClient(c.config)
@@ -297,6 +305,8 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionRefundAllocation:  NewSubscriptionRefundAllocationClient(cfg),
+		SubscriptionRefundRequest:     NewSubscriptionRefundRequestClient(cfg),
 		SubscriptionSettlementOrder:   NewSubscriptionSettlementOrderClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
@@ -352,6 +362,8 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
 		SubscriptionPlan:              NewSubscriptionPlanClient(cfg),
+		SubscriptionRefundAllocation:  NewSubscriptionRefundAllocationClient(cfg),
+		SubscriptionRefundRequest:     NewSubscriptionRefundRequestClient(cfg),
 		SubscriptionSettlementOrder:   NewSubscriptionSettlementOrderClient(cfg),
 		TLSFingerprintProfile:         NewTLSFingerprintProfileClient(cfg),
 		UsageCleanupTask:              NewUsageCleanupTaskClient(cfg),
@@ -398,10 +410,11 @@ func (c *Client) Use(hooks ...Hook) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.SubscriptionSettlementOrder, c.TLSFingerprintProfile,
-		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
-		c.UserSubscription,
+		c.SubscriptionPlan, c.SubscriptionRefundAllocation,
+		c.SubscriptionRefundRequest, c.SubscriptionSettlementOrder,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Use(hooks...)
 	}
@@ -418,10 +431,11 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
 		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.SubscriptionSettlementOrder, c.TLSFingerprintProfile,
-		c.UsageCleanupTask, c.UsageLog, c.User, c.UserAllowedGroup,
-		c.UserAttributeDefinition, c.UserAttributeValue, c.UserPlatformQuota,
-		c.UserSubscription,
+		c.SubscriptionPlan, c.SubscriptionRefundAllocation,
+		c.SubscriptionRefundRequest, c.SubscriptionSettlementOrder,
+		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
+		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
+		c.UserPlatformQuota, c.UserSubscription,
 	} {
 		n.Intercept(interceptors...)
 	}
@@ -482,6 +496,10 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.Setting.mutate(ctx, m)
 	case *SubscriptionPlanMutation:
 		return c.SubscriptionPlan.mutate(ctx, m)
+	case *SubscriptionRefundAllocationMutation:
+		return c.SubscriptionRefundAllocation.mutate(ctx, m)
+	case *SubscriptionRefundRequestMutation:
+		return c.SubscriptionRefundRequest.mutate(ctx, m)
 	case *SubscriptionSettlementOrderMutation:
 		return c.SubscriptionSettlementOrder.mutate(ctx, m)
 	case *TLSFingerprintProfileMutation:
@@ -3212,6 +3230,22 @@ func (c *PaymentOrderClient) QueryUser(_m *PaymentOrder) *UserQuery {
 	return query
 }
 
+// QuerySubscriptionRefundAllocations queries the subscription_refund_allocations edge of a PaymentOrder.
+func (c *PaymentOrderClient) QuerySubscriptionRefundAllocations(_m *PaymentOrder) *SubscriptionRefundAllocationQuery {
+	query := (&SubscriptionRefundAllocationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(paymentorder.Table, paymentorder.FieldID, id),
+			sqlgraph.To(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, paymentorder.SubscriptionRefundAllocationsTable, paymentorder.SubscriptionRefundAllocationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PaymentOrderClient) Hooks() []Hook {
 	return c.hooks.PaymentOrder
@@ -3343,6 +3377,22 @@ func (c *PaymentProviderInstanceClient) GetX(ctx context.Context, id int64) *Pay
 		panic(err)
 	}
 	return obj
+}
+
+// QuerySubscriptionRefundAllocations queries the subscription_refund_allocations edge of a PaymentProviderInstance.
+func (c *PaymentProviderInstanceClient) QuerySubscriptionRefundAllocations(_m *PaymentProviderInstance) *SubscriptionRefundAllocationQuery {
+	query := (&SubscriptionRefundAllocationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(paymentproviderinstance.Table, paymentproviderinstance.FieldID, id),
+			sqlgraph.To(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, paymentproviderinstance.SubscriptionRefundAllocationsTable, paymentproviderinstance.SubscriptionRefundAllocationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
 }
 
 // Hooks returns the client hooks.
@@ -4580,6 +4630,416 @@ func (c *SubscriptionPlanClient) mutate(ctx context.Context, m *SubscriptionPlan
 	}
 }
 
+// SubscriptionRefundAllocationClient is a client for the SubscriptionRefundAllocation schema.
+type SubscriptionRefundAllocationClient struct {
+	config
+}
+
+// NewSubscriptionRefundAllocationClient returns a client for the SubscriptionRefundAllocation from the given config.
+func NewSubscriptionRefundAllocationClient(c config) *SubscriptionRefundAllocationClient {
+	return &SubscriptionRefundAllocationClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscriptionrefundallocation.Hooks(f(g(h())))`.
+func (c *SubscriptionRefundAllocationClient) Use(hooks ...Hook) {
+	c.hooks.SubscriptionRefundAllocation = append(c.hooks.SubscriptionRefundAllocation, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscriptionrefundallocation.Intercept(f(g(h())))`.
+func (c *SubscriptionRefundAllocationClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SubscriptionRefundAllocation = append(c.inters.SubscriptionRefundAllocation, interceptors...)
+}
+
+// Create returns a builder for creating a SubscriptionRefundAllocation entity.
+func (c *SubscriptionRefundAllocationClient) Create() *SubscriptionRefundAllocationCreate {
+	mutation := newSubscriptionRefundAllocationMutation(c.config, OpCreate)
+	return &SubscriptionRefundAllocationCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SubscriptionRefundAllocation entities.
+func (c *SubscriptionRefundAllocationClient) CreateBulk(builders ...*SubscriptionRefundAllocationCreate) *SubscriptionRefundAllocationCreateBulk {
+	return &SubscriptionRefundAllocationCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionRefundAllocationClient) MapCreateBulk(slice any, setFunc func(*SubscriptionRefundAllocationCreate, int)) *SubscriptionRefundAllocationCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionRefundAllocationCreateBulk{err: fmt.Errorf("calling to SubscriptionRefundAllocationClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionRefundAllocationCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionRefundAllocationCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) Update() *SubscriptionRefundAllocationUpdate {
+	mutation := newSubscriptionRefundAllocationMutation(c.config, OpUpdate)
+	return &SubscriptionRefundAllocationUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionRefundAllocationClient) UpdateOne(_m *SubscriptionRefundAllocation) *SubscriptionRefundAllocationUpdateOne {
+	mutation := newSubscriptionRefundAllocationMutation(c.config, OpUpdateOne, withSubscriptionRefundAllocation(_m))
+	return &SubscriptionRefundAllocationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionRefundAllocationClient) UpdateOneID(id int64) *SubscriptionRefundAllocationUpdateOne {
+	mutation := newSubscriptionRefundAllocationMutation(c.config, OpUpdateOne, withSubscriptionRefundAllocationID(id))
+	return &SubscriptionRefundAllocationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) Delete() *SubscriptionRefundAllocationDelete {
+	mutation := newSubscriptionRefundAllocationMutation(c.config, OpDelete)
+	return &SubscriptionRefundAllocationDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionRefundAllocationClient) DeleteOne(_m *SubscriptionRefundAllocation) *SubscriptionRefundAllocationDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionRefundAllocationClient) DeleteOneID(id int64) *SubscriptionRefundAllocationDeleteOne {
+	builder := c.Delete().Where(subscriptionrefundallocation.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionRefundAllocationDeleteOne{builder}
+}
+
+// Query returns a query builder for SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) Query() *SubscriptionRefundAllocationQuery {
+	return &SubscriptionRefundAllocationQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscriptionRefundAllocation},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SubscriptionRefundAllocation entity by its id.
+func (c *SubscriptionRefundAllocationClient) Get(ctx context.Context, id int64) (*SubscriptionRefundAllocation, error) {
+	return c.Query().Where(subscriptionrefundallocation.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionRefundAllocationClient) GetX(ctx context.Context, id int64) *SubscriptionRefundAllocation {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryRefundRequest queries the refund_request edge of a SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) QueryRefundRequest(_m *SubscriptionRefundAllocation) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundallocation.RefundRequestTable, subscriptionrefundallocation.RefundRequestColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPaymentOrder queries the payment_order edge of a SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) QueryPaymentOrder(_m *SubscriptionRefundAllocation) *PaymentOrderQuery {
+	query := (&PaymentOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID, id),
+			sqlgraph.To(paymentorder.Table, paymentorder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundallocation.PaymentOrderTable, subscriptionrefundallocation.PaymentOrderColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryPaymentProviderInstance queries the payment_provider_instance edge of a SubscriptionRefundAllocation.
+func (c *SubscriptionRefundAllocationClient) QueryPaymentProviderInstance(_m *SubscriptionRefundAllocation) *PaymentProviderInstanceQuery {
+	query := (&PaymentProviderInstanceClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID, id),
+			sqlgraph.To(paymentproviderinstance.Table, paymentproviderinstance.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundallocation.PaymentProviderInstanceTable, subscriptionrefundallocation.PaymentProviderInstanceColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionRefundAllocationClient) Hooks() []Hook {
+	return c.hooks.SubscriptionRefundAllocation
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionRefundAllocationClient) Interceptors() []Interceptor {
+	return c.inters.SubscriptionRefundAllocation
+}
+
+func (c *SubscriptionRefundAllocationClient) mutate(ctx context.Context, m *SubscriptionRefundAllocationMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionRefundAllocationCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionRefundAllocationUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionRefundAllocationUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionRefundAllocationDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SubscriptionRefundAllocation mutation op: %q", m.Op())
+	}
+}
+
+// SubscriptionRefundRequestClient is a client for the SubscriptionRefundRequest schema.
+type SubscriptionRefundRequestClient struct {
+	config
+}
+
+// NewSubscriptionRefundRequestClient returns a client for the SubscriptionRefundRequest from the given config.
+func NewSubscriptionRefundRequestClient(c config) *SubscriptionRefundRequestClient {
+	return &SubscriptionRefundRequestClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `subscriptionrefundrequest.Hooks(f(g(h())))`.
+func (c *SubscriptionRefundRequestClient) Use(hooks ...Hook) {
+	c.hooks.SubscriptionRefundRequest = append(c.hooks.SubscriptionRefundRequest, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `subscriptionrefundrequest.Intercept(f(g(h())))`.
+func (c *SubscriptionRefundRequestClient) Intercept(interceptors ...Interceptor) {
+	c.inters.SubscriptionRefundRequest = append(c.inters.SubscriptionRefundRequest, interceptors...)
+}
+
+// Create returns a builder for creating a SubscriptionRefundRequest entity.
+func (c *SubscriptionRefundRequestClient) Create() *SubscriptionRefundRequestCreate {
+	mutation := newSubscriptionRefundRequestMutation(c.config, OpCreate)
+	return &SubscriptionRefundRequestCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of SubscriptionRefundRequest entities.
+func (c *SubscriptionRefundRequestClient) CreateBulk(builders ...*SubscriptionRefundRequestCreate) *SubscriptionRefundRequestCreateBulk {
+	return &SubscriptionRefundRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *SubscriptionRefundRequestClient) MapCreateBulk(slice any, setFunc func(*SubscriptionRefundRequestCreate, int)) *SubscriptionRefundRequestCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &SubscriptionRefundRequestCreateBulk{err: fmt.Errorf("calling to SubscriptionRefundRequestClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*SubscriptionRefundRequestCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &SubscriptionRefundRequestCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) Update() *SubscriptionRefundRequestUpdate {
+	mutation := newSubscriptionRefundRequestMutation(c.config, OpUpdate)
+	return &SubscriptionRefundRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *SubscriptionRefundRequestClient) UpdateOne(_m *SubscriptionRefundRequest) *SubscriptionRefundRequestUpdateOne {
+	mutation := newSubscriptionRefundRequestMutation(c.config, OpUpdateOne, withSubscriptionRefundRequest(_m))
+	return &SubscriptionRefundRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *SubscriptionRefundRequestClient) UpdateOneID(id int64) *SubscriptionRefundRequestUpdateOne {
+	mutation := newSubscriptionRefundRequestMutation(c.config, OpUpdateOne, withSubscriptionRefundRequestID(id))
+	return &SubscriptionRefundRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) Delete() *SubscriptionRefundRequestDelete {
+	mutation := newSubscriptionRefundRequestMutation(c.config, OpDelete)
+	return &SubscriptionRefundRequestDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *SubscriptionRefundRequestClient) DeleteOne(_m *SubscriptionRefundRequest) *SubscriptionRefundRequestDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *SubscriptionRefundRequestClient) DeleteOneID(id int64) *SubscriptionRefundRequestDeleteOne {
+	builder := c.Delete().Where(subscriptionrefundrequest.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &SubscriptionRefundRequestDeleteOne{builder}
+}
+
+// Query returns a query builder for SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) Query() *SubscriptionRefundRequestQuery {
+	return &SubscriptionRefundRequestQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeSubscriptionRefundRequest},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a SubscriptionRefundRequest entity by its id.
+func (c *SubscriptionRefundRequestClient) Get(ctx context.Context, id int64) (*SubscriptionRefundRequest, error) {
+	return c.Query().Where(subscriptionrefundrequest.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *SubscriptionRefundRequestClient) GetX(ctx context.Context, id int64) *SubscriptionRefundRequest {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryUser queries the user edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QueryUser(_m *SubscriptionRefundRequest) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundrequest.UserTable, subscriptionrefundrequest.UserColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscription queries the subscription edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QuerySubscription(_m *SubscriptionRefundRequest) *UserSubscriptionQuery {
+	query := (&UserSubscriptionClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(usersubscription.Table, usersubscription.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundrequest.SubscriptionTable, subscriptionrefundrequest.SubscriptionColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySettlement queries the settlement edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QuerySettlement(_m *SubscriptionRefundRequest) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundrequest.SettlementTable, subscriptionrefundrequest.SettlementColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExpectedSettlement queries the expected_settlement edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QueryExpectedSettlement(_m *SubscriptionRefundRequest) *SubscriptionSettlementOrderQuery {
+	query := (&SubscriptionSettlementOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundrequest.ExpectedSettlementTable, subscriptionrefundrequest.ExpectedSettlementColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryManualTransferOperator queries the manual_transfer_operator edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QueryManualTransferOperator(_m *SubscriptionRefundRequest) *UserQuery {
+	query := (&UserClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(user.Table, user.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionrefundrequest.ManualTransferOperatorTable, subscriptionrefundrequest.ManualTransferOperatorColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryAllocations queries the allocations edge of a SubscriptionRefundRequest.
+func (c *SubscriptionRefundRequestClient) QueryAllocations(_m *SubscriptionRefundRequest) *SubscriptionRefundAllocationQuery {
+	query := (&SubscriptionRefundAllocationClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID, id),
+			sqlgraph.To(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionrefundrequest.AllocationsTable, subscriptionrefundrequest.AllocationsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *SubscriptionRefundRequestClient) Hooks() []Hook {
+	return c.hooks.SubscriptionRefundRequest
+}
+
+// Interceptors returns the client interceptors.
+func (c *SubscriptionRefundRequestClient) Interceptors() []Interceptor {
+	return c.inters.SubscriptionRefundRequest
+}
+
+func (c *SubscriptionRefundRequestClient) mutate(ctx context.Context, m *SubscriptionRefundRequestMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&SubscriptionRefundRequestCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&SubscriptionRefundRequestUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&SubscriptionRefundRequestUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&SubscriptionRefundRequestDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown SubscriptionRefundRequest mutation op: %q", m.Op())
+	}
+}
+
 // SubscriptionSettlementOrderClient is a client for the SubscriptionSettlementOrder schema.
 type SubscriptionSettlementOrderClient struct {
 	config
@@ -4777,6 +5237,38 @@ func (c *SubscriptionSettlementOrderClient) QueryAfterPlan(_m *SubscriptionSettl
 			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
 			sqlgraph.To(subscriptionplan.Table, subscriptionplan.FieldID),
 			sqlgraph.Edge(sqlgraph.M2O, true, subscriptionsettlementorder.AfterPlanTable, subscriptionsettlementorder.AfterPlanColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryRefundRequests queries the refund_requests edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryRefundRequests(_m *SubscriptionSettlementOrder) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionsettlementorder.RefundRequestsTable, subscriptionsettlementorder.RefundRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryExpectedRefundRequests queries the expected_refund_requests edge of a SubscriptionSettlementOrder.
+func (c *SubscriptionSettlementOrderClient) QueryExpectedRefundRequests(_m *SubscriptionSettlementOrder) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, subscriptionsettlementorder.ExpectedRefundRequestsTable, subscriptionsettlementorder.ExpectedRefundRequestsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -5581,6 +6073,38 @@ func (c *UserClient) QueryOperatedSubscriptionSettlementOrders(_m *User) *Subscr
 			sqlgraph.From(user.Table, user.FieldID, id),
 			sqlgraph.To(subscriptionsettlementorder.Table, subscriptionsettlementorder.FieldID),
 			sqlgraph.Edge(sqlgraph.O2M, false, user.OperatedSubscriptionSettlementOrdersTable, user.OperatedSubscriptionSettlementOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QuerySubscriptionRefundRequests queries the subscription_refund_requests edge of a User.
+func (c *UserClient) QuerySubscriptionRefundRequests(_m *User) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionRefundRequestsTable, user.SubscriptionRefundRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// QueryOperatedSubscriptionRefundRequests queries the operated_subscription_refund_requests edge of a User.
+func (c *UserClient) QueryOperatedSubscriptionRefundRequests(_m *User) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OperatedSubscriptionRefundRequestsTable, user.OperatedSubscriptionRefundRequestsColumn),
 		)
 		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
 		return fromV, nil
@@ -6434,6 +6958,22 @@ func (c *UserSubscriptionClient) QuerySettlementOrders(_m *UserSubscription) *Su
 	return query
 }
 
+// QueryRefundRequests queries the refund_requests edge of a UserSubscription.
+func (c *UserSubscriptionClient) QueryRefundRequests(_m *UserSubscription) *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(usersubscription.Table, usersubscription.FieldID, id),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, usersubscription.RefundRequestsTable, usersubscription.RefundRequestsColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *UserSubscriptionClient) Hooks() []Hook {
 	hooks := c.hooks.UserSubscription
@@ -6470,6 +7010,7 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
+		SubscriptionRefundAllocation, SubscriptionRefundRequest,
 		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
 		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserPlatformQuota, UserSubscription []ent.Hook
@@ -6481,6 +7022,7 @@ type (
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
 		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
+		SubscriptionRefundAllocation, SubscriptionRefundRequest,
 		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
 		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserPlatformQuota, UserSubscription []ent.Interceptor

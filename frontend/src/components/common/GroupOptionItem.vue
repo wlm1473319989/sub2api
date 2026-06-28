@@ -9,6 +9,7 @@
       <GroupBadge
         :name="name"
         :platform="platform"
+        :subscription-rate-multiplier="subscriptionRateMultiplier"
         :show-rate="false"
         class="groupOptionItemBadge"
       />
@@ -24,13 +25,13 @@
     <!-- Right: rate pill + checkmark (vertically centered to first row) -->
     <div class="flex shrink-0 items-center gap-2 pt-0.5">
       <!-- Rate pill (platform color) -->
-      <span v-if="rateMultiplier !== undefined" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
-        <template v-if="hasCustomRate">
+      <span v-if="rateText" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
+        <template v-if="hasCustomRate && !hasSplitRate">
           <span class="mr-1 line-through opacity-50">{{ rateMultiplier }}x</span>
-          <span class="font-bold">{{ userRateMultiplier }}x</span>
+          <span class="font-bold">{{ displayBalanceRate }}x</span>
         </template>
         <template v-else>
-          {{ rateMultiplier }}x 倍率
+          {{ rateText }}
         </template>
       </span>
       <!-- Checkmark -->
@@ -50,6 +51,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue'
+import { useI18n } from 'vue-i18n'
 import GroupBadge from './GroupBadge.vue'
 import type { GroupPlatform } from '@/types'
 
@@ -57,6 +59,7 @@ interface Props {
   name: string
   platform: GroupPlatform
   rateMultiplier?: number
+  subscriptionRateMultiplier?: number | null
   userRateMultiplier?: number | null
   description?: string | null
   selected?: boolean
@@ -69,6 +72,8 @@ const props = withDefaults(defineProps<Props>(), {
   userRateMultiplier: null
 })
 
+const { t } = useI18n()
+
 // Whether user has a custom rate different from default
 const hasCustomRate = computed(() => {
   return (
@@ -77,6 +82,45 @@ const hasCustomRate = computed(() => {
     props.rateMultiplier !== undefined &&
     props.userRateMultiplier !== props.rateMultiplier
   )
+})
+
+const displayBalanceRate = computed(() => {
+  if (props.userRateMultiplier !== null && props.userRateMultiplier !== undefined) {
+    return props.userRateMultiplier
+  }
+  return props.rateMultiplier
+})
+
+const displaySubscriptionRate = computed(() => {
+  if (props.subscriptionRateMultiplier !== null && props.subscriptionRateMultiplier !== undefined) {
+    return props.subscriptionRateMultiplier
+  }
+  if (props.rateMultiplier !== undefined) {
+    return props.rateMultiplier
+  }
+  if (props.userRateMultiplier !== null && props.userRateMultiplier !== undefined) {
+    return props.userRateMultiplier
+  }
+  return undefined
+})
+
+const hasSplitRate = computed(() => {
+  return (
+    displayBalanceRate.value !== undefined &&
+    displaySubscriptionRate.value !== undefined &&
+    displaySubscriptionRate.value !== displayBalanceRate.value
+  )
+})
+
+const rateText = computed(() => {
+  if (hasSplitRate.value) {
+    return t('admin.groups.rateMultiplierSplitSummary', {
+      balance: `${displayBalanceRate.value}x`,
+      subscription: `${displaySubscriptionRate.value}x`
+    })
+  }
+  const rate = displayBalanceRate.value ?? displaySubscriptionRate.value
+  return rate !== undefined ? `${rate}x` : ''
 })
 
 // Rate pill color matches platform badge color

@@ -644,6 +644,7 @@ var (
 		{Name: "name", Type: field.TypeString, Size: 100},
 		{Name: "description", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "subscription_rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
 		{Name: "is_exclusive", Type: field.TypeBool, Default: false},
 		{Name: "status", Type: field.TypeString, Size: 20, Default: "active"},
 		{Name: "platform", Type: field.TypeString, Size: 50, Default: "anthropic"},
@@ -678,17 +679,17 @@ var (
 			{
 				Name:    "group_status",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[8]},
+				Columns: []*schema.Column{GroupsColumns[9]},
 			},
 			{
 				Name:    "group_platform",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[9]},
+				Columns: []*schema.Column{GroupsColumns[10]},
 			},
 			{
 				Name:    "group_is_exclusive",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[7]},
+				Columns: []*schema.Column{GroupsColumns[8]},
 			},
 			{
 				Name:    "group_deleted_at",
@@ -698,7 +699,7 @@ var (
 			{
 				Name:    "group_sort_order",
 				Unique:  false,
-				Columns: []*schema.Column{GroupsColumns[23]},
+				Columns: []*schema.Column{GroupsColumns[24]},
 			},
 		},
 	}
@@ -1263,6 +1264,191 @@ var (
 			},
 		},
 	}
+	// SubscriptionRefundAllocationsColumns holds the columns for the "subscription_refund_allocations" table.
+	SubscriptionRefundAllocationsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "order_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "order_pay_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "already_refunded_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "refundable_order_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "allocated_refund_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "gateway_refund_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "currency", Type: field.TypeString, Nullable: true, Size: 10},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "pending"},
+		{Name: "gateway_refund_trade_no", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "failed_reason", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "processed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "payment_order_id", Type: field.TypeInt64},
+		{Name: "payment_provider_instance_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "refund_request_id", Type: field.TypeInt64},
+	}
+	// SubscriptionRefundAllocationsTable holds the schema information for the "subscription_refund_allocations" table.
+	SubscriptionRefundAllocationsTable = &schema.Table{
+		Name:       "subscription_refund_allocations",
+		Columns:    SubscriptionRefundAllocationsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionRefundAllocationsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscription_refund_allocations_payment_orders_subscription_refund_allocations",
+				Columns:    []*schema.Column{SubscriptionRefundAllocationsColumns[14]},
+				RefColumns: []*schema.Column{PaymentOrdersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_refund_allocations_payment_provider_instances_subscription_refund_allocations",
+				Columns:    []*schema.Column{SubscriptionRefundAllocationsColumns[15]},
+				RefColumns: []*schema.Column{PaymentProviderInstancesColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "subscription_refund_allocations_subscription_refund_requests_allocations",
+				Columns:    []*schema.Column{SubscriptionRefundAllocationsColumns[16]},
+				RefColumns: []*schema.Column{SubscriptionRefundRequestsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionrefundallocation_refund_request_id_payment_order_id",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionRefundAllocationsColumns[16], SubscriptionRefundAllocationsColumns[14]},
+			},
+			{
+				Name:    "subscriptionrefundallocation_refund_request_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundAllocationsColumns[16]},
+			},
+			{
+				Name:    "subscriptionrefundallocation_payment_order_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundAllocationsColumns[14]},
+			},
+			{
+				Name:    "subscriptionrefundallocation_status",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundAllocationsColumns[8]},
+			},
+		},
+	}
+	// SubscriptionRefundRequestsColumns holds the columns for the "subscription_refund_requests" table.
+	SubscriptionRefundRequestsColumns = []*schema.Column{
+		{Name: "id", Type: field.TypeInt64, Increment: true},
+		{Name: "status", Type: field.TypeString, Size: 32, Default: "previewed"},
+		{Name: "refund_mode", Type: field.TypeString, Size: 32},
+		{Name: "currency", Type: field.TypeString, Nullable: true, Size: 10},
+		{Name: "reason", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "refund_residual_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "gateway_refundable_total", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "manual_transfer_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "preview_token_hash", Type: field.TypeString, Size: 128},
+		{Name: "preview_fingerprint", Type: field.TypeString, Nullable: true, Size: 128},
+		{Name: "preview_issued_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "preview_expires_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "submitted_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "frozen_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "completed_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "cancelled_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "original_subscription_status", Type: field.TypeString, Nullable: true, Size: 20},
+		{Name: "original_subscription_expires_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "manual_receiver_type", Type: field.TypeString, Nullable: true, Size: 32},
+		{Name: "manual_receiver_name", Type: field.TypeString, Nullable: true, Size: 100},
+		{Name: "manual_receiver_account", Type: field.TypeString, Nullable: true, Size: 255},
+		{Name: "manual_receiver_qr_image_url", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "manual_receiver_remark", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "manual_transfer_proof_url", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "manual_transfer_proof_uploaded_at", Type: field.TypeTime, Nullable: true, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "admin_note", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
+		{Name: "created_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "updated_at", Type: field.TypeTime, SchemaType: map[string]string{"postgres": "timestamptz"}},
+		{Name: "settlement_id", Type: field.TypeInt64},
+		{Name: "expected_settlement_id", Type: field.TypeInt64},
+		{Name: "user_id", Type: field.TypeInt64},
+		{Name: "manual_transfer_operator_user_id", Type: field.TypeInt64, Nullable: true},
+		{Name: "subscription_id", Type: field.TypeInt64},
+	}
+	// SubscriptionRefundRequestsTable holds the schema information for the "subscription_refund_requests" table.
+	SubscriptionRefundRequestsTable = &schema.Table{
+		Name:       "subscription_refund_requests",
+		Columns:    SubscriptionRefundRequestsColumns,
+		PrimaryKey: []*schema.Column{SubscriptionRefundRequestsColumns[0]},
+		ForeignKeys: []*schema.ForeignKey{
+			{
+				Symbol:     "subscription_refund_requests_subscription_settlement_orders_refund_requests",
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[28]},
+				RefColumns: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_refund_requests_subscription_settlement_orders_expected_refund_requests",
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[29]},
+				RefColumns: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_refund_requests_users_subscription_refund_requests",
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[30]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+			{
+				Symbol:     "subscription_refund_requests_users_operated_subscription_refund_requests",
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[31]},
+				RefColumns: []*schema.Column{UsersColumns[0]},
+				OnDelete:   schema.SetNull,
+			},
+			{
+				Symbol:     "subscription_refund_requests_user_subscriptions_refund_requests",
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
+				OnDelete:   schema.NoAction,
+			},
+		},
+		Indexes: []*schema.Index{
+			{
+				Name:    "subscriptionrefundrequest_user_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[30]},
+			},
+			{
+				Name:    "subscriptionrefundrequest_subscription_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+			},
+			{
+				Name:    "subscriptionrefundrequest_settlement_id",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[28]},
+			},
+			{
+				Name:    "subscriptionrefundrequest_status",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[1]},
+			},
+			{
+				Name:    "subscriptionrefundrequest_preview_expires_at",
+				Unique:  false,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[11]},
+			},
+			{
+				Name:    "subscriptionrefundrequest_subscription_previewed",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status = 'previewed'",
+				},
+			},
+			{
+				Name:    "subscriptionrefundrequest_subscription_processing",
+				Unique:  true,
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Annotation: &entsql.IndexAnnotation{
+					Where: "status IN ('submitted', 'gateway_processing', 'manual_pending', 'failed')",
+				},
+			},
+		},
+	}
 	// SubscriptionSettlementOrdersColumns holds the columns for the "subscription_settlement_orders" table.
 	SubscriptionSettlementOrdersColumns = []*schema.Column{
 		{Name: "id", Type: field.TypeInt64, Increment: true},
@@ -1473,6 +1659,8 @@ var (
 		{Name: "subscription_cost", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,10)"}},
 		{Name: "balance_cost", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,10)"}},
 		{Name: "rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "subscription_rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
+		{Name: "balance_rate_multiplier", Type: field.TypeFloat64, Default: 1, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
 		{Name: "account_rate_multiplier", Type: field.TypeFloat64, Nullable: true, SchemaType: map[string]string{"postgres": "decimal(10,4)"}},
 		{Name: "billing_type", Type: field.TypeInt8, Default: 0},
 		{Name: "stream", Type: field.TypeBool, Default: false},
@@ -1502,31 +1690,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "usage_logs_api_keys_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[39]},
+				Columns:    []*schema.Column{UsageLogsColumns[41]},
 				RefColumns: []*schema.Column{APIKeysColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_accounts_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[40]},
+				Columns:    []*schema.Column{UsageLogsColumns[42]},
 				RefColumns: []*schema.Column{AccountsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_groups_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[41]},
+				Columns:    []*schema.Column{UsageLogsColumns[43]},
 				RefColumns: []*schema.Column{GroupsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "usage_logs_users_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[42]},
+				Columns:    []*schema.Column{UsageLogsColumns[44]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "usage_logs_user_subscriptions_usage_logs",
-				Columns:    []*schema.Column{UsageLogsColumns[43]},
+				Columns:    []*schema.Column{UsageLogsColumns[45]},
 				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
@@ -1535,32 +1723,32 @@ var (
 			{
 				Name:    "usagelog_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[42]},
+				Columns: []*schema.Column{UsageLogsColumns[44]},
 			},
 			{
 				Name:    "usagelog_api_key_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[39]},
+				Columns: []*schema.Column{UsageLogsColumns[41]},
 			},
 			{
 				Name:    "usagelog_account_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[40]},
+				Columns: []*schema.Column{UsageLogsColumns[42]},
 			},
 			{
 				Name:    "usagelog_group_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[41]},
+				Columns: []*schema.Column{UsageLogsColumns[43]},
 			},
 			{
 				Name:    "usagelog_subscription_id",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[43]},
+				Columns: []*schema.Column{UsageLogsColumns[45]},
 			},
 			{
 				Name:    "usagelog_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[38]},
+				Columns: []*schema.Column{UsageLogsColumns[40]},
 			},
 			{
 				Name:    "usagelog_model",
@@ -1580,17 +1768,17 @@ var (
 			{
 				Name:    "usagelog_user_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[42], UsageLogsColumns[38]},
+				Columns: []*schema.Column{UsageLogsColumns[44], UsageLogsColumns[40]},
 			},
 			{
 				Name:    "usagelog_api_key_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[39], UsageLogsColumns[38]},
+				Columns: []*schema.Column{UsageLogsColumns[41], UsageLogsColumns[40]},
 			},
 			{
 				Name:    "usagelog_group_id_created_at",
 				Unique:  false,
-				Columns: []*schema.Column{UsageLogsColumns[41], UsageLogsColumns[38]},
+				Columns: []*schema.Column{UsageLogsColumns[43], UsageLogsColumns[40]},
 			},
 		},
 	}
@@ -1925,6 +2113,8 @@ var (
 		SecuritySecretsTable,
 		SettingsTable,
 		SubscriptionPlansTable,
+		SubscriptionRefundAllocationsTable,
+		SubscriptionRefundRequestsTable,
 		SubscriptionSettlementOrdersTable,
 		TLSFingerprintProfilesTable,
 		UsageCleanupTasksTable,
@@ -2037,6 +2227,20 @@ func init() {
 	}
 	SubscriptionPlansTable.Annotation = &entsql.Annotation{
 		Table: "subscription_plans",
+	}
+	SubscriptionRefundAllocationsTable.ForeignKeys[0].RefTable = PaymentOrdersTable
+	SubscriptionRefundAllocationsTable.ForeignKeys[1].RefTable = PaymentProviderInstancesTable
+	SubscriptionRefundAllocationsTable.ForeignKeys[2].RefTable = SubscriptionRefundRequestsTable
+	SubscriptionRefundAllocationsTable.Annotation = &entsql.Annotation{
+		Table: "subscription_refund_allocations",
+	}
+	SubscriptionRefundRequestsTable.ForeignKeys[0].RefTable = SubscriptionSettlementOrdersTable
+	SubscriptionRefundRequestsTable.ForeignKeys[1].RefTable = SubscriptionSettlementOrdersTable
+	SubscriptionRefundRequestsTable.ForeignKeys[2].RefTable = UsersTable
+	SubscriptionRefundRequestsTable.ForeignKeys[3].RefTable = UsersTable
+	SubscriptionRefundRequestsTable.ForeignKeys[4].RefTable = UserSubscriptionsTable
+	SubscriptionRefundRequestsTable.Annotation = &entsql.Annotation{
+		Table: "subscription_refund_requests",
 	}
 	SubscriptionSettlementOrdersTable.ForeignKeys[0].RefTable = SubscriptionPlansTable
 	SubscriptionSettlementOrdersTable.ForeignKeys[1].RefTable = SubscriptionSettlementOrdersTable

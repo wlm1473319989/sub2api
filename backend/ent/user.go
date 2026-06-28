@@ -95,6 +95,10 @@ type UserEdges struct {
 	SubscriptionSettlementOrders []*SubscriptionSettlementOrder `json:"subscription_settlement_orders,omitempty"`
 	// OperatedSubscriptionSettlementOrders holds the value of the operated_subscription_settlement_orders edge.
 	OperatedSubscriptionSettlementOrders []*SubscriptionSettlementOrder `json:"operated_subscription_settlement_orders,omitempty"`
+	// SubscriptionRefundRequests holds the value of the subscription_refund_requests edge.
+	SubscriptionRefundRequests []*SubscriptionRefundRequest `json:"subscription_refund_requests,omitempty"`
+	// OperatedSubscriptionRefundRequests holds the value of the operated_subscription_refund_requests edge.
+	OperatedSubscriptionRefundRequests []*SubscriptionRefundRequest `json:"operated_subscription_refund_requests,omitempty"`
 	// AuthIdentities holds the value of the auth_identities edge.
 	AuthIdentities []*AuthIdentity `json:"auth_identities,omitempty"`
 	// PendingAuthSessions holds the value of the pending_auth_sessions edge.
@@ -105,7 +109,7 @@ type UserEdges struct {
 	UserAllowedGroups []*UserAllowedGroup `json:"user_allowed_groups,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [16]bool
+	loadedTypes [18]bool
 }
 
 // APIKeysOrErr returns the APIKeys value or an error if the edge
@@ -216,10 +220,28 @@ func (e UserEdges) OperatedSubscriptionSettlementOrdersOrErr() ([]*SubscriptionS
 	return nil, &NotLoadedError{edge: "operated_subscription_settlement_orders"}
 }
 
+// SubscriptionRefundRequestsOrErr returns the SubscriptionRefundRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) SubscriptionRefundRequestsOrErr() ([]*SubscriptionRefundRequest, error) {
+	if e.loadedTypes[12] {
+		return e.SubscriptionRefundRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "subscription_refund_requests"}
+}
+
+// OperatedSubscriptionRefundRequestsOrErr returns the OperatedSubscriptionRefundRequests value or an error if the edge
+// was not loaded in eager-loading.
+func (e UserEdges) OperatedSubscriptionRefundRequestsOrErr() ([]*SubscriptionRefundRequest, error) {
+	if e.loadedTypes[13] {
+		return e.OperatedSubscriptionRefundRequests, nil
+	}
+	return nil, &NotLoadedError{edge: "operated_subscription_refund_requests"}
+}
+
 // AuthIdentitiesOrErr returns the AuthIdentities value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) AuthIdentitiesOrErr() ([]*AuthIdentity, error) {
-	if e.loadedTypes[12] {
+	if e.loadedTypes[14] {
 		return e.AuthIdentities, nil
 	}
 	return nil, &NotLoadedError{edge: "auth_identities"}
@@ -228,7 +250,7 @@ func (e UserEdges) AuthIdentitiesOrErr() ([]*AuthIdentity, error) {
 // PendingAuthSessionsOrErr returns the PendingAuthSessions value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PendingAuthSessionsOrErr() ([]*PendingAuthSession, error) {
-	if e.loadedTypes[13] {
+	if e.loadedTypes[15] {
 		return e.PendingAuthSessions, nil
 	}
 	return nil, &NotLoadedError{edge: "pending_auth_sessions"}
@@ -237,7 +259,7 @@ func (e UserEdges) PendingAuthSessionsOrErr() ([]*PendingAuthSession, error) {
 // PlatformQuotasOrErr returns the PlatformQuotas value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) PlatformQuotasOrErr() ([]*UserPlatformQuota, error) {
-	if e.loadedTypes[14] {
+	if e.loadedTypes[16] {
 		return e.PlatformQuotas, nil
 	}
 	return nil, &NotLoadedError{edge: "platform_quotas"}
@@ -246,7 +268,7 @@ func (e UserEdges) PlatformQuotasOrErr() ([]*UserPlatformQuota, error) {
 // UserAllowedGroupsOrErr returns the UserAllowedGroups value or an error if the edge
 // was not loaded in eager-loading.
 func (e UserEdges) UserAllowedGroupsOrErr() ([]*UserAllowedGroup, error) {
-	if e.loadedTypes[15] {
+	if e.loadedTypes[17] {
 		return e.UserAllowedGroups, nil
 	}
 	return nil, &NotLoadedError{edge: "user_allowed_groups"}
@@ -503,6 +525,16 @@ func (_m *User) QuerySubscriptionSettlementOrders() *SubscriptionSettlementOrder
 // QueryOperatedSubscriptionSettlementOrders queries the "operated_subscription_settlement_orders" edge of the User entity.
 func (_m *User) QueryOperatedSubscriptionSettlementOrders() *SubscriptionSettlementOrderQuery {
 	return NewUserClient(_m.config).QueryOperatedSubscriptionSettlementOrders(_m)
+}
+
+// QuerySubscriptionRefundRequests queries the "subscription_refund_requests" edge of the User entity.
+func (_m *User) QuerySubscriptionRefundRequests() *SubscriptionRefundRequestQuery {
+	return NewUserClient(_m.config).QuerySubscriptionRefundRequests(_m)
+}
+
+// QueryOperatedSubscriptionRefundRequests queries the "operated_subscription_refund_requests" edge of the User entity.
+func (_m *User) QueryOperatedSubscriptionRefundRequests() *SubscriptionRefundRequestQuery {
+	return NewUserClient(_m.config).QueryOperatedSubscriptionRefundRequests(_m)
 }
 
 // QueryAuthIdentities queries the "auth_identities" edge of the User entity.

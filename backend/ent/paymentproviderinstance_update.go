@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
 )
 
 // PaymentProviderInstanceUpdate is the builder for updating PaymentProviderInstance entities.
@@ -181,9 +182,45 @@ func (_u *PaymentProviderInstanceUpdate) SetUpdatedAt(v time.Time) *PaymentProvi
 	return _u
 }
 
+// AddSubscriptionRefundAllocationIDs adds the "subscription_refund_allocations" edge to the SubscriptionRefundAllocation entity by IDs.
+func (_u *PaymentProviderInstanceUpdate) AddSubscriptionRefundAllocationIDs(ids ...int64) *PaymentProviderInstanceUpdate {
+	_u.mutation.AddSubscriptionRefundAllocationIDs(ids...)
+	return _u
+}
+
+// AddSubscriptionRefundAllocations adds the "subscription_refund_allocations" edges to the SubscriptionRefundAllocation entity.
+func (_u *PaymentProviderInstanceUpdate) AddSubscriptionRefundAllocations(v ...*SubscriptionRefundAllocation) *PaymentProviderInstanceUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionRefundAllocationIDs(ids...)
+}
+
 // Mutation returns the PaymentProviderInstanceMutation object of the builder.
 func (_u *PaymentProviderInstanceUpdate) Mutation() *PaymentProviderInstanceMutation {
 	return _u.mutation
+}
+
+// ClearSubscriptionRefundAllocations clears all "subscription_refund_allocations" edges to the SubscriptionRefundAllocation entity.
+func (_u *PaymentProviderInstanceUpdate) ClearSubscriptionRefundAllocations() *PaymentProviderInstanceUpdate {
+	_u.mutation.ClearSubscriptionRefundAllocations()
+	return _u
+}
+
+// RemoveSubscriptionRefundAllocationIDs removes the "subscription_refund_allocations" edge to SubscriptionRefundAllocation entities by IDs.
+func (_u *PaymentProviderInstanceUpdate) RemoveSubscriptionRefundAllocationIDs(ids ...int64) *PaymentProviderInstanceUpdate {
+	_u.mutation.RemoveSubscriptionRefundAllocationIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptionRefundAllocations removes "subscription_refund_allocations" edges to SubscriptionRefundAllocation entities.
+func (_u *PaymentProviderInstanceUpdate) RemoveSubscriptionRefundAllocations(v ...*SubscriptionRefundAllocation) *PaymentProviderInstanceUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionRefundAllocationIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -294,6 +331,51 @@ func (_u *PaymentProviderInstanceUpdate) sqlSave(ctx context.Context) (_node int
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(paymentproviderinstance.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SubscriptionRefundAllocationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionRefundAllocationsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionRefundAllocationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionRefundAllocationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
@@ -468,9 +550,45 @@ func (_u *PaymentProviderInstanceUpdateOne) SetUpdatedAt(v time.Time) *PaymentPr
 	return _u
 }
 
+// AddSubscriptionRefundAllocationIDs adds the "subscription_refund_allocations" edge to the SubscriptionRefundAllocation entity by IDs.
+func (_u *PaymentProviderInstanceUpdateOne) AddSubscriptionRefundAllocationIDs(ids ...int64) *PaymentProviderInstanceUpdateOne {
+	_u.mutation.AddSubscriptionRefundAllocationIDs(ids...)
+	return _u
+}
+
+// AddSubscriptionRefundAllocations adds the "subscription_refund_allocations" edges to the SubscriptionRefundAllocation entity.
+func (_u *PaymentProviderInstanceUpdateOne) AddSubscriptionRefundAllocations(v ...*SubscriptionRefundAllocation) *PaymentProviderInstanceUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddSubscriptionRefundAllocationIDs(ids...)
+}
+
 // Mutation returns the PaymentProviderInstanceMutation object of the builder.
 func (_u *PaymentProviderInstanceUpdateOne) Mutation() *PaymentProviderInstanceMutation {
 	return _u.mutation
+}
+
+// ClearSubscriptionRefundAllocations clears all "subscription_refund_allocations" edges to the SubscriptionRefundAllocation entity.
+func (_u *PaymentProviderInstanceUpdateOne) ClearSubscriptionRefundAllocations() *PaymentProviderInstanceUpdateOne {
+	_u.mutation.ClearSubscriptionRefundAllocations()
+	return _u
+}
+
+// RemoveSubscriptionRefundAllocationIDs removes the "subscription_refund_allocations" edge to SubscriptionRefundAllocation entities by IDs.
+func (_u *PaymentProviderInstanceUpdateOne) RemoveSubscriptionRefundAllocationIDs(ids ...int64) *PaymentProviderInstanceUpdateOne {
+	_u.mutation.RemoveSubscriptionRefundAllocationIDs(ids...)
+	return _u
+}
+
+// RemoveSubscriptionRefundAllocations removes "subscription_refund_allocations" edges to SubscriptionRefundAllocation entities.
+func (_u *PaymentProviderInstanceUpdateOne) RemoveSubscriptionRefundAllocations(v ...*SubscriptionRefundAllocation) *PaymentProviderInstanceUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveSubscriptionRefundAllocationIDs(ids...)
 }
 
 // Where appends a list predicates to the PaymentProviderInstanceUpdate builder.
@@ -611,6 +729,51 @@ func (_u *PaymentProviderInstanceUpdateOne) sqlSave(ctx context.Context) (_node 
 	}
 	if value, ok := _u.mutation.UpdatedAt(); ok {
 		_spec.SetField(paymentproviderinstance.FieldUpdatedAt, field.TypeTime, value)
+	}
+	if _u.mutation.SubscriptionRefundAllocationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedSubscriptionRefundAllocationsIDs(); len(nodes) > 0 && !_u.mutation.SubscriptionRefundAllocationsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.SubscriptionRefundAllocationsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   paymentproviderinstance.SubscriptionRefundAllocationsTable,
+			Columns: []string{paymentproviderinstance.SubscriptionRefundAllocationsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
 	_node = &PaymentProviderInstance{config: _u.config}
 	_spec.Assign = _node.assignValues

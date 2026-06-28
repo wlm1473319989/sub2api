@@ -4,6 +4,7 @@ package ent
 
 import (
 	"context"
+	"database/sql/driver"
 	"fmt"
 	"math"
 
@@ -14,16 +15,18 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/paymentproviderinstance"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
 )
 
 // PaymentProviderInstanceQuery is the builder for querying PaymentProviderInstance entities.
 type PaymentProviderInstanceQuery struct {
 	config
-	ctx        *QueryContext
-	order      []paymentproviderinstance.OrderOption
-	inters     []Interceptor
-	predicates []predicate.PaymentProviderInstance
-	modifiers  []func(*sql.Selector)
+	ctx                               *QueryContext
+	order                             []paymentproviderinstance.OrderOption
+	inters                            []Interceptor
+	predicates                        []predicate.PaymentProviderInstance
+	withSubscriptionRefundAllocations *SubscriptionRefundAllocationQuery
+	modifiers                         []func(*sql.Selector)
 	// intermediate query (i.e. traversal path).
 	sql  *sql.Selector
 	path func(context.Context) (*sql.Selector, error)
@@ -58,6 +61,28 @@ func (_q *PaymentProviderInstanceQuery) Unique(unique bool) *PaymentProviderInst
 func (_q *PaymentProviderInstanceQuery) Order(o ...paymentproviderinstance.OrderOption) *PaymentProviderInstanceQuery {
 	_q.order = append(_q.order, o...)
 	return _q
+}
+
+// QuerySubscriptionRefundAllocations chains the current query on the "subscription_refund_allocations" edge.
+func (_q *PaymentProviderInstanceQuery) QuerySubscriptionRefundAllocations() *SubscriptionRefundAllocationQuery {
+	query := (&SubscriptionRefundAllocationClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(paymentproviderinstance.Table, paymentproviderinstance.FieldID, selector),
+			sqlgraph.To(subscriptionrefundallocation.Table, subscriptionrefundallocation.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, paymentproviderinstance.SubscriptionRefundAllocationsTable, paymentproviderinstance.SubscriptionRefundAllocationsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
 }
 
 // First returns the first PaymentProviderInstance entity from the query.
@@ -247,15 +272,27 @@ func (_q *PaymentProviderInstanceQuery) Clone() *PaymentProviderInstanceQuery {
 		return nil
 	}
 	return &PaymentProviderInstanceQuery{
-		config:     _q.config,
-		ctx:        _q.ctx.Clone(),
-		order:      append([]paymentproviderinstance.OrderOption{}, _q.order...),
-		inters:     append([]Interceptor{}, _q.inters...),
-		predicates: append([]predicate.PaymentProviderInstance{}, _q.predicates...),
+		config:                            _q.config,
+		ctx:                               _q.ctx.Clone(),
+		order:                             append([]paymentproviderinstance.OrderOption{}, _q.order...),
+		inters:                            append([]Interceptor{}, _q.inters...),
+		predicates:                        append([]predicate.PaymentProviderInstance{}, _q.predicates...),
+		withSubscriptionRefundAllocations: _q.withSubscriptionRefundAllocations.Clone(),
 		// clone intermediate query.
 		sql:  _q.sql.Clone(),
 		path: _q.path,
 	}
+}
+
+// WithSubscriptionRefundAllocations tells the query-builder to eager-load the nodes that are connected to
+// the "subscription_refund_allocations" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *PaymentProviderInstanceQuery) WithSubscriptionRefundAllocations(opts ...func(*SubscriptionRefundAllocationQuery)) *PaymentProviderInstanceQuery {
+	query := (&SubscriptionRefundAllocationClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSubscriptionRefundAllocations = query
+	return _q
 }
 
 // GroupBy is used to group vertices by one or more fields/columns.
@@ -334,8 +371,11 @@ func (_q *PaymentProviderInstanceQuery) prepareQuery(ctx context.Context) error 
 
 func (_q *PaymentProviderInstanceQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*PaymentProviderInstance, error) {
 	var (
-		nodes = []*PaymentProviderInstance{}
-		_spec = _q.querySpec()
+		nodes       = []*PaymentProviderInstance{}
+		_spec       = _q.querySpec()
+		loadedTypes = [1]bool{
+			_q.withSubscriptionRefundAllocations != nil,
+		}
 	)
 	_spec.ScanValues = func(columns []string) ([]any, error) {
 		return (*PaymentProviderInstance).scanValues(nil, columns)
@@ -343,6 +383,7 @@ func (_q *PaymentProviderInstanceQuery) sqlAll(ctx context.Context, hooks ...que
 	_spec.Assign = func(columns []string, values []any) error {
 		node := &PaymentProviderInstance{config: _q.config}
 		nodes = append(nodes, node)
+		node.Edges.loadedTypes = loadedTypes
 		return node.assignValues(columns, values)
 	}
 	if len(_q.modifiers) > 0 {
@@ -357,7 +398,52 @@ func (_q *PaymentProviderInstanceQuery) sqlAll(ctx context.Context, hooks ...que
 	if len(nodes) == 0 {
 		return nodes, nil
 	}
+	if query := _q.withSubscriptionRefundAllocations; query != nil {
+		if err := _q.loadSubscriptionRefundAllocations(ctx, query, nodes,
+			func(n *PaymentProviderInstance) {
+				n.Edges.SubscriptionRefundAllocations = []*SubscriptionRefundAllocation{}
+			},
+			func(n *PaymentProviderInstance, e *SubscriptionRefundAllocation) {
+				n.Edges.SubscriptionRefundAllocations = append(n.Edges.SubscriptionRefundAllocations, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
 	return nodes, nil
+}
+
+func (_q *PaymentProviderInstanceQuery) loadSubscriptionRefundAllocations(ctx context.Context, query *SubscriptionRefundAllocationQuery, nodes []*PaymentProviderInstance, init func(*PaymentProviderInstance), assign func(*PaymentProviderInstance, *SubscriptionRefundAllocation)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*PaymentProviderInstance)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionrefundallocation.FieldPaymentProviderInstanceID)
+	}
+	query.Where(predicate.SubscriptionRefundAllocation(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(paymentproviderinstance.SubscriptionRefundAllocationsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.PaymentProviderInstanceID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "payment_provider_instance_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "payment_provider_instance_id" returned %v for node %v`, *fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
 }
 
 func (_q *PaymentProviderInstanceQuery) sqlCount(ctx context.Context) (int, error) {

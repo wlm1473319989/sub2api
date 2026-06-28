@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -589,6 +590,21 @@ func (_u *UserSubscriptionUpdate) AddSettlementOrders(v ...*SubscriptionSettleme
 	return _u.AddSettlementOrderIDs(ids...)
 }
 
+// AddRefundRequestIDs adds the "refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_u *UserSubscriptionUpdate) AddRefundRequestIDs(ids ...int64) *UserSubscriptionUpdate {
+	_u.mutation.AddRefundRequestIDs(ids...)
+	return _u
+}
+
+// AddRefundRequests adds the "refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_u *UserSubscriptionUpdate) AddRefundRequests(v ...*SubscriptionRefundRequest) *UserSubscriptionUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRefundRequestIDs(ids...)
+}
+
 // Mutation returns the UserSubscriptionMutation object of the builder.
 func (_u *UserSubscriptionUpdate) Mutation() *UserSubscriptionMutation {
 	return _u.mutation
@@ -646,6 +662,27 @@ func (_u *UserSubscriptionUpdate) RemoveSettlementOrders(v ...*SubscriptionSettl
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSettlementOrderIDs(ids...)
+}
+
+// ClearRefundRequests clears all "refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_u *UserSubscriptionUpdate) ClearRefundRequests() *UserSubscriptionUpdate {
+	_u.mutation.ClearRefundRequests()
+	return _u
+}
+
+// RemoveRefundRequestIDs removes the "refund_requests" edge to SubscriptionRefundRequest entities by IDs.
+func (_u *UserSubscriptionUpdate) RemoveRefundRequestIDs(ids ...int64) *UserSubscriptionUpdate {
+	_u.mutation.RemoveRefundRequestIDs(ids...)
+	return _u
+}
+
+// RemoveRefundRequests removes "refund_requests" edges to SubscriptionRefundRequest entities.
+func (_u *UserSubscriptionUpdate) RemoveRefundRequests(v ...*SubscriptionRefundRequest) *UserSubscriptionUpdate {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRefundRequestIDs(ids...)
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1002,6 +1039,51 @@ func (_u *UserSubscriptionUpdate) sqlSave(ctx context.Context) (_node int, err e
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RefundRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRefundRequestsIDs(); len(nodes) > 0 && !_u.mutation.RefundRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {
@@ -1587,6 +1669,21 @@ func (_u *UserSubscriptionUpdateOne) AddSettlementOrders(v ...*SubscriptionSettl
 	return _u.AddSettlementOrderIDs(ids...)
 }
 
+// AddRefundRequestIDs adds the "refund_requests" edge to the SubscriptionRefundRequest entity by IDs.
+func (_u *UserSubscriptionUpdateOne) AddRefundRequestIDs(ids ...int64) *UserSubscriptionUpdateOne {
+	_u.mutation.AddRefundRequestIDs(ids...)
+	return _u
+}
+
+// AddRefundRequests adds the "refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_u *UserSubscriptionUpdateOne) AddRefundRequests(v ...*SubscriptionRefundRequest) *UserSubscriptionUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.AddRefundRequestIDs(ids...)
+}
+
 // Mutation returns the UserSubscriptionMutation object of the builder.
 func (_u *UserSubscriptionUpdateOne) Mutation() *UserSubscriptionMutation {
 	return _u.mutation
@@ -1644,6 +1741,27 @@ func (_u *UserSubscriptionUpdateOne) RemoveSettlementOrders(v ...*SubscriptionSe
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSettlementOrderIDs(ids...)
+}
+
+// ClearRefundRequests clears all "refund_requests" edges to the SubscriptionRefundRequest entity.
+func (_u *UserSubscriptionUpdateOne) ClearRefundRequests() *UserSubscriptionUpdateOne {
+	_u.mutation.ClearRefundRequests()
+	return _u
+}
+
+// RemoveRefundRequestIDs removes the "refund_requests" edge to SubscriptionRefundRequest entities by IDs.
+func (_u *UserSubscriptionUpdateOne) RemoveRefundRequestIDs(ids ...int64) *UserSubscriptionUpdateOne {
+	_u.mutation.RemoveRefundRequestIDs(ids...)
+	return _u
+}
+
+// RemoveRefundRequests removes "refund_requests" edges to SubscriptionRefundRequest entities.
+func (_u *UserSubscriptionUpdateOne) RemoveRefundRequests(v ...*SubscriptionRefundRequest) *UserSubscriptionUpdateOne {
+	ids := make([]int64, len(v))
+	for i := range v {
+		ids[i] = v[i].ID
+	}
+	return _u.RemoveRefundRequestIDs(ids...)
 }
 
 // Where appends a list predicates to the UserSubscriptionUpdate builder.
@@ -2030,6 +2148,51 @@ func (_u *UserSubscriptionUpdateOne) sqlSave(ctx context.Context) (_node *UserSu
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionsettlementorder.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RefundRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RemovedRefundRequestsIDs(); len(nodes) > 0 && !_u.mutation.RefundRequestsCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RefundRequestsIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.O2M,
+			Inverse: false,
+			Table:   usersubscription.RefundRequestsTable,
+			Columns: []string{usersubscription.RefundRequestsColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundrequest.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

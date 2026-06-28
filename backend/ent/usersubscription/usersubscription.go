@@ -75,6 +75,8 @@ const (
 	EdgeUsageLogs = "usage_logs"
 	// EdgeSettlementOrders holds the string denoting the settlement_orders edge name in mutations.
 	EdgeSettlementOrders = "settlement_orders"
+	// EdgeRefundRequests holds the string denoting the refund_requests edge name in mutations.
+	EdgeRefundRequests = "refund_requests"
 	// Table holds the table name of the usersubscription in the database.
 	Table = "user_subscriptions"
 	// UserTable is the table that holds the user relation/edge.
@@ -105,6 +107,13 @@ const (
 	SettlementOrdersInverseTable = "subscription_settlement_orders"
 	// SettlementOrdersColumn is the table column denoting the settlement_orders relation/edge.
 	SettlementOrdersColumn = "after_user_subscription_id"
+	// RefundRequestsTable is the table that holds the refund_requests relation/edge.
+	RefundRequestsTable = "subscription_refund_requests"
+	// RefundRequestsInverseTable is the table name for the SubscriptionRefundRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundrequest" package.
+	RefundRequestsInverseTable = "subscription_refund_requests"
+	// RefundRequestsColumn is the table column denoting the refund_requests relation/edge.
+	RefundRequestsColumn = "subscription_id"
 )
 
 // Columns holds all SQL columns for usersubscription fields.
@@ -363,6 +372,20 @@ func BySettlementOrders(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption 
 		sqlgraph.OrderByNeighborTerms(s, newSettlementOrdersStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRefundRequestsCount orders the results by refund_requests count.
+func ByRefundRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRefundRequestsStep(), opts...)
+	}
+}
+
+// ByRefundRequests orders the results by refund_requests terms.
+func ByRefundRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRefundRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -389,5 +412,12 @@ func newSettlementOrdersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SettlementOrdersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SettlementOrdersTable, SettlementOrdersColumn),
+	)
+}
+func newRefundRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RefundRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RefundRequestsTable, RefundRequestsColumn),
 	)
 }

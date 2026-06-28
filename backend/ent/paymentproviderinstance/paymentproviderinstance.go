@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"entgo.io/ent/dialect/sql"
+	"entgo.io/ent/dialect/sql/sqlgraph"
 )
 
 const (
@@ -37,8 +38,17 @@ const (
 	FieldCreatedAt = "created_at"
 	// FieldUpdatedAt holds the string denoting the updated_at field in the database.
 	FieldUpdatedAt = "updated_at"
+	// EdgeSubscriptionRefundAllocations holds the string denoting the subscription_refund_allocations edge name in mutations.
+	EdgeSubscriptionRefundAllocations = "subscription_refund_allocations"
 	// Table holds the table name of the paymentproviderinstance in the database.
 	Table = "payment_provider_instances"
+	// SubscriptionRefundAllocationsTable is the table that holds the subscription_refund_allocations relation/edge.
+	SubscriptionRefundAllocationsTable = "subscription_refund_allocations"
+	// SubscriptionRefundAllocationsInverseTable is the table name for the SubscriptionRefundAllocation entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundallocation" package.
+	SubscriptionRefundAllocationsInverseTable = "subscription_refund_allocations"
+	// SubscriptionRefundAllocationsColumn is the table column denoting the subscription_refund_allocations relation/edge.
+	SubscriptionRefundAllocationsColumn = "payment_provider_instance_id"
 )
 
 // Columns holds all SQL columns for paymentproviderinstance fields.
@@ -167,4 +177,25 @@ func ByCreatedAt(opts ...sql.OrderTermOption) OrderOption {
 // ByUpdatedAt orders the results by the updated_at field.
 func ByUpdatedAt(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldUpdatedAt, opts...).ToFunc()
+}
+
+// BySubscriptionRefundAllocationsCount orders the results by subscription_refund_allocations count.
+func BySubscriptionRefundAllocationsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscriptionRefundAllocationsStep(), opts...)
+	}
+}
+
+// BySubscriptionRefundAllocations orders the results by subscription_refund_allocations terms.
+func BySubscriptionRefundAllocations(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscriptionRefundAllocationsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+func newSubscriptionRefundAllocationsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscriptionRefundAllocationsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionRefundAllocationsTable, SubscriptionRefundAllocationsColumn),
+	)
 }

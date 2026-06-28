@@ -2156,6 +2156,7 @@ export default {
         description: 'Description',
         platform: 'Platform',
         rateMultiplier: 'Rate Multiplier',
+        subscriptionRateMultiplier: 'Subscription Multiplier',
         status: 'Status',
         exclusive: 'Exclusive Group',
         rpmLimit: 'Requests Per Minute (RPM)',
@@ -2167,6 +2168,8 @@ export default {
       platformHint: 'Select the platform this group is associated with',
       platformNotEditable: 'Platform cannot be changed after creation',
       rateMultiplierHint: 'Cost multiplier for this group (e.g., 1.5 = 150% of base cost)',
+      subscriptionRateMultiplierHint: 'Used when subscription quota is consumed first; balance fallback still uses the rate multiplier.',
+      rateMultiplierSplitSummary: 'Balance {balance} / Subscription {subscription}',
       exclusiveHint: 'Exclusive group, manually assign to specific users',
       exclusiveTooltip: {
         title: 'What is an exclusive group?',

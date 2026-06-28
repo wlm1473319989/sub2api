@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 12 // v12: include exclusive group authorization fields
+const apiKeyAuthSnapshotVersion = 13 // v13: include subscription_rate_multiplier in group snapshot
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -254,6 +254,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			IsExclusive:                     apiKey.Group.IsExclusive,
 			Status:                          apiKey.Group.Status,
 			RateMultiplier:                  apiKey.Group.RateMultiplier,
+			SubscriptionRateMultiplier:      apiKey.Group.SubscriptionRateMultiplier,
 			AllowImageGeneration:            apiKey.Group.AllowImageGeneration,
 			ImageRateIndependent:            apiKey.Group.ImageRateIndependent,
 			ImageRateMultiplier:             apiKey.Group.ImageRateMultiplier,
@@ -323,6 +324,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			Status:                          snapshot.Group.Status,
 			Hydrated:                        true,
 			RateMultiplier:                  snapshot.Group.RateMultiplier,
+			SubscriptionRateMultiplier:      snapshot.Group.SubscriptionRateMultiplier,
 			AllowImageGeneration:            snapshot.Group.AllowImageGeneration,
 			ImageRateIndependent:            snapshot.Group.ImageRateIndependent,
 			ImageRateMultiplier:             snapshot.Group.ImageRateMultiplier,

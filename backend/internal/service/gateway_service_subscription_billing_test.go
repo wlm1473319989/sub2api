@@ -8,141 +8,111 @@ import (
 	"time"
 )
 
-// TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier locks in the fix
-// that subscription-mode billing honours the group (and any user-specific) rate
-// multiplier — i.e. cmd.SubscriptionCost tracks ActualCost (= TotalCost *
-// RateMultiplier), not raw TotalCost.
-func TestBuildUsageBillingCommand_SubscriptionAppliesRateMultiplier(t *testing.T) {
+func TestResolveUsageBillingSplitFromRawCost_SubscriptionFirstAcrossDifferentMultipliers(t *testing.T) {
 	t.Parallel()
 
-	groupID := int64(7)
-	subID := int64(42)
 	now := time.Now().UTC()
 	oneDayStart := now.Add(-time.Hour)
 	oneDayExpiry := oneDayStart.Add(24 * time.Hour)
 	dailyQuota := 10.0
+	newSubscription := func(remaining float64) *UserSubscription {
+		used := maxFloat64(dailyQuota-remaining, 0)
+		return &UserSubscription{
+			ID:               42,
+			StartsAt:         oneDayStart,
+			ExpiresAt:        oneDayExpiry,
+			DailyQuotaKnives: &dailyQuota,
+			DailyUsedKnives:  used,
+			DailyWindowStart: &oneDayStart,
+		}
+	}
 
 	tests := []struct {
-		name           string
-		totalCost      float64
-		actualCost     float64
-		isSubscription bool
-		subscription   *UserSubscription
-		wantSub        float64
-		wantBalance    float64
-		wantType       int8
+		name                 string
+		totalCost            float64
+		subscription         *UserSubscription
+		subscriptionRate     float64
+		balanceRate          float64
+		wantSubscriptionCost float64
+		wantBalanceCost      float64
+		wantType             int8
 	}{
 		{
-			name:           "subscription with 2x multiplier consumes 2x quota",
-			totalCost:      1.0,
-			actualCost:     2.0,
-			isSubscription: true,
-			subscription: &UserSubscription{
-				ID:               subID,
-				StartsAt:         now.Add(-time.Hour),
-				ExpiresAt:        now.Add(24 * time.Hour),
-				DailyQuotaKnives: &dailyQuota,
-			},
-			wantSub:     2.0,
-			wantBalance: 0,
-			wantType:    BillingTypeSubscription,
+			name:                 "subscription fully covers raw cost at subscription rate",
+			totalCost:            1.0,
+			subscription:         newSubscription(dailyQuota),
+			subscriptionRate:     0.5,
+			balanceRate:          2.0,
+			wantSubscriptionCost: 0.5,
+			wantBalanceCost:      0,
+			wantType:             BillingTypeSubscription,
 		},
 		{
-			name:           "subscription with 0.5x multiplier consumes 0.5x quota",
-			totalCost:      1.0,
-			actualCost:     0.5,
-			isSubscription: true,
-			subscription: &UserSubscription{
-				ID:               subID,
-				StartsAt:         now.Add(-time.Hour),
-				ExpiresAt:        now.Add(24 * time.Hour),
-				DailyQuotaKnives: &dailyQuota,
-			},
-			wantSub:     0.5,
-			wantBalance: 0,
-			wantType:    BillingTypeSubscription,
+			name:                 "mixed billing spends subscription quota first then falls back to balance",
+			totalCost:            1.0,
+			subscription:         newSubscription(0.25),
+			subscriptionRate:     0.5,
+			balanceRate:          2.0,
+			wantSubscriptionCost: 0.25,
+			wantBalanceCost:      1.0,
+			wantType:             BillingTypeMixed,
 		},
 		{
-			name:           "free subscription (multiplier 0) consumes no quota",
-			totalCost:      1.0,
-			actualCost:     0,
-			isSubscription: true,
-			subscription: &UserSubscription{
-				ID:               subID,
-				StartsAt:         now.Add(-time.Hour),
-				ExpiresAt:        now.Add(24 * time.Hour),
-				DailyQuotaKnives: &dailyQuota,
-			},
-			wantSub:     0,
-			wantBalance: 0,
-			wantType:    BillingTypeBalance,
+			name:                 "exhausted subscription falls back to balance multiplier",
+			totalCost:            1.0,
+			subscription:         newSubscription(0),
+			subscriptionRate:     0.5,
+			balanceRate:          2.0,
+			wantSubscriptionCost: 0,
+			wantBalanceCost:      2.0,
+			wantType:             BillingTypeBalance,
 		},
 		{
-			name:           "balance billing keeps using ActualCost (regression)",
-			totalCost:      1.0,
-			actualCost:     2.0,
-			isSubscription: false,
-			subscription:   &UserSubscription{ID: subID},
-			wantSub:        0,
-			wantBalance:    2.0,
-			wantType:       BillingTypeBalance,
+			name:                 "zero subscription multiplier makes covered usage free",
+			totalCost:            1.0,
+			subscription:         newSubscription(dailyQuota),
+			subscriptionRate:     0,
+			balanceRate:          2.0,
+			wantSubscriptionCost: 0,
+			wantBalanceCost:      0,
+			wantType:             BillingTypeBalance,
 		},
 		{
-			name:           "mixed split uses subscription remainder then balance",
-			totalCost:      1.0,
-			actualCost:     2.0,
-			isSubscription: true,
-			subscription: &UserSubscription{
-				ID:               subID,
-				StartsAt:         oneDayStart,
-				ExpiresAt:        oneDayExpiry,
-				DailyQuotaKnives: &dailyQuota,
-				DailyUsedKnives:  8.5,
-				DailyWindowStart: &oneDayStart,
-			},
-			wantSub:     1.5,
-			wantBalance: 0.5,
-			wantType:    BillingTypeMixed,
-		},
-		{
-			name:           "legacy subscription without snapshot quota falls back to balance billing",
-			totalCost:      1.0,
-			actualCost:     2.0,
-			isSubscription: true,
-			subscription: &UserSubscription{
-				ID:        subID,
-				StartsAt:  now.Add(-time.Hour),
-				ExpiresAt: now.Add(24 * time.Hour),
-			},
-			wantSub:     0,
-			wantBalance: 2.0,
-			wantType:    BillingTypeBalance,
+			name:                 "missing subscription uses balance billing only",
+			totalCost:            1.0,
+			subscription:         nil,
+			subscriptionRate:     0.5,
+			balanceRate:          2.0,
+			wantSubscriptionCost: 0,
+			wantBalanceCost:      2.0,
+			wantType:             BillingTypeBalance,
 		},
 	}
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			t.Parallel()
-			p := &postUsageBillingParams{
-				Cost:         &CostBreakdown{TotalCost: tt.totalCost, ActualCost: tt.actualCost},
-				User:         &User{ID: 1},
-				APIKey:       &APIKey{ID: 2, GroupID: &groupID},
-				Account:      &Account{ID: 3},
-				Subscription: tt.subscription,
-			}
+			split := resolveUsageBillingSplitFromRawCost(
+				tt.totalCost,
+				tt.subscription,
+				tt.subscriptionRate,
+				tt.balanceRate,
+			)
 
-			cmd := buildUsageBillingCommand("req-1", nil, p)
-			if cmd == nil {
-				t.Fatal("buildUsageBillingCommand returned nil")
+			if diff := split.SubscriptionCost - tt.wantSubscriptionCost; diff > 1e-12 || diff < -1e-12 {
+				t.Errorf("SubscriptionCost = %v, want %v", split.SubscriptionCost, tt.wantSubscriptionCost)
 			}
-			if cmd.SubscriptionCost != tt.wantSub {
-				t.Errorf("SubscriptionCost = %v, want %v", cmd.SubscriptionCost, tt.wantSub)
+			if diff := split.BalanceCost - tt.wantBalanceCost; diff > 1e-12 || diff < -1e-12 {
+				t.Errorf("BalanceCost = %v, want %v", split.BalanceCost, tt.wantBalanceCost)
 			}
-			if cmd.BalanceCost != tt.wantBalance {
-				t.Errorf("BalanceCost = %v, want %v", cmd.BalanceCost, tt.wantBalance)
+			if split.billingType() != tt.wantType {
+				t.Errorf("BillingType = %v, want %v", split.billingType(), tt.wantType)
 			}
-			if cmd.BillingType != tt.wantType {
-				t.Errorf("BillingType = %v, want %v", cmd.BillingType, tt.wantType)
+			if tt.totalCost > 0 {
+				wantEffective := (tt.wantSubscriptionCost + tt.wantBalanceCost) / tt.totalCost
+				if diff := split.EffectiveRateMultiplier - wantEffective; diff > 1e-12 || diff < -1e-12 {
+					t.Errorf("EffectiveRateMultiplier = %v, want %v", split.EffectiveRateMultiplier, wantEffective)
+				}
 			}
 		})
 	}
@@ -157,10 +127,12 @@ func TestApplyUsageBilling_SyncsSplitCostsBackToUsageLog(t *testing.T) {
 		Model:     "gpt-5",
 	}
 	p := &postUsageBillingParams{
-		Cost:    &CostBreakdown{TotalCost: 1.0, ActualCost: 1.0},
-		User:    &User{ID: 1},
-		APIKey:  &APIKey{ID: 2},
-		Account: &Account{ID: 3},
+		Cost:                       &CostBreakdown{TotalCost: 1.0, ActualCost: 1.0},
+		User:                       &User{ID: 1},
+		APIKey:                     &APIKey{ID: 2},
+		Account:                    &Account{ID: 3},
+		BalanceRateMultiplier:      1,
+		SubscriptionRateMultiplier: 1,
 		Subscription: &UserSubscription{
 			ID:               subID,
 			StartsAt:         time.Now().Add(-time.Hour),
@@ -199,10 +171,12 @@ func TestApplyUsageBilling_LegacyFallbackAllowsNegativeBalancePortion(t *testing
 	userRepo := &openAIRecordUsageUserRepoStub{}
 	subRepo := &openAIRecordUsageSubRepoStub{}
 	p := &postUsageBillingParams{
-		Cost:    &CostBreakdown{TotalCost: 2.0, ActualCost: 2.0},
-		User:    &User{ID: 1, Balance: 0.1},
-		APIKey:  &APIKey{ID: 2, GroupID: &groupID},
-		Account: &Account{ID: 3},
+		Cost:                       &CostBreakdown{TotalCost: 2.0, ActualCost: 2.0},
+		User:                       &User{ID: 1, Balance: 0.1},
+		APIKey:                     &APIKey{ID: 2, GroupID: &groupID},
+		Account:                    &Account{ID: 3},
+		BalanceRateMultiplier:      1,
+		SubscriptionRateMultiplier: 1,
 		Subscription: &UserSubscription{
 			ID:               subID,
 			StartsAt:         startsAt,

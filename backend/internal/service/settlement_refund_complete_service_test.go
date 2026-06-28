@@ -62,7 +62,7 @@ func TestSettlementRefundServiceCompleteRefundsSubscriptionAndCreatesSettlement(
 		Reason:                 &reason,
 		RefundResidualValue:    168.5,
 		ManualTransferAmount:   69.5,
-		ManualTransferProofURL: ptrString("uploads/refund/proof/9001.png"),
+		ManualTransferProofURL: settlementRefundTestPtrString("uploads/refund/proof/9001.png"),
 		Allocations: []SettlementRefundAllocationRecord{
 			{Status: SettlementRefundAllocationStatusSkipped},
 		},

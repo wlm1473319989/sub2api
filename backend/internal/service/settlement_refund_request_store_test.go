@@ -141,7 +141,7 @@ func TestSettlementRefundRequestStoreCreateSettlementRefundPreview(t *testing.T)
 				AllocatedRefundValue:  0.0,
 				GatewayRefundAmount:   0.0,
 				Currency:              "CNY",
-				FailedReason:          ptrString("refund_channel_unavailable"),
+				FailedReason:          refundRequestPtrString("refund_channel_unavailable"),
 			},
 		},
 	})
@@ -521,10 +521,10 @@ func TestSettlementRefundRequestStoreSubmitSettlementRefundPreview(t *testing.T)
 		FrozenAt:                      now,
 		OriginalSubscriptionStatus:    SubscriptionStatusActive,
 		OriginalSubscriptionExpiresAt: now.Add(24 * time.Hour),
-		ManualReceiverType:            ptrString("wechat_qr"),
-		ManualReceiverName:            ptrString("Zhang San"),
-		ManualReceiverAccount:         ptrString(""),
-		ManualReceiverQRCodeImageURL:  ptrString("uploads/refund/qr/9001.png"),
+		ManualReceiverType:            refundRequestPtrString("wechat_qr"),
+		ManualReceiverName:            refundRequestPtrString("Zhang San"),
+		ManualReceiverAccount:         refundRequestPtrString(""),
+		ManualReceiverQRCodeImageURL:  refundRequestPtrString("uploads/refund/qr/9001.png"),
 	})
 	require.NoError(t, err)
 	require.NotNil(t, record)
@@ -849,7 +849,7 @@ func TestSettlementRefundRequestStoreCancelSettlementRefundRequest(t *testing.T)
 	require.NoError(t, mock.ExpectationsWereMet())
 }
 
-func ptrString(v string) *string {
+func refundRequestPtrString(v string) *string {
 	return &v
 }
 

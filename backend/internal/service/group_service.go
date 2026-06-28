@@ -48,6 +48,7 @@ type CreateGroupRequest struct {
 	Name                 string   `json:"name"`
 	Description          string   `json:"description"`
 	RateMultiplier       float64  `json:"rate_multiplier"`
+	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
 	IsExclusive          bool     `json:"is_exclusive"`
 	AllowImageGeneration bool     `json:"allow_image_generation"`
 	ImageRateIndependent bool     `json:"image_rate_independent"`
@@ -59,6 +60,7 @@ type UpdateGroupRequest struct {
 	Name                 *string  `json:"name"`
 	Description          *string  `json:"description"`
 	RateMultiplier       *float64 `json:"rate_multiplier"`
+	SubscriptionRateMultiplier *float64 `json:"subscription_rate_multiplier"`
 	IsExclusive          *bool    `json:"is_exclusive"`
 	Status               *string  `json:"status"`
 	AllowImageGeneration *bool    `json:"allow_image_generation"`
@@ -82,6 +84,10 @@ func NewGroupService(groupRepo GroupRepository, authCacheInvalidator APIKeyAuthC
 
 // Create 创建分组
 func (s *GroupService) Create(ctx context.Context, req CreateGroupRequest) (*Group, error) {
+	subscriptionRateMultiplier := req.SubscriptionRateMultiplier
+	if subscriptionRateMultiplier <= 0 {
+		subscriptionRateMultiplier = req.RateMultiplier
+	}
 	imageRateMultiplier := 1.0
 	if req.ImageRateMultiplier != nil {
 		if *req.ImageRateMultiplier < 0 {
@@ -104,6 +110,7 @@ func (s *GroupService) Create(ctx context.Context, req CreateGroupRequest) (*Gro
 		Description:          req.Description,
 		Platform:             PlatformAnthropic,
 		RateMultiplier:       req.RateMultiplier,
+		SubscriptionRateMultiplier: subscriptionRateMultiplier,
 		IsExclusive:          req.IsExclusive,
 		Status:               StatusActive,
 		AllowImageGeneration: req.AllowImageGeneration,
@@ -171,6 +178,9 @@ func (s *GroupService) Update(ctx context.Context, id int64, req UpdateGroupRequ
 
 	if req.RateMultiplier != nil {
 		group.RateMultiplier = *req.RateMultiplier
+	}
+	if req.SubscriptionRateMultiplier != nil {
+		group.SubscriptionRateMultiplier = *req.SubscriptionRateMultiplier
 	}
 
 	if req.IsExclusive != nil {

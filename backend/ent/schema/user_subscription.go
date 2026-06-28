@@ -129,6 +129,7 @@ func (UserSubscription) Edges() []ent.Edge {
 			Unique(),
 		edge.To("usage_logs", UsageLog.Type),
 		edge.To("settlement_orders", SubscriptionSettlementOrder.Type),
+		edge.To("refund_requests", SubscriptionRefundRequest.Type),
 	}
 }
 

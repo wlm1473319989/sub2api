@@ -86,6 +86,10 @@ const (
 	EdgeAfterUserSubscription = "after_user_subscription"
 	// EdgeAfterPlan holds the string denoting the after_plan edge name in mutations.
 	EdgeAfterPlan = "after_plan"
+	// EdgeRefundRequests holds the string denoting the refund_requests edge name in mutations.
+	EdgeRefundRequests = "refund_requests"
+	// EdgeExpectedRefundRequests holds the string denoting the expected_refund_requests edge name in mutations.
+	EdgeExpectedRefundRequests = "expected_refund_requests"
 	// Table holds the table name of the subscriptionsettlementorder in the database.
 	Table = "subscription_settlement_orders"
 	// UserTable is the table that holds the user relation/edge.
@@ -124,6 +128,20 @@ const (
 	AfterPlanInverseTable = "subscription_plans"
 	// AfterPlanColumn is the table column denoting the after_plan relation/edge.
 	AfterPlanColumn = "after_plan_id"
+	// RefundRequestsTable is the table that holds the refund_requests relation/edge.
+	RefundRequestsTable = "subscription_refund_requests"
+	// RefundRequestsInverseTable is the table name for the SubscriptionRefundRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundrequest" package.
+	RefundRequestsInverseTable = "subscription_refund_requests"
+	// RefundRequestsColumn is the table column denoting the refund_requests relation/edge.
+	RefundRequestsColumn = "settlement_id"
+	// ExpectedRefundRequestsTable is the table that holds the expected_refund_requests relation/edge.
+	ExpectedRefundRequestsTable = "subscription_refund_requests"
+	// ExpectedRefundRequestsInverseTable is the table name for the SubscriptionRefundRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundrequest" package.
+	ExpectedRefundRequestsInverseTable = "subscription_refund_requests"
+	// ExpectedRefundRequestsColumn is the table column denoting the expected_refund_requests relation/edge.
+	ExpectedRefundRequestsColumn = "expected_settlement_id"
 )
 
 // Columns holds all SQL columns for subscriptionsettlementorder fields.
@@ -405,6 +423,34 @@ func ByAfterPlanField(field string, opts ...sql.OrderTermOption) OrderOption {
 		sqlgraph.OrderByNeighborTerms(s, newAfterPlanStep(), sql.OrderByField(field, opts...))
 	}
 }
+
+// ByRefundRequestsCount orders the results by refund_requests count.
+func ByRefundRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newRefundRequestsStep(), opts...)
+	}
+}
+
+// ByRefundRequests orders the results by refund_requests terms.
+func ByRefundRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRefundRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByExpectedRefundRequestsCount orders the results by expected_refund_requests count.
+func ByExpectedRefundRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newExpectedRefundRequestsStep(), opts...)
+	}
+}
+
+// ByExpectedRefundRequests orders the results by expected_refund_requests terms.
+func ByExpectedRefundRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newExpectedRefundRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -445,5 +491,19 @@ func newAfterPlanStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(AfterPlanInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.M2O, true, AfterPlanTable, AfterPlanColumn),
+	)
+}
+func newRefundRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RefundRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, RefundRequestsTable, RefundRequestsColumn),
+	)
+}
+func newExpectedRefundRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(ExpectedRefundRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, ExpectedRefundRequestsTable, ExpectedRefundRequestsColumn),
 	)
 }

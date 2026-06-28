@@ -85,6 +85,10 @@ const (
 	EdgeSubscriptionSettlementOrders = "subscription_settlement_orders"
 	// EdgeOperatedSubscriptionSettlementOrders holds the string denoting the operated_subscription_settlement_orders edge name in mutations.
 	EdgeOperatedSubscriptionSettlementOrders = "operated_subscription_settlement_orders"
+	// EdgeSubscriptionRefundRequests holds the string denoting the subscription_refund_requests edge name in mutations.
+	EdgeSubscriptionRefundRequests = "subscription_refund_requests"
+	// EdgeOperatedSubscriptionRefundRequests holds the string denoting the operated_subscription_refund_requests edge name in mutations.
+	EdgeOperatedSubscriptionRefundRequests = "operated_subscription_refund_requests"
 	// EdgeAuthIdentities holds the string denoting the auth_identities edge name in mutations.
 	EdgeAuthIdentities = "auth_identities"
 	// EdgePendingAuthSessions holds the string denoting the pending_auth_sessions edge name in mutations.
@@ -177,6 +181,20 @@ const (
 	OperatedSubscriptionSettlementOrdersInverseTable = "subscription_settlement_orders"
 	// OperatedSubscriptionSettlementOrdersColumn is the table column denoting the operated_subscription_settlement_orders relation/edge.
 	OperatedSubscriptionSettlementOrdersColumn = "operator_user_id"
+	// SubscriptionRefundRequestsTable is the table that holds the subscription_refund_requests relation/edge.
+	SubscriptionRefundRequestsTable = "subscription_refund_requests"
+	// SubscriptionRefundRequestsInverseTable is the table name for the SubscriptionRefundRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundrequest" package.
+	SubscriptionRefundRequestsInverseTable = "subscription_refund_requests"
+	// SubscriptionRefundRequestsColumn is the table column denoting the subscription_refund_requests relation/edge.
+	SubscriptionRefundRequestsColumn = "user_id"
+	// OperatedSubscriptionRefundRequestsTable is the table that holds the operated_subscription_refund_requests relation/edge.
+	OperatedSubscriptionRefundRequestsTable = "subscription_refund_requests"
+	// OperatedSubscriptionRefundRequestsInverseTable is the table name for the SubscriptionRefundRequest entity.
+	// It exists in this package in order to avoid circular dependency with the "subscriptionrefundrequest" package.
+	OperatedSubscriptionRefundRequestsInverseTable = "subscription_refund_requests"
+	// OperatedSubscriptionRefundRequestsColumn is the table column denoting the operated_subscription_refund_requests relation/edge.
+	OperatedSubscriptionRefundRequestsColumn = "manual_transfer_operator_user_id"
 	// AuthIdentitiesTable is the table that holds the auth_identities relation/edge.
 	AuthIdentitiesTable = "auth_identities"
 	// AuthIdentitiesInverseTable is the table name for the AuthIdentity entity.
@@ -596,6 +614,34 @@ func ByOperatedSubscriptionSettlementOrders(term sql.OrderTerm, terms ...sql.Ord
 	}
 }
 
+// BySubscriptionRefundRequestsCount orders the results by subscription_refund_requests count.
+func BySubscriptionRefundRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newSubscriptionRefundRequestsStep(), opts...)
+	}
+}
+
+// BySubscriptionRefundRequests orders the results by subscription_refund_requests terms.
+func BySubscriptionRefundRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newSubscriptionRefundRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
+// ByOperatedSubscriptionRefundRequestsCount orders the results by operated_subscription_refund_requests count.
+func ByOperatedSubscriptionRefundRequestsCount(opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborsCount(s, newOperatedSubscriptionRefundRequestsStep(), opts...)
+	}
+}
+
+// ByOperatedSubscriptionRefundRequests orders the results by operated_subscription_refund_requests terms.
+func ByOperatedSubscriptionRefundRequests(term sql.OrderTerm, terms ...sql.OrderTerm) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newOperatedSubscriptionRefundRequestsStep(), append([]sql.OrderTerm{term}, terms...)...)
+	}
+}
+
 // ByAuthIdentitiesCount orders the results by auth_identities count.
 func ByAuthIdentitiesCount(opts ...sql.OrderTermOption) OrderOption {
 	return func(s *sql.Selector) {
@@ -733,6 +779,20 @@ func newOperatedSubscriptionSettlementOrdersStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(OperatedSubscriptionSettlementOrdersInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, OperatedSubscriptionSettlementOrdersTable, OperatedSubscriptionSettlementOrdersColumn),
+	)
+}
+func newSubscriptionRefundRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(SubscriptionRefundRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionRefundRequestsTable, SubscriptionRefundRequestsColumn),
+	)
+}
+func newOperatedSubscriptionRefundRequestsStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(OperatedSubscriptionRefundRequestsInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.O2M, false, OperatedSubscriptionRefundRequestsTable, OperatedSubscriptionRefundRequestsColumn),
 	)
 }
 func newAuthIdentitiesStep() *sqlgraph.Step {

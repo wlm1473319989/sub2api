@@ -13,13 +13,13 @@ func TestSettlementRefundServiceCancelRejectsAfterPayout(t *testing.T) {
 	active := settlementRefundPreviewTestActiveSubscription()
 	active.Status = SubscriptionStatusSuspended
 	record := &SettlementRefundRequestRecord{
-		ID:                     9001,
-		UserID:                 active.UserID,
-		SubscriptionID:         active.ID,
-		Status:                 SettlementRefundStatusManualPending,
-		OriginalSubscriptionStatus: ptrString(SubscriptionStatusActive),
-		OriginalSubscriptionExpiresAt: timePtr(now.Add(24 * time.Hour)),
-		ManualTransferProofURL: ptrString("uploads/refund/proof/9001.png"),
+		ID:                            9001,
+		UserID:                        active.UserID,
+		SubscriptionID:                active.ID,
+		Status:                        SettlementRefundStatusManualPending,
+		OriginalSubscriptionStatus:    settlementRefundTestPtrString(SubscriptionStatusActive),
+		OriginalSubscriptionExpiresAt: refundCancelTimePtr(now.Add(24 * time.Hour)),
+		ManualTransferProofURL:        settlementRefundTestPtrString("uploads/refund/proof/9001.png"),
 	}
 	repo := newSubscriptionUserSubRepoStub()
 	repo.seed(active)
@@ -47,7 +47,7 @@ func TestSettlementRefundServiceCancelRestoresActiveSubscription(t *testing.T) {
 		UserID:                        active.UserID,
 		SubscriptionID:                active.ID,
 		Status:                        SettlementRefundStatusSubmitted,
-		OriginalSubscriptionStatus:    ptrString(SubscriptionStatusActive),
+		OriginalSubscriptionStatus:    settlementRefundTestPtrString(SubscriptionStatusActive),
 		OriginalSubscriptionExpiresAt: &expiresAt,
 		Allocations: []SettlementRefundAllocationRecord{
 			{Status: SettlementRefundAllocationStatusSkipped},
@@ -89,7 +89,7 @@ func TestSettlementRefundServiceCancelRestoresExpiredSubscription(t *testing.T) 
 		UserID:                        active.UserID,
 		SubscriptionID:                active.ID,
 		Status:                        SettlementRefundStatusSubmitted,
-		OriginalSubscriptionStatus:    ptrString(SubscriptionStatusActive),
+		OriginalSubscriptionStatus:    settlementRefundTestPtrString(SubscriptionStatusActive),
 		OriginalSubscriptionExpiresAt: &expiredAt,
 	}
 	repo := newSubscriptionUserSubRepoStub()
@@ -119,7 +119,7 @@ func TestSettlementRefundServiceCancelAllowsFailedWithoutPayoutEvidence(t *testi
 		UserID:                        active.UserID,
 		SubscriptionID:                active.ID,
 		Status:                        SettlementRefundStatusFailed,
-		OriginalSubscriptionStatus:    ptrString(SubscriptionStatusActive),
+		OriginalSubscriptionStatus:    settlementRefundTestPtrString(SubscriptionStatusActive),
 		OriginalSubscriptionExpiresAt: &expiresAt,
 		Allocations: []SettlementRefundAllocationRecord{
 			{Status: SettlementRefundAllocationStatusFailed},
@@ -173,6 +173,6 @@ func (s *settlementRefundCancelStoreStub) CancelSettlementRefundRequest(_ contex
 	return record, nil
 }
 
-func timePtr(v time.Time) *time.Time {
+func refundCancelTimePtr(v time.Time) *time.Time {
 	return &v
 }

@@ -128,9 +128,9 @@ func TestSettlementRefundServiceUploadManualProofPersistsProof(t *testing.T) {
 }
 
 type settlementRefundManualStoreStub struct {
-	request     *SettlementRefundRequestRecord
-	lastUpdate  *UpdateSettlementRefundManualProofInput
-	updateFn    func(UpdateSettlementRefundManualProofInput) (*SettlementRefundRequestRecord, error)
+	request    *SettlementRefundRequestRecord
+	lastUpdate *UpdateSettlementRefundManualProofInput
+	updateFn   func(UpdateSettlementRefundManualProofInput) (*SettlementRefundRequestRecord, error)
 }
 
 func (s *settlementRefundManualStoreStub) CreateSettlementRefundPreview(context.Context, CreateSettlementRefundPreviewInput) (*SettlementRefundRequestRecord, error) {
@@ -151,7 +151,7 @@ func (s *settlementRefundManualStoreStub) UpdateSettlementRefundManualProof(_ co
 	}
 	record := cloneSettlementRefundRequestRecord(s.request)
 	record.Status = input.Status
-	record.ManualTransferProofURL = ptrString(input.ProofURL)
+	record.ManualTransferProofURL = settlementRefundTestPtrString(input.ProofURL)
 	record.ManualTransferProofUploadedAt = &input.UploadedAt
 	record.ManualTransferOperatorUserID = &input.OperatorUserID
 	record.AdminNote = input.AdminNote

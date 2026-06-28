@@ -41,6 +41,7 @@
           :name="group.name"
           :platform="group.platform"
           :rate-multiplier="group.rate_multiplier"
+          :subscription-rate-multiplier="group.subscription_rate_multiplier"
           class="min-w-0 flex-1"
         />
         <span class="shrink-0 text-xs text-gray-400">{{ group.account_count || 0 }}</span>

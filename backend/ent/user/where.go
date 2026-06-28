@@ -1616,6 +1616,52 @@ func HasOperatedSubscriptionSettlementOrdersWith(preds ...predicate.Subscription
 	})
 }
 
+// HasSubscriptionRefundRequests applies the HasEdge predicate on the "subscription_refund_requests" edge.
+func HasSubscriptionRefundRequests() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionRefundRequestsTable, SubscriptionRefundRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasSubscriptionRefundRequestsWith applies the HasEdge predicate on the "subscription_refund_requests" edge with a given conditions (other predicates).
+func HasSubscriptionRefundRequestsWith(preds ...predicate.SubscriptionRefundRequest) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newSubscriptionRefundRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
+// HasOperatedSubscriptionRefundRequests applies the HasEdge predicate on the "operated_subscription_refund_requests" edge.
+func HasOperatedSubscriptionRefundRequests() predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, OperatedSubscriptionRefundRequestsTable, OperatedSubscriptionRefundRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasOperatedSubscriptionRefundRequestsWith applies the HasEdge predicate on the "operated_subscription_refund_requests" edge with a given conditions (other predicates).
+func HasOperatedSubscriptionRefundRequestsWith(preds ...predicate.SubscriptionRefundRequest) predicate.User {
+	return predicate.User(func(s *sql.Selector) {
+		step := newOperatedSubscriptionRefundRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // HasAuthIdentities applies the HasEdge predicate on the "auth_identities" edge.
 func HasAuthIdentities() predicate.User {
 	return predicate.User(func(s *sql.Selector) {

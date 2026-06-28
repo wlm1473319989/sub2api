@@ -37,11 +37,19 @@ func newGroupRepositoryWithSQL(client *dbent.Client, sqlq sqlExecutor) *groupRep
 }
 
 func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) error {
+	subscriptionRateMultiplier := groupIn.SubscriptionRateMultiplier
+	if subscriptionRateMultiplier <= 0 {
+		subscriptionRateMultiplier = groupIn.RateMultiplier
+		if subscriptionRateMultiplier <= 0 {
+			subscriptionRateMultiplier = 1
+		}
+	}
 	builder := r.client.Group.Create().
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
 		SetRateMultiplier(groupIn.RateMultiplier).
+		SetSubscriptionRateMultiplier(subscriptionRateMultiplier).
 		SetSortOrder(groupIn.SortOrder).
 		SetIsExclusive(groupIn.IsExclusive).
 		SetStatus(groupIn.Status).
@@ -111,11 +119,19 @@ func (r *groupRepository) GetByIDLite(ctx context.Context, id int64) (*service.G
 }
 
 func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) error {
+	subscriptionRateMultiplier := groupIn.SubscriptionRateMultiplier
+	if subscriptionRateMultiplier <= 0 {
+		subscriptionRateMultiplier = groupIn.RateMultiplier
+		if subscriptionRateMultiplier <= 0 {
+			subscriptionRateMultiplier = 1
+		}
+	}
 	builder := r.client.Group.UpdateOneID(groupIn.ID).
 		SetName(groupIn.Name).
 		SetDescription(groupIn.Description).
 		SetPlatform(groupIn.Platform).
 		SetRateMultiplier(groupIn.RateMultiplier).
+		SetSubscriptionRateMultiplier(subscriptionRateMultiplier).
 		SetIsExclusive(groupIn.IsExclusive).
 		SetStatus(groupIn.Status).
 		SetAllowImageGeneration(groupIn.AllowImageGeneration).

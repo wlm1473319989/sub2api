@@ -379,6 +379,34 @@ func (_c *UsageLogCreate) SetNillableRateMultiplier(v *float64) *UsageLogCreate 
 	return _c
 }
 
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (_c *UsageLogCreate) SetSubscriptionRateMultiplier(v float64) *UsageLogCreate {
+	_c.mutation.SetSubscriptionRateMultiplier(v)
+	return _c
+}
+
+// SetNillableSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableSubscriptionRateMultiplier(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetSubscriptionRateMultiplier(*v)
+	}
+	return _c
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (_c *UsageLogCreate) SetBalanceRateMultiplier(v float64) *UsageLogCreate {
+	_c.mutation.SetBalanceRateMultiplier(v)
+	return _c
+}
+
+// SetNillableBalanceRateMultiplier sets the "balance_rate_multiplier" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableBalanceRateMultiplier(v *float64) *UsageLogCreate {
+	if v != nil {
+		_c.SetBalanceRateMultiplier(*v)
+	}
+	return _c
+}
+
 // SetAccountRateMultiplier sets the "account_rate_multiplier" field.
 func (_c *UsageLogCreate) SetAccountRateMultiplier(v float64) *UsageLogCreate {
 	_c.mutation.SetAccountRateMultiplier(v)
@@ -701,6 +729,14 @@ func (_c *UsageLogCreate) defaults() {
 		v := usagelog.DefaultRateMultiplier
 		_c.mutation.SetRateMultiplier(v)
 	}
+	if _, ok := _c.mutation.SubscriptionRateMultiplier(); !ok {
+		v := usagelog.DefaultSubscriptionRateMultiplier
+		_c.mutation.SetSubscriptionRateMultiplier(v)
+	}
+	if _, ok := _c.mutation.BalanceRateMultiplier(); !ok {
+		v := usagelog.DefaultBalanceRateMultiplier
+		_c.mutation.SetBalanceRateMultiplier(v)
+	}
 	if _, ok := _c.mutation.BillingType(); !ok {
 		v := usagelog.DefaultBillingType
 		_c.mutation.SetBillingType(v)
@@ -819,6 +855,12 @@ func (_c *UsageLogCreate) check() error {
 	}
 	if _, ok := _c.mutation.RateMultiplier(); !ok {
 		return &ValidationError{Name: "rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.rate_multiplier"`)}
+	}
+	if _, ok := _c.mutation.SubscriptionRateMultiplier(); !ok {
+		return &ValidationError{Name: "subscription_rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.subscription_rate_multiplier"`)}
+	}
+	if _, ok := _c.mutation.BalanceRateMultiplier(); !ok {
+		return &ValidationError{Name: "balance_rate_multiplier", err: errors.New(`ent: missing required field "UsageLog.balance_rate_multiplier"`)}
 	}
 	if _, ok := _c.mutation.BillingType(); !ok {
 		return &ValidationError{Name: "billing_type", err: errors.New(`ent: missing required field "UsageLog.billing_type"`)}
@@ -992,6 +1034,14 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.RateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldRateMultiplier, field.TypeFloat64, value)
 		_node.RateMultiplier = value
+	}
+	if value, ok := _c.mutation.SubscriptionRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldSubscriptionRateMultiplier, field.TypeFloat64, value)
+		_node.SubscriptionRateMultiplier = value
+	}
+	if value, ok := _c.mutation.BalanceRateMultiplier(); ok {
+		_spec.SetField(usagelog.FieldBalanceRateMultiplier, field.TypeFloat64, value)
+		_node.BalanceRateMultiplier = value
 	}
 	if value, ok := _c.mutation.AccountRateMultiplier(); ok {
 		_spec.SetField(usagelog.FieldAccountRateMultiplier, field.TypeFloat64, value)
@@ -1667,6 +1717,42 @@ func (u *UsageLogUpsert) UpdateRateMultiplier() *UsageLogUpsert {
 // AddRateMultiplier adds v to the "rate_multiplier" field.
 func (u *UsageLogUpsert) AddRateMultiplier(v float64) *UsageLogUpsert {
 	u.Add(usagelog.FieldRateMultiplier, v)
+	return u
+}
+
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsert) SetSubscriptionRateMultiplier(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldSubscriptionRateMultiplier, v)
+	return u
+}
+
+// UpdateSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateSubscriptionRateMultiplier() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldSubscriptionRateMultiplier)
+	return u
+}
+
+// AddSubscriptionRateMultiplier adds v to the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsert) AddSubscriptionRateMultiplier(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldSubscriptionRateMultiplier, v)
+	return u
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (u *UsageLogUpsert) SetBalanceRateMultiplier(v float64) *UsageLogUpsert {
+	u.Set(usagelog.FieldBalanceRateMultiplier, v)
+	return u
+}
+
+// UpdateBalanceRateMultiplier sets the "balance_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateBalanceRateMultiplier() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldBalanceRateMultiplier)
+	return u
+}
+
+// AddBalanceRateMultiplier adds v to the "balance_rate_multiplier" field.
+func (u *UsageLogUpsert) AddBalanceRateMultiplier(v float64) *UsageLogUpsert {
+	u.Add(usagelog.FieldBalanceRateMultiplier, v)
 	return u
 }
 
@@ -2530,6 +2616,48 @@ func (u *UsageLogUpsertOne) AddRateMultiplier(v float64) *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) UpdateRateMultiplier() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsertOne) SetSubscriptionRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetSubscriptionRateMultiplier(v)
+	})
+}
+
+// AddSubscriptionRateMultiplier adds v to the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsertOne) AddSubscriptionRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddSubscriptionRateMultiplier(v)
+	})
+}
+
+// UpdateSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateSubscriptionRateMultiplier() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateSubscriptionRateMultiplier()
+	})
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (u *UsageLogUpsertOne) SetBalanceRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetBalanceRateMultiplier(v)
+	})
+}
+
+// AddBalanceRateMultiplier adds v to the "balance_rate_multiplier" field.
+func (u *UsageLogUpsertOne) AddBalanceRateMultiplier(v float64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddBalanceRateMultiplier(v)
+	})
+}
+
+// UpdateBalanceRateMultiplier sets the "balance_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateBalanceRateMultiplier() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateBalanceRateMultiplier()
 	})
 }
 
@@ -3602,6 +3730,48 @@ func (u *UsageLogUpsertBulk) AddRateMultiplier(v float64) *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) UpdateRateMultiplier() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.UpdateRateMultiplier()
+	})
+}
+
+// SetSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) SetSubscriptionRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetSubscriptionRateMultiplier(v)
+	})
+}
+
+// AddSubscriptionRateMultiplier adds v to the "subscription_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) AddSubscriptionRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddSubscriptionRateMultiplier(v)
+	})
+}
+
+// UpdateSubscriptionRateMultiplier sets the "subscription_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateSubscriptionRateMultiplier() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateSubscriptionRateMultiplier()
+	})
+}
+
+// SetBalanceRateMultiplier sets the "balance_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) SetBalanceRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetBalanceRateMultiplier(v)
+	})
+}
+
+// AddBalanceRateMultiplier adds v to the "balance_rate_multiplier" field.
+func (u *UsageLogUpsertBulk) AddBalanceRateMultiplier(v float64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddBalanceRateMultiplier(v)
+	})
+}
+
+// UpdateBalanceRateMultiplier sets the "balance_rate_multiplier" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateBalanceRateMultiplier() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateBalanceRateMultiplier()
 	})
 }
 

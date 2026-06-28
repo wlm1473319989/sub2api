@@ -321,6 +321,30 @@ func (f SubscriptionPlanFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.V
 	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionPlanMutation", m)
 }
 
+// The SubscriptionRefundAllocationFunc type is an adapter to allow the use of ordinary
+// function as SubscriptionRefundAllocation mutator.
+type SubscriptionRefundAllocationFunc func(context.Context, *ent.SubscriptionRefundAllocationMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubscriptionRefundAllocationFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SubscriptionRefundAllocationMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionRefundAllocationMutation", m)
+}
+
+// The SubscriptionRefundRequestFunc type is an adapter to allow the use of ordinary
+// function as SubscriptionRefundRequest mutator.
+type SubscriptionRefundRequestFunc func(context.Context, *ent.SubscriptionRefundRequestMutation) (ent.Value, error)
+
+// Mutate calls f(ctx, m).
+func (f SubscriptionRefundRequestFunc) Mutate(ctx context.Context, m ent.Mutation) (ent.Value, error) {
+	if mv, ok := m.(*ent.SubscriptionRefundRequestMutation); ok {
+		return f(ctx, mv)
+	}
+	return nil, fmt.Errorf("unexpected mutation type %T. expect *ent.SubscriptionRefundRequestMutation", m)
+}
+
 // The SubscriptionSettlementOrderFunc type is an adapter to allow the use of ordinary
 // function as SubscriptionSettlementOrder mutator.
 type SubscriptionSettlementOrderFunc func(context.Context, *ent.SubscriptionSettlementOrderMutation) (ent.Value, error)

@@ -195,6 +195,16 @@ func RateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldRateMultiplier, v))
 }
 
+// SubscriptionRateMultiplier applies equality check predicate on the "subscription_rate_multiplier" field. It's identical to SubscriptionRateMultiplierEQ.
+func SubscriptionRateMultiplier(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldSubscriptionRateMultiplier, v))
+}
+
+// BalanceRateMultiplier applies equality check predicate on the "balance_rate_multiplier" field. It's identical to BalanceRateMultiplierEQ.
+func BalanceRateMultiplier(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldBalanceRateMultiplier, v))
+}
+
 // AccountRateMultiplier applies equality check predicate on the "account_rate_multiplier" field. It's identical to AccountRateMultiplierEQ.
 func AccountRateMultiplier(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldAccountRateMultiplier, v))
@@ -1538,6 +1548,86 @@ func RateMultiplierLT(v float64) predicate.UsageLog {
 // RateMultiplierLTE applies the LTE predicate on the "rate_multiplier" field.
 func RateMultiplierLTE(v float64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldLTE(FieldRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierEQ applies the EQ predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldSubscriptionRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierNEQ applies the NEQ predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldSubscriptionRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierIn applies the In predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldSubscriptionRateMultiplier, vs...))
+}
+
+// SubscriptionRateMultiplierNotIn applies the NotIn predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldSubscriptionRateMultiplier, vs...))
+}
+
+// SubscriptionRateMultiplierGT applies the GT predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldSubscriptionRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierGTE applies the GTE predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldSubscriptionRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierLT applies the LT predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldSubscriptionRateMultiplier, v))
+}
+
+// SubscriptionRateMultiplierLTE applies the LTE predicate on the "subscription_rate_multiplier" field.
+func SubscriptionRateMultiplierLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldSubscriptionRateMultiplier, v))
+}
+
+// BalanceRateMultiplierEQ applies the EQ predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldBalanceRateMultiplier, v))
+}
+
+// BalanceRateMultiplierNEQ applies the NEQ predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierNEQ(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldBalanceRateMultiplier, v))
+}
+
+// BalanceRateMultiplierIn applies the In predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldBalanceRateMultiplier, vs...))
+}
+
+// BalanceRateMultiplierNotIn applies the NotIn predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierNotIn(vs ...float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldBalanceRateMultiplier, vs...))
+}
+
+// BalanceRateMultiplierGT applies the GT predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierGT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldBalanceRateMultiplier, v))
+}
+
+// BalanceRateMultiplierGTE applies the GTE predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierGTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldBalanceRateMultiplier, v))
+}
+
+// BalanceRateMultiplierLT applies the LT predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierLT(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldBalanceRateMultiplier, v))
+}
+
+// BalanceRateMultiplierLTE applies the LTE predicate on the "balance_rate_multiplier" field.
+func BalanceRateMultiplierLTE(v float64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldBalanceRateMultiplier, v))
 }
 
 // AccountRateMultiplierEQ applies the EQ predicate on the "account_rate_multiplier" field.

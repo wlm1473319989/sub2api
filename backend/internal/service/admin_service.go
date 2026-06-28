@@ -199,6 +199,7 @@ type CreateGroupInput struct {
 	Description    string
 	Platform       string
 	RateMultiplier float64
+	SubscriptionRateMultiplier float64
 	IsExclusive    bool
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	AllowImageGeneration bool
@@ -235,6 +236,7 @@ type UpdateGroupInput struct {
 	Description    *string
 	Platform       string
 	RateMultiplier *float64 // 使用指针以支持设置为0
+	SubscriptionRateMultiplier *float64
 	IsExclusive    *bool
 	Status         string
 	// 图片生成计费配置（仅 antigravity 平台使用）
@@ -1779,6 +1781,9 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 	if input.RateMultiplier <= 0 {
 		return nil, errors.New("rate_multiplier must be > 0")
 	}
+	if input.SubscriptionRateMultiplier <= 0 {
+		input.SubscriptionRateMultiplier = input.RateMultiplier
+	}
 
 	platform := input.Platform
 	if platform == "" {
@@ -1857,6 +1862,7 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		Description:                     input.Description,
 		Platform:                        platform,
 		RateMultiplier:                  input.RateMultiplier,
+		SubscriptionRateMultiplier:      input.SubscriptionRateMultiplier,
 		IsExclusive:                     input.IsExclusive,
 		Status:                          StatusActive,
 		AllowImageGeneration:            input.AllowImageGeneration,
@@ -2015,6 +2021,12 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 			return nil, errors.New("rate_multiplier must be > 0")
 		}
 		group.RateMultiplier = *input.RateMultiplier
+	}
+	if input.SubscriptionRateMultiplier != nil {
+		if *input.SubscriptionRateMultiplier <= 0 {
+			return nil, errors.New("subscription_rate_multiplier must be > 0")
+		}
+		group.SubscriptionRateMultiplier = *input.SubscriptionRateMultiplier
 	}
 	if input.IsExclusive != nil {
 		group.IsExclusive = *input.IsExclusive

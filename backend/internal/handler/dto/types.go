@@ -94,6 +94,7 @@ type Group struct {
 	Description    string  `json:"description"`
 	Platform       string  `json:"platform"`
 	RateMultiplier float64 `json:"rate_multiplier"`
+	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
 	IsExclusive    bool    `json:"is_exclusive"`
 	Status         string  `json:"status"`
 
@@ -460,6 +461,8 @@ type UsageLog struct {
 	SubscriptionCost  float64 `json:"subscription_cost"`
 	BalanceCost       float64 `json:"balance_cost"`
 	RateMultiplier    float64 `json:"rate_multiplier"`
+	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
+	BalanceRateMultiplier      float64 `json:"balance_rate_multiplier"`
 
 	BillingType  int8   `json:"billing_type"`
 	RequestType  string `json:"request_type"`

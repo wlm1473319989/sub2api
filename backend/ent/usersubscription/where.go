@@ -1482,6 +1482,29 @@ func HasSettlementOrdersWith(preds ...predicate.SubscriptionSettlementOrder) pre
 	})
 }
 
+// HasRefundRequests applies the HasEdge predicate on the "refund_requests" edge.
+func HasRefundRequests() predicate.UserSubscription {
+	return predicate.UserSubscription(func(s *sql.Selector) {
+		step := sqlgraph.NewStep(
+			sqlgraph.From(Table, FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, RefundRequestsTable, RefundRequestsColumn),
+		)
+		sqlgraph.HasNeighbors(s, step)
+	})
+}
+
+// HasRefundRequestsWith applies the HasEdge predicate on the "refund_requests" edge with a given conditions (other predicates).
+func HasRefundRequestsWith(preds ...predicate.SubscriptionRefundRequest) predicate.UserSubscription {
+	return predicate.UserSubscription(func(s *sql.Selector) {
+		step := newRefundRequestsStep()
+		sqlgraph.HasNeighborsWith(s, step, func(s *sql.Selector) {
+			for _, p := range preds {
+				p(s)
+			}
+		})
+	})
+}
+
 // And groups predicates with the AND operator between them.
 func And(predicates ...predicate.UserSubscription) predicate.UserSubscription {
 	return predicate.UserSubscription(sql.AndPredicates(predicates...))

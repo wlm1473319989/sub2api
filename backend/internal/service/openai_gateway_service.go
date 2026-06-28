@@ -5937,6 +5937,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		}
 		multiplier = resolver.Resolve(ctx, user.ID, *apiKey.GroupID, apiKey.Group.RateMultiplier)
 	}
+	subscriptionMultiplier := resolveGroupSubscriptionRateMultiplier(apiKey, multiplier)
 	imageMultiplier := resolveImageRateMultiplier(apiKey, multiplier)
 
 	var cost *CostBreakdown
@@ -5980,11 +5981,11 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		cost = &CostBreakdown{BillingMode: string(BillingModeToken)}
 	}
 
-	// Determine billing type
-	billingType := BillingTypeBalance
-	if subscription != nil {
-		billingType = BillingTypeSubscription
-	}
+	balanceRateMultiplier := resolveUsageBalanceRateMultiplier(result.ImageCount, cost.BillingMode, multiplier, imageMultiplier)
+	split := resolveUsageBillingSplitFromRawCost(cost.TotalCost, subscription, subscriptionMultiplier, balanceRateMultiplier)
+	cost.ActualCost = split.actualCost()
+
+	billingType := split.billingType()
 
 	// Create usage log
 	durationMs := int(result.Duration.Milliseconds())
@@ -6003,28 +6004,33 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	}
 
 	usageLog := &UsageLog{
-		UserID:              user.ID,
-		APIKeyID:            apiKey.ID,
-		AccountID:           account.ID,
-		RequestID:           requestID,
-		Model:               result.Model,
-		RequestedModel:      requestedModel,
-		UpstreamModel:       optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
-		ServiceTier:         result.ServiceTier,
-		ReasoningEffort:     result.ReasoningEffort,
-		InboundEndpoint:     optionalTrimmedStringPtr(input.InboundEndpoint),
-		UpstreamEndpoint:    optionalTrimmedStringPtr(input.UpstreamEndpoint),
-		InputTokens:         actualInputTokens,
-		OutputTokens:        result.Usage.OutputTokens,
-		CacheCreationTokens: result.Usage.CacheCreationInputTokens,
-		CacheReadTokens:     result.Usage.CacheReadInputTokens,
-		ImageOutputTokens:   result.Usage.ImageOutputTokens,
-		ImageCount:          result.ImageCount,
-		ImageSize:           optionalTrimmedStringPtr(result.ImageSize),
-		ImageInputSize:      optionalTrimmedStringPtr(result.ImageInputSize),
-		ImageOutputSize:     optionalTrimmedStringPtr(result.ImageOutputSize),
-		ImageSizeSource:     optionalTrimmedStringPtr(result.ImageSizeSource),
-		ImageSizeBreakdown:  result.ImageSizeBreakdown,
+		UserID:                     user.ID,
+		APIKeyID:                   apiKey.ID,
+		AccountID:                  account.ID,
+		RequestID:                  requestID,
+		Model:                      result.Model,
+		RequestedModel:             requestedModel,
+		UpstreamModel:              optionalNonEqualStringPtr(result.UpstreamModel, result.Model),
+		ServiceTier:                result.ServiceTier,
+		ReasoningEffort:            result.ReasoningEffort,
+		InboundEndpoint:            optionalTrimmedStringPtr(input.InboundEndpoint),
+		UpstreamEndpoint:           optionalTrimmedStringPtr(input.UpstreamEndpoint),
+		InputTokens:                actualInputTokens,
+		OutputTokens:               result.Usage.OutputTokens,
+		CacheCreationTokens:        result.Usage.CacheCreationInputTokens,
+		CacheReadTokens:            result.Usage.CacheReadInputTokens,
+		ImageOutputTokens:          result.Usage.ImageOutputTokens,
+		ImageCount:                 result.ImageCount,
+		ImageSize:                  optionalTrimmedStringPtr(result.ImageSize),
+		ImageInputSize:             optionalTrimmedStringPtr(result.ImageInputSize),
+		ImageOutputSize:            optionalTrimmedStringPtr(result.ImageOutputSize),
+		ImageSizeSource:            optionalTrimmedStringPtr(result.ImageSizeSource),
+		ImageSizeBreakdown:         result.ImageSizeBreakdown,
+		RateMultiplier:             split.EffectiveRateMultiplier,
+		SubscriptionRateMultiplier: split.SubscriptionRateMultiplier,
+		BalanceRateMultiplier:      split.BalanceRateMultiplier,
+		SubscriptionCost:           split.SubscriptionCost,
+		BalanceCost:                split.BalanceCost,
 	}
 	if cost != nil {
 		usageLog.InputCost = cost.InputCost
@@ -6034,11 +6040,6 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		usageLog.CacheReadCost = cost.CacheReadCost
 		usageLog.TotalCost = cost.TotalCost
 		usageLog.ActualCost = cost.ActualCost
-	}
-	if result.ImageCount > 0 && (cost == nil || cost.BillingMode != string(BillingModeToken)) {
-		usageLog.RateMultiplier = imageMultiplier
-	} else {
-		usageLog.RateMultiplier = multiplier
 	}
 	usageLog.AccountRateMultiplier = &accountRateMultiplier
 	usageLog.BillingType = billingType
@@ -6098,15 +6099,17 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 
 	billingErr := func() error {
 		_, err := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
-			Cost:                  cost,
-			User:                  user,
-			APIKey:                apiKey,
-			Account:               account,
-			Subscription:          subscription,
-			RequestPayloadHash:    resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
-			AccountRateMultiplier: accountRateMultiplier,
-			APIKeyService:         input.APIKeyService,
-			Platform:              PlatformFromAPIKey(apiKey),
+			Cost:                       cost,
+			User:                       user,
+			APIKey:                     apiKey,
+			Account:                    account,
+			Subscription:               subscription,
+			RequestPayloadHash:         resolveUsageBillingPayloadFingerprint(ctx, input.RequestPayloadHash),
+			BalanceRateMultiplier:      balanceRateMultiplier,
+			SubscriptionRateMultiplier: subscriptionMultiplier,
+			AccountRateMultiplier:      accountRateMultiplier,
+			APIKeyService:              input.APIKeyService,
+			Platform:                   PlatformFromAPIKey(apiKey),
 		}, s.billingDeps(), s.usageBillingRepo)
 		return err
 	}()

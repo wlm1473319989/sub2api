@@ -22,6 +22,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
+	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundrequest"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
 	"github.com/Wei-Shaw/sub2api/ent/usagelog"
 	"github.com/Wei-Shaw/sub2api/ent/user"
@@ -50,6 +51,8 @@ type UserQuery struct {
 	withPaymentOrders                        *PaymentOrderQuery
 	withSubscriptionSettlementOrders         *SubscriptionSettlementOrderQuery
 	withOperatedSubscriptionSettlementOrders *SubscriptionSettlementOrderQuery
+	withSubscriptionRefundRequests           *SubscriptionRefundRequestQuery
+	withOperatedSubscriptionRefundRequests   *SubscriptionRefundRequestQuery
 	withAuthIdentities                       *AuthIdentityQuery
 	withPendingAuthSessions                  *PendingAuthSessionQuery
 	withPlatformQuotas                       *UserPlatformQuotaQuery
@@ -355,6 +358,50 @@ func (_q *UserQuery) QueryOperatedSubscriptionSettlementOrders() *SubscriptionSe
 	return query
 }
 
+// QuerySubscriptionRefundRequests chains the current query on the "subscription_refund_requests" edge.
+func (_q *UserQuery) QuerySubscriptionRefundRequests() *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.SubscriptionRefundRequestsTable, user.SubscriptionRefundRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
+// QueryOperatedSubscriptionRefundRequests chains the current query on the "operated_subscription_refund_requests" edge.
+func (_q *UserQuery) QueryOperatedSubscriptionRefundRequests() *SubscriptionRefundRequestQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	query.path = func(ctx context.Context) (fromU *sql.Selector, err error) {
+		if err := _q.prepareQuery(ctx); err != nil {
+			return nil, err
+		}
+		selector := _q.sqlQuery(ctx)
+		if err := selector.Err(); err != nil {
+			return nil, err
+		}
+		step := sqlgraph.NewStep(
+			sqlgraph.From(user.Table, user.FieldID, selector),
+			sqlgraph.To(subscriptionrefundrequest.Table, subscriptionrefundrequest.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, user.OperatedSubscriptionRefundRequestsTable, user.OperatedSubscriptionRefundRequestsColumn),
+		)
+		fromU = sqlgraph.SetNeighbors(_q.driver.Dialect(), step)
+		return fromU, nil
+	}
+	return query
+}
+
 // QueryAuthIdentities chains the current query on the "auth_identities" edge.
 func (_q *UserQuery) QueryAuthIdentities() *AuthIdentityQuery {
 	query := (&AuthIdentityClient{config: _q.config}).Query()
@@ -647,6 +694,8 @@ func (_q *UserQuery) Clone() *UserQuery {
 		withPaymentOrders:                        _q.withPaymentOrders.Clone(),
 		withSubscriptionSettlementOrders:         _q.withSubscriptionSettlementOrders.Clone(),
 		withOperatedSubscriptionSettlementOrders: _q.withOperatedSubscriptionSettlementOrders.Clone(),
+		withSubscriptionRefundRequests:           _q.withSubscriptionRefundRequests.Clone(),
+		withOperatedSubscriptionRefundRequests:   _q.withOperatedSubscriptionRefundRequests.Clone(),
 		withAuthIdentities:                       _q.withAuthIdentities.Clone(),
 		withPendingAuthSessions:                  _q.withPendingAuthSessions.Clone(),
 		withPlatformQuotas:                       _q.withPlatformQuotas.Clone(),
@@ -789,6 +838,28 @@ func (_q *UserQuery) WithOperatedSubscriptionSettlementOrders(opts ...func(*Subs
 	return _q
 }
 
+// WithSubscriptionRefundRequests tells the query-builder to eager-load the nodes that are connected to
+// the "subscription_refund_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithSubscriptionRefundRequests(opts ...func(*SubscriptionRefundRequestQuery)) *UserQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withSubscriptionRefundRequests = query
+	return _q
+}
+
+// WithOperatedSubscriptionRefundRequests tells the query-builder to eager-load the nodes that are connected to
+// the "operated_subscription_refund_requests" edge. The optional arguments are used to configure the query builder of the edge.
+func (_q *UserQuery) WithOperatedSubscriptionRefundRequests(opts ...func(*SubscriptionRefundRequestQuery)) *UserQuery {
+	query := (&SubscriptionRefundRequestClient{config: _q.config}).Query()
+	for _, opt := range opts {
+		opt(query)
+	}
+	_q.withOperatedSubscriptionRefundRequests = query
+	return _q
+}
+
 // WithAuthIdentities tells the query-builder to eager-load the nodes that are connected to
 // the "auth_identities" edge. The optional arguments are used to configure the query builder of the edge.
 func (_q *UserQuery) WithAuthIdentities(opts ...func(*AuthIdentityQuery)) *UserQuery {
@@ -911,7 +982,7 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 	var (
 		nodes       = []*User{}
 		_spec       = _q.querySpec()
-		loadedTypes = [16]bool{
+		loadedTypes = [18]bool{
 			_q.withAPIKeys != nil,
 			_q.withRedeemCodes != nil,
 			_q.withSubscriptions != nil,
@@ -924,6 +995,8 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			_q.withPaymentOrders != nil,
 			_q.withSubscriptionSettlementOrders != nil,
 			_q.withOperatedSubscriptionSettlementOrders != nil,
+			_q.withSubscriptionRefundRequests != nil,
+			_q.withOperatedSubscriptionRefundRequests != nil,
 			_q.withAuthIdentities != nil,
 			_q.withPendingAuthSessions != nil,
 			_q.withPlatformQuotas != nil,
@@ -1037,6 +1110,24 @@ func (_q *UserQuery) sqlAll(ctx context.Context, hooks ...queryHook) ([]*User, e
 			func(n *User) { n.Edges.OperatedSubscriptionSettlementOrders = []*SubscriptionSettlementOrder{} },
 			func(n *User, e *SubscriptionSettlementOrder) {
 				n.Edges.OperatedSubscriptionSettlementOrders = append(n.Edges.OperatedSubscriptionSettlementOrders, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withSubscriptionRefundRequests; query != nil {
+		if err := _q.loadSubscriptionRefundRequests(ctx, query, nodes,
+			func(n *User) { n.Edges.SubscriptionRefundRequests = []*SubscriptionRefundRequest{} },
+			func(n *User, e *SubscriptionRefundRequest) {
+				n.Edges.SubscriptionRefundRequests = append(n.Edges.SubscriptionRefundRequests, e)
+			}); err != nil {
+			return nil, err
+		}
+	}
+	if query := _q.withOperatedSubscriptionRefundRequests; query != nil {
+		if err := _q.loadOperatedSubscriptionRefundRequests(ctx, query, nodes,
+			func(n *User) { n.Edges.OperatedSubscriptionRefundRequests = []*SubscriptionRefundRequest{} },
+			func(n *User, e *SubscriptionRefundRequest) {
+				n.Edges.OperatedSubscriptionRefundRequests = append(n.Edges.OperatedSubscriptionRefundRequests, e)
 			}); err != nil {
 			return nil, err
 		}
@@ -1467,6 +1558,69 @@ func (_q *UserQuery) loadOperatedSubscriptionSettlementOrders(ctx context.Contex
 		node, ok := nodeids[fk]
 		if !ok {
 			return fmt.Errorf(`unexpected referenced foreign-key "operator_user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadSubscriptionRefundRequests(ctx context.Context, query *SubscriptionRefundRequestQuery, nodes []*User, init func(*User), assign func(*User, *SubscriptionRefundRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionrefundrequest.FieldUserID)
+	}
+	query.Where(predicate.SubscriptionRefundRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.SubscriptionRefundRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.UserID
+		node, ok := nodeids[fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "user_id" returned %v for node %v`, fk, n.ID)
+		}
+		assign(node, n)
+	}
+	return nil
+}
+func (_q *UserQuery) loadOperatedSubscriptionRefundRequests(ctx context.Context, query *SubscriptionRefundRequestQuery, nodes []*User, init func(*User), assign func(*User, *SubscriptionRefundRequest)) error {
+	fks := make([]driver.Value, 0, len(nodes))
+	nodeids := make(map[int64]*User)
+	for i := range nodes {
+		fks = append(fks, nodes[i].ID)
+		nodeids[nodes[i].ID] = nodes[i]
+		if init != nil {
+			init(nodes[i])
+		}
+	}
+	if len(query.ctx.Fields) > 0 {
+		query.ctx.AppendFieldOnce(subscriptionrefundrequest.FieldManualTransferOperatorUserID)
+	}
+	query.Where(predicate.SubscriptionRefundRequest(func(s *sql.Selector) {
+		s.Where(sql.InValues(s.C(user.OperatedSubscriptionRefundRequestsColumn), fks...))
+	}))
+	neighbors, err := query.All(ctx)
+	if err != nil {
+		return err
+	}
+	for _, n := range neighbors {
+		fk := n.ManualTransferOperatorUserID
+		if fk == nil {
+			return fmt.Errorf(`foreign-key "manual_transfer_operator_user_id" is nil for node %v`, n.ID)
+		}
+		node, ok := nodeids[*fk]
+		if !ok {
+			return fmt.Errorf(`unexpected referenced foreign-key "manual_transfer_operator_user_id" returned %v for node %v`, *fk, n.ID)
 		}
 		assign(node, n)
 	}
