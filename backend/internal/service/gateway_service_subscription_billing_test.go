@@ -224,6 +224,56 @@ func TestApplyUsageBilling_LegacyFallbackAllowsNegativeBalancePortion(t *testing
 	}
 }
 
+type usageBillingAuthCacheStub struct {
+	userInvalidations []int64
+	keyInvalidations  []string
+}
+
+func (s *usageBillingAuthCacheStub) UpdateQuotaUsed(context.Context, int64, float64) error {
+	return nil
+}
+
+func (s *usageBillingAuthCacheStub) UpdateRateLimitUsage(context.Context, int64, float64) error {
+	return nil
+}
+
+func (s *usageBillingAuthCacheStub) InvalidateAuthCacheByKey(_ context.Context, key string) {
+	s.keyInvalidations = append(s.keyInvalidations, key)
+}
+
+func (s *usageBillingAuthCacheStub) InvalidateAuthCacheByUserID(_ context.Context, userID int64) {
+	s.userInvalidations = append(s.userInvalidations, userID)
+}
+
+func TestApplyUsageBilling_InvalidatesAuthCacheByUserWhenCommittedBalanceNonPositive(t *testing.T) {
+	t.Parallel()
+
+	authCache := &usageBillingAuthCacheStub{}
+	newBalance := 0.0
+
+	applied, err := applyUsageBilling(context.Background(), "req-balance-floor", &UsageLog{
+		RequestID: "req-balance-floor",
+	}, &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 77},
+		APIKey:                &APIKey{ID: 88, Key: "sk-test"},
+		APIKeyService:         authCache,
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{
+		billingCacheService: &BillingCacheService{},
+	}, &openAIRecordUsageBillingRepoStub{
+		result: &UsageBillingApplyResult{
+			Applied:    true,
+			NewBalance: &newBalance,
+		},
+	})
+
+	require.NoError(t, err)
+	require.True(t, applied)
+	require.Equal(t, []int64{77}, authCache.userInvalidations)
+	require.Empty(t, authCache.keyInvalidations)
+}
+
 type finalizeBillingCacheStub struct {
 	BillingCache
 
