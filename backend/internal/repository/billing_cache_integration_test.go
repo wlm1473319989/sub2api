@@ -60,6 +60,44 @@ func (s *BillingCacheSuite) TestUserBalance() {
 			},
 		},
 		{
+			name: "set_if_lower_populates_missing_key",
+			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
+				userID := int64(22)
+
+				require.NoError(s.T(), cache.SetUserBalanceIfLower(ctx, userID, 10.5), "SetUserBalanceIfLower")
+
+				got, err := cache.GetUserBalance(ctx, userID)
+				require.NoError(s.T(), err, "GetUserBalance")
+				require.Equal(s.T(), 10.5, got, "balance mismatch")
+			},
+		},
+		{
+			name: "set_if_lower_does_not_raise_existing_balance",
+			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
+				userID := int64(23)
+
+				require.NoError(s.T(), cache.SetUserBalance(ctx, userID, -1), "SetUserBalance")
+				require.NoError(s.T(), cache.SetUserBalanceIfLower(ctx, userID, 8), "SetUserBalanceIfLower")
+
+				got, err := cache.GetUserBalance(ctx, userID)
+				require.NoError(s.T(), err, "GetUserBalance")
+				require.Equal(s.T(), -1.0, got, "stale higher balance should not overwrite lower value")
+			},
+		},
+		{
+			name: "set_if_lower_can_lower_existing_balance",
+			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
+				userID := int64(24)
+
+				require.NoError(s.T(), cache.SetUserBalance(ctx, userID, 10), "SetUserBalance")
+				require.NoError(s.T(), cache.SetUserBalanceIfLower(ctx, userID, 3.25), "SetUserBalanceIfLower")
+
+				got, err := cache.GetUserBalance(ctx, userID)
+				require.NoError(s.T(), err, "GetUserBalance")
+				require.Equal(s.T(), 3.25, got, "lower balance should overwrite old cached value")
+			},
+		},
+		{
 			name: "deduct_reduces_balance",
 			fn: func(ctx context.Context, rdb *redis.Client, cache service.BillingCache) {
 				userID := int64(3)

@@ -4,8 +4,13 @@ package service
 
 import (
 	"context"
+	"errors"
+	"sync/atomic"
 	"testing"
 	"time"
+
+	"github.com/Wei-Shaw/sub2api/internal/config"
+	"github.com/stretchr/testify/require"
 )
 
 func TestResolveUsageBillingSplitFromRawCost_SubscriptionFirstAcrossDifferentMultipliers(t *testing.T) {
@@ -217,4 +222,138 @@ func TestApplyUsageBilling_LegacyFallbackAllowsNegativeBalancePortion(t *testing
 	if userRepo.lastAmount != 1.0 {
 		t.Fatalf("DeductBalance amount = %v, want 1.0", userRepo.lastAmount)
 	}
+}
+
+type finalizeBillingCacheStub struct {
+	BillingCache
+
+	setCalls             int64
+	setIfLowerCalls      int64
+	deductCalls          int64
+	invalidateCalls      int64
+	setErr               error
+	lastSetBalance       float64
+	lastSetIfLowerBalance float64
+}
+
+func (s *finalizeBillingCacheStub) SetUserBalance(ctx context.Context, userID int64, balance float64) error {
+	atomic.AddInt64(&s.setCalls, 1)
+	s.lastSetBalance = balance
+	return s.setErr
+}
+
+func (s *finalizeBillingCacheStub) SetUserBalanceIfLower(ctx context.Context, userID int64, balance float64) error {
+	atomic.AddInt64(&s.setIfLowerCalls, 1)
+	s.lastSetIfLowerBalance = balance
+	return nil
+}
+
+func (s *finalizeBillingCacheStub) DeductUserBalance(ctx context.Context, userID int64, amount float64) error {
+	atomic.AddInt64(&s.deductCalls, 1)
+	return nil
+}
+
+func (s *finalizeBillingCacheStub) InvalidateUserBalance(ctx context.Context, userID int64) error {
+	atomic.AddInt64(&s.invalidateCalls, 1)
+	return nil
+}
+
+func TestFinalizePostUsageBilling_SyncsCommittedNonPositiveBalanceCache(t *testing.T) {
+	t.Parallel()
+
+	cache := &finalizeBillingCacheStub{}
+	billingCacheService := NewBillingCacheService(cache, nil, nil, nil, nil, nil, &config.Config{}, nil)
+	t.Cleanup(billingCacheService.Stop)
+
+	newBalance := -0.25
+	finalizePostUsageBilling(context.Background(), &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 7},
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{
+		billingCacheService: billingCacheService,
+	}, &UsageBillingApplyResult{
+		Applied:    true,
+		NewBalance: &newBalance,
+	})
+
+	require.Equal(t, int64(1), atomic.LoadInt64(&cache.setCalls))
+	require.Equal(t, newBalance, cache.lastSetBalance)
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.deductCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.invalidateCalls))
+}
+
+func TestFinalizePostUsageBilling_QueuesExactPositiveBalanceCacheUpdate(t *testing.T) {
+	t.Parallel()
+
+	cache := &finalizeBillingCacheStub{}
+	billingCacheService := NewBillingCacheService(cache, nil, nil, nil, nil, nil, &config.Config{}, nil)
+	t.Cleanup(billingCacheService.Stop)
+
+	newBalance := 3.5
+	finalizePostUsageBilling(context.Background(), &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 8},
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{
+		billingCacheService: billingCacheService,
+	}, &UsageBillingApplyResult{
+		Applied:    true,
+		NewBalance: &newBalance,
+	})
+
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&cache.setIfLowerCalls) == 1
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.setCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.deductCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.invalidateCalls))
+	require.Equal(t, newBalance, cache.lastSetIfLowerBalance)
+}
+
+func TestFinalizePostUsageBilling_InvalidatesBalanceCacheWhenSyncFails(t *testing.T) {
+	t.Parallel()
+
+	cache := &finalizeBillingCacheStub{setErr: errors.New("boom")}
+	billingCacheService := NewBillingCacheService(cache, nil, nil, nil, nil, nil, &config.Config{}, nil)
+	t.Cleanup(billingCacheService.Stop)
+
+	newBalance := 0.0
+	finalizePostUsageBilling(context.Background(), &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 9},
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{
+		billingCacheService: billingCacheService,
+	}, &UsageBillingApplyResult{
+		Applied:    true,
+		NewBalance: &newBalance,
+	})
+
+	require.Equal(t, int64(1), atomic.LoadInt64(&cache.setCalls))
+	require.Equal(t, int64(1), atomic.LoadInt64(&cache.invalidateCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.deductCalls))
+}
+
+func TestFinalizePostUsageBilling_FallsBackToAsyncDeductWhenCommittedBalanceUnknown(t *testing.T) {
+	t.Parallel()
+
+	cache := &finalizeBillingCacheStub{}
+	billingCacheService := NewBillingCacheService(cache, nil, nil, nil, nil, nil, &config.Config{}, nil)
+	t.Cleanup(billingCacheService.Stop)
+
+	finalizePostUsageBilling(context.Background(), &postUsageBillingParams{
+		Cost:                  &CostBreakdown{TotalCost: 1, ActualCost: 1},
+		User:                  &User{ID: 10},
+		BalanceRateMultiplier: 1,
+	}, &billingDeps{
+		billingCacheService: billingCacheService,
+	}, nil)
+
+	require.Eventually(t, func() bool {
+		return atomic.LoadInt64(&cache.deductCalls) == 1
+	}, time.Second, 10*time.Millisecond)
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.setCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.setIfLowerCalls))
+	require.Equal(t, int64(0), atomic.LoadInt64(&cache.invalidateCalls))
 }
