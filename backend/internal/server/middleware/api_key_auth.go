@@ -149,7 +149,7 @@ func apiKeyAuthWithSubscription(apiKeyService *service.APIKeyService, subscripti
 
 		var subscription *service.UserSubscription
 		if subscriptionService != nil {
-			sub, subErr := subscriptionService.GetActiveSubscriptionByUser(
+			sub, subErr := subscriptionService.GetActiveSubscription(
 				c.Request.Context(),
 				apiKey.User.ID,
 			)

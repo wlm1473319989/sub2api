@@ -49,6 +49,9 @@ func TestGetActiveSubscriptionByUser_NormalizesReadModel(t *testing.T) {
 				DailyUsageUSD:      3,
 				WeeklyUsageUSD:     7,
 				MonthlyUsageUSD:    9,
+				DailyUsedKnives:    3,
+				WeeklyUsedKnives:   7,
+				MonthlyUsedKnives:  9,
 			}, nil
 		},
 	}
@@ -63,6 +66,9 @@ func TestGetActiveSubscriptionByUser_NormalizesReadModel(t *testing.T) {
 	require.Zero(t, sub.DailyUsageUSD)
 	require.Zero(t, sub.WeeklyUsageUSD)
 	require.Zero(t, sub.MonthlyUsageUSD)
+	require.Zero(t, sub.DailyUsedKnives)
+	require.Zero(t, sub.WeeklyUsedKnives)
+	require.Zero(t, sub.MonthlyUsedKnives)
 }
 
 func TestGetActiveSubscriptionByUser_Conflict(t *testing.T) {

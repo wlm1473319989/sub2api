@@ -24,14 +24,17 @@ func normalizeSubscriptionReadModel(sub *UserSubscription) {
 	if sub.NeedsDailyReset() {
 		sub.DailyWindowStart = nil
 		sub.DailyUsageUSD = 0
+		sub.DailyUsedKnives = 0
 	}
 	if sub.NeedsWeeklyReset() {
 		sub.WeeklyWindowStart = nil
 		sub.WeeklyUsageUSD = 0
+		sub.WeeklyUsedKnives = 0
 	}
 	if sub.NeedsMonthlyReset() {
 		sub.MonthlyWindowStart = nil
 		sub.MonthlyUsageUSD = 0
+		sub.MonthlyUsedKnives = 0
 	}
 	if sub.Status == SubscriptionStatusActive && sub.IsExpired() {
 		sub.Status = SubscriptionStatusExpired

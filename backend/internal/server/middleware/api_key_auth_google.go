@@ -80,7 +80,7 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 
 		var subscription *service.UserSubscription
 		if subscriptionService != nil {
-			subscription, err = subscriptionService.GetActiveSubscriptionByUser(
+			subscription, err = subscriptionService.GetActiveSubscription(
 				c.Request.Context(),
 				apiKey.User.ID,
 			)

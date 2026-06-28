@@ -24,10 +24,10 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 
 	limit := 1.0
 	group := &service.Group{
-		ID:               42,
-		Name:             "sub",
-		Status:           service.StatusActive,
-		Hydrated:         true,
+		ID:       42,
+		Name:     "sub",
+		Status:   service.StatusActive,
+		Hydrated: true,
 	}
 	user := &service.User{
 		ID:          7,
@@ -103,6 +103,74 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			// ok
 		case <-time.After(time.Second):
 			t.Fatalf("expected maintenance to be scheduled")
+		}
+	})
+
+	t.Run("standard_mode_expired_daily_window_exhausted_quota_resets_and_allows_request", func(t *testing.T) {
+		cfg := &config.Config{RunMode: config.RunModeStandard}
+		cfg.SubscriptionMaintenance.WorkerCount = 1
+		cfg.SubscriptionMaintenance.QueueSize = 1
+
+		quotaBlockedUser := *user
+		quotaBlockedUser.Balance = 0
+		quotaBlockedAPIKey := *apiKey
+		quotaBlockedAPIKey.User = &quotaBlockedUser
+		apiKeyService := service.NewAPIKeyService(&stubApiKeyRepo{
+			getByKey: func(ctx context.Context, key string) (*service.APIKey, error) {
+				if key != quotaBlockedAPIKey.Key {
+					return nil, service.ErrAPIKeyNotFound
+				}
+				clone := quotaBlockedAPIKey
+				return &clone, nil
+			},
+		}, nil, nil, nil, nil, nil, cfg)
+
+		startsAt := time.Now().Add(-48 * time.Hour)
+		dailyWindowStart := time.Now().Add(-25 * time.Hour)
+		sub := &service.UserSubscription{
+			ID:               56,
+			UserID:           user.ID,
+			Status:           service.SubscriptionStatusActive,
+			StartsAt:         startsAt,
+			ExpiresAt:        startsAt.AddDate(0, 0, 3),
+			DailyWindowStart: &dailyWindowStart,
+			DailyQuotaKnives: &limit,
+			DailyUsedKnives:  limit,
+		}
+		resetDailyCalled := make(chan struct{}, 1)
+		subscriptionRepo := &stubUserSubscriptionRepo{
+			getActive: func(ctx context.Context, userID int64) (*service.UserSubscription, error) {
+				if userID != sub.UserID {
+					return nil, service.ErrSubscriptionNotFound
+				}
+				clone := *sub
+				return &clone, nil
+			},
+			updateStatus:   func(ctx context.Context, subscriptionID int64, status string) error { return nil },
+			activateWindow: func(ctx context.Context, id int64, start time.Time) error { return nil },
+			resetDaily: func(ctx context.Context, id int64, start time.Time) error {
+				resetDailyCalled <- struct{}{}
+				return nil
+			},
+			resetWeekly:  func(ctx context.Context, id int64, start time.Time) error { return nil },
+			resetMonthly: func(ctx context.Context, id int64, start time.Time) error { return nil },
+		}
+		subscriptionService := service.NewSubscriptionService(nil, subscriptionRepo, nil, nil, cfg)
+		t.Cleanup(subscriptionService.Stop)
+
+		router := newAuthTestRouter(apiKeyService, subscriptionService, cfg)
+
+		w := httptest.NewRecorder()
+		req := httptest.NewRequest(http.MethodGet, "/t", nil)
+		req.Header.Set("x-api-key", quotaBlockedAPIKey.Key)
+		router.ServeHTTP(w, req)
+
+		require.Equal(t, http.StatusOK, w.Code)
+		select {
+		case <-resetDailyCalled:
+			// ok
+		case <-time.After(time.Second):
+			t.Fatalf("expected expired daily window to trigger reset")
 		}
 	})
 
