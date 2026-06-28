@@ -6034,6 +6034,7 @@ type OpenAIRecordUsageInput struct {
 	IPAddress          string // 请求的客户端 IP 地址
 	RequestPayloadHash string
 	APIKeyService      APIKeyQuotaUpdater
+	QuotaPlatform      string // user x platform quota platform resolved by the handler before async billing.
 	OriginGroupID      *int64
 	RoutedGroupID      *int64
 	FailoverReason     *string
@@ -6314,6 +6315,13 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 		return nil
 	}
 
+	// Async usage billing runs outside the original request context, so it
+	// cannot recover ForcePlatform there. Fall back for internal/test callers.
+	quotaPlatform := input.QuotaPlatform
+	if quotaPlatform == "" {
+		quotaPlatform = PlatformFromAPIKey(apiKey)
+	}
+
 	billingErr := func() error {
 		_, err := applyUsageBilling(ctx, requestID, usageLog, &postUsageBillingParams{
 			Cost:                       cost,
@@ -6326,7 +6334,7 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 			SubscriptionRateMultiplier: subscriptionMultiplier,
 			AccountRateMultiplier:      accountRateMultiplier,
 			APIKeyService:              input.APIKeyService,
-			Platform:                   PlatformFromAPIKey(apiKey),
+			Platform:                   quotaPlatform,
 		}, s.billingDeps(), s.usageBillingRepo)
 		return err
 	}()
