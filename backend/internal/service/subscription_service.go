@@ -702,6 +702,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.DailyWindowStart = &windowStart
 		sub.DailyUsageUSD = 0
+		sub.DailyUsedKnives = 0
 		needsInvalidateCache = true
 	}
 
@@ -712,6 +713,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.WeeklyWindowStart = &windowStart
 		sub.WeeklyUsageUSD = 0
+		sub.WeeklyUsedKnives = 0
 		needsInvalidateCache = true
 	}
 
@@ -722,6 +724,7 @@ func (s *SubscriptionService) CheckAndResetWindows(ctx context.Context, sub *Use
 		}
 		sub.MonthlyWindowStart = &windowStart
 		sub.MonthlyUsageUSD = 0
+		sub.MonthlyUsedKnives = 0
 		needsInvalidateCache = true
 	}
 
