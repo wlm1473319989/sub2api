@@ -135,6 +135,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			ExpiresAt:        startsAt.AddDate(0, 0, 3),
 			DailyWindowStart: &dailyWindowStart,
 			DailyQuotaKnives: &limit,
+			DailyUsageUSD:    limit,
 			DailyUsedKnives:  limit,
 		}
 		resetDailyCalled := make(chan struct{}, 1)
@@ -218,6 +219,7 @@ func TestSimpleModeBypassesQuotaCheck(t *testing.T) {
 			ExpiresAt:        now.Add(24 * time.Hour),
 			DailyWindowStart: &now,
 			DailyQuotaKnives: &limit,
+			DailyUsageUSD:    10,
 			DailyUsedKnives:  10,
 		}
 		subscriptionRepo := &stubUserSubscriptionRepo{

@@ -711,6 +711,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_SubscriptionLimitExceededReturns429(t 
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
 		DailyQuotaKnives: &limit,
+		DailyUsageUSD:    10,
 		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
@@ -798,6 +799,7 @@ func TestApiKeyAuthWithSubscriptionGoogle_ExpiredDailyWindowExhaustedQuotaResets
 		ExpiresAt:        startsAt.AddDate(0, 0, 3),
 		DailyWindowStart: &dailyWindowStart,
 		DailyQuotaKnives: &limit,
+		DailyUsageUSD:    limit,
 		DailyUsedKnives:  limit,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{

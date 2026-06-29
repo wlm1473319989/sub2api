@@ -27,6 +27,7 @@ func TestResolveUsageBillingSplitFromRawCost_SubscriptionFirstAcrossDifferentMul
 			StartsAt:         oneDayStart,
 			ExpiresAt:        oneDayExpiry,
 			DailyQuotaKnives: &dailyQuota,
+			DailyUsageUSD:    used,
 			DailyUsedKnives:  used,
 			DailyWindowStart: &oneDayStart,
 		}

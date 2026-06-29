@@ -9036,7 +9036,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription) float64 {
 	now := time.Now()
 	residualDaily := calculateQuotaFamilyCapacity(
 		dailyQuota,
-		sub.DailyUsedKnives,
+		sub.DailyUsageUSD,
 		sub.DailyWindowStart,
 		now,
 		sub.StartsAt,
@@ -9046,7 +9046,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription) float64 {
 	)
 	residualWeekly := calculateQuotaFamilyCapacity(
 		weeklyQuota,
-		sub.WeeklyUsedKnives,
+		sub.WeeklyUsageUSD,
 		sub.WeeklyWindowStart,
 		now,
 		sub.StartsAt,
@@ -9056,7 +9056,7 @@ func resolveSubscriptionRemainingQuota(sub *UserSubscription) float64 {
 	)
 	residualMonthly := calculateQuotaFamilyCapacity(
 		monthlyQuota,
-		sub.MonthlyUsedKnives,
+		sub.MonthlyUsageUSD,
 		sub.MonthlyWindowStart,
 		now,
 		sub.StartsAt,

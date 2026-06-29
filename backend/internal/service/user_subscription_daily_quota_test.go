@@ -170,7 +170,8 @@ func TestValidateAndCheckLimits_ExactQuotaExhaustedRejectsNextRequest(t *testing
 		StartsAt:         start,
 		ExpiresAt:        start.Add(24 * time.Hour),
 		DailyWindowStart: &dailyWindowStart,
-		DailyUsedKnives:  dailyLimit,
+		DailyUsageUSD:    dailyLimit,
+		DailyUsedKnives:  0,
 		DailyQuotaKnives: &dailyLimit,
 	}
 	svc := NewSubscriptionService(groupRepoNoop{}, userSubRepoNoop{}, nil, nil, nil)
@@ -179,4 +180,25 @@ func TestValidateAndCheckLimits_ExactQuotaExhaustedRejectsNextRequest(t *testing
 
 	require.False(t, needsMaintenance)
 	require.True(t, errors.Is(err, ErrDailyLimitExceeded))
+}
+
+func TestValidateAndCheckLimits_UsesUsageUSDInsteadOfStaleUsedKnives(t *testing.T) {
+	start := time.Now().Add(-time.Hour)
+	dailyWindowStart := start
+	dailyLimit := 10.0
+	sub := &UserSubscription{
+		Status:           SubscriptionStatusActive,
+		StartsAt:         start,
+		ExpiresAt:        start.AddDate(0, 0, 3),
+		DailyWindowStart: &dailyWindowStart,
+		DailyUsageUSD:    0,
+		DailyUsedKnives:  dailyLimit,
+		DailyQuotaKnives: &dailyLimit,
+	}
+	svc := NewSubscriptionService(groupRepoNoop{}, userSubRepoNoop{}, nil, nil, nil)
+
+	needsMaintenance, err := svc.ValidateAndCheckLimits(sub, &Group{})
+
+	require.NoError(t, err)
+	require.False(t, needsMaintenance)
 }

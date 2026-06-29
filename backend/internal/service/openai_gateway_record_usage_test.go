@@ -1359,7 +1359,7 @@ func TestOpenAIGatewayServiceRecordUsage_SubscriptionBillingSetsSubscriptionFiel
 			Model:     "gpt-5.1",
 			Duration:  time.Second,
 		},
-		APIKey:       &APIKey{ID: 100, GroupID: i64p(88), Group: &Group{ID: 88, RateMultiplier: 1.0}},
+		APIKey:       &APIKey{ID: 100, GroupID: i64p(88), Group: &Group{ID: 88, RateMultiplier: 1.0, SubscriptionRateMultiplier: 1.0}},
 		User:         &User{ID: 200},
 		Account:      &Account{ID: 300},
 		Subscription: subscription,
@@ -1389,9 +1389,11 @@ func TestOpenAIGatewayServiceRecordUsage_MixedBillingSplitsSubscriptionAndBalanc
 	expiresAt := startsAt.Add(24 * time.Hour)
 	subscription := &UserSubscription{
 		ID:               77,
+		Status:           SubscriptionStatusActive,
 		StartsAt:         startsAt,
 		ExpiresAt:        expiresAt,
 		DailyQuotaKnives: &dailyQuota,
+		DailyUsageUSD:    dailyQuota - subscriptionRemaining,
 		DailyUsedKnives:  dailyQuota - subscriptionRemaining,
 		DailyWindowStart: &startsAt,
 	}
@@ -1403,7 +1405,7 @@ func TestOpenAIGatewayServiceRecordUsage_MixedBillingSplitsSubscriptionAndBalanc
 			Model:     "gpt-5.1",
 			Duration:  time.Second,
 		},
-		APIKey:       &APIKey{ID: 100, GroupID: i64p(88), Group: &Group{ID: 88, RateMultiplier: 1.0}},
+		APIKey:       &APIKey{ID: 100, GroupID: i64p(88), Group: &Group{ID: 88, RateMultiplier: 1.0, SubscriptionRateMultiplier: 1.0}},
 		User:         &User{ID: 200, Balance: 0.2},
 		Account:      &Account{ID: 300},
 		Subscription: subscription,
@@ -1439,9 +1441,11 @@ func TestOpenAIGatewayServiceRecordUsage_BalancePortionUsesActualDeductedAmount(
 	expiresAt := startsAt.Add(24 * time.Hour)
 	subscription := &UserSubscription{
 		ID:               78,
+		Status:           SubscriptionStatusActive,
 		StartsAt:         startsAt,
 		ExpiresAt:        expiresAt,
 		DailyQuotaKnives: &dailyQuota,
+		DailyUsageUSD:    dailyQuota - subscriptionRemaining,
 		DailyUsedKnives:  dailyQuota - subscriptionRemaining,
 		DailyWindowStart: &startsAt,
 	}

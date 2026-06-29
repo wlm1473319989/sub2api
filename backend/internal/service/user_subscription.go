@@ -131,42 +131,42 @@ func (s *UserSubscription) CheckDailyLimit(additionalCost float64) bool {
 	if s.DailyQuotaKnives == nil || *s.DailyQuotaKnives <= 0 {
 		return true
 	}
-	return s.DailyUsedKnives+additionalCost <= *s.DailyQuotaKnives
+	return s.DailyUsageUSD+additionalCost <= *s.DailyQuotaKnives
 }
 
 func (s *UserSubscription) CheckDailyLimitForNextRequest() bool {
 	if s.DailyQuotaKnives == nil || *s.DailyQuotaKnives <= 0 {
 		return true
 	}
-	return s.DailyUsedKnives < *s.DailyQuotaKnives
+	return s.DailyUsageUSD < *s.DailyQuotaKnives
 }
 
 func (s *UserSubscription) CheckWeeklyLimit(additionalCost float64) bool {
 	if s.WeeklyQuotaKnives == nil || *s.WeeklyQuotaKnives <= 0 {
 		return true
 	}
-	return s.WeeklyUsedKnives+additionalCost <= *s.WeeklyQuotaKnives
+	return s.WeeklyUsageUSD+additionalCost <= *s.WeeklyQuotaKnives
 }
 
 func (s *UserSubscription) CheckWeeklyLimitForNextRequest() bool {
 	if s.WeeklyQuotaKnives == nil || *s.WeeklyQuotaKnives <= 0 {
 		return true
 	}
-	return s.WeeklyUsedKnives < *s.WeeklyQuotaKnives
+	return s.WeeklyUsageUSD < *s.WeeklyQuotaKnives
 }
 
 func (s *UserSubscription) CheckMonthlyLimit(additionalCost float64) bool {
 	if s.MonthlyQuotaKnives == nil || *s.MonthlyQuotaKnives <= 0 {
 		return true
 	}
-	return s.MonthlyUsedKnives+additionalCost <= *s.MonthlyQuotaKnives
+	return s.MonthlyUsageUSD+additionalCost <= *s.MonthlyQuotaKnives
 }
 
 func (s *UserSubscription) CheckMonthlyLimitForNextRequest() bool {
 	if s.MonthlyQuotaKnives == nil || *s.MonthlyQuotaKnives <= 0 {
 		return true
 	}
-	return s.MonthlyUsedKnives < *s.MonthlyQuotaKnives
+	return s.MonthlyUsageUSD < *s.MonthlyQuotaKnives
 }
 
 func (s *UserSubscription) CheckAllLimits(additionalCost float64) (daily, weekly, monthly bool) {

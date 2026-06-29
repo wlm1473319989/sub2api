@@ -1002,12 +1002,15 @@ func (s *BillingCacheService) checkSubscriptionEligibility(ctx context.Context, 
 	}
 
 	if subCopy.NeedsDailyReset() {
+		subCopy.DailyUsageUSD = 0
 		subCopy.DailyUsedKnives = 0
 	}
 	if subCopy.NeedsWeeklyReset() {
+		subCopy.WeeklyUsageUSD = 0
 		subCopy.WeeklyUsedKnives = 0
 	}
 	if subCopy.NeedsMonthlyReset() {
+		subCopy.MonthlyUsageUSD = 0
 		subCopy.MonthlyUsedKnives = 0
 	}
 

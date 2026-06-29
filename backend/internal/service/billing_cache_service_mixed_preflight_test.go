@@ -130,6 +130,7 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 					ExpiresAt:        now.Add(24 * time.Hour),
 					DailyWindowStart: &now,
 					DailyQuotaKnives: &quota,
+					DailyUsageUSD:    quota,
 					DailyUsedKnives:  quota,
 				}
 			}(),
@@ -148,6 +149,7 @@ func TestCheckBillingEligibility_MixedPreflightCombinations(t *testing.T) {
 					ExpiresAt:        now.Add(24 * time.Hour),
 					DailyWindowStart: &now,
 					DailyQuotaKnives: &quota,
+					DailyUsageUSD:    quota,
 					DailyUsedKnives:  quota,
 				}
 			}(),

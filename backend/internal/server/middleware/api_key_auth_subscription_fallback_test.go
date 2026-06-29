@@ -21,10 +21,10 @@ func TestAPIKeyAuth_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 
 	limit := 1.0
 	group := &service.Group{
-		ID:               42,
-		Name:             "sub",
-		Status:           service.StatusActive,
-		Hydrated:         true,
+		ID:       42,
+		Name:     "sub",
+		Status:   service.StatusActive,
+		Hydrated: true,
 	}
 	user := &service.User{
 		ID:          7,
@@ -61,6 +61,7 @@ func TestAPIKeyAuth_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
 		DailyQuotaKnives: &limit,
+		DailyUsageUSD:    10,
 		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, &stubUserSubscriptionRepo{
@@ -90,11 +91,11 @@ func TestAPIKeyAuthGoogle_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 
 	limit := 1.0
 	group := &service.Group{
-		ID:               77,
-		Name:             "gemini-sub",
-		Status:           service.StatusActive,
-		Platform:         service.PlatformGemini,
-		Hydrated:         true,
+		ID:       77,
+		Name:     "gemini-sub",
+		Status:   service.StatusActive,
+		Platform: service.PlatformGemini,
+		Hydrated: true,
 	}
 	user := &service.User{
 		ID:          999,
@@ -131,6 +132,7 @@ func TestAPIKeyAuthGoogle_AllowsSubscriptionFallbackToBalance(t *testing.T) {
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
 		DailyQuotaKnives: &limit,
+		DailyUsageUSD:    10,
 		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
@@ -163,11 +165,11 @@ func TestAPIKeyAuthGoogle_PreservesSubscriptionErrorWhenNeitherQuotaNorBalanceAv
 
 	limit := 1.0
 	group := &service.Group{
-		ID:               77,
-		Name:             "gemini-sub",
-		Status:           service.StatusActive,
-		Platform:         service.PlatformGemini,
-		Hydrated:         true,
+		ID:       77,
+		Name:     "gemini-sub",
+		Status:   service.StatusActive,
+		Platform: service.PlatformGemini,
+		Hydrated: true,
 	}
 	user := &service.User{
 		ID:          999,
@@ -204,6 +206,7 @@ func TestAPIKeyAuthGoogle_PreservesSubscriptionErrorWhenNeitherQuotaNorBalanceAv
 		ExpiresAt:        now.Add(24 * time.Hour),
 		DailyWindowStart: &now,
 		DailyQuotaKnives: &limit,
+		DailyUsageUSD:    10,
 		DailyUsedKnives:  10,
 	}
 	subscriptionService := service.NewSubscriptionService(nil, fakeGoogleSubscriptionRepo{
