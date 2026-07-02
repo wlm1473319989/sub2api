@@ -408,6 +408,7 @@ export default {
     subscriptionRefundRequests: 'Refund Requests',
     buySubscription: 'Recharge / Subscription',
     docs: 'Docs',
+    userGuide: 'User Guide',
     myOrders: 'My Orders',
     orderManagement: 'Orders',
     paymentDashboard: 'Payment Dashboard',
@@ -697,6 +698,11 @@ export default {
     checkDetailedLogs: 'Check detailed usage logs',
     redeemCode: 'Redeem Code',
     addBalanceWithCode: 'Add balance with a code'
+  },
+
+  userGuide: {
+    title: 'User Guide',
+    description: 'How to buy, choose groups, and start using your API keys'
   },
 
   // Groups (shared)
@@ -7358,6 +7364,7 @@ export default {
     upgradeCalculationDeltaFormula: 'Upgrade Delta',
     upgradeCalculationRuleHint: 'Rule: current plan price / theoretical full quota = unit value cost; remaining quota × unit value cost = residual credit; target plan price - residual credit = upgrade delta.',
     subscriptionUnavailableHint: 'Only purchase, renew, and higher-price upgrades are supported right now. Downgrades and lateral switches are disabled.',
+    subscriptionPurchaseLimitHint: 'You have reached the purchase limit for this plan.',
     planFeatures: 'Features',
     planCard: {
       rate: 'Rate',
@@ -7477,6 +7484,8 @@ export default {
       validityUnit: 'Validity Unit',
       selectValidityUnit: 'Select validity unit',
       sortOrder: 'Sort Order',
+      purchaseLimitPerUser: 'Per-account purchase limit',
+      purchaseLimitPerUserHint: 'Leave empty for unlimited. Purchase, renew, and upgrade all count.',
       forSale: 'For Sale',
       onSale: 'On Sale',
       offSale: 'Off Sale',

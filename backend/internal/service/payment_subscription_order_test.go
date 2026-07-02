@@ -351,6 +351,24 @@ func TestPrepareSubscriptionOrderDecision_LowerPriceRejected(t *testing.T) {
 	require.ErrorIs(t, err, ErrSubscriptionOrderActionInvalid)
 }
 
+func TestPrepareSubscriptionOrderDecision_PurchaseLimitReachedFromCompletedOrder(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	user := h.createUser(t, "purchase-limit@example.com")
+	group := h.createGroup(t, "purchase-limit-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	plan := h.createPlan(t, "Starter", 39.99, 30, "day", &groupID, nil, nil, floatPtr(100))
+
+	plan, err := h.client.SubscriptionPlan.UpdateOneID(plan.ID).
+		SetPurchaseLimitPerUser(1).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	_ = h.createSubscriptionOrder(t, user, plan, subscriptionActionPurchase, OrderStatusCompleted, time.Now().Add(-time.Hour))
+
+	_, err = h.paymentSvc.prepareSubscriptionOrderDecision(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
+	require.ErrorIs(t, err, ErrSubscriptionPlanPurchaseLimitExceeded)
+}
+
 func TestPreviewSubscriptionOrder_Upgrade(t *testing.T) {
 	h := newPaymentSubscriptionHarness(t)
 	user := h.createUser(t, "preview-upgrade@example.com")
@@ -401,6 +419,28 @@ func TestPreviewSubscriptionOrder_LowerPriceReturnsUnavailable(t *testing.T) {
 	require.Equal(t, activePlan.Name, preview.CurrentPlan.Name)
 	require.NotNil(t, preview.TargetPlan)
 	require.Equal(t, lowerPlan.Name, preview.TargetPlan.Name)
+}
+
+func TestPreviewSubscriptionOrder_PurchaseLimitReturnsUnavailable(t *testing.T) {
+	h := newPaymentSubscriptionHarness(t)
+	user := h.createUser(t, "preview-purchase-limit@example.com")
+	group := h.createGroup(t, "preview-purchase-limit-group", nil, nil, floatPtr(100))
+	groupID := group.ID
+	plan := h.createPlan(t, "Starter", 49.99, 30, "day", &groupID, nil, nil, floatPtr(100))
+
+	plan, err := h.client.SubscriptionPlan.UpdateOneID(plan.ID).
+		SetPurchaseLimitPerUser(1).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	_ = h.createSubscriptionOrder(t, user, plan, subscriptionActionPurchase, OrderStatusCompleted, time.Now().Add(-time.Hour))
+
+	preview, err := h.paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, plan.ID, payment.DefaultPaymentCurrency)
+	require.NoError(t, err)
+	require.Equal(t, subscriptionActionUnavailable, preview.Action)
+	require.Equal(t, subscriptionPreviewBlockedReasonPurchaseLimitReached, preview.BlockedReason)
+	require.NotNil(t, preview.TargetPlan)
+	require.Equal(t, plan.Name, preview.TargetPlan.Name)
 }
 
 func TestCreateOrderInTx_WritesSubscriptionActionSnapshot(t *testing.T) {

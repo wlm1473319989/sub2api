@@ -249,6 +249,27 @@ func (_u *SubscriptionPlanUpdate) SetNillableProductName(v *string) *Subscriptio
 	return _u
 }
 
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdate) SetPurchaseLimitPerUser(v int) *SubscriptionPlanUpdate {
+	_u.mutation.ResetPurchaseLimitPerUser()
+	_u.mutation.SetPurchaseLimitPerUser(v)
+	return _u
+}
+
+// SetNillablePurchaseLimitPerUser sets the "purchase_limit_per_user" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdate) SetNillablePurchaseLimitPerUser(v *int) *SubscriptionPlanUpdate {
+	if v != nil {
+		_u.SetPurchaseLimitPerUser(*v)
+	}
+	return _u
+}
+
+// ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdate) ClearPurchaseLimitPerUser() *SubscriptionPlanUpdate {
+	_u.mutation.ClearPurchaseLimitPerUser()
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdate) SetForSale(v bool) *SubscriptionPlanUpdate {
 	_u.mutation.SetForSale(v)
@@ -461,6 +482,12 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PurchaseLimitPerUser(); ok {
+		_spec.SetField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
+	}
+	if _u.mutation.PurchaseLimitPerUserCleared() {
+		_spec.ClearField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)
@@ -759,6 +786,27 @@ func (_u *SubscriptionPlanUpdateOne) SetNillableProductName(v *string) *Subscrip
 	return _u
 }
 
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdateOne) SetPurchaseLimitPerUser(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.ResetPurchaseLimitPerUser()
+	_u.mutation.SetPurchaseLimitPerUser(v)
+	return _u
+}
+
+// SetNillablePurchaseLimitPerUser sets the "purchase_limit_per_user" field if the given value is not nil.
+func (_u *SubscriptionPlanUpdateOne) SetNillablePurchaseLimitPerUser(v *int) *SubscriptionPlanUpdateOne {
+	if v != nil {
+		_u.SetPurchaseLimitPerUser(*v)
+	}
+	return _u
+}
+
+// ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdateOne) ClearPurchaseLimitPerUser() *SubscriptionPlanUpdateOne {
+	_u.mutation.ClearPurchaseLimitPerUser()
+	return _u
+}
+
 // SetForSale sets the "for_sale" field.
 func (_u *SubscriptionPlanUpdateOne) SetForSale(v bool) *SubscriptionPlanUpdateOne {
 	_u.mutation.SetForSale(v)
@@ -1001,6 +1049,12 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
+	}
+	if value, ok := _u.mutation.PurchaseLimitPerUser(); ok {
+		_spec.SetField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
+	}
+	if _u.mutation.PurchaseLimitPerUserCleared() {
+		_spec.ClearField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt)
 	}
 	if value, ok := _u.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)

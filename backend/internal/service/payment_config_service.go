@@ -150,35 +150,37 @@ type UpdateProviderInstanceRequest struct {
 	AllowUserRefund *bool             `json:"allow_user_refund"`
 }
 type CreatePlanRequest struct {
-	Name               string   `json:"name"`
-	Description        string   `json:"description"`
-	Price              float64  `json:"price"`
-	OriginalPrice      *float64 `json:"original_price"`
-	ValidityDays       int      `json:"validity_days"`
-	ValidityUnit       string   `json:"validity_unit"`
-	DailyQuotaKnives   *float64 `json:"daily_quota_knives"`
-	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives"`
-	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives"`
-	Features           string   `json:"features"`
-	ProductName        string   `json:"product_name"`
-	ForSale            bool     `json:"for_sale"`
-	SortOrder          int      `json:"sort_order"`
+	Name                 string   `json:"name"`
+	Description          string   `json:"description"`
+	Price                float64  `json:"price"`
+	OriginalPrice        *float64 `json:"original_price"`
+	ValidityDays         int      `json:"validity_days"`
+	ValidityUnit         string   `json:"validity_unit"`
+	DailyQuotaKnives     *float64 `json:"daily_quota_knives"`
+	WeeklyQuotaKnives    *float64 `json:"weekly_quota_knives"`
+	MonthlyQuotaKnives   *float64 `json:"monthly_quota_knives"`
+	Features             string   `json:"features"`
+	ProductName          string   `json:"product_name"`
+	PurchaseLimitPerUser *int     `json:"purchase_limit_per_user"`
+	ForSale              bool     `json:"for_sale"`
+	SortOrder            int      `json:"sort_order"`
 }
 
 type UpdatePlanRequest struct {
-	Name               *string  `json:"name"`
-	Description        *string  `json:"description"`
-	Price              *float64 `json:"price"`
-	OriginalPrice      *float64 `json:"original_price"`
-	ValidityDays       *int     `json:"validity_days"`
-	ValidityUnit       *string  `json:"validity_unit"`
-	DailyQuotaKnives   *float64 `json:"daily_quota_knives"`
-	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives"`
-	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives"`
-	Features           *string  `json:"features"`
-	ProductName        *string  `json:"product_name"`
-	ForSale            *bool    `json:"for_sale"`
-	SortOrder          *int     `json:"sort_order"`
+	Name                 *string  `json:"name"`
+	Description          *string  `json:"description"`
+	Price                *float64 `json:"price"`
+	OriginalPrice        *float64 `json:"original_price"`
+	ValidityDays         *int     `json:"validity_days"`
+	ValidityUnit         *string  `json:"validity_unit"`
+	DailyQuotaKnives     *float64 `json:"daily_quota_knives"`
+	WeeklyQuotaKnives    *float64 `json:"weekly_quota_knives"`
+	MonthlyQuotaKnives   *float64 `json:"monthly_quota_knives"`
+	Features             *string  `json:"features"`
+	ProductName          *string  `json:"product_name"`
+	PurchaseLimitPerUser *int     `json:"purchase_limit_per_user"`
+	ForSale              *bool    `json:"for_sale"`
+	SortOrder            *int     `json:"sort_order"`
 }
 
 // PaymentConfigService manages payment configuration and CRUD for

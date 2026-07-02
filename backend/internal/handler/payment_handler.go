@@ -125,40 +125,42 @@ type checkoutInfoResponse struct {
 }
 
 type checkoutPlan struct {
-	ID                 int64    `json:"id"`
-	DailyQuotaKnives   *float64 `json:"daily_quota_knives,omitempty"`
-	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives,omitempty"`
-	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
-	Name               string   `json:"name"`
-	Description        string   `json:"description"`
-	Price              float64  `json:"price"`
-	OriginalPrice      *float64 `json:"original_price,omitempty"`
-	ValidityDays       int      `json:"validity_days"`
-	ValidityUnit       string   `json:"validity_unit"`
-	Features           []string `json:"features"`
-	ProductName        string   `json:"product_name"`
-	ForSale            bool     `json:"for_sale"`
-	SortOrder          int      `json:"sort_order"`
+	ID                   int64    `json:"id"`
+	DailyQuotaKnives     *float64 `json:"daily_quota_knives,omitempty"`
+	WeeklyQuotaKnives    *float64 `json:"weekly_quota_knives,omitempty"`
+	MonthlyQuotaKnives   *float64 `json:"monthly_quota_knives,omitempty"`
+	PurchaseLimitPerUser *int     `json:"purchase_limit_per_user,omitempty"`
+	Name                 string   `json:"name"`
+	Description          string   `json:"description"`
+	Price                float64  `json:"price"`
+	OriginalPrice        *float64 `json:"original_price,omitempty"`
+	ValidityDays         int      `json:"validity_days"`
+	ValidityUnit         string   `json:"validity_unit"`
+	Features             []string `json:"features"`
+	ProductName          string   `json:"product_name"`
+	ForSale              bool     `json:"for_sale"`
+	SortOrder            int      `json:"sort_order"`
 }
 
 func buildPublicCheckoutPlans(plans []*dbent.SubscriptionPlan) []checkoutPlan {
 	planList := make([]checkoutPlan, 0, len(plans))
 	for _, p := range plans {
 		planList = append(planList, checkoutPlan{
-			ID:                 int64(p.ID),
-			DailyQuotaKnives:   p.DailyQuotaKnives,
-			WeeklyQuotaKnives:  p.WeeklyQuotaKnives,
-			MonthlyQuotaKnives: p.MonthlyQuotaKnives,
-			Name:               p.Name,
-			Description:        p.Description,
-			Price:              p.Price,
-			OriginalPrice:      p.OriginalPrice,
-			ValidityDays:       p.ValidityDays,
-			ValidityUnit:       p.ValidityUnit,
-			Features:           parseFeatures(p.Features),
-			ProductName:        p.ProductName,
-			ForSale:            p.ForSale,
-			SortOrder:          p.SortOrder,
+			ID:                   int64(p.ID),
+			DailyQuotaKnives:     p.DailyQuotaKnives,
+			WeeklyQuotaKnives:    p.WeeklyQuotaKnives,
+			MonthlyQuotaKnives:   p.MonthlyQuotaKnives,
+			PurchaseLimitPerUser: p.PurchaseLimitPerUser,
+			Name:                 p.Name,
+			Description:          p.Description,
+			Price:                p.Price,
+			OriginalPrice:        p.OriginalPrice,
+			ValidityDays:         p.ValidityDays,
+			ValidityUnit:         p.ValidityUnit,
+			Features:             parseFeatures(p.Features),
+			ProductName:          p.ProductName,
+			ForSale:              p.ForSale,
+			SortOrder:            p.SortOrder,
 		})
 	}
 	return planList

@@ -7,6 +7,7 @@ import (
 
 func ptrPlanStr(s string) *string     { return &s }
 func ptrPlanFloat(f float64) *float64 { return &f }
+func ptrPlanInt(i int) *int           { return &i }
 
 func TestPaymentConfigServiceCreatePlan_UserLevelQuotas(t *testing.T) {
 	ctx := context.Background()
@@ -17,15 +18,16 @@ func TestPaymentConfigServiceCreatePlan_UserLevelQuotas(t *testing.T) {
 	monthlyQuota := 300.0
 
 	plan, err := svc.CreatePlan(ctx, CreatePlanRequest{
-		Name:               "User Level",
-		Description:        "quota plan",
-		Price:              9.99,
-		ValidityDays:       30,
-		ValidityUnit:       "days",
-		DailyQuotaKnives:   &dailyQuota,
-		MonthlyQuotaKnives: &monthlyQuota,
-		ForSale:            true,
-		SortOrder:          3,
+		Name:                 "User Level",
+		Description:          "quota plan",
+		Price:                9.99,
+		ValidityDays:         30,
+		ValidityUnit:         "days",
+		DailyQuotaKnives:     &dailyQuota,
+		MonthlyQuotaKnives:   &monthlyQuota,
+		PurchaseLimitPerUser: ptrPlanInt(2),
+		ForSale:              true,
+		SortOrder:            3,
 	})
 	if err != nil {
 		t.Fatalf("CreatePlan returned error: %v", err)
@@ -39,6 +41,9 @@ func TestPaymentConfigServiceCreatePlan_UserLevelQuotas(t *testing.T) {
 	}
 	if plan.MonthlyQuotaKnives == nil || *plan.MonthlyQuotaKnives != monthlyQuota {
 		t.Fatalf("MonthlyQuotaKnives = %v, want %v", plan.MonthlyQuotaKnives, monthlyQuota)
+	}
+	if plan.PurchaseLimitPerUser == nil || *plan.PurchaseLimitPerUser != 2 {
+		t.Fatalf("PurchaseLimitPerUser = %v, want 2", plan.PurchaseLimitPerUser)
 	}
 }
 
@@ -64,10 +69,12 @@ func TestPaymentConfigServiceUpdatePlan_ReplacesQuotaAndNormalizesUnit(t *testin
 	}
 
 	weeklyQuota := 88.0
+	purchaseLimit := 4
 	updated, err := svc.UpdatePlan(ctx, created.ID, UpdatePlanRequest{
-		DailyQuotaKnives:  ptrPlanFloat(0),
-		WeeklyQuotaKnives: &weeklyQuota,
-		ValidityUnit:      ptrPlanStr("months"),
+		DailyQuotaKnives:     ptrPlanFloat(0),
+		WeeklyQuotaKnives:    &weeklyQuota,
+		ValidityUnit:         ptrPlanStr("months"),
+		PurchaseLimitPerUser: &purchaseLimit,
 	})
 	if err != nil {
 		t.Fatalf("UpdatePlan returned error: %v", err)
@@ -81,6 +88,9 @@ func TestPaymentConfigServiceUpdatePlan_ReplacesQuotaAndNormalizesUnit(t *testin
 	}
 	if updated.ValidityUnit != "month" {
 		t.Fatalf("ValidityUnit = %q, want month", updated.ValidityUnit)
+	}
+	if updated.PurchaseLimitPerUser == nil || *updated.PurchaseLimitPerUser != purchaseLimit {
+		t.Fatalf("PurchaseLimitPerUser = %v, want %d", updated.PurchaseLimitPerUser, purchaseLimit)
 	}
 }
 

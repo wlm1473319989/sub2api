@@ -161,6 +161,20 @@ func (_c *SubscriptionPlanCreate) SetNillableProductName(v *string) *Subscriptio
 	return _c
 }
 
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (_c *SubscriptionPlanCreate) SetPurchaseLimitPerUser(v int) *SubscriptionPlanCreate {
+	_c.mutation.SetPurchaseLimitPerUser(v)
+	return _c
+}
+
+// SetNillablePurchaseLimitPerUser sets the "purchase_limit_per_user" field if the given value is not nil.
+func (_c *SubscriptionPlanCreate) SetNillablePurchaseLimitPerUser(v *int) *SubscriptionPlanCreate {
+	if v != nil {
+		_c.SetPurchaseLimitPerUser(*v)
+	}
+	return _c
+}
+
 // SetForSale sets the "for_sale" field.
 func (_c *SubscriptionPlanCreate) SetForSale(v bool) *SubscriptionPlanCreate {
 	_c.mutation.SetForSale(v)
@@ -425,6 +439,10 @@ func (_c *SubscriptionPlanCreate) createSpec() (*SubscriptionPlan, *sqlgraph.Cre
 	if value, ok := _c.mutation.ProductName(); ok {
 		_spec.SetField(subscriptionplan.FieldProductName, field.TypeString, value)
 		_node.ProductName = value
+	}
+	if value, ok := _c.mutation.PurchaseLimitPerUser(); ok {
+		_spec.SetField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
+		_node.PurchaseLimitPerUser = &value
 	}
 	if value, ok := _c.mutation.ForSale(); ok {
 		_spec.SetField(subscriptionplan.FieldForSale, field.TypeBool, value)

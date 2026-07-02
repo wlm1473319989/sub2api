@@ -155,6 +155,45 @@ func TestCreateOrderZeroDeltaUpgradeCompletesDirectly(t *testing.T) {
 	require.NotEqual(t, active.ID, current.ID)
 }
 
+func TestCreateOrderZeroDeltaUpgradeCountsTowardPurchaseLimit(t *testing.T) {
+	h := newSubscriptionOpsHarness(t)
+	configSvc := service.NewPaymentConfigService(h.client, &paymentDirectSettingRepoStub{
+		values: map[string]string{service.SettingPaymentEnabled: "true"},
+	}, nil)
+	userRepo := repository.NewUserRepository(h.client, h.db)
+	paymentSvc := service.NewPaymentService(h.client, nil, nil, nil, h.svc, configSvc, userRepo, nil, nil)
+
+	user := h.createUser(t, "direct-upgrade-limit@test.com")
+	group := h.createGroup(t, "direct-upgrade-limit-group")
+	groupID := group.ID
+	monthly := 100.0
+	basePlan := h.createPlan(t, "Direct Limit Starter", 100, 30, "day", &groupID, nil, nil, &monthly)
+	targetPlan := h.createPlan(t, "Direct Limit Pro", 160, 30, "day", &groupID, nil, nil, &monthly)
+	targetPlan, err := h.client.SubscriptionPlan.UpdateOneID(targetPlan.ID).
+		SetPurchaseLimitPerUser(1).
+		Save(h.ctx)
+	require.NoError(t, err)
+
+	_ = seedRenewedSettlementHead(t, h, user.ID, basePlan.ID, basePlan.Name, basePlan.Price)
+
+	resp, err := paymentSvc.CreateOrder(h.ctx, service.CreateOrderRequest{
+		UserID:      user.ID,
+		Amount:      0,
+		PaymentType: payment.TypeAlipay,
+		OrderType:   payment.OrderTypeSubscription,
+		PlanID:      targetPlan.ID,
+		ClientIP:    "127.0.0.1",
+		SrcHost:     "example.com",
+	})
+	require.NoError(t, err)
+	require.Equal(t, payment.CreatePaymentResultCompletedDirectly, resp.ResultType)
+
+	preview, err := paymentSvc.PreviewSubscriptionOrder(h.ctx, user.ID, targetPlan.ID, payment.DefaultPaymentCurrency)
+	require.NoError(t, err)
+	require.Equal(t, "unavailable", preview.Action)
+	require.Equal(t, "purchase_limit_reached", preview.BlockedReason)
+}
+
 func TestCreateOrderZeroDeltaUpgradeAfterAdminRenewCompletesDirectly(t *testing.T) {
 	h := newSubscriptionOpsHarness(t)
 	configSvc := service.NewPaymentConfigService(h.client, &paymentDirectSettingRepoStub{

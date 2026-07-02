@@ -22,7 +22,7 @@ var validPlanValidityUnits = map[string]string{
 }
 
 // validatePlanRequired checks that all required fields for a plan are provided.
-func validatePlanRequired(name string, price float64, validityDays int, validityUnit string, originalPrice, dailyQuotaKnives, weeklyQuotaKnives, monthlyQuotaKnives *float64) error {
+func validatePlanRequired(name string, price float64, validityDays int, validityUnit string, originalPrice, dailyQuotaKnives, weeklyQuotaKnives, monthlyQuotaKnives *float64, purchaseLimitPerUser *int) error {
 	if strings.TrimSpace(name) == "" {
 		return infraerrors.BadRequest("PLAN_NAME_REQUIRED", "plan name is required")
 	}
@@ -45,6 +45,9 @@ func validatePlanRequired(name string, price float64, validityDays int, validity
 		if quota != nil && *quota < 0 {
 			return infraerrors.BadRequest("PLAN_QUOTA_INVALID", "quota knives must be >= 0")
 		}
+	}
+	if purchaseLimitPerUser != nil && *purchaseLimitPerUser < 0 {
+		return infraerrors.BadRequest("PLAN_PURCHASE_LIMIT_INVALID", "purchase limit per user must be >= 0")
 	}
 	if normalizeOptionalQuotaKnives(dailyQuotaKnives) == nil &&
 		normalizeOptionalQuotaKnives(weeklyQuotaKnives) == nil &&
@@ -81,6 +84,9 @@ func validatePlanPatch(req UpdatePlanRequest) error {
 			return infraerrors.BadRequest("PLAN_QUOTA_INVALID", "quota knives must be >= 0")
 		}
 	}
+	if req.PurchaseLimitPerUser != nil && *req.PurchaseLimitPerUser < 0 {
+		return infraerrors.BadRequest("PLAN_PURCHASE_LIMIT_INVALID", "purchase limit per user must be >= 0")
+	}
 	return nil
 }
 
@@ -105,6 +111,17 @@ func normalizeOptionalQuotaKnives(quota *float64) *float64 {
 		return nil
 	}
 	value := *quota
+	if value == 0 {
+		return nil
+	}
+	return &value
+}
+
+func normalizeOptionalPurchaseLimitPerUser(limit *int) *int {
+	if limit == nil {
+		return nil
+	}
+	value := *limit
 	if value == 0 {
 		return nil
 	}
@@ -150,13 +167,14 @@ func (s *PaymentConfigService) ListPlansForSale(ctx context.Context) ([]*dbent.S
 }
 
 func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanRequest) (*dbent.SubscriptionPlan, error) {
-	if err := validatePlanRequired(req.Name, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice, req.DailyQuotaKnives, req.WeeklyQuotaKnives, req.MonthlyQuotaKnives); err != nil {
+	if err := validatePlanRequired(req.Name, req.Price, req.ValidityDays, req.ValidityUnit, req.OriginalPrice, req.DailyQuotaKnives, req.WeeklyQuotaKnives, req.MonthlyQuotaKnives, req.PurchaseLimitPerUser); err != nil {
 		return nil, err
 	}
 	validityUnit, _ := normalizePlanValidityUnit(req.ValidityUnit)
 	dailyQuota := normalizeOptionalQuotaKnives(req.DailyQuotaKnives)
 	weeklyQuota := normalizeOptionalQuotaKnives(req.WeeklyQuotaKnives)
 	monthlyQuota := normalizeOptionalQuotaKnives(req.MonthlyQuotaKnives)
+	purchaseLimitPerUser := normalizeOptionalPurchaseLimitPerUser(req.PurchaseLimitPerUser)
 	b := s.entClient.SubscriptionPlan.Create().
 		SetName(req.Name).SetDescription(req.Description).
 		SetPrice(req.Price).SetValidityDays(req.ValidityDays).SetValidityUnit(validityUnit).
@@ -164,6 +182,7 @@ func (s *PaymentConfigService) CreatePlan(ctx context.Context, req CreatePlanReq
 		SetNillableWeeklyQuotaKnives(weeklyQuota).
 		SetNillableMonthlyQuotaKnives(monthlyQuota).
 		SetFeatures(req.Features).SetProductName(req.ProductName).
+		SetNillablePurchaseLimitPerUser(purchaseLimitPerUser).
 		SetForSale(req.ForSale).SetSortOrder(req.SortOrder)
 	if req.OriginalPrice != nil {
 		b.SetOriginalPrice(*req.OriginalPrice)
@@ -237,6 +256,13 @@ func (s *PaymentConfigService) UpdatePlan(ctx context.Context, id int64, req Upd
 	}
 	if req.ProductName != nil {
 		u.SetProductName(*req.ProductName)
+	}
+	if req.PurchaseLimitPerUser != nil {
+		if normalized := normalizeOptionalPurchaseLimitPerUser(req.PurchaseLimitPerUser); normalized == nil {
+			u.ClearPurchaseLimitPerUser()
+		} else {
+			u.SetPurchaseLimitPerUser(*normalized)
+		}
 	}
 	if req.ForSale != nil {
 		u.SetForSale(*req.ForSale)

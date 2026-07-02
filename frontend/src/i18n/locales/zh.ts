@@ -408,6 +408,7 @@ export default {
     subscriptionRefundRequests: '退款申请',
     buySubscription: '充值/订阅',
     docs: '文档',
+    userGuide: '使用文档',
     myOrders: '我的订单',
     orderManagement: '订单管理',
     paymentDashboard: '支付概览',
@@ -696,6 +697,11 @@ export default {
     checkDetailedLogs: '查看详细的使用日志',
     redeemCode: '兑换码',
     addBalanceWithCode: '使用兑换码充值'
+  },
+
+  userGuide: {
+    title: '使用文档',
+    description: '购买、套餐、分组和 API Key 的用户使用说明'
   },
 
   // Groups (shared)
@@ -7553,6 +7559,7 @@ export default {
     upgradeCalculationDeltaFormula: '本次补差',
     upgradeCalculationRuleHint: '计算规则：当前套餐价格 ÷ 理论总权益 = 单位权益成本；剩余权益 × 单位权益成本 = 可抵扣残值；目标套餐价格 - 可抵扣残值 = 本次补差。',
     subscriptionUnavailableHint: '当前仅支持购买、续费和升级到更高价套餐，降级和平级切换暂不支持。',
+    subscriptionPurchaseLimitHint: '你已达到该套餐的购买次数上限。',
     planFeatures: '功能特性',
     planCard: {
       rate: '倍率',
@@ -7671,6 +7678,8 @@ export default {
       validityUnit: '有效期单位',
       selectValidityUnit: '请选择有效期单位',
       sortOrder: '排序',
+      purchaseLimitPerUser: '单账号限购次数',
+      purchaseLimitPerUserHint: '留空表示不限。购买、续费、升级都会计入次数。',
       forSale: '上架状态',
       onSale: '上架',
       offSale: '下架',

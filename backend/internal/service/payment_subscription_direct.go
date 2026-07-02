@@ -37,6 +37,9 @@ func (s *PaymentService) completeSubscriptionDirectAction(ctx context.Context, r
 	txCtx := dbent.NewTxContext(ctx, tx)
 	txClient := tx.Client()
 	now := time.Now()
+	if err := s.ensurePlanPurchaseAllowed(txCtx, req.UserID, plan); err != nil {
+		return nil, err
+	}
 
 	activeBefore, err := s.subscriptionSvc.GetActiveSubscriptionByUser(txCtx, req.UserID)
 	if err != nil {

@@ -36,6 +36,8 @@ const (
 	FieldFeatures = "features"
 	// FieldProductName holds the string denoting the product_name field in the database.
 	FieldProductName = "product_name"
+	// FieldPurchaseLimitPerUser holds the string denoting the purchase_limit_per_user field in the database.
+	FieldPurchaseLimitPerUser = "purchase_limit_per_user"
 	// FieldForSale holds the string denoting the for_sale field in the database.
 	FieldForSale = "for_sale"
 	// FieldSortOrder holds the string denoting the sort_order field in the database.
@@ -71,6 +73,7 @@ var Columns = []string{
 	FieldMonthlyQuotaKnives,
 	FieldFeatures,
 	FieldProductName,
+	FieldPurchaseLimitPerUser,
 	FieldForSale,
 	FieldSortOrder,
 	FieldCreatedAt,
@@ -177,6 +180,11 @@ func ByFeatures(opts ...sql.OrderTermOption) OrderOption {
 // ByProductName orders the results by the product_name field.
 func ByProductName(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldProductName, opts...).ToFunc()
+}
+
+// ByPurchaseLimitPerUser orders the results by the purchase_limit_per_user field.
+func ByPurchaseLimitPerUser(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldPurchaseLimitPerUser, opts...).ToFunc()
 }
 
 // ByForSale orders the results by the for_sale field.

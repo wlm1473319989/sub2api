@@ -22,9 +22,10 @@ const (
 )
 
 var (
-	ErrSubscriptionOrderActionInvalid   = infraerrors.BadRequest("SUBSCRIPTION_ORDER_ACTION_INVALID", "active subscription only supports renewal or upgrade")
-	ErrUpgradePaymentNotRequired        = infraerrors.BadRequest("UPGRADE_PAYMENT_NOT_REQUIRED", "upgrade does not require additional payment")
-	ErrActiveSubscriptionPlanUnresolved = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_PLAN_UNRESOLVED", "active subscription plan could not be resolved during migration")
+	ErrSubscriptionOrderActionInvalid        = infraerrors.BadRequest("SUBSCRIPTION_ORDER_ACTION_INVALID", "active subscription only supports renewal or upgrade")
+	ErrUpgradePaymentNotRequired             = infraerrors.BadRequest("UPGRADE_PAYMENT_NOT_REQUIRED", "upgrade does not require additional payment")
+	ErrActiveSubscriptionPlanUnresolved      = infraerrors.Conflict("ACTIVE_SUBSCRIPTION_PLAN_UNRESOLVED", "active subscription plan could not be resolved during migration")
+	ErrSubscriptionPlanPurchaseLimitExceeded = infraerrors.Conflict("SUBSCRIPTION_PLAN_PURCHASE_LIMIT_EXCEEDED", "purchase limit reached for this subscription plan")
 )
 
 type subscriptionOrderDecision struct {
@@ -37,8 +38,9 @@ type subscriptionOrderDecision struct {
 }
 
 const (
-	subscriptionPreviewBlockedReasonDowngradeOrSwitch = "downgrade_or_switch_not_supported"
-	subscriptionPreviewBlockedReasonUpgradeNoPayment  = "upgrade_payment_not_required"
+	subscriptionPreviewBlockedReasonDowngradeOrSwitch    = "downgrade_or_switch_not_supported"
+	subscriptionPreviewBlockedReasonUpgradeNoPayment     = "upgrade_payment_not_required"
+	subscriptionPreviewBlockedReasonPurchaseLimitReached = "purchase_limit_reached"
 )
 
 type SubscriptionOrderPreview struct {
@@ -76,11 +78,15 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 	active, err := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
 	if err != nil {
 		if errorsIsSubscriptionNotFound(err) {
-			return &subscriptionOrderDecision{
+			decision := &subscriptionOrderDecision{
 				Plan:        plan,
 				Action:      subscriptionActionPurchase,
 				OrderAmount: plan.Price,
-			}, nil
+			}
+			if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+				return nil, err
+			}
+			return decision, nil
 		}
 		return nil, err
 	}
@@ -91,12 +97,16 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 	}
 
 	if subscriptionOrderMatchesRenewPlan(active, currentPlanID, plan) {
-		return &subscriptionOrderDecision{
+		decision := &subscriptionOrderDecision{
 			Plan:               plan,
 			ActiveSubscription: active,
 			Action:             subscriptionActionRenew,
 			OrderAmount:        plan.Price,
-		}, nil
+		}
+		if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+			return nil, err
+		}
+		return decision, nil
 	}
 
 	resolvedCurrentPrice := 0.0
@@ -118,23 +128,31 @@ func (s *PaymentService) prepareSubscriptionOrderDecision(ctx context.Context, u
 		upgradeAmount = breakdown.UpgradeDelta
 	}
 	if upgradeAmount <= 0 {
-		return &subscriptionOrderDecision{
+		decision := &subscriptionOrderDecision{
 			Plan:                plan,
 			ActiveSubscription:  active,
 			Action:              subscriptionActionUpgrade,
 			OrderAmount:         0,
 			UpgradeBreakdown:    breakdown,
 			CanCompleteDirectly: true,
-		}, nil
+		}
+		if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+			return nil, err
+		}
+		return decision, nil
 	}
 
-	return &subscriptionOrderDecision{
+	decision := &subscriptionOrderDecision{
 		Plan:               plan,
 		ActiveSubscription: active,
 		Action:             subscriptionActionUpgrade,
 		OrderAmount:        upgradeAmount,
 		UpgradeBreakdown:   breakdown,
-	}, nil
+	}
+	if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+		return nil, err
+	}
+	return decision, nil
 }
 
 func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx context.Context, userID int64, plan *dbent.SubscriptionPlan, currency string) (*subscriptionOrderDecision, bool, error) {
@@ -157,22 +175,30 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 
 	switch settlementDecision.Action {
 	case subscriptionActionPurchase:
-		return &subscriptionOrderDecision{
+		decision := &subscriptionOrderDecision{
 			Plan:        plan,
 			Action:      subscriptionActionPurchase,
 			OrderAmount: plan.Price,
-		}, true, nil
+		}
+		if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+			return nil, true, err
+		}
+		return decision, true, nil
 	case subscriptionActionRenew:
 		active, activeErr := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
 		if activeErr != nil {
 			return nil, true, activeErr
 		}
-		return &subscriptionOrderDecision{
+		decision := &subscriptionOrderDecision{
 			Plan:               plan,
 			ActiveSubscription: active,
 			Action:             subscriptionActionRenew,
 			OrderAmount:        plan.Price,
-		}, true, nil
+		}
+		if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+			return nil, true, err
+		}
+		return decision, true, nil
 	case subscriptionActionUpgrade:
 		active, activeErr := s.subscriptionSvc.GetActiveSubscriptionByUser(ctx, userID)
 		if activeErr != nil {
@@ -188,22 +214,30 @@ func (s *PaymentService) prepareSubscriptionOrderDecisionFromSettlementHead(ctx 
 		}
 		breakdown = roundUpgradeBreakdownForCurrency(breakdown, currency)
 		if breakdown.UpgradeDelta <= 0 {
-			return &subscriptionOrderDecision{
+			decision := &subscriptionOrderDecision{
 				Plan:                plan,
 				ActiveSubscription:  active,
 				Action:              subscriptionActionUpgrade,
 				OrderAmount:         0,
 				UpgradeBreakdown:    breakdown,
 				CanCompleteDirectly: true,
-			}, true, nil
+			}
+			if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+				return nil, true, err
+			}
+			return decision, true, nil
 		}
-		return &subscriptionOrderDecision{
+		decision := &subscriptionOrderDecision{
 			Plan:               plan,
 			ActiveSubscription: active,
 			Action:             subscriptionActionUpgrade,
 			OrderAmount:        breakdown.UpgradeDelta,
 			UpgradeBreakdown:   breakdown,
-		}, true, nil
+		}
+		if err := s.ensurePlanPurchaseAllowed(ctx, userID, plan); err != nil {
+			return nil, true, err
+		}
+		return decision, true, nil
 	case subscriptionActionUnavailable:
 		return nil, true, ErrSubscriptionOrderActionInvalid
 	default:
@@ -217,7 +251,9 @@ func (s *PaymentService) PreviewSubscriptionOrder(ctx context.Context, userID in
 		return s.buildSubscriptionOrderPreview(ctx, decision.Action, decision.OrderAmount, decision.Plan, decision.ActiveSubscription, decision.UpgradeBreakdown, decision.CanCompleteDirectly, "")
 	}
 
-	if !errors.Is(err, ErrSubscriptionOrderActionInvalid) && !errors.Is(err, ErrUpgradePaymentNotRequired) {
+	if !errors.Is(err, ErrSubscriptionOrderActionInvalid) &&
+		!errors.Is(err, ErrUpgradePaymentNotRequired) &&
+		!errors.Is(err, ErrSubscriptionPlanPurchaseLimitExceeded) {
 		return nil, err
 	}
 
@@ -353,6 +389,8 @@ func subscriptionPreviewBlockedReason(err error) string {
 	switch {
 	case errors.Is(err, ErrUpgradePaymentNotRequired):
 		return subscriptionPreviewBlockedReasonUpgradeNoPayment
+	case errors.Is(err, ErrSubscriptionPlanPurchaseLimitExceeded):
+		return subscriptionPreviewBlockedReasonPurchaseLimitReached
 	case errors.Is(err, ErrSubscriptionOrderActionInvalid):
 		return subscriptionPreviewBlockedReasonDowngradeOrSwitch
 	default:

@@ -590,6 +590,16 @@ const selectedUpgradeBreakdown = computed(() => selectedPlanPreview.value?.upgra
 const selectedCurrentPlanPreview = computed(() => selectedPlanPreview.value?.current_plan ?? null)
 const selectedTargetPlanPreview = computed(() => selectedPlanPreview.value?.target_plan ?? null)
 
+function subscriptionNoticeForPreview(preview: SubscriptionPreviewResponse | null): string {
+  if (preview?.action !== 'unavailable') {
+    return ''
+  }
+  if (preview.blocked_reason === 'purchase_limit_reached') {
+    return t('payment.subscriptionPurchaseLimitHint')
+  }
+  return t('payment.subscriptionUnavailableHint')
+}
+
 // Adaptive grid: center single card, 2-col for 2 plans, 3-col for 3+
 const planGridClass = computed(() => {
   const n = checkout.value.plans.length
@@ -757,7 +767,7 @@ async function loadSubscriptionPreview(plan: SubscriptionPlan): Promise<Subscrip
     }
     selectedPlanPreview.value = response.data
     if (response.data.action === 'unavailable') {
-      subscriptionNotice.value = t('payment.subscriptionUnavailableHint')
+      subscriptionNotice.value = subscriptionNoticeForPreview(response.data)
     } else if (response.data.action === 'upgrade') {
       subscriptionNotice.value = t('payment.upgradePreviewHint')
     } else {
@@ -795,7 +805,7 @@ async function selectPlan(plan: SubscriptionPlan) {
     subscriptionNotice.value = ''
     const preview = await loadSubscriptionPreview(plan)
     if (preview?.action === 'unavailable') {
-      const notice = t('payment.subscriptionUnavailableHint')
+      const notice = subscriptionNoticeForPreview(preview)
       clearSelectedPlan()
       subscriptionNotice.value = notice
       appStore.showInfo(notice)
@@ -815,7 +825,7 @@ async function confirmSubscribe() {
   if (!selectedPlan.value || submitting.value) return
   if (previewLoading.value || selectedPlanPreview.value === null) return
   if (selectedPlanAction.value === 'unavailable') {
-    subscriptionNotice.value = t('payment.subscriptionUnavailableHint')
+    subscriptionNotice.value = subscriptionNoticeForPreview(selectedPlanPreview.value)
     return
   }
   await createOrder(selectedPlanOrderAmount.value, 'subscription', selectedPlan.value.id)

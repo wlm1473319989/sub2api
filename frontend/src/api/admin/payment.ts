@@ -25,6 +25,7 @@ export interface PlanPayload {
   daily_quota_knives?: number | null
   weekly_quota_knives?: number | null
   monthly_quota_knives?: number | null
+  purchase_limit_per_user?: number | null
   features?: string
   product_name?: string
   for_sale: boolean

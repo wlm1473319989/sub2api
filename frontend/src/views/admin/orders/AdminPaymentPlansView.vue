@@ -35,6 +35,12 @@
           </div>
         </template>
 
+        <template #cell-purchase_limit_per_user="{ value }">
+          <span class="text-sm text-gray-700 dark:text-gray-300">
+            {{ value ?? t('payment.admin.unlimited') }}
+          </span>
+        </template>
+
         <template #cell-for_sale="{ value, row }">
           <button
             type="button"
@@ -114,6 +120,7 @@ const planColumns = computed((): Column[] => [
   { key: 'name', label: t('payment.admin.planName') },
   { key: 'price', label: t('payment.admin.price') },
   { key: 'quotas', label: t('payment.planCard.quota') },
+  { key: 'purchase_limit_per_user', label: t('payment.admin.purchaseLimitPerUser') },
   { key: 'validity_days', label: t('payment.admin.validityPeriod') },
   { key: 'for_sale', label: t('payment.admin.forSale') },
   { key: 'sort_order', label: t('payment.admin.sortOrder') },

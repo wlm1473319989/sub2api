@@ -65,6 +65,18 @@
           <label class="input-label">{{ t('payment.admin.sortOrder') }}</label>
           <input v-model.number="planForm.sort_order" type="number" min="0" class="input" />
         </div>
+        <div>
+          <label class="input-label">{{ t('payment.admin.purchaseLimitPerUser') }}</label>
+          <input
+            v-model.number="planForm.purchase_limit_per_user"
+            type="number"
+            min="1"
+            step="1"
+            class="input"
+            :placeholder="t('payment.admin.unlimited')"
+          />
+          <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ t('payment.admin.purchaseLimitPerUserHint') }}</p>
+        </div>
       </div>
 
       <div>
@@ -141,6 +153,7 @@ const planForm = reactive({
   daily_quota_knives: null as number | null,
   weekly_quota_knives: null as number | null,
   monthly_quota_knives: null as number | null,
+  purchase_limit_per_user: null as number | null,
   sort_order: 0,
   for_sale: true,
 })
@@ -178,6 +191,7 @@ watch(
         daily_quota_knives: props.plan.daily_quota_knives ?? null,
         weekly_quota_knives: props.plan.weekly_quota_knives ?? null,
         monthly_quota_knives: props.plan.monthly_quota_knives ?? null,
+        purchase_limit_per_user: props.plan.purchase_limit_per_user ?? null,
         sort_order: props.plan.sort_order || 0,
         for_sale: props.plan.for_sale,
       })
@@ -195,6 +209,7 @@ watch(
       daily_quota_knives: null,
       weekly_quota_knives: null,
       monthly_quota_knives: null,
+      purchase_limit_per_user: null,
       sort_order: 0,
       for_sale: true,
     })
@@ -205,6 +220,11 @@ watch(
 function normalizedQuota(value: number | null): number | null {
   if (value == null || value <= 0) return null
   return value
+}
+
+function normalizedPurchaseLimit(value: number | null): number | null {
+  if (value == null || value <= 0) return null
+  return Math.floor(value)
 }
 
 function buildPlanPayload(): PlanPayload {
@@ -224,6 +244,7 @@ function buildPlanPayload(): PlanPayload {
     daily_quota_knives: normalizedQuota(planForm.daily_quota_knives),
     weekly_quota_knives: normalizedQuota(planForm.weekly_quota_knives),
     monthly_quota_knives: normalizedQuota(planForm.monthly_quota_knives),
+    purchase_limit_per_user: normalizedPurchaseLimit(planForm.purchase_limit_per_user),
     features,
     for_sale: planForm.for_sale,
     sort_order: planForm.sort_order,

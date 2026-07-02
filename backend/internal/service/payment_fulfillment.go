@@ -456,6 +456,9 @@ func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context,
 		return fmt.Errorf("get plan: %w", err)
 	}
 	normalizePlanEntity(plan)
+	if err := s.ensurePlanPurchaseAllowedForOrder(txCtx, order.UserID, plan, order.ID); err != nil {
+		return err
+	}
 
 	now := time.Now()
 	action := strings.TrimSpace(*order.SubscriptionAction)
