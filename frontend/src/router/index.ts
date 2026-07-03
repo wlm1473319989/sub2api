@@ -167,6 +167,24 @@ const routes: RouteRecordRaw[] = [
     }
   },
   {
+    path: '/image-tool',
+    name: 'ImageToolEmbedHost',
+    component: () => import('@/views/public/ImageToolEmbedHostView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'GPT Image Tool'
+    }
+  },
+  {
+    path: '/image-tool/embed',
+    name: 'ImageToolStandalone',
+    component: () => import('@/views/public/ImageToolStandaloneView.vue'),
+    meta: {
+      requiresAuth: false,
+      title: 'GPT Image Tool'
+    }
+  },
+  {
     path: '/legal/:documentId',
     name: 'LegalDocument',
     component: () => import('@/views/public/LegalDocumentView.vue'),
@@ -750,7 +768,7 @@ let authInitialized = false
 const navigationLoading = useNavigationLoadingState()
 // 延迟初始化预加载，传入 router 实例
 let routePrefetch: ReturnType<typeof useRoutePrefetch> | null = null
-const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/setup', '/payment/result', '/payment/airwallex', '/legal']
+const BACKEND_MODE_ALLOWED_PATHS = ['/login', '/key-usage', '/image-tool', '/setup', '/payment/result', '/payment/airwallex', '/legal']
 const BACKEND_MODE_CALLBACK_PATHS = [
   '/auth/callback',
   '/auth/linuxdo/callback',
