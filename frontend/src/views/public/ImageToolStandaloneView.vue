@@ -1,9 +1,14 @@
 <template>
   <main class="image-tool-page">
     <header class="tool-header">
-      <div class="brand">
-        <span class="brand-mark">AI</span>
-        <span>GPT Image</span>
+      <div class="header-left">
+        <div class="brand">
+          <span class="brand-mark">AI</span>
+          <span>GPT Image</span>
+        </div>
+        <button type="button" class="tutorial-button" @click="showTutorial = true">
+          使用教程
+        </button>
       </div>
 
       <div class="mode-tabs" role="tablist" aria-label="Image tool mode">
@@ -205,6 +210,9 @@
               <button type="button" class="action-button" @click="copyPrompt">复制提示词</button>
               <button type="button" class="action-button primary" @click="downloadCurrentImage">下载</button>
             </div>
+            <div class="download-warning">
+              生成后请先下载到本地。刷新、关闭或后退页面会丢失当前图片。
+            </div>
           </div>
         </div>
 
@@ -242,11 +250,67 @@
         </button>
       </aside>
     </section>
+
+    <div v-if="showTutorial" class="tutorial-overlay" role="dialog" aria-modal="true" aria-labelledby="imageToolTutorialTitle" @click.self="showTutorial = false">
+      <section class="tutorial-dialog">
+        <header class="tutorial-header">
+          <div>
+            <p class="tutorial-kicker">使用教程</p>
+            <h2 id="imageToolTutorialTitle">生图页面使用说明</h2>
+          </div>
+          <button type="button" class="tutorial-close" aria-label="关闭使用教程" @click="showTutorial = false">×</button>
+        </header>
+
+        <div class="tutorial-alert">
+          <strong>重要提醒：</strong>
+          图片生成结果只在当前页面临时保存。生成成功后必须立刻点击“下载”，把图片保存到本地电脑或手机；不要刷新页面、关闭页面、后退页面或重新打开链接，否则当前图片和历史记录可能丢失，无法从页面恢复。
+        </div>
+
+        <div class="tutorial-content">
+          <section class="tutorial-section">
+            <h3>基础使用步骤</h3>
+            <ol>
+              <li>填写模型名、Base URL 和 API Key。Base URL 一般填你的中转地址或 OpenAI 兼容接口地址。</li>
+              <li>选择“绘图”或“编辑”。绘图只需要提示词；编辑模式必须先上传需要修改的原图。</li>
+              <li>选择比例、分辨率、质量、图片格式和生成数量。分辨率越高，等待时间和消耗通常越高。</li>
+              <li>在底部提示词中写清主体、场景、风格、构图、颜色、画幅要求和不想出现的内容。</li>
+              <li>点击“生成”或“编辑”后等待完成。生成中不要切换页面，不要刷新浏览器。</li>
+              <li>看到结果后，先确认图片是否可用，然后立即点击图片下方“下载”保存到本地。</li>
+            </ol>
+          </section>
+
+          <section class="tutorial-section">
+            <h3>提示词建议</h3>
+            <ul>
+              <li>尽量写具体：对象、动作、环境、镜头、光线、材质、颜色、比例都可以描述。</li>
+              <li>需要商业图时，补充“干净背景、主体清晰、无文字、无水印、适合电商展示”等要求。</li>
+              <li>需要一致风格时，保持同一套关键词，少量调整主体或画面细节。</li>
+              <li>编辑图片时，明确说明保留哪些内容、修改哪些区域、不要改变哪些细节。</li>
+            </ul>
+          </section>
+
+          <section class="tutorial-section">
+            <h3>注意事项</h3>
+            <ul>
+              <li>本页面不会长期保存生成图片，右侧“图片历史”也只是当前页面的临时记录。</li>
+              <li>刷新、关闭、浏览器崩溃、切换账号或重新进入页面，都可能让临时图片失效。</li>
+              <li>流式预览里的中间图只是预览，最终可用图出现后仍然要手动下载。</li>
+              <li>API Key 只用于当前请求，请不要把自己的 Key 分享给他人或填到不可信页面。</li>
+              <li>如果请求失败，先检查 API Key、Base URL、模型名、余额或上游接口是否可用。</li>
+            </ul>
+          </section>
+        </div>
+
+        <footer class="tutorial-footer">
+          <button type="button" class="action-button primary" @click="showTutorial = false">我知道了</button>
+        </footer>
+      </section>
+    </div>
   </main>
 </template>
 
 <script setup lang="ts">
-import { computed, onBeforeUnmount, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, ref, watch } from 'vue'
 import {
   imageAspectRatioOptions,
   imageResolutionTierOptions,
@@ -303,6 +367,8 @@ const maskImage = ref<UploadItem | null>(null)
 const currentImage = ref<ResultItem | null>(null)
 const historyItems = ref<ResultItem[]>([])
 const abortController = ref<AbortController | null>(null)
+const showTutorial = ref(false)
+const downloadedResultIds = new Set<string>()
 
 const derivedSize = computed(() => resolveImageSize(mode.value, aspectRatio.value, resolutionTier.value))
 const displaySize = computed(() => derivedSize.value === 'auto' ? 'auto' : derivedSize.value.replace('x', '×'))
@@ -407,7 +473,10 @@ function addFinalResult(item: ResultItem): void {
   const nextHistory = [item, ...historyItems.value]
   const retained = nextHistory.slice(0, MAX_HISTORY_ITEMS)
   const evicted = nextHistory.slice(MAX_HISTORY_ITEMS)
-  evicted.forEach(revokeResult)
+  evicted.forEach((evictedItem) => {
+    revokeResult(evictedItem)
+    downloadedResultIds.delete(evictedItem.id)
+  })
 
   currentImage.value = item
   historyItems.value = retained
@@ -654,9 +723,31 @@ function downloadCurrentImage(): void {
   document.body.appendChild(link)
   link.click()
   link.remove()
+  downloadedResultIds.add(currentImage.value.id)
 }
 
+function hasUndownloadedResult(): boolean {
+  const items = [currentImage.value, ...historyItems.value]
+  const seen = new Set<string>()
+  return items.some((item) => {
+    if (!item || seen.has(item.id)) return false
+    seen.add(item.id)
+    return !downloadedResultIds.has(item.id)
+  })
+}
+
+function handleBeforeUnload(event: BeforeUnloadEvent): void {
+  if (status.value !== 'loading' && !hasUndownloadedResult()) return
+  event.preventDefault()
+  event.returnValue = ''
+}
+
+onMounted(() => {
+  window.addEventListener('beforeunload', handleBeforeUnload)
+})
+
 onBeforeUnmount(() => {
+  window.removeEventListener('beforeunload', handleBeforeUnload)
   abortController.value?.abort()
   inputImages.value.forEach(revokeUpload)
   revokeUpload(maskImage.value)
@@ -697,10 +788,18 @@ onBeforeUnmount(() => {
   backdrop-filter: blur(18px);
 }
 
+.header-left {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  min-width: 0;
+}
+
 .brand {
   display: inline-flex;
   align-items: center;
   gap: 10px;
+  flex: 0 0 auto;
   font-size: 16px;
   font-weight: 800;
 }
@@ -715,6 +814,25 @@ onBeforeUnmount(() => {
   background: linear-gradient(135deg, #10b981, #06b6d4);
   color: #fff;
   font-size: 12px;
+}
+
+.tutorial-button {
+  border: 1px solid rgba(15, 23, 42, 0.12);
+  border-radius: 8px;
+  background: #fff;
+  color: #0f766e;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 800;
+  padding: 9px 12px;
+  white-space: nowrap;
+  transition: border-color 0.18s, box-shadow 0.18s, color 0.18s;
+}
+
+.tutorial-button:hover {
+  border-color: rgba(13, 148, 136, 0.42);
+  box-shadow: 0 8px 20px rgba(15, 23, 42, 0.08);
+  color: #0d9488;
 }
 
 .mode-tabs {
@@ -1022,6 +1140,20 @@ onBeforeUnmount(() => {
   padding: 5px 10px;
 }
 
+.download-warning {
+  display: inline-flex;
+  max-width: min(100%, 560px);
+  margin-top: 12px;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #78350f;
+  font-size: 13px;
+  font-weight: 800;
+  line-height: 1.6;
+  padding: 9px 12px;
+}
+
 .action-button,
 .submit-button {
   border: 0;
@@ -1114,6 +1246,117 @@ onBeforeUnmount(() => {
   border-color: #10b981;
 }
 
+.tutorial-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 80;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(15, 23, 42, 0.52);
+  padding: 24px;
+}
+
+.tutorial-dialog {
+  width: min(780px, 100%);
+  max-height: min(760px, calc(100vh - 48px));
+  overflow: auto;
+  border-radius: 8px;
+  background: #fff;
+  box-shadow: 0 24px 80px rgba(15, 23, 42, 0.28);
+}
+
+.tutorial-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid rgba(15, 23, 42, 0.08);
+  padding: 22px 24px 18px;
+}
+
+.tutorial-kicker {
+  margin: 0 0 7px;
+  color: #0d9488;
+  font-size: 12px;
+  font-weight: 900;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.tutorial-header h2 {
+  margin: 0;
+  color: #0f172a;
+  font-size: 22px;
+  line-height: 1.25;
+}
+
+.tutorial-close {
+  display: inline-flex;
+  width: 36px;
+  height: 36px;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(15, 23, 42, 0.1);
+  border-radius: 8px;
+  background: #f8fafc;
+  color: #334155;
+  cursor: pointer;
+  flex: 0 0 auto;
+  font-size: 24px;
+  line-height: 1;
+}
+
+.tutorial-alert {
+  margin: 18px 24px 0;
+  border: 1px solid #f59e0b;
+  border-radius: 8px;
+  background: #fffbeb;
+  color: #78350f;
+  font-size: 14px;
+  font-weight: 700;
+  line-height: 1.75;
+  padding: 14px 16px;
+}
+
+.tutorial-content {
+  display: grid;
+  gap: 18px;
+  padding: 20px 24px 8px;
+}
+
+.tutorial-section {
+  border: 1px solid rgba(15, 23, 42, 0.08);
+  border-radius: 8px;
+  background: #f8fafc;
+  padding: 16px 18px;
+}
+
+.tutorial-section h3 {
+  margin: 0 0 10px;
+  color: #0f172a;
+  font-size: 15px;
+}
+
+.tutorial-section ol,
+.tutorial-section ul {
+  margin: 0;
+  padding-left: 20px;
+}
+
+.tutorial-section li {
+  color: #475569;
+  font-size: 14px;
+  line-height: 1.75;
+  padding-left: 2px;
+}
+
+.tutorial-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 16px 24px 24px;
+}
+
 @keyframes spin {
   to {
     transform: rotate(360deg);
@@ -1137,6 +1380,11 @@ onBeforeUnmount(() => {
     height: auto;
     justify-items: stretch;
     padding: 14px;
+  }
+
+  .header-left {
+    justify-content: center;
+    flex-wrap: wrap;
   }
 
   .brand {
@@ -1164,6 +1412,27 @@ onBeforeUnmount(() => {
 
   .prompt-input-row {
     grid-template-columns: 1fr;
+  }
+
+  .tutorial-overlay {
+    align-items: stretch;
+    padding: 12px;
+  }
+
+  .tutorial-dialog {
+    max-height: calc(100vh - 24px);
+  }
+
+  .tutorial-header,
+  .tutorial-content,
+  .tutorial-footer {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .tutorial-alert {
+    margin-left: 16px;
+    margin-right: 16px;
   }
 }
 </style>
