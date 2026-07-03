@@ -270,13 +270,15 @@ interface UploadItem {
 interface ResultItem {
   id: string
   url: string
-  b64?: string
+  ownedUrl?: boolean
   prompt: string
   size: string
   format: ImageOutputFormat
   createdAt: number
   kind: 'partial' | 'final'
 }
+
+const MAX_HISTORY_ITEMS = 12
 
 const mode = ref<ImageToolMode>('generate')
 const modelName = ref('gpt-image-2')
@@ -366,11 +368,21 @@ function mimeFromFormat(format: ImageOutputFormat): string {
   return format === 'jpeg' ? 'image/jpeg' : `image/${format}`
 }
 
+function createObjectUrlFromBase64(b64: string, format: ImageOutputFormat): string {
+  const normalized = b64.replace(/\s/g, '')
+  const binary = atob(normalized)
+  const bytes = new Uint8Array(binary.length)
+  for (let i = 0; i < binary.length; i += 1) {
+    bytes[i] = binary.charCodeAt(i)
+  }
+  return URL.createObjectURL(new Blob([bytes], { type: mimeFromFormat(format) }))
+}
+
 function createResultFromBase64(b64: string, kind: ResultItem['kind']): ResultItem {
   return {
     id: nextId(kind),
-    url: `data:${mimeFromFormat(outputFormat.value)};base64,${b64}`,
-    b64,
+    url: createObjectUrlFromBase64(b64, outputFormat.value),
+    ownedUrl: true,
     prompt: prompt.value.trim(),
     size: derivedSize.value,
     format: outputFormat.value,
@@ -379,13 +391,31 @@ function createResultFromBase64(b64: string, kind: ResultItem['kind']): ResultIt
   }
 }
 
+function revokeResult(item: ResultItem | null): void {
+  if (item?.ownedUrl) URL.revokeObjectURL(item.url)
+}
+
+function releaseCurrentTransientResult(exceptId?: string): void {
+  const item = currentImage.value
+  if (!item || item.id === exceptId) return
+  if (historyItems.value.some((historyItem) => historyItem.id === item.id)) return
+  revokeResult(item)
+}
+
 function addFinalResult(item: ResultItem): void {
+  releaseCurrentTransientResult(item.id)
+  const nextHistory = [item, ...historyItems.value]
+  const retained = nextHistory.slice(0, MAX_HISTORY_ITEMS)
+  const evicted = nextHistory.slice(MAX_HISTORY_ITEMS)
+  evicted.forEach(revokeResult)
+
   currentImage.value = item
-  historyItems.value = [item, ...historyItems.value].slice(0, 24)
+  historyItems.value = retained
   status.value = 'success'
 }
 
 function setPreviewResult(item: ResultItem): void {
+  releaseCurrentTransientResult(item.id)
   currentImage.value = item
   status.value = 'success'
 }
@@ -519,6 +549,7 @@ function handleJSONResponse(data: any): void {
         return {
           id: nextId('url'),
           url: item.url,
+          ownedUrl: false,
           prompt: prompt.value.trim(),
           size: data?.size || derivedSize.value,
           format: outputFormat.value,
@@ -605,17 +636,8 @@ async function handleStreamResponse(response: Response): Promise<void> {
 
   if (buffer.trim()) consumeBlock(buffer)
   if (!streamState.finalAdded && streamState.lastPreview !== null) {
-    const finalPreview: ResultItem = {
-      id: streamState.lastPreview.id,
-      url: streamState.lastPreview.url,
-      b64: streamState.lastPreview.b64,
-      prompt: streamState.lastPreview.prompt,
-      size: streamState.lastPreview.size,
-      format: streamState.lastPreview.format,
-      createdAt: streamState.lastPreview.createdAt,
-      kind: 'final',
-    }
-    addFinalResult(finalPreview)
+    streamState.lastPreview.kind = 'final'
+    addFinalResult(streamState.lastPreview)
   }
   if (!currentImage.value) throw new Error('流式响应中没有可显示的图片')
 }
@@ -638,6 +660,13 @@ onBeforeUnmount(() => {
   abortController.value?.abort()
   inputImages.value.forEach(revokeUpload)
   revokeUpload(maskImage.value)
+  const revoked = new Set<string>()
+  const resultItems = [currentImage.value, ...historyItems.value]
+  resultItems.forEach((item) => {
+    if (!item?.ownedUrl || revoked.has(item.url)) return
+    URL.revokeObjectURL(item.url)
+    revoked.add(item.url)
+  })
 })
 </script>
 

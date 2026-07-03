@@ -56,6 +56,16 @@ describe('embedded-url', () => {
     expect(url.searchParams.has('lang')).toBe(false)
   })
 
+  it('resolves same-site absolute paths against current origin', () => {
+    const result = buildEmbeddedUrl('/image-tool/embed', 42, 'token-123', 'light', 'zh-CN')
+
+    const url = new URL(result)
+    expect(url.origin).toBe('https://app.example.com')
+    expect(url.pathname).toBe('/image-tool/embed')
+    expect(url.searchParams.get('user_id')).toBe('42')
+    expect(url.searchParams.get('token')).toBe('token-123')
+  })
+
   it('returns original string for invalid url input', () => {
     expect(buildEmbeddedUrl('not a url', 1, 'token')).toBe('not a url')
   })

@@ -13,6 +13,10 @@ const EMBEDDED_UI_MODE_VALUE = 'embedded'
 const EMBEDDED_SRC_HOST_QUERY_KEY = 'src_host'
 const EMBEDDED_SRC_QUERY_KEY = 'src_url'
 
+function isSameSiteAbsolutePath(value: string): boolean {
+  return value.startsWith('/') && !value.startsWith('//') && !value.includes('\\')
+}
+
 export function buildEmbeddedUrl(
   baseUrl: string,
   userId?: number,
@@ -22,7 +26,10 @@ export function buildEmbeddedUrl(
 ): string {
   if (!baseUrl) return baseUrl
   try {
-    const url = new URL(baseUrl)
+    const origin = typeof window !== 'undefined' ? window.location.origin : undefined
+    const url = isSameSiteAbsolutePath(baseUrl) && origin
+      ? new URL(baseUrl, origin)
+      : new URL(baseUrl)
     if (userId) {
       url.searchParams.set(EMBEDDED_USER_ID_QUERY_KEY, String(userId))
     }

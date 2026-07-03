@@ -5935,7 +5935,7 @@ export default {
         name: 'Menu Name',
         namePlaceholder: 'e.g. Help Center',
         url: 'Page URL',
-        urlPlaceholder: 'https://example.com/page',
+        urlPlaceholder: 'https://example.com/page or /image-tool/embed',
         iconSvg: 'SVG Icon',
         iconSvgPlaceholder: '<svg>...</svg>',
         iconPreview: 'Icon Preview',

@@ -28,12 +28,15 @@ const (
 	AirwallexDemoStaticDomain = "https://static-demo.airwallex.com"
 	// AirwallexDemoCheckoutDomain 是 Airwallex 沙箱环境收银台元素和 iframe 域名。
 	AirwallexDemoCheckoutDomain = "https://checkout-demo.airwallex.com"
+	// ImageToolEmbedPath is the standalone image tool route intended to be embedded by CustomPageView.
+	ImageToolEmbedPath = "/image-tool/embed"
 )
 
 var requiredCSPDirectiveValues = []struct {
 	directive string
 	value     string
 }{
+	{"frame-src", "'self'"},
 	{"script-src", CloudflareInsightsDomain},
 	{"script-src", StripeDomain},
 	{"frame-src", StripeDomain},
@@ -92,7 +95,12 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 
 		c.Header("X-Content-Type-Options", "nosniff")
-		c.Header("X-Frame-Options", "DENY")
+		if isSameOriginEmbeddablePath(c) {
+			c.Header("X-Frame-Options", "SAMEORIGIN")
+			finalPolicy = setDirective(finalPolicy, "frame-ancestors", "'self'")
+		} else {
+			c.Header("X-Frame-Options", "DENY")
+		}
 		c.Header("Referrer-Policy", "strict-origin-when-cross-origin")
 		if isAPIRoutePath(c) {
 			c.Next()
@@ -113,6 +121,13 @@ func SecurityHeaders(cfg config.CSPConfig, getFrameSrcOrigins func() []string) g
 		}
 		c.Next()
 	}
+}
+
+func isSameOriginEmbeddablePath(c *gin.Context) bool {
+	if c == nil || c.Request == nil || c.Request.URL == nil {
+		return false
+	}
+	return c.Request.URL.Path == ImageToolEmbedPath
 }
 
 func isAPIRoutePath(c *gin.Context) bool {
@@ -158,6 +173,25 @@ func directiveHasValue(policy, directive, value string) bool {
 		return false
 	}
 	return false
+}
+
+func setDirective(policy, directive, value string) string {
+	directives := strings.Split(policy, ";")
+	for i, rawDirective := range directives {
+		fields := strings.Fields(strings.TrimSpace(rawDirective))
+		if len(fields) == 0 || fields[0] != directive {
+			continue
+		}
+		directives[i] = directive + " " + value
+		for j, item := range directives {
+			directives[j] = strings.TrimSpace(item)
+		}
+		return strings.Join(directives, "; ")
+	}
+	if strings.TrimSpace(policy) == "" {
+		return directive + " " + value
+	}
+	return directive + " " + value + "; " + policy
 }
 
 // addToDirective adds a value to a specific CSP directive.

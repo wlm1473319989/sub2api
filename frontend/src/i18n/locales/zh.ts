@@ -6091,7 +6091,7 @@ export default {
         name: '菜单名称',
         namePlaceholder: '如：帮助中心',
         url: '页面 URL',
-        urlPlaceholder: 'https://example.com/page',
+        urlPlaceholder: 'https://example.com/page 或 /image-tool/embed',
         iconSvg: 'SVG 图标',
         iconSvgPlaceholder: '<svg>...</svg>',
         iconPreview: '图标预览',

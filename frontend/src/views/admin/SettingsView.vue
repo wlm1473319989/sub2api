@@ -5003,7 +5003,7 @@
                     </label>
                     <input
                       v-model="item.url"
-                      type="url"
+                      type="text"
                       class="input font-mono text-sm"
                       :placeholder="
                         t('admin.settings.customMenu.urlPlaceholder')

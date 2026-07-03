@@ -27,6 +27,13 @@ var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 // menuItemIDPattern validates custom menu item IDs: alphanumeric, hyphens, underscores only.
 var menuItemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
+func isSameSiteAbsolutePath(raw string) bool {
+	return strings.HasPrefix(raw, "/") &&
+		!strings.HasPrefix(raw, "//") &&
+		!strings.Contains(raw, "\\") &&
+		!strings.Contains(raw, "#")
+}
+
 // generateMenuItemID generates a short random hex ID for a custom menu item.
 func generateMenuItemID() (string, error) {
 	b := make([]byte, 8)
@@ -1318,8 +1325,14 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 					response.BadRequest(c, "Custom menu item URL is too long (max 2048 characters)")
 					return
 				}
-				if err := config.ValidateAbsoluteHTTPURL(urlTrimmed); err != nil {
-					response.BadRequest(c, "Custom menu item URL must be an absolute http(s) URL or md:<slug>")
+				if !isSameSiteAbsolutePath(urlTrimmed) {
+					if err := config.ValidateAbsoluteHTTPURL(urlTrimmed); err != nil {
+						response.BadRequest(c, "Custom menu item URL must be an absolute http(s) URL, same-site absolute path, or md:<slug>")
+						return
+					}
+				}
+				if strings.HasPrefix(urlTrimmed, "/api/") {
+					response.BadRequest(c, "Custom menu item same-site path cannot point to /api/")
 					return
 				}
 			}
