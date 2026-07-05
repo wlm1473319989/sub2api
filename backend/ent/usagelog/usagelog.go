@@ -38,6 +38,12 @@ const (
 	FieldBillingMode = "billing_mode"
 	// FieldGroupID holds the string denoting the group_id field in the database.
 	FieldGroupID = "group_id"
+	// FieldOriginGroupID holds the string denoting the origin_group_id field in the database.
+	FieldOriginGroupID = "origin_group_id"
+	// FieldRoutedGroupID holds the string denoting the routed_group_id field in the database.
+	FieldRoutedGroupID = "routed_group_id"
+	// FieldFailoverReason holds the string denoting the failover_reason field in the database.
+	FieldFailoverReason = "failover_reason"
 	// FieldSubscriptionID holds the string denoting the subscription_id field in the database.
 	FieldSubscriptionID = "subscription_id"
 	// FieldInputTokens holds the string denoting the input_tokens field in the database.
@@ -168,6 +174,9 @@ var Columns = []string{
 	FieldBillingTier,
 	FieldBillingMode,
 	FieldGroupID,
+	FieldOriginGroupID,
+	FieldRoutedGroupID,
+	FieldFailoverReason,
 	FieldSubscriptionID,
 	FieldInputTokens,
 	FieldOutputTokens,
@@ -228,6 +237,8 @@ var (
 	BillingTierValidator func(string) error
 	// BillingModeValidator is a validator for the "billing_mode" field. It is called by the builders before save.
 	BillingModeValidator func(string) error
+	// FailoverReasonValidator is a validator for the "failover_reason" field. It is called by the builders before save.
+	FailoverReasonValidator func(string) error
 	// DefaultInputTokens holds the default value on creation for the "input_tokens" field.
 	DefaultInputTokens int
 	// DefaultOutputTokens holds the default value on creation for the "output_tokens" field.
@@ -352,6 +363,21 @@ func ByBillingMode(opts ...sql.OrderTermOption) OrderOption {
 // ByGroupID orders the results by the group_id field.
 func ByGroupID(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldGroupID, opts...).ToFunc()
+}
+
+// ByOriginGroupID orders the results by the origin_group_id field.
+func ByOriginGroupID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldOriginGroupID, opts...).ToFunc()
+}
+
+// ByRoutedGroupID orders the results by the routed_group_id field.
+func ByRoutedGroupID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRoutedGroupID, opts...).ToFunc()
+}
+
+// ByFailoverReason orders the results by the failover_reason field.
+func ByFailoverReason(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldFailoverReason, opts...).ToFunc()
 }
 
 // BySubscriptionID orders the results by the subscription_id field.

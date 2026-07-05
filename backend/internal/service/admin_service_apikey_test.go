@@ -294,6 +294,20 @@ func TestAdminService_AdminUpdateAPIKeyGroupID_Unbind(t *testing.T) {
 	require.Equal(t, []string{"sk-test"}, cache.keys, "cache should be invalidated")
 }
 
+func TestAdminService_AdminUpdateAPIKeyAllowPaidFailover(t *testing.T) {
+	existing := &APIKey{ID: 1, Key: "sk-test", AllowPaidFailover: false}
+	repo := &apiKeyRepoStubForGroupUpdate{key: existing}
+	cache := &authCacheInvalidatorStub{}
+	svc := &adminServiceImpl{apiKeyRepo: repo, authCacheInvalidator: cache}
+
+	got, err := svc.AdminUpdateAPIKeyAllowPaidFailover(context.Background(), 1, true)
+	require.NoError(t, err)
+	require.True(t, got.AllowPaidFailover)
+	require.NotNil(t, repo.updated)
+	require.True(t, repo.updated.AllowPaidFailover)
+	require.Equal(t, []string{"sk-test"}, cache.keys)
+}
+
 func TestAdminService_AdminUpdateAPIKeyGroupID_BindActiveGroup(t *testing.T) {
 	existing := &APIKey{ID: 1, Key: "sk-test", GroupID: nil}
 	apiKeyRepo := &apiKeyRepoStubForGroupUpdate{key: existing}

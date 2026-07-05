@@ -93,6 +93,28 @@ func TestAdminAPIKeyHandler_UpdateGroup_BindGroup(t *testing.T) {
 	require.Equal(t, int64(2), *data.APIKey.GroupID)
 }
 
+func TestAdminAPIKeyHandler_UpdateAllowPaidFailover(t *testing.T) {
+	router := setupAPIKeyHandler(newStubAdminService())
+	body := `{"allow_paid_failover": true}`
+
+	rec := httptest.NewRecorder()
+	req := httptest.NewRequest(http.MethodPut, "/api/v1/admin/api-keys/10", bytes.NewBufferString(body))
+	req.Header.Set("Content-Type", "application/json")
+	router.ServeHTTP(rec, req)
+
+	require.Equal(t, http.StatusOK, rec.Code)
+
+	var resp struct {
+		Data struct {
+			APIKey struct {
+				AllowPaidFailover bool `json:"allow_paid_failover"`
+			} `json:"api_key"`
+		} `json:"data"`
+	}
+	require.NoError(t, json.Unmarshal(rec.Body.Bytes(), &resp))
+	require.True(t, resp.Data.APIKey.AllowPaidFailover)
+}
+
 func TestAdminAPIKeyHandler_UpdateGroup_Unbind(t *testing.T) {
 	svc := newStubAdminService()
 	gid := int64(2)

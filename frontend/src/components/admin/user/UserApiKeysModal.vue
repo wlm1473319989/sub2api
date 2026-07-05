@@ -38,6 +38,26 @@
                 <svg v-else class="h-3 w-3 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M8.25 15L12 18.75 15.75 15m-7.5-6L12 5.25 15.75 9" /></svg>
               </button>
             </div>
+            <div v-if="key.group?.platform === 'openai'" class="flex items-center gap-1">
+              <span>{{ t('admin.users.paidFailover') }}:</span>
+              <button
+                type="button"
+                :disabled="updatingKeyIds.has(key.id) || (!apiKeySupportsPaidFailover(key) && !key.allow_paid_failover)"
+                @click="togglePaidFailover(key)"
+                :class="[
+                  'rounded-full px-2 py-0.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50',
+                  apiKeySupportsPaidFailover(key) && key.allow_paid_failover
+                    ? 'bg-primary-100 text-primary-700 dark:bg-primary-900/30 dark:text-primary-300'
+                    : 'bg-gray-100 text-gray-500 dark:bg-dark-700 dark:text-gray-400'
+                ]"
+              >
+                {{
+                  apiKeySupportsPaidFailover(key) && key.allow_paid_failover
+                    ? t('admin.users.enabled')
+                    : t('admin.users.disabled')
+                }}
+              </button>
+            </div>
             <div class="flex items-center gap-1"><span>{{ t('admin.users.columns.created') }}: {{ formatDateTime(key.created_at) }}</span></div>
           </div>
         </div>
@@ -192,6 +212,33 @@ const openGroupSelector = (key: ApiKey) => {
 const closeGroupSelector = () => {
   groupSelectorKeyId.value = null
   dropdownPosition.value = null
+}
+
+const apiKeySupportsPaidFailover = (key: ApiKey) => {
+  const group = key.group
+  return !!(
+    group &&
+    group.platform === 'openai' &&
+    group.backup_failover_enabled &&
+    group.backup_group_id
+  )
+}
+
+const togglePaidFailover = async (key: ApiKey) => {
+  const nextValue = apiKeySupportsPaidFailover(key) ? !key.allow_paid_failover : false
+  updatingKeyIds.value.add(key.id)
+  try {
+    const result = await adminAPI.apiKeys.updateApiKeyAllowPaidFailover(key.id, nextValue)
+    const idx = apiKeys.value.findIndex((k) => k.id === key.id)
+    if (idx !== -1) {
+      apiKeys.value[idx] = result.api_key
+    }
+    appStore.showSuccess(t('admin.users.paidFailoverUpdated'))
+  } catch (error: any) {
+    appStore.showError(error?.message || t('admin.users.paidFailoverUpdateFailed'))
+  } finally {
+    updatingKeyIds.value.delete(key.id)
+  }
 }
 
 const changeGroup = async (key: ApiKey, newGroupId: number | null) => {

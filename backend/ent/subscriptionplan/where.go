@@ -110,6 +110,11 @@ func ProductName(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldProductName, v))
 }
 
+// PurchaseLimitPerUser applies equality check predicate on the "purchase_limit_per_user" field. It's identical to PurchaseLimitPerUserEQ.
+func PurchaseLimitPerUser(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldPurchaseLimitPerUser, v))
+}
+
 // ForSale applies equality check predicate on the "for_sale" field. It's identical to ForSaleEQ.
 func ForSale(v bool) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldEQ(FieldForSale, v))
@@ -733,6 +738,56 @@ func ProductNameEqualFold(v string) predicate.SubscriptionPlan {
 // ProductNameContainsFold applies the ContainsFold predicate on the "product_name" field.
 func ProductNameContainsFold(v string) predicate.SubscriptionPlan {
 	return predicate.SubscriptionPlan(sql.FieldContainsFold(FieldProductName, v))
+}
+
+// PurchaseLimitPerUserEQ applies the EQ predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldEQ(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserNEQ applies the NEQ predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserNEQ(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNEQ(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserIn applies the In predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIn(FieldPurchaseLimitPerUser, vs...))
+}
+
+// PurchaseLimitPerUserNotIn applies the NotIn predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserNotIn(vs ...int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotIn(FieldPurchaseLimitPerUser, vs...))
+}
+
+// PurchaseLimitPerUserGT applies the GT predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserGT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGT(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserGTE applies the GTE predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserGTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldGTE(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserLT applies the LT predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserLT(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLT(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserLTE applies the LTE predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserLTE(v int) predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldLTE(FieldPurchaseLimitPerUser, v))
+}
+
+// PurchaseLimitPerUserIsNil applies the IsNil predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserIsNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldIsNull(FieldPurchaseLimitPerUser))
+}
+
+// PurchaseLimitPerUserNotNil applies the NotNil predicate on the "purchase_limit_per_user" field.
+func PurchaseLimitPerUserNotNil() predicate.SubscriptionPlan {
+	return predicate.SubscriptionPlan(sql.FieldNotNull(FieldPurchaseLimitPerUser))
 }
 
 // ForSaleEQ applies the EQ predicate on the "for_sale" field.

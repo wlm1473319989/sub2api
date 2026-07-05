@@ -62,6 +62,9 @@ func (r *groupRepository) Create(ctx context.Context, groupIn *service.Group) er
 		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
 		SetNillableFallbackGroupID(groupIn.FallbackGroupID).
 		SetNillableFallbackGroupIDOnInvalidRequest(groupIn.FallbackGroupIDOnInvalidRequest).
+		SetBackupFailoverEnabled(groupIn.BackupFailoverEnabled).
+		SetNillableBackupGroupID(groupIn.BackupGroupID).
+		SetBackupFailoverConfig(groupIn.BackupFailoverConfig).
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
@@ -141,6 +144,8 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		SetNillableImagePrice2k(groupIn.ImagePrice2K).
 		SetNillableImagePrice4k(groupIn.ImagePrice4K).
 		SetClaudeCodeOnly(groupIn.ClaudeCodeOnly).
+		SetBackupFailoverEnabled(groupIn.BackupFailoverEnabled).
+		SetBackupFailoverConfig(groupIn.BackupFailoverConfig).
 		SetModelRoutingEnabled(groupIn.ModelRoutingEnabled).
 		SetMcpXMLInject(groupIn.MCPXMLInject).
 		SetAllowMessagesDispatch(groupIn.AllowMessagesDispatch).
@@ -178,6 +183,11 @@ func (r *groupRepository) Update(ctx context.Context, groupIn *service.Group) er
 		builder = builder.SetFallbackGroupIDOnInvalidRequest(*groupIn.FallbackGroupIDOnInvalidRequest)
 	} else {
 		builder = builder.ClearFallbackGroupIDOnInvalidRequest()
+	}
+	if groupIn.BackupGroupID != nil {
+		builder = builder.SetBackupGroupID(*groupIn.BackupGroupID)
+	} else {
+		builder = builder.ClearBackupGroupID()
 	}
 
 	// 处理 ModelRouting：nil 时清除，否则设置

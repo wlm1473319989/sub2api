@@ -496,6 +496,15 @@ export interface OpenAIMessagesDispatchModelConfig {
   exact_model_mappings?: Record<string, string>
 }
 
+export interface GroupBackupFailoverConfig {
+  failure_window_seconds: number
+  failure_threshold: number
+  open_cooldown_seconds: number
+  half_open_success_threshold: number
+  max_open_cooldown_seconds: number
+  cooldown_backoff_multiplier: number
+}
+
 export interface Group {
   id: number
   name: string
@@ -517,6 +526,9 @@ export interface Group {
   claude_code_only: boolean
   fallback_group_id: number | null
   fallback_group_id_on_invalid_request: number | null
+  backup_failover_enabled?: boolean
+  backup_group_id?: number | null
+  backup_failover_config?: GroupBackupFailoverConfig
   // OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
   allow_messages_dispatch?: boolean
   default_mapped_model?: string
@@ -567,6 +579,7 @@ export interface ApiKey {
   ip_whitelist: string[]
   ip_blacklist: string[]
   last_used_at: string | null
+  allow_paid_failover?: boolean
   quota: number // Quota limit in USD (0 = unlimited)
   quota_used: number // Used quota amount in USD
   expires_at: string | null // Expiration time (null = never expires)
@@ -598,6 +611,7 @@ export interface CreateApiKeyRequest {
   rate_limit_5h?: number
   rate_limit_1d?: number
   rate_limit_7d?: number
+  allow_paid_failover?: boolean
 }
 
 export interface UpdateApiKeyRequest {
@@ -613,6 +627,7 @@ export interface UpdateApiKeyRequest {
   rate_limit_1d?: number
   rate_limit_7d?: number
   reset_rate_limit_usage?: boolean
+  allow_paid_failover?: boolean
 }
 
 export interface CreateGroupRequest {
@@ -631,6 +646,9 @@ export interface CreateGroupRequest {
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
+  backup_failover_enabled?: boolean
+  backup_group_id?: number | null
+  backup_failover_config?: GroupBackupFailoverConfig
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
@@ -663,6 +681,9 @@ export interface UpdateGroupRequest {
   claude_code_only?: boolean
   fallback_group_id?: number | null
   fallback_group_id_on_invalid_request?: number | null
+  backup_failover_enabled?: boolean
+  backup_group_id?: number | null
+  backup_failover_config?: GroupBackupFailoverConfig
   mcp_xml_inject?: boolean
   supported_model_scopes?: string[]
   models_list_config?: ModelsListConfig
@@ -1209,6 +1230,9 @@ export interface UsageLog {
   upstream_endpoint?: string | null
 
   group_id: number | null
+  origin_group_id?: number | null
+  routed_group_id?: number | null
+  failover_reason?: string | null
   subscription_id: number | null
 
   input_tokens: number

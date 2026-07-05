@@ -71,32 +71,33 @@ type APIKey struct {
 	UpdatedAt   time.Time  `json:"updated_at"`
 
 	// Rate limit fields
-	RateLimit5h   float64    `json:"rate_limit_5h"`
-	RateLimit1d   float64    `json:"rate_limit_1d"`
-	RateLimit7d   float64    `json:"rate_limit_7d"`
-	Usage5h       float64    `json:"usage_5h"`
-	Usage1d       float64    `json:"usage_1d"`
-	Usage7d       float64    `json:"usage_7d"`
-	Window5hStart *time.Time `json:"window_5h_start"`
-	Window1dStart *time.Time `json:"window_1d_start"`
-	Window7dStart *time.Time `json:"window_7d_start"`
-	Reset5hAt     *time.Time `json:"reset_5h_at,omitempty"`
-	Reset1dAt     *time.Time `json:"reset_1d_at,omitempty"`
-	Reset7dAt     *time.Time `json:"reset_7d_at,omitempty"`
+	RateLimit5h       float64    `json:"rate_limit_5h"`
+	RateLimit1d       float64    `json:"rate_limit_1d"`
+	RateLimit7d       float64    `json:"rate_limit_7d"`
+	Usage5h           float64    `json:"usage_5h"`
+	Usage1d           float64    `json:"usage_1d"`
+	Usage7d           float64    `json:"usage_7d"`
+	Window5hStart     *time.Time `json:"window_5h_start"`
+	Window1dStart     *time.Time `json:"window_1d_start"`
+	Window7dStart     *time.Time `json:"window_7d_start"`
+	Reset5hAt         *time.Time `json:"reset_5h_at,omitempty"`
+	Reset1dAt         *time.Time `json:"reset_1d_at,omitempty"`
+	Reset7dAt         *time.Time `json:"reset_7d_at,omitempty"`
+	AllowPaidFailover bool       `json:"allow_paid_failover"`
 
 	User  *User  `json:"user,omitempty"`
 	Group *Group `json:"group,omitempty"`
 }
 
 type Group struct {
-	ID             int64   `json:"id"`
-	Name           string  `json:"name"`
-	Description    string  `json:"description"`
-	Platform       string  `json:"platform"`
-	RateMultiplier float64 `json:"rate_multiplier"`
+	ID                         int64   `json:"id"`
+	Name                       string  `json:"name"`
+	Description                string  `json:"description"`
+	Platform                   string  `json:"platform"`
+	RateMultiplier             float64 `json:"rate_multiplier"`
 	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
-	IsExclusive    bool    `json:"is_exclusive"`
-	Status         string  `json:"status"`
+	IsExclusive                bool    `json:"is_exclusive"`
+	Status                     string  `json:"status"`
 
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	AllowImageGeneration bool     `json:"allow_image_generation"`
@@ -111,6 +112,10 @@ type Group struct {
 	FallbackGroupID *int64 `json:"fallback_group_id"`
 	// 无效请求兜底分组
 	FallbackGroupIDOnInvalidRequest *int64 `json:"fallback_group_id_on_invalid_request"`
+	// OpenAI 备用分组自动熔断切换
+	BackupFailoverEnabled bool                             `json:"backup_failover_enabled"`
+	BackupGroupID         *int64                           `json:"backup_group_id"`
+	BackupFailoverConfig  domain.GroupBackupFailoverConfig `json:"backup_failover_config"`
 
 	// OpenAI Messages 调度开关（用户侧需要此字段判断是否展示 Claude Code 教程）
 	AllowMessagesDispatch bool `json:"allow_messages_dispatch"`
@@ -441,8 +446,11 @@ type UsageLog struct {
 	// UpstreamEndpoint is the normalized upstream endpoint path, e.g. /v1/responses.
 	UpstreamEndpoint *string `json:"upstream_endpoint,omitempty"`
 
-	GroupID        *int64 `json:"group_id"`
-	SubscriptionID *int64 `json:"subscription_id"`
+	GroupID        *int64  `json:"group_id"`
+	OriginGroupID  *int64  `json:"origin_group_id"`
+	RoutedGroupID  *int64  `json:"routed_group_id"`
+	FailoverReason *string `json:"failover_reason,omitempty"`
+	SubscriptionID *int64  `json:"subscription_id"`
 
 	InputTokens         int `json:"input_tokens"`
 	OutputTokens        int `json:"output_tokens"`
@@ -452,15 +460,15 @@ type UsageLog struct {
 	CacheCreation5mTokens int `json:"cache_creation_5m_tokens"`
 	CacheCreation1hTokens int `json:"cache_creation_1h_tokens"`
 
-	InputCost         float64 `json:"input_cost"`
-	OutputCost        float64 `json:"output_cost"`
-	CacheCreationCost float64 `json:"cache_creation_cost"`
-	CacheReadCost     float64 `json:"cache_read_cost"`
-	TotalCost         float64 `json:"total_cost"`
-	ActualCost        float64 `json:"actual_cost"`
-	SubscriptionCost  float64 `json:"subscription_cost"`
-	BalanceCost       float64 `json:"balance_cost"`
-	RateMultiplier    float64 `json:"rate_multiplier"`
+	InputCost                  float64 `json:"input_cost"`
+	OutputCost                 float64 `json:"output_cost"`
+	CacheCreationCost          float64 `json:"cache_creation_cost"`
+	CacheReadCost              float64 `json:"cache_read_cost"`
+	TotalCost                  float64 `json:"total_cost"`
+	ActualCost                 float64 `json:"actual_cost"`
+	SubscriptionCost           float64 `json:"subscription_cost"`
+	BalanceCost                float64 `json:"balance_cost"`
+	RateMultiplier             float64 `json:"rate_multiplier"`
 	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
 	BalanceRateMultiplier      float64 `json:"balance_rate_multiplier"`
 
@@ -587,15 +595,15 @@ type UserSubscription struct {
 	WeeklyUsageUSD  float64 `json:"weekly_usage_usd"`
 	MonthlyUsageUSD float64 `json:"monthly_usage_usd"`
 
-	DailyQuotaKnives   *float64 `json:"daily_quota_knives,omitempty"`
-	WeeklyQuotaKnives  *float64 `json:"weekly_quota_knives,omitempty"`
-	MonthlyQuotaKnives *float64 `json:"monthly_quota_knives,omitempty"`
-	DailyUsedKnives    float64  `json:"daily_used_knives"`
-	WeeklyUsedKnives   float64  `json:"weekly_used_knives"`
-	MonthlyUsedKnives  float64  `json:"monthly_used_knives"`
-	RefundFreezeActive bool     `json:"refund_freeze_active,omitempty"`
-	ActiveRefundRequestID *int64 `json:"active_refund_request_id,omitempty"`
-	ActiveRefundStatus *string  `json:"active_refund_status,omitempty"`
+	DailyQuotaKnives      *float64 `json:"daily_quota_knives,omitempty"`
+	WeeklyQuotaKnives     *float64 `json:"weekly_quota_knives,omitempty"`
+	MonthlyQuotaKnives    *float64 `json:"monthly_quota_knives,omitempty"`
+	DailyUsedKnives       float64  `json:"daily_used_knives"`
+	WeeklyUsedKnives      float64  `json:"weekly_used_knives"`
+	MonthlyUsedKnives     float64  `json:"monthly_used_knives"`
+	RefundFreezeActive    bool     `json:"refund_freeze_active,omitempty"`
+	ActiveRefundRequestID *int64   `json:"active_refund_request_id,omitempty"`
+	ActiveRefundStatus    *string  `json:"active_refund_status,omitempty"`
 
 	CreatedAt time.Time `json:"created_at"`
 	UpdatedAt time.Time `json:"updated_at"`
@@ -624,44 +632,44 @@ type SubscriptionRefundAllocation struct {
 }
 
 type SubscriptionRefundRequest struct {
-	ID                        int64                        `json:"id"`
-	UserID                    int64                        `json:"user_id"`
-	SubscriptionID            int64                        `json:"subscription_id"`
-	SettlementID              int64                        `json:"settlement_id"`
-	ExpectedSettlementID      int64                        `json:"expected_settlement_id"`
-	Subscription              *UserSubscription            `json:"subscription,omitempty"`
-	CurrentSettlementHead     *SubscriptionSettlementOrder `json:"current_settlement_head,omitempty"`
-	ExpectedSettlementHead    *SubscriptionSettlementOrder `json:"expected_settlement_head,omitempty"`
-	Status                    string                       `json:"status"`
-	RefundMode                string                       `json:"refund_mode"`
-	Currency                  string                       `json:"currency"`
-	Reason                    *string                      `json:"reason,omitempty"`
-	RefundResidualValue       float64                      `json:"refund_residual_value"`
-	GatewayRefundableTotal    float64                      `json:"gateway_refundable_total"`
-	ManualTransferAmount      float64                      `json:"manual_transfer_amount"`
-	PreviewIssuedAt           time.Time                    `json:"preview_issued_at"`
-	PreviewExpiresAt          time.Time                    `json:"preview_expires_at"`
-	SubmittedAt               *time.Time                   `json:"submitted_at,omitempty"`
-	FrozenAt                  *time.Time                   `json:"frozen_at,omitempty"`
-	CompletedAt               *time.Time                   `json:"completed_at,omitempty"`
-	CancelledAt               *time.Time                   `json:"cancelled_at,omitempty"`
-	OriginalSubscriptionStatus *string                      `json:"original_subscription_status,omitempty"`
-	OriginalSubscriptionExpiresAt *time.Time               `json:"original_subscription_expires_at,omitempty"`
-	ManualReceiverType        *string                      `json:"manual_receiver_type,omitempty"`
-	ManualReceiverName        *string                      `json:"manual_receiver_name,omitempty"`
-	ManualReceiverAccount     *string                      `json:"manual_receiver_account,omitempty"`
-	ManualReceiverQRCodeImageURL *string                   `json:"manual_receiver_qr_image_url,omitempty"`
-	ManualReceiverRemark      *string                      `json:"manual_receiver_remark,omitempty"`
-	ManualTransferProofURL    *string                      `json:"manual_transfer_proof_url,omitempty"`
-	ManualTransferProofUploadedAt *time.Time               `json:"manual_transfer_proof_uploaded_at,omitempty"`
-	ManualTransferOperatorUserID *int64                    `json:"manual_transfer_operator_user_id,omitempty"`
-	AdminNote                 *string                      `json:"admin_note,omitempty"`
-	GatewayRefundedTotal      float64                      `json:"gateway_refunded_total"`
-	SucceededAllocations      int                          `json:"succeeded_allocations"`
-	FailedAllocations         int                          `json:"failed_allocations"`
-	SkippedAllocations        int                          `json:"skipped_allocations"`
-	ManualTransferRequired    bool                         `json:"manual_transfer_required"`
-	Allocations               []SubscriptionRefundAllocation `json:"allocations,omitempty"`
+	ID                            int64                          `json:"id"`
+	UserID                        int64                          `json:"user_id"`
+	SubscriptionID                int64                          `json:"subscription_id"`
+	SettlementID                  int64                          `json:"settlement_id"`
+	ExpectedSettlementID          int64                          `json:"expected_settlement_id"`
+	Subscription                  *UserSubscription              `json:"subscription,omitempty"`
+	CurrentSettlementHead         *SubscriptionSettlementOrder   `json:"current_settlement_head,omitempty"`
+	ExpectedSettlementHead        *SubscriptionSettlementOrder   `json:"expected_settlement_head,omitempty"`
+	Status                        string                         `json:"status"`
+	RefundMode                    string                         `json:"refund_mode"`
+	Currency                      string                         `json:"currency"`
+	Reason                        *string                        `json:"reason,omitempty"`
+	RefundResidualValue           float64                        `json:"refund_residual_value"`
+	GatewayRefundableTotal        float64                        `json:"gateway_refundable_total"`
+	ManualTransferAmount          float64                        `json:"manual_transfer_amount"`
+	PreviewIssuedAt               time.Time                      `json:"preview_issued_at"`
+	PreviewExpiresAt              time.Time                      `json:"preview_expires_at"`
+	SubmittedAt                   *time.Time                     `json:"submitted_at,omitempty"`
+	FrozenAt                      *time.Time                     `json:"frozen_at,omitempty"`
+	CompletedAt                   *time.Time                     `json:"completed_at,omitempty"`
+	CancelledAt                   *time.Time                     `json:"cancelled_at,omitempty"`
+	OriginalSubscriptionStatus    *string                        `json:"original_subscription_status,omitempty"`
+	OriginalSubscriptionExpiresAt *time.Time                     `json:"original_subscription_expires_at,omitempty"`
+	ManualReceiverType            *string                        `json:"manual_receiver_type,omitempty"`
+	ManualReceiverName            *string                        `json:"manual_receiver_name,omitempty"`
+	ManualReceiverAccount         *string                        `json:"manual_receiver_account,omitempty"`
+	ManualReceiverQRCodeImageURL  *string                        `json:"manual_receiver_qr_image_url,omitempty"`
+	ManualReceiverRemark          *string                        `json:"manual_receiver_remark,omitempty"`
+	ManualTransferProofURL        *string                        `json:"manual_transfer_proof_url,omitempty"`
+	ManualTransferProofUploadedAt *time.Time                     `json:"manual_transfer_proof_uploaded_at,omitempty"`
+	ManualTransferOperatorUserID  *int64                         `json:"manual_transfer_operator_user_id,omitempty"`
+	AdminNote                     *string                        `json:"admin_note,omitempty"`
+	GatewayRefundedTotal          float64                        `json:"gateway_refunded_total"`
+	SucceededAllocations          int                            `json:"succeeded_allocations"`
+	FailedAllocations             int                            `json:"failed_allocations"`
+	SkippedAllocations            int                            `json:"skipped_allocations"`
+	ManualTransferRequired        bool                           `json:"manual_transfer_required"`
+	Allocations                   []SubscriptionRefundAllocation `json:"allocations,omitempty"`
 }
 
 type AdminSubscriptionRefundRequest struct {

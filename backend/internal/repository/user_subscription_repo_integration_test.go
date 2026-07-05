@@ -432,6 +432,40 @@ func (s *UserSubscriptionRepoSuite) TestActivateWindows() {
 	s.Require().WithinDuration(activateAt, *got.DailyWindowStart, time.Microsecond)
 }
 
+func (s *UserSubscriptionRepoSuite) TestActivateWindowStarts() {
+	user := s.mustCreateUser("activate-starts@test.com", service.RoleUser)
+	group := s.mustCreateGroup("g-activate-starts")
+	sub := s.mustCreateSubscription(user.ID, group.ID, func(c *dbent.UserSubscriptionCreate) {
+		c.SetDailyUsageUsd(10.0)
+		c.SetWeeklyUsageUsd(20.0)
+		c.SetMonthlyUsageUsd(30.0)
+		c.SetDailyUsedKnives(1.0)
+		c.SetWeeklyUsedKnives(2.0)
+		c.SetMonthlyUsedKnives(3.0)
+	})
+
+	dailyStart := time.Date(2025, 1, 10, 0, 0, 0, 0, time.UTC)
+	weeklyStart := time.Date(2025, 1, 6, 0, 0, 0, 0, time.UTC)
+	monthlyStart := time.Date(2025, 1, 1, 0, 0, 0, 0, time.UTC)
+	err := s.repo.ActivateWindowStarts(s.ctx, sub.ID, dailyStart, weeklyStart, monthlyStart)
+	s.Require().NoError(err, "ActivateWindowStarts")
+
+	got, err := s.repo.GetByID(s.ctx, sub.ID)
+	s.Require().NoError(err)
+	s.Require().Zero(got.DailyUsageUSD)
+	s.Require().Zero(got.WeeklyUsageUSD)
+	s.Require().Zero(got.MonthlyUsageUSD)
+	s.Require().Zero(got.DailyUsedKnives)
+	s.Require().Zero(got.WeeklyUsedKnives)
+	s.Require().Zero(got.MonthlyUsedKnives)
+	s.Require().NotNil(got.DailyWindowStart)
+	s.Require().NotNil(got.WeeklyWindowStart)
+	s.Require().NotNil(got.MonthlyWindowStart)
+	s.Require().WithinDuration(dailyStart, *got.DailyWindowStart, time.Microsecond)
+	s.Require().WithinDuration(weeklyStart, *got.WeeklyWindowStart, time.Microsecond)
+	s.Require().WithinDuration(monthlyStart, *got.MonthlyWindowStart, time.Microsecond)
+}
+
 func (s *UserSubscriptionRepoSuite) TestResetDailyUsage() {
 	user := s.mustCreateUser("resetd@test.com", service.RoleUser)
 	group := s.mustCreateGroup("g-resetd")

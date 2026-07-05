@@ -377,6 +377,67 @@ func (_u *GroupUpdate) ClearFallbackGroupIDOnInvalidRequest() *GroupUpdate {
 	return _u
 }
 
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (_u *GroupUpdate) SetBackupFailoverEnabled(v bool) *GroupUpdate {
+	_u.mutation.SetBackupFailoverEnabled(v)
+	return _u
+}
+
+// SetNillableBackupFailoverEnabled sets the "backup_failover_enabled" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableBackupFailoverEnabled(v *bool) *GroupUpdate {
+	if v != nil {
+		_u.SetBackupFailoverEnabled(*v)
+	}
+	return _u
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (_u *GroupUpdate) SetBackupGroupID(v int64) *GroupUpdate {
+	_u.mutation.ResetBackupGroupID()
+	_u.mutation.SetBackupGroupID(v)
+	return _u
+}
+
+// SetNillableBackupGroupID sets the "backup_group_id" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableBackupGroupID(v *int64) *GroupUpdate {
+	if v != nil {
+		_u.SetBackupGroupID(*v)
+	}
+	return _u
+}
+
+// AddBackupGroupID adds value to the "backup_group_id" field.
+func (_u *GroupUpdate) AddBackupGroupID(v int64) *GroupUpdate {
+	_u.mutation.AddBackupGroupID(v)
+	return _u
+}
+
+// ClearBackupGroupID clears the value of the "backup_group_id" field.
+func (_u *GroupUpdate) ClearBackupGroupID() *GroupUpdate {
+	_u.mutation.ClearBackupGroupID()
+	return _u
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (_u *GroupUpdate) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupUpdate {
+	_u.mutation.SetBackupFailoverConfig(v)
+	return _u
+}
+
+// SetNillableBackupFailoverConfig sets the "backup_failover_config" field if the given value is not nil.
+func (_u *GroupUpdate) SetNillableBackupFailoverConfig(v *domain.GroupBackupFailoverConfig) *GroupUpdate {
+	if v != nil {
+		_u.SetBackupFailoverConfig(*v)
+	}
+	return _u
+}
+
+// ClearBackupFailoverConfig clears the value of the "backup_failover_config" field.
+func (_u *GroupUpdate) ClearBackupFailoverConfig() *GroupUpdate {
+	_u.mutation.ClearBackupFailoverConfig()
+	return _u
+}
+
 // SetModelRouting sets the "model_routing" field.
 func (_u *GroupUpdate) SetModelRouting(v map[string][]int64) *GroupUpdate {
 	_u.mutation.SetModelRouting(v)
@@ -917,6 +978,24 @@ func (_u *GroupUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.FallbackGroupIDOnInvalidRequestCleared() {
 		_spec.ClearField(group.FieldFallbackGroupIDOnInvalidRequest, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.BackupFailoverEnabled(); ok {
+		_spec.SetField(group.FieldBackupFailoverEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.BackupGroupID(); ok {
+		_spec.SetField(group.FieldBackupGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedBackupGroupID(); ok {
+		_spec.AddField(group.FieldBackupGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.BackupGroupIDCleared() {
+		_spec.ClearField(group.FieldBackupGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.BackupFailoverConfig(); ok {
+		_spec.SetField(group.FieldBackupFailoverConfig, field.TypeJSON, value)
+	}
+	if _u.mutation.BackupFailoverConfigCleared() {
+		_spec.ClearField(group.FieldBackupFailoverConfig, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ModelRouting(); ok {
 		_spec.SetField(group.FieldModelRouting, field.TypeJSON, value)
@@ -1579,6 +1658,67 @@ func (_u *GroupUpdateOne) ClearFallbackGroupIDOnInvalidRequest() *GroupUpdateOne
 	return _u
 }
 
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (_u *GroupUpdateOne) SetBackupFailoverEnabled(v bool) *GroupUpdateOne {
+	_u.mutation.SetBackupFailoverEnabled(v)
+	return _u
+}
+
+// SetNillableBackupFailoverEnabled sets the "backup_failover_enabled" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableBackupFailoverEnabled(v *bool) *GroupUpdateOne {
+	if v != nil {
+		_u.SetBackupFailoverEnabled(*v)
+	}
+	return _u
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (_u *GroupUpdateOne) SetBackupGroupID(v int64) *GroupUpdateOne {
+	_u.mutation.ResetBackupGroupID()
+	_u.mutation.SetBackupGroupID(v)
+	return _u
+}
+
+// SetNillableBackupGroupID sets the "backup_group_id" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableBackupGroupID(v *int64) *GroupUpdateOne {
+	if v != nil {
+		_u.SetBackupGroupID(*v)
+	}
+	return _u
+}
+
+// AddBackupGroupID adds value to the "backup_group_id" field.
+func (_u *GroupUpdateOne) AddBackupGroupID(v int64) *GroupUpdateOne {
+	_u.mutation.AddBackupGroupID(v)
+	return _u
+}
+
+// ClearBackupGroupID clears the value of the "backup_group_id" field.
+func (_u *GroupUpdateOne) ClearBackupGroupID() *GroupUpdateOne {
+	_u.mutation.ClearBackupGroupID()
+	return _u
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (_u *GroupUpdateOne) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupUpdateOne {
+	_u.mutation.SetBackupFailoverConfig(v)
+	return _u
+}
+
+// SetNillableBackupFailoverConfig sets the "backup_failover_config" field if the given value is not nil.
+func (_u *GroupUpdateOne) SetNillableBackupFailoverConfig(v *domain.GroupBackupFailoverConfig) *GroupUpdateOne {
+	if v != nil {
+		_u.SetBackupFailoverConfig(*v)
+	}
+	return _u
+}
+
+// ClearBackupFailoverConfig clears the value of the "backup_failover_config" field.
+func (_u *GroupUpdateOne) ClearBackupFailoverConfig() *GroupUpdateOne {
+	_u.mutation.ClearBackupFailoverConfig()
+	return _u
+}
+
 // SetModelRouting sets the "model_routing" field.
 func (_u *GroupUpdateOne) SetModelRouting(v map[string][]int64) *GroupUpdateOne {
 	_u.mutation.SetModelRouting(v)
@@ -2149,6 +2289,24 @@ func (_u *GroupUpdateOne) sqlSave(ctx context.Context) (_node *Group, err error)
 	}
 	if _u.mutation.FallbackGroupIDOnInvalidRequestCleared() {
 		_spec.ClearField(group.FieldFallbackGroupIDOnInvalidRequest, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.BackupFailoverEnabled(); ok {
+		_spec.SetField(group.FieldBackupFailoverEnabled, field.TypeBool, value)
+	}
+	if value, ok := _u.mutation.BackupGroupID(); ok {
+		_spec.SetField(group.FieldBackupGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedBackupGroupID(); ok {
+		_spec.AddField(group.FieldBackupGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.BackupGroupIDCleared() {
+		_spec.ClearField(group.FieldBackupGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.BackupFailoverConfig(); ok {
+		_spec.SetField(group.FieldBackupFailoverConfig, field.TypeJSON, value)
+	}
+	if _u.mutation.BackupFailoverConfigCleared() {
+		_spec.ClearField(group.FieldBackupFailoverConfig, field.TypeJSON)
 	}
 	if value, ok := _u.mutation.ModelRouting(); ok {
 		_spec.SetField(group.FieldModelRouting, field.TypeJSON, value)

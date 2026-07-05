@@ -115,6 +115,21 @@ func GroupID(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldGroupID, v))
 }
 
+// OriginGroupID applies equality check predicate on the "origin_group_id" field. It's identical to OriginGroupIDEQ.
+func OriginGroupID(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldOriginGroupID, v))
+}
+
+// RoutedGroupID applies equality check predicate on the "routed_group_id" field. It's identical to RoutedGroupIDEQ.
+func RoutedGroupID(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRoutedGroupID, v))
+}
+
+// FailoverReason applies equality check predicate on the "failover_reason" field. It's identical to FailoverReasonEQ.
+func FailoverReason(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFailoverReason, v))
+}
+
 // SubscriptionID applies equality check predicate on the "subscription_id" field. It's identical to SubscriptionIDEQ.
 func SubscriptionID(v int64) predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldEQ(FieldSubscriptionID, v))
@@ -918,6 +933,181 @@ func GroupIDIsNil() predicate.UsageLog {
 // GroupIDNotNil applies the NotNil predicate on the "group_id" field.
 func GroupIDNotNil() predicate.UsageLog {
 	return predicate.UsageLog(sql.FieldNotNull(FieldGroupID))
+}
+
+// OriginGroupIDEQ applies the EQ predicate on the "origin_group_id" field.
+func OriginGroupIDEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDNEQ applies the NEQ predicate on the "origin_group_id" field.
+func OriginGroupIDNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDIn applies the In predicate on the "origin_group_id" field.
+func OriginGroupIDIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldOriginGroupID, vs...))
+}
+
+// OriginGroupIDNotIn applies the NotIn predicate on the "origin_group_id" field.
+func OriginGroupIDNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldOriginGroupID, vs...))
+}
+
+// OriginGroupIDGT applies the GT predicate on the "origin_group_id" field.
+func OriginGroupIDGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDGTE applies the GTE predicate on the "origin_group_id" field.
+func OriginGroupIDGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDLT applies the LT predicate on the "origin_group_id" field.
+func OriginGroupIDLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDLTE applies the LTE predicate on the "origin_group_id" field.
+func OriginGroupIDLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldOriginGroupID, v))
+}
+
+// OriginGroupIDIsNil applies the IsNil predicate on the "origin_group_id" field.
+func OriginGroupIDIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldOriginGroupID))
+}
+
+// OriginGroupIDNotNil applies the NotNil predicate on the "origin_group_id" field.
+func OriginGroupIDNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldOriginGroupID))
+}
+
+// RoutedGroupIDEQ applies the EQ predicate on the "routed_group_id" field.
+func RoutedGroupIDEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDNEQ applies the NEQ predicate on the "routed_group_id" field.
+func RoutedGroupIDNEQ(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDIn applies the In predicate on the "routed_group_id" field.
+func RoutedGroupIDIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldRoutedGroupID, vs...))
+}
+
+// RoutedGroupIDNotIn applies the NotIn predicate on the "routed_group_id" field.
+func RoutedGroupIDNotIn(vs ...int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldRoutedGroupID, vs...))
+}
+
+// RoutedGroupIDGT applies the GT predicate on the "routed_group_id" field.
+func RoutedGroupIDGT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDGTE applies the GTE predicate on the "routed_group_id" field.
+func RoutedGroupIDGTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDLT applies the LT predicate on the "routed_group_id" field.
+func RoutedGroupIDLT(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDLTE applies the LTE predicate on the "routed_group_id" field.
+func RoutedGroupIDLTE(v int64) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldRoutedGroupID, v))
+}
+
+// RoutedGroupIDIsNil applies the IsNil predicate on the "routed_group_id" field.
+func RoutedGroupIDIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldRoutedGroupID))
+}
+
+// RoutedGroupIDNotNil applies the NotNil predicate on the "routed_group_id" field.
+func RoutedGroupIDNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldRoutedGroupID))
+}
+
+// FailoverReasonEQ applies the EQ predicate on the "failover_reason" field.
+func FailoverReasonEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEQ(FieldFailoverReason, v))
+}
+
+// FailoverReasonNEQ applies the NEQ predicate on the "failover_reason" field.
+func FailoverReasonNEQ(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNEQ(FieldFailoverReason, v))
+}
+
+// FailoverReasonIn applies the In predicate on the "failover_reason" field.
+func FailoverReasonIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIn(FieldFailoverReason, vs...))
+}
+
+// FailoverReasonNotIn applies the NotIn predicate on the "failover_reason" field.
+func FailoverReasonNotIn(vs ...string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotIn(FieldFailoverReason, vs...))
+}
+
+// FailoverReasonGT applies the GT predicate on the "failover_reason" field.
+func FailoverReasonGT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGT(FieldFailoverReason, v))
+}
+
+// FailoverReasonGTE applies the GTE predicate on the "failover_reason" field.
+func FailoverReasonGTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldGTE(FieldFailoverReason, v))
+}
+
+// FailoverReasonLT applies the LT predicate on the "failover_reason" field.
+func FailoverReasonLT(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLT(FieldFailoverReason, v))
+}
+
+// FailoverReasonLTE applies the LTE predicate on the "failover_reason" field.
+func FailoverReasonLTE(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldLTE(FieldFailoverReason, v))
+}
+
+// FailoverReasonContains applies the Contains predicate on the "failover_reason" field.
+func FailoverReasonContains(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContains(FieldFailoverReason, v))
+}
+
+// FailoverReasonHasPrefix applies the HasPrefix predicate on the "failover_reason" field.
+func FailoverReasonHasPrefix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasPrefix(FieldFailoverReason, v))
+}
+
+// FailoverReasonHasSuffix applies the HasSuffix predicate on the "failover_reason" field.
+func FailoverReasonHasSuffix(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldHasSuffix(FieldFailoverReason, v))
+}
+
+// FailoverReasonIsNil applies the IsNil predicate on the "failover_reason" field.
+func FailoverReasonIsNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldIsNull(FieldFailoverReason))
+}
+
+// FailoverReasonNotNil applies the NotNil predicate on the "failover_reason" field.
+func FailoverReasonNotNil() predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldNotNull(FieldFailoverReason))
+}
+
+// FailoverReasonEqualFold applies the EqualFold predicate on the "failover_reason" field.
+func FailoverReasonEqualFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldEqualFold(FieldFailoverReason, v))
+}
+
+// FailoverReasonContainsFold applies the ContainsFold predicate on the "failover_reason" field.
+func FailoverReasonContainsFold(v string) predicate.UsageLog {
+	return predicate.UsageLog(sql.FieldContainsFold(FieldFailoverReason, v))
 }
 
 // SubscriptionIDEQ applies the EQ predicate on the "subscription_id" field.

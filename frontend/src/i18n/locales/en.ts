@@ -744,6 +744,11 @@ export default {
     namePlaceholder: 'My API Key',
     groupLabel: 'Group',
     selectGroup: 'Select a group',
+    paidFailover: {
+      title: 'Allow Paid Backup Group',
+      hint: 'If the primary group circuit opens, requests may route to the backup group and be billed at the backup group multiplier.',
+      unavailable: 'This OpenAI group has no backup group configured.'
+    },
     statusLabel: 'Status',
     selectStatus: 'Select status',
     saving: 'Saving...',
@@ -1914,6 +1919,10 @@ export default {
       noApiKeys: 'This user has no API keys',
       group: 'Group',
       none: 'None',
+      paidFailover: 'Paid backup',
+      paidFailoverUpdated: 'Paid backup group permission updated',
+      paidFailoverUpdateFailed: 'Failed to update paid backup group permission',
+      enabled: 'Enabled',
       groupChangedSuccess: 'Group updated successfully',
       groupChangedWithGrant: 'Group updated. User auto-granted access to "{group}"',
       groupChangeFailed: 'Failed to update group',
@@ -2296,6 +2305,21 @@ export default {
         targetModel: 'Target Model',
         targetModelPlaceholder: 'e.g., gpt-5.4',
         removeExactMapping: 'Remove Exact Mapping'
+      },
+      backupFailover: {
+        title: 'OpenAI Backup Group Failover',
+        hint: 'When the primary group fails repeatedly within a short window, opted-in API keys can route to the backup group. After cooldown, half-open probes restore the primary group automatically.',
+        backupGroup: 'Backup Group',
+        backupGroupHint: 'The backup must be an active OpenAI group and cannot configure its own backup group.',
+        noBackup: 'No backup group',
+        backupGroupRequired: 'Select a backup group when backup failover is enabled',
+        failureWindow: 'Failure window (seconds)',
+        failureThreshold: 'Failure threshold',
+        openCooldown: 'Initial cooldown (seconds)',
+        halfOpenSuccess: 'Half-open successes',
+        maxCooldown: 'Max cooldown (seconds)',
+        backoffMultiplier: 'Cooldown backoff multiplier',
+        billingHint: 'Failover requests are billed by the routed backup group multiplier; origin and routed groups are both recorded for audit.'
       },
       invalidRequestFallback: {
         title: 'Invalid Request Fallback Group',

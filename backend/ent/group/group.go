@@ -54,6 +54,12 @@ const (
 	FieldFallbackGroupID = "fallback_group_id"
 	// FieldFallbackGroupIDOnInvalidRequest holds the string denoting the fallback_group_id_on_invalid_request field in the database.
 	FieldFallbackGroupIDOnInvalidRequest = "fallback_group_id_on_invalid_request"
+	// FieldBackupFailoverEnabled holds the string denoting the backup_failover_enabled field in the database.
+	FieldBackupFailoverEnabled = "backup_failover_enabled"
+	// FieldBackupGroupID holds the string denoting the backup_group_id field in the database.
+	FieldBackupGroupID = "backup_group_id"
+	// FieldBackupFailoverConfig holds the string denoting the backup_failover_config field in the database.
+	FieldBackupFailoverConfig = "backup_failover_config"
 	// FieldModelRouting holds the string denoting the model_routing field in the database.
 	FieldModelRouting = "model_routing"
 	// FieldModelRoutingEnabled holds the string denoting the model_routing_enabled field in the database.
@@ -163,6 +169,9 @@ var Columns = []string{
 	FieldClaudeCodeOnly,
 	FieldFallbackGroupID,
 	FieldFallbackGroupIDOnInvalidRequest,
+	FieldBackupFailoverEnabled,
+	FieldBackupGroupID,
+	FieldBackupFailoverConfig,
 	FieldModelRouting,
 	FieldModelRoutingEnabled,
 	FieldMcpXMLInject,
@@ -234,6 +243,8 @@ var (
 	DefaultImageRateMultiplier float64
 	// DefaultClaudeCodeOnly holds the default value on creation for the "claude_code_only" field.
 	DefaultClaudeCodeOnly bool
+	// DefaultBackupFailoverEnabled holds the default value on creation for the "backup_failover_enabled" field.
+	DefaultBackupFailoverEnabled bool
 	// DefaultModelRoutingEnabled holds the default value on creation for the "model_routing_enabled" field.
 	DefaultModelRoutingEnabled bool
 	// DefaultMcpXMLInject holds the default value on creation for the "mcp_xml_inject" field.
@@ -361,6 +372,16 @@ func ByFallbackGroupID(opts ...sql.OrderTermOption) OrderOption {
 // ByFallbackGroupIDOnInvalidRequest orders the results by the fallback_group_id_on_invalid_request field.
 func ByFallbackGroupIDOnInvalidRequest(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFallbackGroupIDOnInvalidRequest, opts...).ToFunc()
+}
+
+// ByBackupFailoverEnabled orders the results by the backup_failover_enabled field.
+func ByBackupFailoverEnabled(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackupFailoverEnabled, opts...).ToFunc()
+}
+
+// ByBackupGroupID orders the results by the backup_group_id field.
+func ByBackupGroupID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldBackupGroupID, opts...).ToFunc()
 }
 
 // ByModelRoutingEnabled orders the results by the model_routing_enabled field.

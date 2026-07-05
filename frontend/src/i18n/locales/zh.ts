@@ -743,6 +743,11 @@ export default {
     namePlaceholder: '我的 API 密钥',
     groupLabel: '分组',
     selectGroup: '选择分组',
+    paidFailover: {
+      title: '允许付费备用分组',
+      hint: '主分组熔断时可自动切换到备用分组；切换期间按备用分组倍率计费。',
+      unavailable: '当前 OpenAI 分组未配置备用分组，无法启用。'
+    },
     statusLabel: '状态',
     selectStatus: '选择状态',
     saving: '保存中...',
@@ -1935,6 +1940,10 @@ export default {
       noApiKeys: '此用户暂无 API 密钥',
       group: '分组',
       none: '无',
+      paidFailover: '付费备用',
+      paidFailoverUpdated: '付费备用分组授权已更新',
+      paidFailoverUpdateFailed: '更新付费备用分组授权失败',
+      enabled: '已启用',
       groupChangedSuccess: '分组修改成功',
       groupChangedWithGrant: '分组修改成功，已自动为用户添加「{group}」分组权限',
       groupChangeFailed: '分组修改失败',
@@ -2380,6 +2389,21 @@ export default {
         targetModel: '目标模型',
         targetModelPlaceholder: '例如: gpt-5.4',
         removeExactMapping: '删除精确映射'
+      },
+      backupFailover: {
+        title: 'OpenAI 备用分组熔断切换',
+        hint: '当主分组在短窗口内连续失败时，允许已授权的 API Key 自动切换到备用分组；冷却结束后自动半开探测并恢复主分组。',
+        backupGroup: '备用分组',
+        backupGroupHint: '备用分组必须是启用状态的 OpenAI 分组，且自身不能再配置备用分组。',
+        noBackup: '不使用备用分组',
+        backupGroupRequired: '启用备用分组熔断切换时必须选择备用分组',
+        failureWindow: '失败统计窗口（秒）',
+        failureThreshold: '失败次数阈值',
+        openCooldown: '首次冷却时间（秒）',
+        halfOpenSuccess: '半开恢复成功次数',
+        maxCooldown: '最大冷却时间（秒）',
+        backoffMultiplier: '冷却退避倍数',
+        billingHint: '切换后按实际执行的备用分组倍率计费；API Key 仍会记录原始分组和路由分组用于审计。'
       },
       invalidRequestFallback: {
         title: '无效请求兜底分组',

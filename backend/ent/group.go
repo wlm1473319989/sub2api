@@ -57,6 +57,12 @@ type Group struct {
 	FallbackGroupID *int64 `json:"fallback_group_id,omitempty"`
 	// 无效请求兜底使用的分组 ID
 	FallbackGroupIDOnInvalidRequest *int64 `json:"fallback_group_id_on_invalid_request,omitempty"`
+	// 是否启用 OpenAI 备用分组自动熔断切换
+	BackupFailoverEnabled bool `json:"backup_failover_enabled,omitempty"`
+	// OpenAI 自动熔断切换使用的备用分组 ID
+	BackupGroupID *int64 `json:"backup_group_id,omitempty"`
+	// OpenAI 备用分组熔断配置
+	BackupFailoverConfig domain.GroupBackupFailoverConfig `json:"backup_failover_config,omitempty"`
 	// 模型路由配置：模型模式 -> 优先账号ID列表
 	ModelRouting map[string][]int64 `json:"model_routing,omitempty"`
 	// 是否启用模型路由配置
@@ -176,13 +182,13 @@ func (*Group) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig:
+		case group.FieldBackupFailoverConfig, group.FieldModelRouting, group.FieldSupportedModelScopes, group.FieldMessagesDispatchModelConfig, group.FieldModelsListConfig:
 			values[i] = new([]byte)
-		case group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldImageRateIndependent, group.FieldClaudeCodeOnly, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
+		case group.FieldIsExclusive, group.FieldAllowImageGeneration, group.FieldImageRateIndependent, group.FieldClaudeCodeOnly, group.FieldBackupFailoverEnabled, group.FieldModelRoutingEnabled, group.FieldMcpXMLInject, group.FieldAllowMessagesDispatch, group.FieldRequireOauthOnly, group.FieldRequirePrivacySet:
 			values[i] = new(sql.NullBool)
 		case group.FieldRateMultiplier, group.FieldSubscriptionRateMultiplier, group.FieldImageRateMultiplier, group.FieldImagePrice1k, group.FieldImagePrice2k, group.FieldImagePrice4k:
 			values[i] = new(sql.NullFloat64)
-		case group.FieldID, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldSortOrder, group.FieldRpmLimit:
+		case group.FieldID, group.FieldFallbackGroupID, group.FieldFallbackGroupIDOnInvalidRequest, group.FieldBackupGroupID, group.FieldSortOrder, group.FieldRpmLimit:
 			values[i] = new(sql.NullInt64)
 		case group.FieldName, group.FieldDescription, group.FieldStatus, group.FieldPlatform, group.FieldDefaultMappedModel:
 			values[i] = new(sql.NullString)
@@ -329,6 +335,27 @@ func (_m *Group) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.FallbackGroupIDOnInvalidRequest = new(int64)
 				*_m.FallbackGroupIDOnInvalidRequest = value.Int64
+			}
+		case group.FieldBackupFailoverEnabled:
+			if value, ok := values[i].(*sql.NullBool); !ok {
+				return fmt.Errorf("unexpected type %T for field backup_failover_enabled", values[i])
+			} else if value.Valid {
+				_m.BackupFailoverEnabled = value.Bool
+			}
+		case group.FieldBackupGroupID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field backup_group_id", values[i])
+			} else if value.Valid {
+				_m.BackupGroupID = new(int64)
+				*_m.BackupGroupID = value.Int64
+			}
+		case group.FieldBackupFailoverConfig:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field backup_failover_config", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.BackupFailoverConfig); err != nil {
+					return fmt.Errorf("unmarshal field backup_failover_config: %w", err)
+				}
 			}
 		case group.FieldModelRouting:
 			if value, ok := values[i].(*[]byte); !ok {
@@ -551,6 +578,17 @@ func (_m *Group) String() string {
 		builder.WriteString("fallback_group_id_on_invalid_request=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
 	}
+	builder.WriteString(", ")
+	builder.WriteString("backup_failover_enabled=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BackupFailoverEnabled))
+	builder.WriteString(", ")
+	if v := _m.BackupGroupID; v != nil {
+		builder.WriteString("backup_group_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("backup_failover_config=")
+	builder.WriteString(fmt.Sprintf("%v", _m.BackupFailoverConfig))
 	builder.WriteString(", ")
 	builder.WriteString("model_routing=")
 	builder.WriteString(fmt.Sprintf("%v", _m.ModelRouting))

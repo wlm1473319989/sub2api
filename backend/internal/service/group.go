@@ -9,6 +9,15 @@ import (
 
 type OpenAIMessagesDispatchModelConfig = domain.OpenAIMessagesDispatchModelConfig
 type GroupModelsListConfig = domain.GroupModelsListConfig
+type GroupBackupFailoverConfig = domain.GroupBackupFailoverConfig
+
+func DefaultGroupBackupFailoverConfig() GroupBackupFailoverConfig {
+	return domain.DefaultGroupBackupFailoverConfig()
+}
+
+func NormalizeGroupBackupFailoverConfig(cfg GroupBackupFailoverConfig) GroupBackupFailoverConfig {
+	return domain.NormalizeGroupBackupFailoverConfig(cfg)
+}
 
 type Group struct {
 	ID             int64
@@ -19,9 +28,9 @@ type Group struct {
 	// SubscriptionRateMultiplier controls how fast subscription quota is consumed.
 	// RateMultiplier remains the balance / pay-as-you-go multiplier for compatibility.
 	SubscriptionRateMultiplier float64
-	IsExclusive    bool
-	Status         string
-	Hydrated       bool // indicates the group was loaded from a trusted repository source
+	IsExclusive                bool
+	Status                     string
+	Hydrated                   bool // indicates the group was loaded from a trusted repository source
 
 	// 图片生成计费配置（antigravity 和 gemini 平台使用）
 	AllowImageGeneration bool
@@ -36,6 +45,10 @@ type Group struct {
 	FallbackGroupID *int64
 	// 无效请求兜底分组（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
+	// OpenAI 备用分组自动熔断切换
+	BackupFailoverEnabled bool
+	BackupGroupID         *int64
+	BackupFailoverConfig  GroupBackupFailoverConfig
 
 	// 模型路由配置
 	// key: 模型匹配模式（支持 * 通配符，如 "claude-opus-*"）

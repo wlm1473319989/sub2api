@@ -307,6 +307,20 @@ func (_c *APIKeyCreate) SetNillableWindow7dStart(v *time.Time) *APIKeyCreate {
 	return _c
 }
 
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (_c *APIKeyCreate) SetAllowPaidFailover(v bool) *APIKeyCreate {
+	_c.mutation.SetAllowPaidFailover(v)
+	return _c
+}
+
+// SetNillableAllowPaidFailover sets the "allow_paid_failover" field if the given value is not nil.
+func (_c *APIKeyCreate) SetNillableAllowPaidFailover(v *bool) *APIKeyCreate {
+	if v != nil {
+		_c.SetAllowPaidFailover(*v)
+	}
+	return _c
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_c *APIKeyCreate) SetUser(v *User) *APIKeyCreate {
 	return _c.SetUserID(v.ID)
@@ -419,6 +433,10 @@ func (_c *APIKeyCreate) defaults() error {
 		v := apikey.DefaultUsage7d
 		_c.mutation.SetUsage7d(v)
 	}
+	if _, ok := _c.mutation.AllowPaidFailover(); !ok {
+		v := apikey.DefaultAllowPaidFailover
+		_c.mutation.SetAllowPaidFailover(v)
+	}
 	return nil
 }
 
@@ -480,6 +498,9 @@ func (_c *APIKeyCreate) check() error {
 	}
 	if _, ok := _c.mutation.Usage7d(); !ok {
 		return &ValidationError{Name: "usage_7d", err: errors.New(`ent: missing required field "APIKey.usage_7d"`)}
+	}
+	if _, ok := _c.mutation.AllowPaidFailover(); !ok {
+		return &ValidationError{Name: "allow_paid_failover", err: errors.New(`ent: missing required field "APIKey.allow_paid_failover"`)}
 	}
 	if len(_c.mutation.UserIDs()) == 0 {
 		return &ValidationError{Name: "user", err: errors.New(`ent: missing required edge "APIKey.user"`)}
@@ -594,6 +615,10 @@ func (_c *APIKeyCreate) createSpec() (*APIKey, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.Window7dStart(); ok {
 		_spec.SetField(apikey.FieldWindow7dStart, field.TypeTime, value)
 		_node.Window7dStart = &value
+	}
+	if value, ok := _c.mutation.AllowPaidFailover(); ok {
+		_spec.SetField(apikey.FieldAllowPaidFailover, field.TypeBool, value)
+		_node.AllowPaidFailover = value
 	}
 	if nodes := _c.mutation.UserIDs(); len(nodes) > 0 {
 		edge := &sqlgraph.EdgeSpec{
@@ -1060,6 +1085,18 @@ func (u *APIKeyUpsert) UpdateWindow7dStart() *APIKeyUpsert {
 // ClearWindow7dStart clears the value of the "window_7d_start" field.
 func (u *APIKeyUpsert) ClearWindow7dStart() *APIKeyUpsert {
 	u.SetNull(apikey.FieldWindow7dStart)
+	return u
+}
+
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (u *APIKeyUpsert) SetAllowPaidFailover(v bool) *APIKeyUpsert {
+	u.Set(apikey.FieldAllowPaidFailover, v)
+	return u
+}
+
+// UpdateAllowPaidFailover sets the "allow_paid_failover" field to the value that was provided on create.
+func (u *APIKeyUpsert) UpdateAllowPaidFailover() *APIKeyUpsert {
+	u.SetExcluded(apikey.FieldAllowPaidFailover)
 	return u
 }
 
@@ -1532,6 +1569,20 @@ func (u *APIKeyUpsertOne) UpdateWindow7dStart() *APIKeyUpsertOne {
 func (u *APIKeyUpsertOne) ClearWindow7dStart() *APIKeyUpsertOne {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.ClearWindow7dStart()
+	})
+}
+
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (u *APIKeyUpsertOne) SetAllowPaidFailover(v bool) *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetAllowPaidFailover(v)
+	})
+}
+
+// UpdateAllowPaidFailover sets the "allow_paid_failover" field to the value that was provided on create.
+func (u *APIKeyUpsertOne) UpdateAllowPaidFailover() *APIKeyUpsertOne {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateAllowPaidFailover()
 	})
 }
 
@@ -2170,6 +2221,20 @@ func (u *APIKeyUpsertBulk) UpdateWindow7dStart() *APIKeyUpsertBulk {
 func (u *APIKeyUpsertBulk) ClearWindow7dStart() *APIKeyUpsertBulk {
 	return u.Update(func(s *APIKeyUpsert) {
 		s.ClearWindow7dStart()
+	})
+}
+
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (u *APIKeyUpsertBulk) SetAllowPaidFailover(v bool) *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.SetAllowPaidFailover(v)
+	})
+}
+
+// UpdateAllowPaidFailover sets the "allow_paid_failover" field to the value that was provided on create.
+func (u *APIKeyUpsertBulk) UpdateAllowPaidFailover() *APIKeyUpsertBulk {
+	return u.Update(func(s *APIKeyUpsert) {
+		s.UpdateAllowPaidFailover()
 	})
 }
 

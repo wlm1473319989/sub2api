@@ -264,6 +264,12 @@ func (_u *SubscriptionPlanUpdate) SetNillablePurchaseLimitPerUser(v *int) *Subsc
 	return _u
 }
 
+// AddPurchaseLimitPerUser adds value to the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdate) AddPurchaseLimitPerUser(v int) *SubscriptionPlanUpdate {
+	_u.mutation.AddPurchaseLimitPerUser(v)
+	return _u
+}
+
 // ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
 func (_u *SubscriptionPlanUpdate) ClearPurchaseLimitPerUser() *SubscriptionPlanUpdate {
 	_u.mutation.ClearPurchaseLimitPerUser()
@@ -485,6 +491,9 @@ func (_u *SubscriptionPlanUpdate) sqlSave(ctx context.Context) (_node int, err e
 	}
 	if value, ok := _u.mutation.PurchaseLimitPerUser(); ok {
 		_spec.SetField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedPurchaseLimitPerUser(); ok {
+		_spec.AddField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
 	}
 	if _u.mutation.PurchaseLimitPerUserCleared() {
 		_spec.ClearField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt)
@@ -801,6 +810,12 @@ func (_u *SubscriptionPlanUpdateOne) SetNillablePurchaseLimitPerUser(v *int) *Su
 	return _u
 }
 
+// AddPurchaseLimitPerUser adds value to the "purchase_limit_per_user" field.
+func (_u *SubscriptionPlanUpdateOne) AddPurchaseLimitPerUser(v int) *SubscriptionPlanUpdateOne {
+	_u.mutation.AddPurchaseLimitPerUser(v)
+	return _u
+}
+
 // ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
 func (_u *SubscriptionPlanUpdateOne) ClearPurchaseLimitPerUser() *SubscriptionPlanUpdateOne {
 	_u.mutation.ClearPurchaseLimitPerUser()
@@ -1052,6 +1067,9 @@ func (_u *SubscriptionPlanUpdateOne) sqlSave(ctx context.Context) (_node *Subscr
 	}
 	if value, ok := _u.mutation.PurchaseLimitPerUser(); ok {
 		_spec.SetField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
+	}
+	if value, ok := _u.mutation.AddedPurchaseLimitPerUser(); ok {
+		_spec.AddField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt, value)
 	}
 	if _u.mutation.PurchaseLimitPerUserCleared() {
 		_spec.ClearField(subscriptionplan.FieldPurchaseLimitPerUser, field.TypeInt)

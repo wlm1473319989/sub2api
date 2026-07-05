@@ -269,6 +269,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 		}
 	}
 
+	failoverRoute := h.resolveInitialOpenAIGroupFailoverRoute(c.Request.Context(), apiKey, reqLog)
+	apiKey = failoverRoute.APIKey()
+
 	// 解析渠道级模型映射
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 	forwardBody := openAIModelMappedBody(body, channelMapping.Mapped, channelMapping.MappedModel, h.gatewayService.ReplaceModelInBody)
@@ -299,17 +302,23 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 	}
 
 	// 2. Re-check billing eligibility after wait
-	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
-	if err != nil {
-		reqLog.Info("openai.billing_eligibility_check_failed", zap.Error(err))
-		status, code, message, retryAfter := billingErrorDetails(err)
-		if retryAfter > 0 {
-			c.Header("Retry-After", strconv.Itoa(retryAfter))
+	checkBillingEligibility := func() bool {
+		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
+		if err != nil {
+			reqLog.Info("openai.billing_eligibility_check_failed", zap.Error(err))
+			status, code, message, retryAfter := billingErrorDetails(err)
+			if retryAfter > 0 {
+				c.Header("Retry-After", strconv.Itoa(retryAfter))
+			}
+			h.handleStreamingAwareError(c, status, code, message, streamStarted)
+			return false
 		}
-		h.handleStreamingAwareError(c, status, code, message, streamStarted)
+		subscription = resolvedSubscription
+		return true
+	}
+	if !checkBillingEligibility() {
 		return
 	}
-	subscription = resolvedSubscription
 
 	// Generate session hash (header first; fallback to prompt_cache_key)
 	sessionHash := h.gatewayService.GenerateSessionHash(c, sessionHashBody)
@@ -344,6 +353,15 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonNoCapacity, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+					forwardBody = openAIModelMappedBody(body, channelMapping.Mapped, channelMapping.MappedModel, h.gatewayService.ReplaceModelInBody)
+					if !checkBillingEligibility() {
+						return
+					}
+					continue
+				}
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				if errors.Is(err, service.ErrNoAvailableCompactAccounts) {
 					h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "compact_not_supported", "No available OpenAI accounts support /responses/compact", streamStarted)
@@ -466,6 +484,19 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 						h.handleFailoverExhausted(c, failoverErr, streamStarted)
 						return
 					}
+					if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonFailureThreshold, reqLog) {
+						apiKey = failoverRoute.APIKey()
+						channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+						forwardBody = openAIModelMappedBody(body, channelMapping.Mapped, channelMapping.MappedModel, h.gatewayService.ReplaceModelInBody)
+						if !checkBillingEligibility() {
+							return
+						}
+						failedAccountIDs = make(map[int64]struct{})
+						sameAccountRetryCount = make(map[int64]int)
+						lastFailoverErr = nil
+						switchCount = 0
+						continue
+					}
 					reqLog.Warn("openai.upstream_failover_switching",
 						zap.Int64("account_id", account.ID),
 						zap.Int("upstream_status", failoverErr.StatusCode),
@@ -499,8 +530,10 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(c.Request.Context(), account.ID, result.ResponseHeaders)
 			}
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		} else {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		}
 
 		// 捕获请求信息（用于异步记录，避免在 goroutine 中访问 gin.Context）
@@ -525,6 +558,9 @@ func (h *OpenAIGatewayHandler) Responses(c *gin.Context) {
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,
 				APIKeyService:      h.apiKeyService,
+				OriginGroupID:      failoverRoute.OriginGroupID(),
+				RoutedGroupID:      failoverRoute.RoutedGroupID(),
+				FailoverReason:     failoverRoute.FailoverReason(),
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
 			}); err != nil {
@@ -703,6 +739,10 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		return
 	}
 
+	failoverRoute := h.resolveInitialOpenAIGroupFailoverRoute(c.Request.Context(), apiKey, reqLog)
+	apiKey = failoverRoute.APIKey()
+	preferredMappedModel = resolveOpenAIMessagesDispatchMappedModel(apiKey, reqModel)
+
 	// 解析渠道级模型映射
 	channelMappingMsg, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 	mappedBodyForMessages := newOpenAIModelMappedBodyCache(body, h.gatewayService.ReplaceModelInBody)
@@ -725,17 +765,23 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		defer userReleaseFunc()
 	}
 
-	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
-	if err != nil {
-		reqLog.Info("openai_messages.billing_eligibility_check_failed", zap.Error(err))
-		status, code, message, retryAfter := billingErrorDetails(err)
-		if retryAfter > 0 {
-			c.Header("Retry-After", strconv.Itoa(retryAfter))
+	checkBillingEligibility := func() bool {
+		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
+		if err != nil {
+			reqLog.Info("openai_messages.billing_eligibility_check_failed", zap.Error(err))
+			status, code, message, retryAfter := billingErrorDetails(err)
+			if retryAfter > 0 {
+				c.Header("Retry-After", strconv.Itoa(retryAfter))
+			}
+			h.anthropicStreamingAwareError(c, status, code, message, streamStarted)
+			return false
 		}
-		h.anthropicStreamingAwareError(c, status, code, message, streamStarted)
+		subscription = resolvedSubscription
+		return true
+	}
+	if !checkBillingEligibility() {
 		return
 	}
-	subscription = resolvedSubscription
 
 	sessionHash := h.gatewayService.GenerateSessionHash(c, body)
 	promptCacheKey := h.gatewayService.ExtractSessionID(c, body)
@@ -774,6 +820,16 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonNoCapacity, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMappingMsg, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+					preferredMappedModel = resolveOpenAIMessagesDispatchMappedModel(apiKey, reqModel)
+					effectiveMappedModel = preferredMappedModel
+					if !checkBillingEligibility() {
+						return
+					}
+					continue
+				}
 				if err != nil {
 					markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 					h.anthropicStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
@@ -880,6 +936,20 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 						h.handleAnthropicFailoverExhausted(c, failoverErr, streamStarted)
 						return
 					}
+					if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonFailureThreshold, reqLog) {
+						apiKey = failoverRoute.APIKey()
+						channelMappingMsg, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+						preferredMappedModel = resolveOpenAIMessagesDispatchMappedModel(apiKey, reqModel)
+						effectiveMappedModel = preferredMappedModel
+						if !checkBillingEligibility() {
+							return
+						}
+						failedAccountIDs = make(map[int64]struct{})
+						sameAccountRetryCount = make(map[int64]int)
+						lastFailoverErr = nil
+						switchCount = 0
+						continue
+					}
 					reqLog.Warn("openai_messages.upstream_failover_switching",
 						zap.Int64("account_id", account.ID),
 						zap.Int("upstream_status", failoverErr.StatusCode),
@@ -907,8 +977,10 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 		}
 		if result != nil {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		} else {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		}
 
 		userAgent := c.GetHeader("User-Agent")
@@ -931,6 +1003,9 @@ func (h *OpenAIGatewayHandler) Messages(c *gin.Context) {
 				IPAddress:          clientIP,
 				RequestPayloadHash: requestPayloadHash,
 				APIKeyService:      h.apiKeyService,
+				OriginGroupID:      failoverRoute.OriginGroupID(),
+				RoutedGroupID:      failoverRoute.RoutedGroupID(),
+				FailoverReason:     failoverRoute.FailoverReason(),
 				ChannelUsageFields: channelMappingMsg.ToUsageFields(reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
 			}); err != nil {
@@ -1272,6 +1347,9 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	}
 	cyberBlockedThisConn := false
 
+	failoverRoute := h.resolveInitialOpenAIGroupFailoverRoute(ctx, apiKey, reqLog)
+	apiKey = failoverRoute.APIKey()
+
 	// 解析渠道级模型映射
 	channelMappingWS, _ := h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
 
@@ -1323,13 +1401,19 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 	}
 
 	subscription, _ := middleware2.GetSubscriptionFromContext(c)
-	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(ctx, apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
-	if err != nil {
-		reqLog.Info("openai.websocket_billing_eligibility_check_failed", zap.Error(err))
-		closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "billing check failed")
+	checkBillingEligibility := func() bool {
+		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(ctx, apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
+		if err != nil {
+			reqLog.Info("openai.websocket_billing_eligibility_check_failed", zap.Error(err))
+			closeOpenAIClientWS(wsConn, coderws.StatusPolicyViolation, "billing check failed")
+			return false
+		}
+		subscription = resolvedSubscription
+		return true
+	}
+	if !checkBillingEligibility() {
 		return
 	}
-	subscription = resolvedSubscription
 
 	sessionHash := h.gatewayService.GenerateSessionHashWithFallback(
 		c,
@@ -1362,6 +1446,19 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 			if lastFailoverErr != nil {
 				closeOpenAIWSFailoverExhausted(wsConn, lastFailoverErr)
 			} else {
+				if h.tryOpenAIBackupGroupAfterFailure(ctx, failoverRoute, service.OpenAIGroupFailoverReasonNoCapacity, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMappingWS, _ = h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
+					if !checkBillingEligibility() {
+						return
+					}
+					sessionHash = h.gatewayService.GenerateSessionHashWithFallback(
+						c,
+						firstMessage,
+						openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
+					)
+					continue
+				}
 				closeOpenAIClientWS(wsConn, coderws.StatusTryAgainLater, "no available account")
 			}
 			return
@@ -1511,6 +1608,7 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 					h.gatewayService.UpdateCodexUsageSnapshotFromHeaders(ctx, account.ID, result.ResponseHeaders)
 				}
 				h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+				h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 				inboundEndpoint := GetInboundEndpoint(c)
 				upstreamEndpoint := resolveOpenAIUpstreamEndpoint(c, account)
 				cyberBlocked := service.GetOpsCyberPolicy(c) != nil
@@ -1527,6 +1625,9 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 						IPAddress:          clientIP,
 						RequestPayloadHash: requestPayloadHash,
 						APIKeyService:      h.apiKeyService,
+						OriginGroupID:      failoverRoute.OriginGroupID(),
+						RoutedGroupID:      failoverRoute.RoutedGroupID(),
+						FailoverReason:     failoverRoute.FailoverReason(),
 						ChannelUsageFields: channelMappingWS.ToUsageFields(reqModel, result.UpstreamModel),
 						CyberBlocked:       cyberBlocked,
 					}); err != nil {
@@ -1576,6 +1677,25 @@ func (h *OpenAIGatewayHandler) ResponsesWebSocket(c *gin.Context) {
 				if h.gatewayService.ShouldStopOpenAIOAuth429Failover(account, failoverErr.StatusCode, switchCount) {
 					closeOpenAIWSFailoverExhausted(wsConn, failoverErr)
 					return
+				}
+				if h.tryOpenAIBackupGroupAfterFailure(ctx, failoverRoute, service.OpenAIGroupFailoverReasonFailureThreshold, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMappingWS, _ = h.gatewayService.ResolveChannelMappingAndRestrict(ctx, apiKey.GroupID, reqModel)
+					if !checkBillingEligibility() {
+						return
+					}
+					failedAccountIDs = make(map[int64]struct{})
+					lastFailoverErr = nil
+					switchCount = 0
+					sessionHash = h.gatewayService.GenerateSessionHashWithFallback(
+						c,
+						firstMessage,
+						openAIWSIngressFallbackSessionSeed(subject.UserID, apiKey.ID, apiKey.GroupID),
+					)
+					if !ensureUserSlotHeld() {
+						return
+					}
+					continue
 				}
 				h.gatewayService.RecordOpenAIAccountSwitch()
 				reqLog.Warn("openai.websocket_upstream_failover_switching",

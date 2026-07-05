@@ -91,6 +91,9 @@ func (userSubRepoNoop) UpdateNotes(context.Context, int64, string) error {
 func (userSubRepoNoop) ActivateWindows(context.Context, int64, time.Time) error {
 	panic("unexpected ActivateWindows call")
 }
+func (userSubRepoNoop) ActivateWindowStarts(context.Context, int64, time.Time, time.Time, time.Time) error {
+	panic("unexpected ActivateWindowStarts call")
+}
 func (userSubRepoNoop) ResetDailyUsage(context.Context, int64, time.Time) error {
 	panic("unexpected ResetDailyUsage call")
 }

@@ -638,15 +638,46 @@ func startOfDay(t time.Time) time.Time {
 	return time.Date(t.Year(), t.Month(), t.Day(), 0, 0, 0, 0, t.Location())
 }
 
+func subscriptionRollingWindowStart(now, startsAt time.Time, duration time.Duration) time.Time {
+	nowStart := startOfDay(now)
+	if startsAt.IsZero() || duration <= 0 {
+		return nowStart
+	}
+
+	anchor := startOfDay(startsAt)
+	if nowStart.Before(anchor) {
+		return nowStart
+	}
+
+	periods := int64(nowStart.Sub(anchor) / duration)
+	return anchor.Add(time.Duration(periods) * duration)
+}
+
 // CheckAndActivateWindow 检查并激活窗口（首次使用时）
 func (s *SubscriptionService) CheckAndActivateWindow(ctx context.Context, sub *UserSubscription) error {
 	if sub.IsWindowActivated() {
 		return nil
 	}
 
-	// 使用当天零点作为窗口起始时间
-	windowStart := startOfDay(time.Now())
-	return s.userSubRepo.ActivateWindows(ctx, sub.ID, windowStart)
+	now := time.Now()
+	dailyWindowStart := startOfDay(now)
+	weeklyWindowStart := subscriptionRollingWindowStart(now, sub.StartsAt, 7*24*time.Hour)
+	monthlyWindowStart := subscriptionRollingWindowStart(now, sub.StartsAt, 30*24*time.Hour)
+
+	if err := s.userSubRepo.ActivateWindowStarts(ctx, sub.ID, dailyWindowStart, weeklyWindowStart, monthlyWindowStart); err != nil {
+		return err
+	}
+
+	sub.DailyWindowStart = &dailyWindowStart
+	sub.WeeklyWindowStart = &weeklyWindowStart
+	sub.MonthlyWindowStart = &monthlyWindowStart
+	sub.DailyUsageUSD = 0
+	sub.WeeklyUsageUSD = 0
+	sub.MonthlyUsageUSD = 0
+	sub.DailyUsedKnives = 0
+	sub.WeeklyUsedKnives = 0
+	sub.MonthlyUsedKnives = 0
+	return nil
 }
 
 // AdminResetQuota manually resets the daily, weekly, and/or monthly usage windows.

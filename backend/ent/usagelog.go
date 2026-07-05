@@ -47,6 +47,12 @@ type UsageLog struct {
 	BillingMode *string `json:"billing_mode,omitempty"`
 	// GroupID holds the value of the "group_id" field.
 	GroupID *int64 `json:"group_id,omitempty"`
+	// API Key 原始绑定分组 ID
+	OriginGroupID *int64 `json:"origin_group_id,omitempty"`
+	// 本次实际执行分组 ID
+	RoutedGroupID *int64 `json:"routed_group_id,omitempty"`
+	// 触发备用分组路由的原因
+	FailoverReason *string `json:"failover_reason,omitempty"`
 	// SubscriptionID holds the value of the "subscription_id" field.
 	SubscriptionID *int64 `json:"subscription_id,omitempty"`
 	// InputTokens holds the value of the "input_tokens" field.
@@ -202,9 +208,9 @@ func (*UsageLog) scanValues(columns []string) ([]any, error) {
 			values[i] = new(sql.NullBool)
 		case usagelog.FieldInputCost, usagelog.FieldOutputCost, usagelog.FieldCacheCreationCost, usagelog.FieldCacheReadCost, usagelog.FieldTotalCost, usagelog.FieldActualCost, usagelog.FieldSubscriptionCost, usagelog.FieldBalanceCost, usagelog.FieldRateMultiplier, usagelog.FieldSubscriptionRateMultiplier, usagelog.FieldBalanceRateMultiplier, usagelog.FieldAccountRateMultiplier:
 			values[i] = new(sql.NullFloat64)
-		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount:
+		case usagelog.FieldID, usagelog.FieldUserID, usagelog.FieldAPIKeyID, usagelog.FieldAccountID, usagelog.FieldChannelID, usagelog.FieldGroupID, usagelog.FieldOriginGroupID, usagelog.FieldRoutedGroupID, usagelog.FieldSubscriptionID, usagelog.FieldInputTokens, usagelog.FieldOutputTokens, usagelog.FieldCacheCreationTokens, usagelog.FieldCacheReadTokens, usagelog.FieldCacheCreation5mTokens, usagelog.FieldCacheCreation1hTokens, usagelog.FieldBillingType, usagelog.FieldDurationMs, usagelog.FieldFirstTokenMs, usagelog.FieldImageCount:
 			values[i] = new(sql.NullInt64)
-		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource:
+		case usagelog.FieldRequestID, usagelog.FieldModel, usagelog.FieldRequestedModel, usagelog.FieldUpstreamModel, usagelog.FieldModelMappingChain, usagelog.FieldBillingTier, usagelog.FieldBillingMode, usagelog.FieldFailoverReason, usagelog.FieldUserAgent, usagelog.FieldIPAddress, usagelog.FieldImageSize, usagelog.FieldImageInputSize, usagelog.FieldImageOutputSize, usagelog.FieldImageSizeSource:
 			values[i] = new(sql.NullString)
 		case usagelog.FieldCreatedAt:
 			values[i] = new(sql.NullTime)
@@ -307,6 +313,27 @@ func (_m *UsageLog) assignValues(columns []string, values []any) error {
 			} else if value.Valid {
 				_m.GroupID = new(int64)
 				*_m.GroupID = value.Int64
+			}
+		case usagelog.FieldOriginGroupID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field origin_group_id", values[i])
+			} else if value.Valid {
+				_m.OriginGroupID = new(int64)
+				*_m.OriginGroupID = value.Int64
+			}
+		case usagelog.FieldRoutedGroupID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field routed_group_id", values[i])
+			} else if value.Valid {
+				_m.RoutedGroupID = new(int64)
+				*_m.RoutedGroupID = value.Int64
+			}
+		case usagelog.FieldFailoverReason:
+			if value, ok := values[i].(*sql.NullString); !ok {
+				return fmt.Errorf("unexpected type %T for field failover_reason", values[i])
+			} else if value.Valid {
+				_m.FailoverReason = new(string)
+				*_m.FailoverReason = value.String
 			}
 		case usagelog.FieldSubscriptionID:
 			if value, ok := values[i].(*sql.NullInt64); !ok {
@@ -627,6 +654,21 @@ func (_m *UsageLog) String() string {
 	if v := _m.GroupID; v != nil {
 		builder.WriteString("group_id=")
 		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.OriginGroupID; v != nil {
+		builder.WriteString("origin_group_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.RoutedGroupID; v != nil {
+		builder.WriteString("routed_group_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	if v := _m.FailoverReason; v != nil {
+		builder.WriteString("failover_reason=")
+		builder.WriteString(*v)
 	}
 	builder.WriteString(", ")
 	if v := _m.SubscriptionID; v != nil {

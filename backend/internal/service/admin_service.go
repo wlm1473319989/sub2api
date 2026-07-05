@@ -8,6 +8,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
+	"math"
 	"net/http"
 	"sort"
 	"strconv"
@@ -70,6 +71,7 @@ type AdminService interface {
 
 	// API Key management (admin)
 	AdminUpdateAPIKeyGroupID(ctx context.Context, keyID int64, groupID *int64) (*AdminUpdateAPIKeyGroupIDResult, error)
+	AdminUpdateAPIKeyAllowPaidFailover(ctx context.Context, keyID int64, allow bool) (*APIKey, error)
 	AdminResetAPIKeyRateLimitUsage(ctx context.Context, keyID int64) (*APIKey, error)
 
 	// ReplaceUserGroup 替换用户的专属分组：授予新分组权限、迁移 Key、移除旧分组权限
@@ -195,12 +197,12 @@ type AdminBoundAuthIdentityChannel struct {
 }
 
 type CreateGroupInput struct {
-	Name           string
-	Description    string
-	Platform       string
-	RateMultiplier float64
+	Name                       string
+	Description                string
+	Platform                   string
+	RateMultiplier             float64
 	SubscriptionRateMultiplier float64
-	IsExclusive    bool
+	IsExclusive                bool
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	AllowImageGeneration bool
 	ImageRateIndependent bool
@@ -212,6 +214,10 @@ type CreateGroupInput struct {
 	FallbackGroupID      *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
+	// OpenAI 备用分组自动熔断切换
+	BackupFailoverEnabled bool
+	BackupGroupID         *int64
+	BackupFailoverConfig  GroupBackupFailoverConfig
 	// 模型路由配置（仅 anthropic 平台使用）
 	ModelRouting        map[string][]int64
 	ModelRoutingEnabled bool // 是否启用模型路由
@@ -232,13 +238,13 @@ type CreateGroupInput struct {
 }
 
 type UpdateGroupInput struct {
-	Name           string
-	Description    *string
-	Platform       string
-	RateMultiplier *float64 // 使用指针以支持设置为0
+	Name                       string
+	Description                *string
+	Platform                   string
+	RateMultiplier             *float64 // 使用指针以支持设置为0
 	SubscriptionRateMultiplier *float64
-	IsExclusive    *bool
-	Status         string
+	IsExclusive                *bool
+	Status                     string
 	// 图片生成计费配置（仅 antigravity 平台使用）
 	AllowImageGeneration *bool
 	ImageRateIndependent *bool
@@ -250,6 +256,10 @@ type UpdateGroupInput struct {
 	FallbackGroupID      *int64 // 降级分组 ID
 	// 无效请求兜底分组 ID（仅 anthropic 平台使用）
 	FallbackGroupIDOnInvalidRequest *int64
+	// OpenAI 备用分组自动熔断切换
+	BackupFailoverEnabled *bool
+	BackupGroupID         *int64
+	BackupFailoverConfig  *GroupBackupFailoverConfig
 	// 模型路由配置（仅 anthropic 平台使用）
 	ModelRouting        map[string][]int64
 	ModelRoutingEnabled *bool // 是否启用模型路由
@@ -411,11 +421,11 @@ type UpdateProxyInput struct {
 }
 
 type GenerateRedeemCodesInput struct {
-	Count        int
-	Type         string
-	Value        float64
-	PlanID       *int64
-	ExpiresAt    *time.Time
+	Count     int
+	Type      string
+	Value     float64
+	PlanID    *int64
+	ExpiresAt *time.Time
 }
 
 type ProxyBatchDeleteResult struct {
@@ -1818,6 +1828,22 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 			return nil, err
 		}
 	}
+	backupGroupID := input.BackupGroupID
+	if backupGroupID != nil && *backupGroupID <= 0 {
+		backupGroupID = nil
+	}
+	if input.BackupFailoverEnabled && backupGroupID == nil {
+		return nil, errors.New("backup_group_id is required when backup failover is enabled")
+	}
+	if backupGroupID != nil {
+		if err := s.validateBackupFailoverGroup(ctx, 0, platform, *backupGroupID); err != nil {
+			return nil, err
+		}
+	}
+	backupFailoverConfig, err := normalizeAndValidateBackupFailoverConfig(input.BackupFailoverConfig)
+	if err != nil {
+		return nil, err
+	}
 
 	// MCPXMLInject：默认为 true，仅当显式传入 false 时关闭
 	mcpXMLInject := true
@@ -1874,6 +1900,9 @@ func (s *adminServiceImpl) CreateGroup(ctx context.Context, input *CreateGroupIn
 		ClaudeCodeOnly:                  input.ClaudeCodeOnly,
 		FallbackGroupID:                 input.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: fallbackOnInvalidRequest,
+		BackupFailoverEnabled:           input.BackupFailoverEnabled,
+		BackupGroupID:                   backupGroupID,
+		BackupFailoverConfig:            backupFailoverConfig,
 		ModelRouting:                    input.ModelRouting,
 		MCPXMLInject:                    mcpXMLInject,
 		SupportedModelScopes:            input.SupportedModelScopes,
@@ -2001,6 +2030,56 @@ func (s *adminServiceImpl) validateFallbackGroupOnInvalidRequest(ctx context.Con
 	return nil
 }
 
+func normalizeAndValidateBackupFailoverConfig(cfg GroupBackupFailoverConfig) (GroupBackupFailoverConfig, error) {
+	cfg = NormalizeGroupBackupFailoverConfig(cfg)
+	if cfg.FailureWindowSeconds < 10 || cfg.FailureWindowSeconds > 600 {
+		return cfg, errors.New("backup_failover_config.failure_window_seconds must be between 10 and 600")
+	}
+	if cfg.FailureThreshold < 1 || cfg.FailureThreshold > 50 {
+		return cfg, errors.New("backup_failover_config.failure_threshold must be between 1 and 50")
+	}
+	if cfg.OpenCooldownSeconds < 30 || cfg.OpenCooldownSeconds > 3600 {
+		return cfg, errors.New("backup_failover_config.open_cooldown_seconds must be between 30 and 3600")
+	}
+	if cfg.HalfOpenSuccessThreshold < 1 || cfg.HalfOpenSuccessThreshold > 20 {
+		return cfg, errors.New("backup_failover_config.half_open_success_threshold must be between 1 and 20")
+	}
+	if cfg.MaxOpenCooldownSeconds < cfg.OpenCooldownSeconds {
+		return cfg, errors.New("backup_failover_config.max_open_cooldown_seconds must be >= open_cooldown_seconds")
+	}
+	if math.IsNaN(cfg.CooldownBackoffMultiplier) || math.IsInf(cfg.CooldownBackoffMultiplier, 0) ||
+		cfg.CooldownBackoffMultiplier < 1.0 || cfg.CooldownBackoffMultiplier > 5.0 {
+		return cfg, errors.New("backup_failover_config.cooldown_backoff_multiplier must be between 1.0 and 5.0")
+	}
+	return cfg, nil
+}
+
+func (s *adminServiceImpl) validateBackupFailoverGroup(ctx context.Context, currentGroupID int64, platform string, backupGroupID int64) error {
+	if platform != PlatformOpenAI {
+		return fmt.Errorf("backup failover only supports openai groups")
+	}
+	if backupGroupID <= 0 {
+		return fmt.Errorf("backup_group_id must be positive")
+	}
+	if currentGroupID > 0 && currentGroupID == backupGroupID {
+		return fmt.Errorf("cannot set self as backup group")
+	}
+	backupGroup, err := s.groupRepo.GetByIDLite(ctx, backupGroupID)
+	if err != nil {
+		return fmt.Errorf("backup group not found: %w", err)
+	}
+	if backupGroup.Status != StatusActive {
+		return fmt.Errorf("backup group must be active")
+	}
+	if backupGroup.Platform != PlatformOpenAI {
+		return fmt.Errorf("backup group must be openai platform")
+	}
+	if backupGroup.BackupFailoverEnabled || backupGroup.BackupGroupID != nil {
+		return fmt.Errorf("backup group cannot configure backup failover")
+	}
+	return nil
+}
+
 func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *UpdateGroupInput) (*Group, error) {
 	group, err := s.groupRepo.GetByID(ctx, id)
 	if err != nil {
@@ -2088,6 +2167,38 @@ func (s *adminServiceImpl) UpdateGroup(ctx context.Context, id int64, input *Upd
 		}
 	}
 	group.FallbackGroupIDOnInvalidRequest = fallbackOnInvalidRequest
+
+	backupFailoverEnabled := group.BackupFailoverEnabled
+	if input.BackupFailoverEnabled != nil {
+		backupFailoverEnabled = *input.BackupFailoverEnabled
+	}
+	backupGroupID := group.BackupGroupID
+	if input.BackupGroupID != nil {
+		if *input.BackupGroupID > 0 {
+			backupGroupID = input.BackupGroupID
+		} else {
+			backupGroupID = nil
+		}
+	}
+	backupFailoverConfig := group.BackupFailoverConfig
+	if input.BackupFailoverConfig != nil {
+		var err error
+		backupFailoverConfig, err = normalizeAndValidateBackupFailoverConfig(*input.BackupFailoverConfig)
+		if err != nil {
+			return nil, err
+		}
+	}
+	if backupFailoverEnabled && backupGroupID == nil {
+		return nil, errors.New("backup_group_id is required when backup failover is enabled")
+	}
+	if backupGroupID != nil {
+		if err := s.validateBackupFailoverGroup(ctx, id, group.Platform, *backupGroupID); err != nil {
+			return nil, err
+		}
+	}
+	group.BackupFailoverEnabled = backupFailoverEnabled
+	group.BackupGroupID = backupGroupID
+	group.BackupFailoverConfig = backupFailoverConfig
 
 	// 模型路由配置
 	if input.ModelRouting != nil {
@@ -2407,6 +2518,25 @@ func (s *adminServiceImpl) AdminUpdateAPIKeyGroupID(ctx context.Context, keyID i
 
 	result.APIKey = apiKey
 	return result, nil
+}
+
+// AdminUpdateAPIKeyAllowPaidFailover updates whether an API key may route to paid backup groups.
+func (s *adminServiceImpl) AdminUpdateAPIKeyAllowPaidFailover(ctx context.Context, keyID int64, allow bool) (*APIKey, error) {
+	apiKey, err := s.apiKeyRepo.GetByID(ctx, keyID)
+	if err != nil {
+		return nil, err
+	}
+	if apiKey.AllowPaidFailover == allow {
+		return apiKey, nil
+	}
+	apiKey.AllowPaidFailover = allow
+	if err := s.apiKeyRepo.Update(ctx, apiKey); err != nil {
+		return nil, fmt.Errorf("update api key allow paid failover: %w", err)
+	}
+	if s.authCacheInvalidator != nil {
+		s.authCacheInvalidator.InvalidateAuthCacheByKey(ctx, apiKey.Key)
+	}
+	return apiKey, nil
 }
 
 // AdminResetAPIKeyRateLimitUsage resets all API key rate-limit usage windows.

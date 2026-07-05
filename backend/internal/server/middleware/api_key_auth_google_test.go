@@ -159,6 +159,12 @@ func (f fakeGoogleSubscriptionRepo) ActivateWindows(ctx context.Context, id int6
 	}
 	return errors.New("not implemented")
 }
+func (f fakeGoogleSubscriptionRepo) ActivateWindowStarts(ctx context.Context, id int64, dailyStart, weeklyStart, monthlyStart time.Time) error {
+	if f.activateWindow != nil {
+		return f.activateWindow(ctx, id, dailyStart)
+	}
+	return errors.New("not implemented")
+}
 func (f fakeGoogleSubscriptionRepo) ResetDailyUsage(ctx context.Context, id int64, start time.Time) error {
 	if f.resetDaily != nil {
 		return f.resetDaily(ctx, id, start)

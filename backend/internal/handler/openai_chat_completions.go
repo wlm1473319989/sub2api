@@ -93,6 +93,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		return
 	}
 
+	failoverRoute := h.resolveInitialOpenAIGroupFailoverRoute(c.Request.Context(), apiKey, reqLog)
+	apiKey = failoverRoute.APIKey()
+
 	// 解析渠道级模型映射
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 
@@ -113,17 +116,23 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		defer userReleaseFunc()
 	}
 
-	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
-	if err != nil {
-		reqLog.Info("openai_chat_completions.billing_eligibility_check_failed", zap.Error(err))
-		status, code, message, retryAfter := billingErrorDetails(err)
-		if retryAfter > 0 {
-			c.Header("Retry-After", strconv.Itoa(retryAfter))
+	checkBillingEligibility := func() bool {
+		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
+		if err != nil {
+			reqLog.Info("openai_chat_completions.billing_eligibility_check_failed", zap.Error(err))
+			status, code, message, retryAfter := billingErrorDetails(err)
+			if retryAfter > 0 {
+				c.Header("Retry-After", strconv.Itoa(retryAfter))
+			}
+			h.handleStreamingAwareError(c, status, code, message, streamStarted)
+			return false
 		}
-		h.handleStreamingAwareError(c, status, code, message, streamStarted)
+		subscription = resolvedSubscription
+		return true
+	}
+	if !checkBillingEligibility() {
 		return
 	}
-	subscription = resolvedSubscription
 
 	sessionHash := h.gatewayService.GenerateSessionHash(c, body)
 	promptCacheKey := h.gatewayService.ExtractSessionID(c, body)
@@ -153,6 +162,14 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonNoCapacity, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+					if !checkBillingEligibility() {
+						return
+					}
+					continue
+				}
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				h.handleStreamingAwareError(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable", streamStarted)
 				return
@@ -259,6 +276,18 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 						h.handleFailoverExhausted(c, failoverErr, streamStarted)
 						return
 					}
+					if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonFailureThreshold, reqLog) {
+						apiKey = failoverRoute.APIKey()
+						channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+						if !checkBillingEligibility() {
+							return
+						}
+						failedAccountIDs = make(map[int64]struct{})
+						sameAccountRetryCount = make(map[int64]int)
+						lastFailoverErr = nil
+						switchCount = 0
+						continue
+					}
 					reqLog.Warn("openai_chat_completions.upstream_failover_switching",
 						zap.Int64("account_id", account.ID),
 						zap.Int("upstream_status", failoverErr.StatusCode),
@@ -284,8 +313,10 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 		}
 		if result != nil {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, result.FirstTokenMs)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		} else {
 			h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+			h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		}
 
 		userAgent := c.GetHeader("User-Agent")
@@ -306,6 +337,9 @@ func (h *OpenAIGatewayHandler) ChatCompletions(c *gin.Context) {
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				APIKeyService:      h.apiKeyService,
+				OriginGroupID:      failoverRoute.OriginGroupID(),
+				RoutedGroupID:      failoverRoute.RoutedGroupID(),
+				FailoverReason:     failoverRoute.FailoverReason(),
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 				CyberBlocked:       cyberBlocked,
 			}); err != nil {

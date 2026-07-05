@@ -369,6 +369,7 @@ type OpenAIGatewayService struct {
 
 	openaiWSFallbackUntil               sync.Map // key: int64(accountID), value: time.Time
 	openaiAccountRuntimeBlockUntil      sync.Map // key: int64(accountID), value: time.Time
+	openaiGroupFailoverStates           sync.Map // key: int64(origin groupID), value: *openAIGroupFailoverState
 	openaiOAuth429WindowStartUnixNano   atomic.Int64
 	openaiOAuth429WindowCount           atomic.Int64
 	openaiWSRetryMetrics                openAIWSRetryMetrics
@@ -5820,6 +5821,9 @@ type OpenAIRecordUsageInput struct {
 	IPAddress          string // 请求的客户端 IP 地址
 	RequestPayloadHash string
 	APIKeyService      APIKeyQuotaUpdater
+	OriginGroupID      *int64
+	RoutedGroupID      *int64
+	FailoverReason     *string
 	// CyberBlocked 为 true 时把该用量行标记为 cyber（request_type=cyber），计费逻辑不变。
 	CyberBlocked bool
 	ChannelUsageFields
@@ -6075,6 +6079,9 @@ func (s *OpenAIGatewayService) RecordUsage(ctx context.Context, input *OpenAIRec
 	if apiKey.GroupID != nil {
 		usageLog.GroupID = apiKey.GroupID
 	}
+	usageLog.OriginGroupID = input.OriginGroupID
+	usageLog.RoutedGroupID = input.RoutedGroupID
+	usageLog.FailoverReason = input.FailoverReason
 	if subscription != nil {
 		usageLog.SubscriptionID = &subscription.ID
 	}

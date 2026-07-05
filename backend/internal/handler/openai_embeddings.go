@@ -74,6 +74,9 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 	setOpsRequestContext(c, reqModel, false)
 	setOpsEndpointContext(c, "", int16(service.RequestTypeSync))
 
+	failoverRoute := h.resolveInitialOpenAIGroupFailoverRoute(c.Request.Context(), apiKey, reqLog)
+	apiKey = failoverRoute.APIKey()
+
 	channelMapping, _ := h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
 
 	subscription, _ := middleware2.GetSubscriptionFromContext(c)
@@ -87,17 +90,23 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 		defer userReleaseFunc()
 	}
 
-	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
-	if err != nil {
-		reqLog.Info("openai_embeddings.billing_check_failed", zap.Error(err))
-		status, code, message, retryAfter := billingErrorDetails(err)
-		if retryAfter > 0 {
-			c.Header("Retry-After", strconv.Itoa(retryAfter))
+	checkBillingEligibility := func() bool {
+		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
+		if err != nil {
+			reqLog.Info("openai_embeddings.billing_check_failed", zap.Error(err))
+			status, code, message, retryAfter := billingErrorDetails(err)
+			if retryAfter > 0 {
+				c.Header("Retry-After", strconv.Itoa(retryAfter))
+			}
+			h.errorResponse(c, status, code, message)
+			return false
 		}
-		h.errorResponse(c, status, code, message)
+		subscription = resolvedSubscription
+		return true
+	}
+	if !checkBillingEligibility() {
 		return
 	}
-	subscription = resolvedSubscription
 
 	failedAccountIDs := make(map[int64]struct{})
 	var lastFailoverErr *service.UpstreamFailoverError
@@ -126,6 +135,14 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 				zap.Int("excluded_account_count", len(failedAccountIDs)),
 			)
 			if len(failedAccountIDs) == 0 {
+				if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonNoCapacity, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+					if !checkBillingEligibility() {
+						return
+					}
+					continue
+				}
 				markOpsRoutingCapacityLimitedIfNoAvailable(c, err)
 				h.errorResponse(c, http.StatusServiceUnavailable, "api_error", "Service temporarily unavailable")
 				return
@@ -191,6 +208,17 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 					return
 				}
 				switchCount++
+				if h.tryOpenAIBackupGroupAfterFailure(c.Request.Context(), failoverRoute, service.OpenAIGroupFailoverReasonFailureThreshold, reqLog) {
+					apiKey = failoverRoute.APIKey()
+					channelMapping, _ = h.gatewayService.ResolveChannelMappingAndRestrict(c.Request.Context(), apiKey.GroupID, reqModel)
+					if !checkBillingEligibility() {
+						return
+					}
+					failedAccountIDs = make(map[int64]struct{})
+					lastFailoverErr = nil
+					switchCount = 0
+					continue
+				}
 				reqLog.Warn("openai_embeddings.upstream_failover_switching",
 					zap.Int64("account_id", account.ID),
 					zap.Int("upstream_status", failoverErr.StatusCode),
@@ -211,6 +239,7 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 		}
 
 		h.gatewayService.ReportOpenAIAccountScheduleResult(account.ID, true, nil)
+		h.recordOpenAIGroupFailoverSuccess(failoverRoute)
 		userAgent := c.GetHeader("User-Agent")
 		clientIP := ip.GetClientIP(c)
 		inboundEndpoint := GetInboundEndpoint(c)
@@ -228,6 +257,9 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 				UserAgent:          userAgent,
 				IPAddress:          clientIP,
 				APIKeyService:      h.apiKeyService,
+				OriginGroupID:      failoverRoute.OriginGroupID(),
+				RoutedGroupID:      failoverRoute.RoutedGroupID(),
+				FailoverReason:     failoverRoute.FailoverReason(),
 				ChannelUsageFields: channelMapping.ToUsageFields(reqModel, result.UpstreamModel),
 			}); err != nil {
 				logger.L().With(

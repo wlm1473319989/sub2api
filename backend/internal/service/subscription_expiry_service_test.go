@@ -67,6 +67,10 @@ func (r *subscriptionExpiryRepoStub) ActivateWindows(context.Context, int64, tim
 	return nil
 }
 
+func (r *subscriptionExpiryRepoStub) ActivateWindowStarts(context.Context, int64, time.Time, time.Time, time.Time) error {
+	return nil
+}
+
 func (r *subscriptionExpiryRepoStub) ResetDailyUsage(context.Context, int64, time.Time) error {
 	return nil
 }

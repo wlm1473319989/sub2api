@@ -60,6 +60,19 @@ func (UsageLog) Fields() []ent.Field {
 		field.Int64("group_id").
 			Optional().
 			Nillable(),
+		field.Int64("origin_group_id").
+			Optional().
+			Nillable().
+			Comment("API Key 原始绑定分组 ID"),
+		field.Int64("routed_group_id").
+			Optional().
+			Nillable().
+			Comment("本次实际执行分组 ID"),
+		field.String("failover_reason").
+			MaxLen(64).
+			Optional().
+			Nillable().
+			Comment("触发备用分组路由的原因"),
 		field.Int64("subscription_id").
 			Optional().
 			Nillable(),
@@ -209,6 +222,8 @@ func (UsageLog) Indexes() []ent.Index {
 		index.Fields("api_key_id"),
 		index.Fields("account_id"),
 		index.Fields("group_id"),
+		index.Fields("origin_group_id"),
+		index.Fields("routed_group_id"),
 		index.Fields("subscription_id"),
 		index.Fields("created_at"),
 		index.Fields("model"),
@@ -219,5 +234,7 @@ func (UsageLog) Indexes() []ent.Index {
 		index.Fields("api_key_id", "created_at"),
 		// 分组维度时间范围查询（线上由 SQL 迁移创建 group_id IS NOT NULL 的部分索引）
 		index.Fields("group_id", "created_at"),
+		index.Fields("origin_group_id", "created_at"),
+		index.Fields("routed_group_id", "created_at"),
 	}
 }

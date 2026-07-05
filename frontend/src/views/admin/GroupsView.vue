@@ -1173,6 +1173,158 @@
           </div>
         </div>
 
+        <!-- OpenAI 备用分组熔断切换 -->
+        <div
+          v-if="createForm.platform === 'openai'"
+          class="border-t border-gray-200 pt-4 dark:border-dark-400"
+        >
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t("admin.groups.backupFailover.title") }}
+              </label>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ t("admin.groups.backupFailover.hint") }}
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="
+                createForm.backup_failover_enabled =
+                  !createForm.backup_failover_enabled
+              "
+              :class="[
+                'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
+                createForm.backup_failover_enabled
+                  ? 'bg-primary-500'
+                  : 'bg-gray-300 dark:bg-dark-600',
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  createForm.backup_failover_enabled
+                    ? 'translate-x-6'
+                    : 'translate-x-1',
+                ]"
+              />
+            </button>
+          </div>
+
+          <div v-if="createForm.backup_failover_enabled" class="space-y-4">
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.backupFailover.backupGroup")
+              }}</label>
+              <Select
+                v-model="createForm.backup_group_id"
+                :options="backupGroupOptions"
+                :placeholder="t('admin.groups.backupFailover.noBackup')"
+              />
+              <p class="input-hint">
+                {{ t("admin.groups.backupFailover.backupGroupHint") }}
+              </p>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.failureWindow")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config.failure_window_seconds
+                  "
+                  type="number"
+                  min="10"
+                  max="600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.failureThreshold")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config.failure_threshold
+                  "
+                  type="number"
+                  min="1"
+                  max="50"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.openCooldown")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config.open_cooldown_seconds
+                  "
+                  type="number"
+                  min="30"
+                  max="3600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.halfOpenSuccess")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config
+                      .half_open_success_threshold
+                  "
+                  type="number"
+                  min="1"
+                  max="20"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.maxCooldown")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config.max_open_cooldown_seconds
+                  "
+                  type="number"
+                  min="30"
+                  max="3600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.backoffMultiplier")
+                }}</label>
+                <input
+                  v-model.number="
+                    createForm.backup_failover_config
+                      .cooldown_backoff_multiplier
+                  "
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  class="input"
+                />
+              </div>
+            </div>
+            <p class="input-hint">
+              {{ t("admin.groups.backupFailover.billingHint") }}
+            </p>
+          </div>
+        </div>
+
         <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini) -->
         <div
           v-if="
@@ -2408,6 +2560,158 @@
           </div>
         </div>
 
+        <!-- OpenAI 备用分组熔断切换 -->
+        <div
+          v-if="editForm.platform === 'openai'"
+          class="border-t border-gray-200 pt-4 dark:border-dark-400"
+        >
+          <div class="mb-3 flex items-center justify-between gap-3">
+            <div>
+              <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                {{ t("admin.groups.backupFailover.title") }}
+              </label>
+              <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                {{ t("admin.groups.backupFailover.hint") }}
+              </p>
+            </div>
+            <button
+              type="button"
+              @click="
+                editForm.backup_failover_enabled =
+                  !editForm.backup_failover_enabled
+              "
+              :class="[
+                'relative inline-flex h-6 w-11 flex-shrink-0 items-center rounded-full transition-colors',
+                editForm.backup_failover_enabled
+                  ? 'bg-primary-500'
+                  : 'bg-gray-300 dark:bg-dark-600',
+              ]"
+            >
+              <span
+                :class="[
+                  'inline-block h-4 w-4 transform rounded-full bg-white shadow transition-transform',
+                  editForm.backup_failover_enabled
+                    ? 'translate-x-6'
+                    : 'translate-x-1',
+                ]"
+              />
+            </button>
+          </div>
+
+          <div v-if="editForm.backup_failover_enabled" class="space-y-4">
+            <div>
+              <label class="input-label">{{
+                t("admin.groups.backupFailover.backupGroup")
+              }}</label>
+              <Select
+                v-model="editForm.backup_group_id"
+                :options="backupGroupOptionsForEdit"
+                :placeholder="t('admin.groups.backupFailover.noBackup')"
+              />
+              <p class="input-hint">
+                {{ t("admin.groups.backupFailover.backupGroupHint") }}
+              </p>
+            </div>
+            <div class="grid grid-cols-1 gap-3 md:grid-cols-2">
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.failureWindow")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config.failure_window_seconds
+                  "
+                  type="number"
+                  min="10"
+                  max="600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.failureThreshold")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config.failure_threshold
+                  "
+                  type="number"
+                  min="1"
+                  max="50"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.openCooldown")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config.open_cooldown_seconds
+                  "
+                  type="number"
+                  min="30"
+                  max="3600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.halfOpenSuccess")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config
+                      .half_open_success_threshold
+                  "
+                  type="number"
+                  min="1"
+                  max="20"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.maxCooldown")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config.max_open_cooldown_seconds
+                  "
+                  type="number"
+                  min="30"
+                  max="3600"
+                  step="1"
+                  class="input"
+                />
+              </div>
+              <div>
+                <label class="input-label">{{
+                  t("admin.groups.backupFailover.backoffMultiplier")
+                }}</label>
+                <input
+                  v-model.number="
+                    editForm.backup_failover_config
+                      .cooldown_backoff_multiplier
+                  "
+                  type="number"
+                  min="1"
+                  max="5"
+                  step="0.1"
+                  class="input"
+                />
+              </div>
+            </div>
+            <p class="input-hint">
+              {{ t("admin.groups.backupFailover.billingHint") }}
+            </p>
+          </div>
+        </div>
+
         <!-- 账号过滤控制 (OpenAI/Antigravity/Anthropic/Gemini) -->
         <div
           v-if="
@@ -2876,7 +3180,11 @@ import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
-import type { AdminGroup, GroupPlatform } from "@/types";
+import type {
+  AdminGroup,
+  GroupBackupFailoverConfig,
+  GroupPlatform,
+} from "@/types";
 import type { Column } from "@/components/common/types";
 import AppLayout from "@/components/layout/AppLayout.vue";
 import TablePageLayout from "@/components/layout/TablePageLayout.vue";
@@ -2981,6 +3289,100 @@ const editStatusOptions = computed(() => [
   { value: "active", label: t("admin.accounts.status.active") },
   { value: "inactive", label: t("admin.accounts.status.inactive") },
 ]);
+
+const defaultBackupFailoverConfig: GroupBackupFailoverConfig = {
+  failure_window_seconds: 60,
+  failure_threshold: 3,
+  open_cooldown_seconds: 180,
+  half_open_success_threshold: 3,
+  max_open_cooldown_seconds: 1800,
+  cooldown_backoff_multiplier: 2,
+};
+
+const cloneBackupFailoverConfig = (): GroupBackupFailoverConfig => ({
+  ...defaultBackupFailoverConfig,
+});
+
+const normalizePositiveNumber = (
+  value: number | undefined,
+  fallback: number,
+) => {
+  const parsed = Number(value);
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : fallback;
+};
+
+const normalizeBackupFailoverConfig = (
+  config?: Partial<GroupBackupFailoverConfig> | null,
+): GroupBackupFailoverConfig => {
+  const normalized = {
+    failure_window_seconds: normalizePositiveNumber(
+      config?.failure_window_seconds,
+      defaultBackupFailoverConfig.failure_window_seconds,
+    ),
+    failure_threshold: normalizePositiveNumber(
+      config?.failure_threshold,
+      defaultBackupFailoverConfig.failure_threshold,
+    ),
+    open_cooldown_seconds: normalizePositiveNumber(
+      config?.open_cooldown_seconds,
+      defaultBackupFailoverConfig.open_cooldown_seconds,
+    ),
+    half_open_success_threshold: normalizePositiveNumber(
+      config?.half_open_success_threshold,
+      defaultBackupFailoverConfig.half_open_success_threshold,
+    ),
+    max_open_cooldown_seconds: normalizePositiveNumber(
+      config?.max_open_cooldown_seconds,
+      defaultBackupFailoverConfig.max_open_cooldown_seconds,
+    ),
+    cooldown_backoff_multiplier: normalizePositiveNumber(
+      config?.cooldown_backoff_multiplier,
+      defaultBackupFailoverConfig.cooldown_backoff_multiplier,
+    ),
+  };
+  if (
+    normalized.max_open_cooldown_seconds <
+    normalized.open_cooldown_seconds
+  ) {
+    normalized.max_open_cooldown_seconds =
+      normalized.open_cooldown_seconds;
+  }
+  return normalized;
+};
+
+const resetBackupFailoverForm = (form: {
+  backup_failover_enabled: boolean;
+  backup_group_id: number | null;
+  backup_failover_config: GroupBackupFailoverConfig;
+}) => {
+  form.backup_failover_enabled = false;
+  form.backup_group_id = null;
+  Object.assign(form.backup_failover_config, cloneBackupFailoverConfig());
+};
+
+const buildBackupGroupOptions = (currentID?: number) => {
+  const options: { value: number | null; label: string }[] = [
+    { value: null, label: t("admin.groups.backupFailover.noBackup") },
+  ];
+  groups.value
+    .filter(
+      (g) =>
+        g.platform === "openai" &&
+        g.status === "active" &&
+        g.id !== currentID &&
+        !g.backup_failover_enabled &&
+        !g.backup_group_id,
+    )
+    .forEach((g) => {
+      options.push({ value: g.id, label: g.name });
+    });
+  return options;
+};
+
+const backupGroupOptions = computed(() => buildBackupGroupOptions());
+const backupGroupOptionsForEdit = computed(() =>
+  buildBackupGroupOptions(editingGroup.value?.id),
+);
 
 // 降级分组选项（创建时）- 仅包含 anthropic 平台且未启用 claude_code_only 的分组
 const fallbackGroupOptions = computed(() => {
@@ -3163,6 +3565,10 @@ const createForm = reactive({
   claude_code_only: false,
   fallback_group_id: null as number | null,
   fallback_group_id_on_invalid_request: null as number | null,
+  // OpenAI 备用分组熔断切换
+  backup_failover_enabled: false,
+  backup_group_id: null as number | null,
+  backup_failover_config: cloneBackupFailoverConfig(),
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
   opus_mapped_model: createMessagesDispatchDefaults.opus_mapped_model,
@@ -3491,6 +3897,10 @@ const editForm = reactive({
   claude_code_only: false,
   fallback_group_id: null as number | null,
   fallback_group_id_on_invalid_request: null as number | null,
+  // OpenAI 备用分组熔断切换
+  backup_failover_enabled: false,
+  backup_group_id: null as number | null,
+  backup_failover_config: cloneBackupFailoverConfig(),
   // OpenAI Messages 调度配置（仅 openai 平台使用）
   allow_messages_dispatch: false,
   default_mapped_model: '',
@@ -3759,6 +4169,7 @@ const closeCreateModal = () => {
   createForm.claude_code_only = false;
   createForm.fallback_group_id = null;
   createForm.fallback_group_id_on_invalid_request = null;
+  resetBackupFailoverForm(createForm);
   resetMessagesDispatchFormState(createForm);
   createForm.require_oauth_only = false;
   createForm.require_privacy_set = false;
@@ -3785,11 +4196,26 @@ const handleCreateGroup = async () => {
     appStore.showError(t("admin.groups.nameRequired"));
     return;
   }
+  if (
+    createForm.platform === "openai" &&
+    createForm.backup_failover_enabled &&
+    !createForm.backup_group_id
+  ) {
+    appStore.showError(t("admin.groups.backupFailover.backupGroupRequired"));
+    return;
+  }
   submitting.value = true;
   try {
     // 构建请求数据，包含模型路由配置
     const requestData = {
       ...createForm,
+      backup_group_id:
+        createForm.platform === "openai" && createForm.backup_failover_enabled
+          ? createForm.backup_group_id
+          : null,
+      backup_failover_config: normalizeBackupFailoverConfig(
+        createForm.backup_failover_config,
+      ),
       model_routing: convertRoutingRulesToApiFormat(
         createModelRoutingRules.value,
       ),
@@ -3856,6 +4282,12 @@ const handleEdit = async (group: AdminGroup) => {
   editForm.fallback_group_id = group.fallback_group_id;
   editForm.fallback_group_id_on_invalid_request =
     group.fallback_group_id_on_invalid_request;
+  editForm.backup_failover_enabled = group.backup_failover_enabled || false;
+  editForm.backup_group_id = group.backup_group_id ?? null;
+  Object.assign(
+    editForm.backup_failover_config,
+    normalizeBackupFailoverConfig(group.backup_failover_config),
+  );
   const messagesDispatchFormState = messagesDispatchConfigToFormState(
     group.messages_dispatch_model_config,
   );
@@ -3896,6 +4328,7 @@ const closeEditModal = () => {
   editingGroup.value = null;
   editModelRoutingRules.value = [];
   editForm.copy_accounts_from_group_ids = [];
+  resetBackupFailoverForm(editForm);
   resetMessagesDispatchFormState(editForm);
   resetModelsListState(editModelsListState);
 };
@@ -3904,6 +4337,14 @@ const handleUpdateGroup = async () => {
   if (!editingGroup.value) return;
   if (!editForm.name.trim()) {
     appStore.showError(t("admin.groups.nameRequired"));
+    return;
+  }
+  if (
+    editForm.platform === "openai" &&
+    editForm.backup_failover_enabled &&
+    !editForm.backup_group_id
+  ) {
+    appStore.showError(t("admin.groups.backupFailover.backupGroupRequired"));
     return;
   }
 
@@ -3918,6 +4359,13 @@ const handleUpdateGroup = async () => {
         editForm.fallback_group_id_on_invalid_request === null
           ? 0
           : editForm.fallback_group_id_on_invalid_request,
+      backup_group_id:
+        editForm.platform === "openai" && editForm.backup_failover_enabled
+          ? editForm.backup_group_id
+          : 0,
+      backup_failover_config: normalizeBackupFailoverConfig(
+        editForm.backup_failover_config,
+      ),
       model_routing: convertRoutingRulesToApiFormat(
         editModelRoutingRules.value,
       ),
@@ -4023,6 +4471,7 @@ watch(
     }
     if (newVal !== "openai") {
       resetMessagesDispatchFormState(createForm);
+      resetBackupFailoverForm(createForm);
     }
     if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       createForm.require_oauth_only = false;
@@ -4041,6 +4490,7 @@ watch(
     }
     if (newVal !== "openai") {
       resetMessagesDispatchFormState(editForm);
+      resetBackupFailoverForm(editForm);
     }
     if (!["openai", "antigravity", "anthropic", "gemini"].includes(newVal)) {
       editForm.require_oauth_only = false;
@@ -4062,6 +4512,7 @@ watch(
     if (newVal !== 'openai') {
       editForm.allow_messages_dispatch = false
       editForm.default_mapped_model = ''
+      resetBackupFailoverForm(editForm)
     }
   }
 )

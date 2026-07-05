@@ -39,9 +39,10 @@ type CreateAPIKeyRequest struct {
 	ExpiresInDays *int     `json:"expires_in_days"` // 过期天数
 
 	// Rate limit fields (0 = unlimited)
-	RateLimit5h *float64 `json:"rate_limit_5h"`
-	RateLimit1d *float64 `json:"rate_limit_1d"`
-	RateLimit7d *float64 `json:"rate_limit_7d"`
+	RateLimit5h       *float64 `json:"rate_limit_5h"`
+	RateLimit1d       *float64 `json:"rate_limit_1d"`
+	RateLimit7d       *float64 `json:"rate_limit_7d"`
+	AllowPaidFailover *bool    `json:"allow_paid_failover"`
 }
 
 // UpdateAPIKeyRequest represents the update API key request payload
@@ -60,6 +61,7 @@ type UpdateAPIKeyRequest struct {
 	RateLimit1d         *float64 `json:"rate_limit_1d"`
 	RateLimit7d         *float64 `json:"rate_limit_7d"`
 	ResetRateLimitUsage *bool    `json:"reset_rate_limit_usage"` // 重置限速用量
+	AllowPaidFailover   *bool    `json:"allow_paid_failover"`
 }
 
 // List handles listing user's API keys with pagination
@@ -161,6 +163,9 @@ func (h *APIKeyHandler) Create(c *gin.Context) {
 		IPBlacklist:   req.IPBlacklist,
 		ExpiresInDays: req.ExpiresInDays,
 	}
+	if req.AllowPaidFailover != nil {
+		svcReq.AllowPaidFailover = *req.AllowPaidFailover
+	}
 	if req.Quota != nil {
 		svcReq.Quota = *req.Quota
 	}
@@ -213,6 +218,7 @@ func (h *APIKeyHandler) Update(c *gin.Context) {
 		RateLimit1d:         req.RateLimit1d,
 		RateLimit7d:         req.RateLimit7d,
 		ResetRateLimitUsage: req.ResetRateLimitUsage,
+		AllowPaidFailover:   req.AllowPaidFailover,
 	}
 	if req.Name != "" {
 		svcReq.Name = &req.Name

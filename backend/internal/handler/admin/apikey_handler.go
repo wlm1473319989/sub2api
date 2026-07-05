@@ -26,6 +26,7 @@ func NewAdminAPIKeyHandler(adminService service.AdminService) *AdminAPIKeyHandle
 type AdminUpdateAPIKeyGroupRequest struct {
 	GroupID             *int64 `json:"group_id"`               // nil=不修改, 0=解绑, >0=绑定到目标分组
 	ResetRateLimitUsage *bool  `json:"reset_rate_limit_usage"` // true=重置 5h/1d/7d 限速用量
+	AllowPaidFailover   *bool  `json:"allow_paid_failover"`    // nil=不修改
 }
 
 // UpdateGroup handles updating an API key's admin-managed fields.
@@ -59,6 +60,14 @@ func (h *AdminAPIKeyHandler) UpdateGroup(c *gin.Context) {
 	}
 	if resetKey != nil && req.GroupID == nil {
 		result.APIKey = resetKey
+	}
+	if req.AllowPaidFailover != nil {
+		updatedKey, err := h.adminService.AdminUpdateAPIKeyAllowPaidFailover(c.Request.Context(), keyID, *req.AllowPaidFailover)
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+		result.APIKey = updatedKey
 	}
 
 	resp := struct {

@@ -115,6 +115,9 @@ func (APIKey) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("Start time of the current 7d rate limit window"),
+		field.Bool("allow_paid_failover").
+			Default(false).
+			Comment("Whether this API key allows automatic failover to a paid backup group"),
 	}
 }
 

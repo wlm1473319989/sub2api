@@ -30,22 +30,25 @@ func NewGroupHandler(adminService service.AdminService, dashboardService *servic
 
 // CreateGroupRequest represents create group request
 type CreateGroupRequest struct {
-	Name           string  `json:"name" binding:"required"`
-	Description    string  `json:"description"`
-	Platform       string  `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
-	RateMultiplier float64 `json:"rate_multiplier"`
+	Name                       string  `json:"name" binding:"required"`
+	Description                string  `json:"description"`
+	Platform                   string  `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
+	RateMultiplier             float64 `json:"rate_multiplier"`
 	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
-	IsExclusive    bool    `json:"is_exclusive"`
+	IsExclusive                bool    `json:"is_exclusive"`
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
-	AllowImageGeneration            bool     `json:"allow_image_generation"`
-	ImageRateIndependent            bool     `json:"image_rate_independent"`
-	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
-	ImagePrice1K                    *float64 `json:"image_price_1k"`
-	ImagePrice2K                    *float64 `json:"image_price_2k"`
-	ImagePrice4K                    *float64 `json:"image_price_4k"`
-	ClaudeCodeOnly                  bool     `json:"claude_code_only"`
-	FallbackGroupID                 *int64   `json:"fallback_group_id"`
-	FallbackGroupIDOnInvalidRequest *int64   `json:"fallback_group_id_on_invalid_request"`
+	AllowImageGeneration            bool                              `json:"allow_image_generation"`
+	ImageRateIndependent            bool                              `json:"image_rate_independent"`
+	ImageRateMultiplier             *float64                          `json:"image_rate_multiplier"`
+	ImagePrice1K                    *float64                          `json:"image_price_1k"`
+	ImagePrice2K                    *float64                          `json:"image_price_2k"`
+	ImagePrice4K                    *float64                          `json:"image_price_4k"`
+	ClaudeCodeOnly                  bool                              `json:"claude_code_only"`
+	FallbackGroupID                 *int64                            `json:"fallback_group_id"`
+	FallbackGroupIDOnInvalidRequest *int64                            `json:"fallback_group_id_on_invalid_request"`
+	BackupFailoverEnabled           bool                              `json:"backup_failover_enabled"`
+	BackupGroupID                   *int64                            `json:"backup_group_id"`
+	BackupFailoverConfig            service.GroupBackupFailoverConfig `json:"backup_failover_config"`
 	// 模型路由配置（仅 anthropic 平台使用）
 	ModelRouting        map[string][]int64 `json:"model_routing"`
 	ModelRoutingEnabled bool               `json:"model_routing_enabled"`
@@ -67,23 +70,26 @@ type CreateGroupRequest struct {
 
 // UpdateGroupRequest represents update group request
 type UpdateGroupRequest struct {
-	Name           string   `json:"name"`
-	Description    *string  `json:"description"`
-	Platform       string   `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
-	RateMultiplier *float64 `json:"rate_multiplier"`
+	Name                       string   `json:"name"`
+	Description                *string  `json:"description"`
+	Platform                   string   `json:"platform" binding:"omitempty,oneof=anthropic openai gemini antigravity"`
+	RateMultiplier             *float64 `json:"rate_multiplier"`
 	SubscriptionRateMultiplier *float64 `json:"subscription_rate_multiplier"`
-	IsExclusive    *bool    `json:"is_exclusive"`
-	Status         string   `json:"status" binding:"omitempty,oneof=active inactive"`
+	IsExclusive                *bool    `json:"is_exclusive"`
+	Status                     string   `json:"status" binding:"omitempty,oneof=active inactive"`
 	// 图片生成计费配置（antigravity 和 gemini 平台使用，负数表示清除配置）
-	AllowImageGeneration            *bool    `json:"allow_image_generation"`
-	ImageRateIndependent            *bool    `json:"image_rate_independent"`
-	ImageRateMultiplier             *float64 `json:"image_rate_multiplier"`
-	ImagePrice1K                    *float64 `json:"image_price_1k"`
-	ImagePrice2K                    *float64 `json:"image_price_2k"`
-	ImagePrice4K                    *float64 `json:"image_price_4k"`
-	ClaudeCodeOnly                  *bool    `json:"claude_code_only"`
-	FallbackGroupID                 *int64   `json:"fallback_group_id"`
-	FallbackGroupIDOnInvalidRequest *int64   `json:"fallback_group_id_on_invalid_request"`
+	AllowImageGeneration            *bool                              `json:"allow_image_generation"`
+	ImageRateIndependent            *bool                              `json:"image_rate_independent"`
+	ImageRateMultiplier             *float64                           `json:"image_rate_multiplier"`
+	ImagePrice1K                    *float64                           `json:"image_price_1k"`
+	ImagePrice2K                    *float64                           `json:"image_price_2k"`
+	ImagePrice4K                    *float64                           `json:"image_price_4k"`
+	ClaudeCodeOnly                  *bool                              `json:"claude_code_only"`
+	FallbackGroupID                 *int64                             `json:"fallback_group_id"`
+	FallbackGroupIDOnInvalidRequest *int64                             `json:"fallback_group_id_on_invalid_request"`
+	BackupFailoverEnabled           *bool                              `json:"backup_failover_enabled"`
+	BackupGroupID                   *int64                             `json:"backup_group_id"`
+	BackupFailoverConfig            *service.GroupBackupFailoverConfig `json:"backup_failover_config"`
 	// 模型路由配置（仅 anthropic 平台使用）
 	ModelRouting        map[string][]int64 `json:"model_routing"`
 	ModelRoutingEnabled *bool              `json:"model_routing_enabled"`
@@ -235,6 +241,9 @@ func (h *GroupHandler) Create(c *gin.Context) {
 		ClaudeCodeOnly:                  req.ClaudeCodeOnly,
 		FallbackGroupID:                 req.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: req.FallbackGroupIDOnInvalidRequest,
+		BackupFailoverEnabled:           req.BackupFailoverEnabled,
+		BackupGroupID:                   req.BackupGroupID,
+		BackupFailoverConfig:            req.BackupFailoverConfig,
 		ModelRouting:                    req.ModelRouting,
 		ModelRoutingEnabled:             req.ModelRoutingEnabled,
 		MCPXMLInject:                    req.MCPXMLInject,
@@ -288,6 +297,9 @@ func (h *GroupHandler) Update(c *gin.Context) {
 		ClaudeCodeOnly:                  req.ClaudeCodeOnly,
 		FallbackGroupID:                 req.FallbackGroupID,
 		FallbackGroupIDOnInvalidRequest: req.FallbackGroupIDOnInvalidRequest,
+		BackupFailoverEnabled:           req.BackupFailoverEnabled,
+		BackupGroupID:                   req.BackupGroupID,
+		BackupFailoverConfig:            req.BackupFailoverConfig,
 		ModelRouting:                    req.ModelRouting,
 		ModelRoutingEnabled:             req.ModelRoutingEnabled,
 		MCPXMLInject:                    req.MCPXMLInject,

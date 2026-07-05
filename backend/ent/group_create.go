@@ -286,6 +286,48 @@ func (_c *GroupCreate) SetNillableFallbackGroupIDOnInvalidRequest(v *int64) *Gro
 	return _c
 }
 
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (_c *GroupCreate) SetBackupFailoverEnabled(v bool) *GroupCreate {
+	_c.mutation.SetBackupFailoverEnabled(v)
+	return _c
+}
+
+// SetNillableBackupFailoverEnabled sets the "backup_failover_enabled" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableBackupFailoverEnabled(v *bool) *GroupCreate {
+	if v != nil {
+		_c.SetBackupFailoverEnabled(*v)
+	}
+	return _c
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (_c *GroupCreate) SetBackupGroupID(v int64) *GroupCreate {
+	_c.mutation.SetBackupGroupID(v)
+	return _c
+}
+
+// SetNillableBackupGroupID sets the "backup_group_id" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableBackupGroupID(v *int64) *GroupCreate {
+	if v != nil {
+		_c.SetBackupGroupID(*v)
+	}
+	return _c
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (_c *GroupCreate) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupCreate {
+	_c.mutation.SetBackupFailoverConfig(v)
+	return _c
+}
+
+// SetNillableBackupFailoverConfig sets the "backup_failover_config" field if the given value is not nil.
+func (_c *GroupCreate) SetNillableBackupFailoverConfig(v *domain.GroupBackupFailoverConfig) *GroupCreate {
+	if v != nil {
+		_c.SetBackupFailoverConfig(*v)
+	}
+	return _c
+}
+
 // SetModelRouting sets the "model_routing" field.
 func (_c *GroupCreate) SetModelRouting(v map[string][]int64) *GroupCreate {
 	_c.mutation.SetModelRouting(v)
@@ -600,6 +642,10 @@ func (_c *GroupCreate) defaults() error {
 		v := group.DefaultClaudeCodeOnly
 		_c.mutation.SetClaudeCodeOnly(v)
 	}
+	if _, ok := _c.mutation.BackupFailoverEnabled(); !ok {
+		v := group.DefaultBackupFailoverEnabled
+		_c.mutation.SetBackupFailoverEnabled(v)
+	}
 	if _, ok := _c.mutation.ModelRoutingEnabled(); !ok {
 		v := group.DefaultModelRoutingEnabled
 		_c.mutation.SetModelRoutingEnabled(v)
@@ -699,6 +745,9 @@ func (_c *GroupCreate) check() error {
 	}
 	if _, ok := _c.mutation.ClaudeCodeOnly(); !ok {
 		return &ValidationError{Name: "claude_code_only", err: errors.New(`ent: missing required field "Group.claude_code_only"`)}
+	}
+	if _, ok := _c.mutation.BackupFailoverEnabled(); !ok {
+		return &ValidationError{Name: "backup_failover_enabled", err: errors.New(`ent: missing required field "Group.backup_failover_enabled"`)}
 	}
 	if _, ok := _c.mutation.ModelRoutingEnabled(); !ok {
 		return &ValidationError{Name: "model_routing_enabled", err: errors.New(`ent: missing required field "Group.model_routing_enabled"`)}
@@ -840,6 +889,18 @@ func (_c *GroupCreate) createSpec() (*Group, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.FallbackGroupIDOnInvalidRequest(); ok {
 		_spec.SetField(group.FieldFallbackGroupIDOnInvalidRequest, field.TypeInt64, value)
 		_node.FallbackGroupIDOnInvalidRequest = &value
+	}
+	if value, ok := _c.mutation.BackupFailoverEnabled(); ok {
+		_spec.SetField(group.FieldBackupFailoverEnabled, field.TypeBool, value)
+		_node.BackupFailoverEnabled = value
+	}
+	if value, ok := _c.mutation.BackupGroupID(); ok {
+		_spec.SetField(group.FieldBackupGroupID, field.TypeInt64, value)
+		_node.BackupGroupID = &value
+	}
+	if value, ok := _c.mutation.BackupFailoverConfig(); ok {
+		_spec.SetField(group.FieldBackupFailoverConfig, field.TypeJSON, value)
+		_node.BackupFailoverConfig = value
 	}
 	if value, ok := _c.mutation.ModelRouting(); ok {
 		_spec.SetField(group.FieldModelRouting, field.TypeJSON, value)
@@ -1332,6 +1393,60 @@ func (u *GroupUpsert) AddFallbackGroupIDOnInvalidRequest(v int64) *GroupUpsert {
 // ClearFallbackGroupIDOnInvalidRequest clears the value of the "fallback_group_id_on_invalid_request" field.
 func (u *GroupUpsert) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsert {
 	u.SetNull(group.FieldFallbackGroupIDOnInvalidRequest)
+	return u
+}
+
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (u *GroupUpsert) SetBackupFailoverEnabled(v bool) *GroupUpsert {
+	u.Set(group.FieldBackupFailoverEnabled, v)
+	return u
+}
+
+// UpdateBackupFailoverEnabled sets the "backup_failover_enabled" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateBackupFailoverEnabled() *GroupUpsert {
+	u.SetExcluded(group.FieldBackupFailoverEnabled)
+	return u
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (u *GroupUpsert) SetBackupGroupID(v int64) *GroupUpsert {
+	u.Set(group.FieldBackupGroupID, v)
+	return u
+}
+
+// UpdateBackupGroupID sets the "backup_group_id" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateBackupGroupID() *GroupUpsert {
+	u.SetExcluded(group.FieldBackupGroupID)
+	return u
+}
+
+// AddBackupGroupID adds v to the "backup_group_id" field.
+func (u *GroupUpsert) AddBackupGroupID(v int64) *GroupUpsert {
+	u.Add(group.FieldBackupGroupID, v)
+	return u
+}
+
+// ClearBackupGroupID clears the value of the "backup_group_id" field.
+func (u *GroupUpsert) ClearBackupGroupID() *GroupUpsert {
+	u.SetNull(group.FieldBackupGroupID)
+	return u
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (u *GroupUpsert) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupUpsert {
+	u.Set(group.FieldBackupFailoverConfig, v)
+	return u
+}
+
+// UpdateBackupFailoverConfig sets the "backup_failover_config" field to the value that was provided on create.
+func (u *GroupUpsert) UpdateBackupFailoverConfig() *GroupUpsert {
+	u.SetExcluded(group.FieldBackupFailoverConfig)
+	return u
+}
+
+// ClearBackupFailoverConfig clears the value of the "backup_failover_config" field.
+func (u *GroupUpsert) ClearBackupFailoverConfig() *GroupUpsert {
+	u.SetNull(group.FieldBackupFailoverConfig)
 	return u
 }
 
@@ -1896,6 +2011,69 @@ func (u *GroupUpsertOne) UpdateFallbackGroupIDOnInvalidRequest() *GroupUpsertOne
 func (u *GroupUpsertOne) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsertOne {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearFallbackGroupIDOnInvalidRequest()
+	})
+}
+
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (u *GroupUpsertOne) SetBackupFailoverEnabled(v bool) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupFailoverEnabled(v)
+	})
+}
+
+// UpdateBackupFailoverEnabled sets the "backup_failover_enabled" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateBackupFailoverEnabled() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupFailoverEnabled()
+	})
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (u *GroupUpsertOne) SetBackupGroupID(v int64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupGroupID(v)
+	})
+}
+
+// AddBackupGroupID adds v to the "backup_group_id" field.
+func (u *GroupUpsertOne) AddBackupGroupID(v int64) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddBackupGroupID(v)
+	})
+}
+
+// UpdateBackupGroupID sets the "backup_group_id" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateBackupGroupID() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupGroupID()
+	})
+}
+
+// ClearBackupGroupID clears the value of the "backup_group_id" field.
+func (u *GroupUpsertOne) ClearBackupGroupID() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearBackupGroupID()
+	})
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (u *GroupUpsertOne) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupFailoverConfig(v)
+	})
+}
+
+// UpdateBackupFailoverConfig sets the "backup_failover_config" field to the value that was provided on create.
+func (u *GroupUpsertOne) UpdateBackupFailoverConfig() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupFailoverConfig()
+	})
+}
+
+// ClearBackupFailoverConfig clears the value of the "backup_failover_config" field.
+func (u *GroupUpsertOne) ClearBackupFailoverConfig() *GroupUpsertOne {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearBackupFailoverConfig()
 	})
 }
 
@@ -2653,6 +2831,69 @@ func (u *GroupUpsertBulk) UpdateFallbackGroupIDOnInvalidRequest() *GroupUpsertBu
 func (u *GroupUpsertBulk) ClearFallbackGroupIDOnInvalidRequest() *GroupUpsertBulk {
 	return u.Update(func(s *GroupUpsert) {
 		s.ClearFallbackGroupIDOnInvalidRequest()
+	})
+}
+
+// SetBackupFailoverEnabled sets the "backup_failover_enabled" field.
+func (u *GroupUpsertBulk) SetBackupFailoverEnabled(v bool) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupFailoverEnabled(v)
+	})
+}
+
+// UpdateBackupFailoverEnabled sets the "backup_failover_enabled" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateBackupFailoverEnabled() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupFailoverEnabled()
+	})
+}
+
+// SetBackupGroupID sets the "backup_group_id" field.
+func (u *GroupUpsertBulk) SetBackupGroupID(v int64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupGroupID(v)
+	})
+}
+
+// AddBackupGroupID adds v to the "backup_group_id" field.
+func (u *GroupUpsertBulk) AddBackupGroupID(v int64) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.AddBackupGroupID(v)
+	})
+}
+
+// UpdateBackupGroupID sets the "backup_group_id" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateBackupGroupID() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupGroupID()
+	})
+}
+
+// ClearBackupGroupID clears the value of the "backup_group_id" field.
+func (u *GroupUpsertBulk) ClearBackupGroupID() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearBackupGroupID()
+	})
+}
+
+// SetBackupFailoverConfig sets the "backup_failover_config" field.
+func (u *GroupUpsertBulk) SetBackupFailoverConfig(v domain.GroupBackupFailoverConfig) *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.SetBackupFailoverConfig(v)
+	})
+}
+
+// UpdateBackupFailoverConfig sets the "backup_failover_config" field to the value that was provided on create.
+func (u *GroupUpsertBulk) UpdateBackupFailoverConfig() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.UpdateBackupFailoverConfig()
+	})
+}
+
+// ClearBackupFailoverConfig clears the value of the "backup_failover_config" field.
+func (u *GroupUpsertBulk) ClearBackupFailoverConfig() *GroupUpsertBulk {
+	return u.Update(func(s *GroupUpsert) {
+		s.ClearBackupFailoverConfig()
 	})
 }
 

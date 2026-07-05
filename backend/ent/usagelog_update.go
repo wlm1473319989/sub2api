@@ -249,6 +249,80 @@ func (_u *UsageLogUpdate) ClearGroupID() *UsageLogUpdate {
 	return _u
 }
 
+// SetOriginGroupID sets the "origin_group_id" field.
+func (_u *UsageLogUpdate) SetOriginGroupID(v int64) *UsageLogUpdate {
+	_u.mutation.ResetOriginGroupID()
+	_u.mutation.SetOriginGroupID(v)
+	return _u
+}
+
+// SetNillableOriginGroupID sets the "origin_group_id" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableOriginGroupID(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetOriginGroupID(*v)
+	}
+	return _u
+}
+
+// AddOriginGroupID adds value to the "origin_group_id" field.
+func (_u *UsageLogUpdate) AddOriginGroupID(v int64) *UsageLogUpdate {
+	_u.mutation.AddOriginGroupID(v)
+	return _u
+}
+
+// ClearOriginGroupID clears the value of the "origin_group_id" field.
+func (_u *UsageLogUpdate) ClearOriginGroupID() *UsageLogUpdate {
+	_u.mutation.ClearOriginGroupID()
+	return _u
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (_u *UsageLogUpdate) SetRoutedGroupID(v int64) *UsageLogUpdate {
+	_u.mutation.ResetRoutedGroupID()
+	_u.mutation.SetRoutedGroupID(v)
+	return _u
+}
+
+// SetNillableRoutedGroupID sets the "routed_group_id" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableRoutedGroupID(v *int64) *UsageLogUpdate {
+	if v != nil {
+		_u.SetRoutedGroupID(*v)
+	}
+	return _u
+}
+
+// AddRoutedGroupID adds value to the "routed_group_id" field.
+func (_u *UsageLogUpdate) AddRoutedGroupID(v int64) *UsageLogUpdate {
+	_u.mutation.AddRoutedGroupID(v)
+	return _u
+}
+
+// ClearRoutedGroupID clears the value of the "routed_group_id" field.
+func (_u *UsageLogUpdate) ClearRoutedGroupID() *UsageLogUpdate {
+	_u.mutation.ClearRoutedGroupID()
+	return _u
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (_u *UsageLogUpdate) SetFailoverReason(v string) *UsageLogUpdate {
+	_u.mutation.SetFailoverReason(v)
+	return _u
+}
+
+// SetNillableFailoverReason sets the "failover_reason" field if the given value is not nil.
+func (_u *UsageLogUpdate) SetNillableFailoverReason(v *string) *UsageLogUpdate {
+	if v != nil {
+		_u.SetFailoverReason(*v)
+	}
+	return _u
+}
+
+// ClearFailoverReason clears the value of the "failover_reason" field.
+func (_u *UsageLogUpdate) ClearFailoverReason() *UsageLogUpdate {
+	_u.mutation.ClearFailoverReason()
+	return _u
+}
+
 // SetSubscriptionID sets the "subscription_id" field.
 func (_u *UsageLogUpdate) SetSubscriptionID(v int64) *UsageLogUpdate {
 	_u.mutation.SetSubscriptionID(v)
@@ -1033,6 +1107,11 @@ func (_u *UsageLogUpdate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FailoverReason(); ok {
+		if err := usagelog.FailoverReasonValidator(v); err != nil {
+			return &ValidationError{Name: "failover_reason", err: fmt.Errorf(`ent: validator failed for field "UsageLog.failover_reason": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -1131,6 +1210,30 @@ func (_u *UsageLogUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.OriginGroupID(); ok {
+		_spec.SetField(usagelog.FieldOriginGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedOriginGroupID(); ok {
+		_spec.AddField(usagelog.FieldOriginGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.OriginGroupIDCleared() {
+		_spec.ClearField(usagelog.FieldOriginGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.RoutedGroupID(); ok {
+		_spec.SetField(usagelog.FieldRoutedGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedRoutedGroupID(); ok {
+		_spec.AddField(usagelog.FieldRoutedGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.RoutedGroupIDCleared() {
+		_spec.ClearField(usagelog.FieldRoutedGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.FailoverReason(); ok {
+		_spec.SetField(usagelog.FieldFailoverReason, field.TypeString, value)
+	}
+	if _u.mutation.FailoverReasonCleared() {
+		_spec.ClearField(usagelog.FieldFailoverReason, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -1700,6 +1803,80 @@ func (_u *UsageLogUpdateOne) SetNillableGroupID(v *int64) *UsageLogUpdateOne {
 // ClearGroupID clears the value of the "group_id" field.
 func (_u *UsageLogUpdateOne) ClearGroupID() *UsageLogUpdateOne {
 	_u.mutation.ClearGroupID()
+	return _u
+}
+
+// SetOriginGroupID sets the "origin_group_id" field.
+func (_u *UsageLogUpdateOne) SetOriginGroupID(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetOriginGroupID()
+	_u.mutation.SetOriginGroupID(v)
+	return _u
+}
+
+// SetNillableOriginGroupID sets the "origin_group_id" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableOriginGroupID(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetOriginGroupID(*v)
+	}
+	return _u
+}
+
+// AddOriginGroupID adds value to the "origin_group_id" field.
+func (_u *UsageLogUpdateOne) AddOriginGroupID(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddOriginGroupID(v)
+	return _u
+}
+
+// ClearOriginGroupID clears the value of the "origin_group_id" field.
+func (_u *UsageLogUpdateOne) ClearOriginGroupID() *UsageLogUpdateOne {
+	_u.mutation.ClearOriginGroupID()
+	return _u
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (_u *UsageLogUpdateOne) SetRoutedGroupID(v int64) *UsageLogUpdateOne {
+	_u.mutation.ResetRoutedGroupID()
+	_u.mutation.SetRoutedGroupID(v)
+	return _u
+}
+
+// SetNillableRoutedGroupID sets the "routed_group_id" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableRoutedGroupID(v *int64) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetRoutedGroupID(*v)
+	}
+	return _u
+}
+
+// AddRoutedGroupID adds value to the "routed_group_id" field.
+func (_u *UsageLogUpdateOne) AddRoutedGroupID(v int64) *UsageLogUpdateOne {
+	_u.mutation.AddRoutedGroupID(v)
+	return _u
+}
+
+// ClearRoutedGroupID clears the value of the "routed_group_id" field.
+func (_u *UsageLogUpdateOne) ClearRoutedGroupID() *UsageLogUpdateOne {
+	_u.mutation.ClearRoutedGroupID()
+	return _u
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (_u *UsageLogUpdateOne) SetFailoverReason(v string) *UsageLogUpdateOne {
+	_u.mutation.SetFailoverReason(v)
+	return _u
+}
+
+// SetNillableFailoverReason sets the "failover_reason" field if the given value is not nil.
+func (_u *UsageLogUpdateOne) SetNillableFailoverReason(v *string) *UsageLogUpdateOne {
+	if v != nil {
+		_u.SetFailoverReason(*v)
+	}
+	return _u
+}
+
+// ClearFailoverReason clears the value of the "failover_reason" field.
+func (_u *UsageLogUpdateOne) ClearFailoverReason() *UsageLogUpdateOne {
+	_u.mutation.ClearFailoverReason()
 	return _u
 }
 
@@ -2500,6 +2677,11 @@ func (_u *UsageLogUpdateOne) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _u.mutation.FailoverReason(); ok {
+		if err := usagelog.FailoverReasonValidator(v); err != nil {
+			return &ValidationError{Name: "failover_reason", err: fmt.Errorf(`ent: validator failed for field "UsageLog.failover_reason": %w`, err)}
+		}
+	}
 	if v, ok := _u.mutation.UserAgent(); ok {
 		if err := usagelog.UserAgentValidator(v); err != nil {
 			return &ValidationError{Name: "user_agent", err: fmt.Errorf(`ent: validator failed for field "UsageLog.user_agent": %w`, err)}
@@ -2615,6 +2797,30 @@ func (_u *UsageLogUpdateOne) sqlSave(ctx context.Context) (_node *UsageLog, err 
 	}
 	if _u.mutation.BillingModeCleared() {
 		_spec.ClearField(usagelog.FieldBillingMode, field.TypeString)
+	}
+	if value, ok := _u.mutation.OriginGroupID(); ok {
+		_spec.SetField(usagelog.FieldOriginGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedOriginGroupID(); ok {
+		_spec.AddField(usagelog.FieldOriginGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.OriginGroupIDCleared() {
+		_spec.ClearField(usagelog.FieldOriginGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.RoutedGroupID(); ok {
+		_spec.SetField(usagelog.FieldRoutedGroupID, field.TypeInt64, value)
+	}
+	if value, ok := _u.mutation.AddedRoutedGroupID(); ok {
+		_spec.AddField(usagelog.FieldRoutedGroupID, field.TypeInt64, value)
+	}
+	if _u.mutation.RoutedGroupIDCleared() {
+		_spec.ClearField(usagelog.FieldRoutedGroupID, field.TypeInt64)
+	}
+	if value, ok := _u.mutation.FailoverReason(); ok {
+		_spec.SetField(usagelog.FieldFailoverReason, field.TypeString, value)
+	}
+	if _u.mutation.FailoverReasonCleared() {
+		_spec.ClearField(usagelog.FieldFailoverReason, field.TypeString)
 	}
 	if value, ok := _u.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)

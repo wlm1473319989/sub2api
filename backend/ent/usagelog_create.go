@@ -155,6 +155,48 @@ func (_c *UsageLogCreate) SetNillableGroupID(v *int64) *UsageLogCreate {
 	return _c
 }
 
+// SetOriginGroupID sets the "origin_group_id" field.
+func (_c *UsageLogCreate) SetOriginGroupID(v int64) *UsageLogCreate {
+	_c.mutation.SetOriginGroupID(v)
+	return _c
+}
+
+// SetNillableOriginGroupID sets the "origin_group_id" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableOriginGroupID(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetOriginGroupID(*v)
+	}
+	return _c
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (_c *UsageLogCreate) SetRoutedGroupID(v int64) *UsageLogCreate {
+	_c.mutation.SetRoutedGroupID(v)
+	return _c
+}
+
+// SetNillableRoutedGroupID sets the "routed_group_id" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableRoutedGroupID(v *int64) *UsageLogCreate {
+	if v != nil {
+		_c.SetRoutedGroupID(*v)
+	}
+	return _c
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (_c *UsageLogCreate) SetFailoverReason(v string) *UsageLogCreate {
+	_c.mutation.SetFailoverReason(v)
+	return _c
+}
+
+// SetNillableFailoverReason sets the "failover_reason" field if the given value is not nil.
+func (_c *UsageLogCreate) SetNillableFailoverReason(v *string) *UsageLogCreate {
+	if v != nil {
+		_c.SetFailoverReason(*v)
+	}
+	return _c
+}
+
 // SetSubscriptionID sets the "subscription_id" field.
 func (_c *UsageLogCreate) SetSubscriptionID(v int64) *UsageLogCreate {
 	_c.mutation.SetSubscriptionID(v)
@@ -811,6 +853,11 @@ func (_c *UsageLogCreate) check() error {
 			return &ValidationError{Name: "billing_mode", err: fmt.Errorf(`ent: validator failed for field "UsageLog.billing_mode": %w`, err)}
 		}
 	}
+	if v, ok := _c.mutation.FailoverReason(); ok {
+		if err := usagelog.FailoverReasonValidator(v); err != nil {
+			return &ValidationError{Name: "failover_reason", err: fmt.Errorf(`ent: validator failed for field "UsageLog.failover_reason": %w`, err)}
+		}
+	}
 	if _, ok := _c.mutation.InputTokens(); !ok {
 		return &ValidationError{Name: "input_tokens", err: errors.New(`ent: missing required field "UsageLog.input_tokens"`)}
 	}
@@ -974,6 +1021,18 @@ func (_c *UsageLogCreate) createSpec() (*UsageLog, *sqlgraph.CreateSpec) {
 	if value, ok := _c.mutation.BillingMode(); ok {
 		_spec.SetField(usagelog.FieldBillingMode, field.TypeString, value)
 		_node.BillingMode = &value
+	}
+	if value, ok := _c.mutation.OriginGroupID(); ok {
+		_spec.SetField(usagelog.FieldOriginGroupID, field.TypeInt64, value)
+		_node.OriginGroupID = &value
+	}
+	if value, ok := _c.mutation.RoutedGroupID(); ok {
+		_spec.SetField(usagelog.FieldRoutedGroupID, field.TypeInt64, value)
+		_node.RoutedGroupID = &value
+	}
+	if value, ok := _c.mutation.FailoverReason(); ok {
+		_spec.SetField(usagelog.FieldFailoverReason, field.TypeString, value)
+		_node.FailoverReason = &value
 	}
 	if value, ok := _c.mutation.InputTokens(); ok {
 		_spec.SetField(usagelog.FieldInputTokens, field.TypeInt, value)
@@ -1429,6 +1488,72 @@ func (u *UsageLogUpsert) UpdateGroupID() *UsageLogUpsert {
 // ClearGroupID clears the value of the "group_id" field.
 func (u *UsageLogUpsert) ClearGroupID() *UsageLogUpsert {
 	u.SetNull(usagelog.FieldGroupID)
+	return u
+}
+
+// SetOriginGroupID sets the "origin_group_id" field.
+func (u *UsageLogUpsert) SetOriginGroupID(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldOriginGroupID, v)
+	return u
+}
+
+// UpdateOriginGroupID sets the "origin_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateOriginGroupID() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldOriginGroupID)
+	return u
+}
+
+// AddOriginGroupID adds v to the "origin_group_id" field.
+func (u *UsageLogUpsert) AddOriginGroupID(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldOriginGroupID, v)
+	return u
+}
+
+// ClearOriginGroupID clears the value of the "origin_group_id" field.
+func (u *UsageLogUpsert) ClearOriginGroupID() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldOriginGroupID)
+	return u
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (u *UsageLogUpsert) SetRoutedGroupID(v int64) *UsageLogUpsert {
+	u.Set(usagelog.FieldRoutedGroupID, v)
+	return u
+}
+
+// UpdateRoutedGroupID sets the "routed_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateRoutedGroupID() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldRoutedGroupID)
+	return u
+}
+
+// AddRoutedGroupID adds v to the "routed_group_id" field.
+func (u *UsageLogUpsert) AddRoutedGroupID(v int64) *UsageLogUpsert {
+	u.Add(usagelog.FieldRoutedGroupID, v)
+	return u
+}
+
+// ClearRoutedGroupID clears the value of the "routed_group_id" field.
+func (u *UsageLogUpsert) ClearRoutedGroupID() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldRoutedGroupID)
+	return u
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (u *UsageLogUpsert) SetFailoverReason(v string) *UsageLogUpsert {
+	u.Set(usagelog.FieldFailoverReason, v)
+	return u
+}
+
+// UpdateFailoverReason sets the "failover_reason" field to the value that was provided on create.
+func (u *UsageLogUpsert) UpdateFailoverReason() *UsageLogUpsert {
+	u.SetExcluded(usagelog.FieldFailoverReason)
+	return u
+}
+
+// ClearFailoverReason clears the value of the "failover_reason" field.
+func (u *UsageLogUpsert) ClearFailoverReason() *UsageLogUpsert {
+	u.SetNull(usagelog.FieldFailoverReason)
 	return u
 }
 
@@ -2280,6 +2405,83 @@ func (u *UsageLogUpsertOne) UpdateGroupID() *UsageLogUpsertOne {
 func (u *UsageLogUpsertOne) ClearGroupID() *UsageLogUpsertOne {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearGroupID()
+	})
+}
+
+// SetOriginGroupID sets the "origin_group_id" field.
+func (u *UsageLogUpsertOne) SetOriginGroupID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetOriginGroupID(v)
+	})
+}
+
+// AddOriginGroupID adds v to the "origin_group_id" field.
+func (u *UsageLogUpsertOne) AddOriginGroupID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddOriginGroupID(v)
+	})
+}
+
+// UpdateOriginGroupID sets the "origin_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateOriginGroupID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateOriginGroupID()
+	})
+}
+
+// ClearOriginGroupID clears the value of the "origin_group_id" field.
+func (u *UsageLogUpsertOne) ClearOriginGroupID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearOriginGroupID()
+	})
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (u *UsageLogUpsertOne) SetRoutedGroupID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRoutedGroupID(v)
+	})
+}
+
+// AddRoutedGroupID adds v to the "routed_group_id" field.
+func (u *UsageLogUpsertOne) AddRoutedGroupID(v int64) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRoutedGroupID(v)
+	})
+}
+
+// UpdateRoutedGroupID sets the "routed_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateRoutedGroupID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRoutedGroupID()
+	})
+}
+
+// ClearRoutedGroupID clears the value of the "routed_group_id" field.
+func (u *UsageLogUpsertOne) ClearRoutedGroupID() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRoutedGroupID()
+	})
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (u *UsageLogUpsertOne) SetFailoverReason(v string) *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFailoverReason(v)
+	})
+}
+
+// UpdateFailoverReason sets the "failover_reason" field to the value that was provided on create.
+func (u *UsageLogUpsertOne) UpdateFailoverReason() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFailoverReason()
+	})
+}
+
+// ClearFailoverReason clears the value of the "failover_reason" field.
+func (u *UsageLogUpsertOne) ClearFailoverReason() *UsageLogUpsertOne {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFailoverReason()
 	})
 }
 
@@ -3394,6 +3596,83 @@ func (u *UsageLogUpsertBulk) UpdateGroupID() *UsageLogUpsertBulk {
 func (u *UsageLogUpsertBulk) ClearGroupID() *UsageLogUpsertBulk {
 	return u.Update(func(s *UsageLogUpsert) {
 		s.ClearGroupID()
+	})
+}
+
+// SetOriginGroupID sets the "origin_group_id" field.
+func (u *UsageLogUpsertBulk) SetOriginGroupID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetOriginGroupID(v)
+	})
+}
+
+// AddOriginGroupID adds v to the "origin_group_id" field.
+func (u *UsageLogUpsertBulk) AddOriginGroupID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddOriginGroupID(v)
+	})
+}
+
+// UpdateOriginGroupID sets the "origin_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateOriginGroupID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateOriginGroupID()
+	})
+}
+
+// ClearOriginGroupID clears the value of the "origin_group_id" field.
+func (u *UsageLogUpsertBulk) ClearOriginGroupID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearOriginGroupID()
+	})
+}
+
+// SetRoutedGroupID sets the "routed_group_id" field.
+func (u *UsageLogUpsertBulk) SetRoutedGroupID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetRoutedGroupID(v)
+	})
+}
+
+// AddRoutedGroupID adds v to the "routed_group_id" field.
+func (u *UsageLogUpsertBulk) AddRoutedGroupID(v int64) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.AddRoutedGroupID(v)
+	})
+}
+
+// UpdateRoutedGroupID sets the "routed_group_id" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateRoutedGroupID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateRoutedGroupID()
+	})
+}
+
+// ClearRoutedGroupID clears the value of the "routed_group_id" field.
+func (u *UsageLogUpsertBulk) ClearRoutedGroupID() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearRoutedGroupID()
+	})
+}
+
+// SetFailoverReason sets the "failover_reason" field.
+func (u *UsageLogUpsertBulk) SetFailoverReason(v string) *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.SetFailoverReason(v)
+	})
+}
+
+// UpdateFailoverReason sets the "failover_reason" field to the value that was provided on create.
+func (u *UsageLogUpsertBulk) UpdateFailoverReason() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.UpdateFailoverReason()
+	})
+}
+
+// ClearFailoverReason clears the value of the "failover_reason" field.
+func (u *UsageLogUpsertBulk) ClearFailoverReason() *UsageLogUpsertBulk {
+	return u.Update(func(s *UsageLogUpsert) {
+		s.ClearFailoverReason()
 	})
 }
 

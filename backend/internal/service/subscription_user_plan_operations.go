@@ -325,7 +325,7 @@ func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context
 	if err != nil {
 		return nil, err
 	}
-	expiresAt := clipSubscriptionExpiry(now.AddDate(0, 0, validityDays))
+	startsAt, expiresAt := subscriptionNaturalDayPeriod(now, validityDays)
 
 	planID := plan.ID
 	planName := plan.Name
@@ -335,7 +335,7 @@ func (s *SubscriptionService) createPlanSnapshotSubscription(ctx context.Context
 		PlanID:             &planID,
 		PlanNameSnapshot:   copyStringPointer(&planName),
 		PlanPriceSnapshot:  copyFloat64Pointer(&planPrice),
-		StartsAt:           now,
+		StartsAt:           startsAt,
 		ExpiresAt:          expiresAt,
 		Status:             SubscriptionStatusActive,
 		DailyQuotaKnives:   copyFloat64Pointer(plan.DailyQuotaKnives),
@@ -389,6 +389,12 @@ func subscriptionPlanTotalValidityDays(plan *dbent.SubscriptionPlan) (int, error
 		days = MaxValidityDays
 	}
 	return days, nil
+}
+
+func subscriptionNaturalDayPeriod(now time.Time, validityDays int) (time.Time, time.Time) {
+	startsAt := startOfDay(now)
+	expiresAt := clipSubscriptionExpiry(startsAt.AddDate(0, 0, validityDays))
+	return startsAt, expiresAt
 }
 
 func clipSubscriptionExpiry(expiresAt time.Time) time.Time {

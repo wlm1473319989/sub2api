@@ -150,6 +150,16 @@ func FallbackGroupIDOnInvalidRequest(v int64) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldFallbackGroupIDOnInvalidRequest, v))
 }
 
+// BackupFailoverEnabled applies equality check predicate on the "backup_failover_enabled" field. It's identical to BackupFailoverEnabledEQ.
+func BackupFailoverEnabled(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldBackupFailoverEnabled, v))
+}
+
+// BackupGroupID applies equality check predicate on the "backup_group_id" field. It's identical to BackupGroupIDEQ.
+func BackupGroupID(v int64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldBackupGroupID, v))
+}
+
 // ModelRoutingEnabled applies equality check predicate on the "model_routing_enabled" field. It's identical to ModelRoutingEnabledEQ.
 func ModelRoutingEnabled(v bool) predicate.Group {
 	return predicate.Group(sql.FieldEQ(FieldModelRoutingEnabled, v))
@@ -998,6 +1008,76 @@ func FallbackGroupIDOnInvalidRequestIsNil() predicate.Group {
 // FallbackGroupIDOnInvalidRequestNotNil applies the NotNil predicate on the "fallback_group_id_on_invalid_request" field.
 func FallbackGroupIDOnInvalidRequestNotNil() predicate.Group {
 	return predicate.Group(sql.FieldNotNull(FieldFallbackGroupIDOnInvalidRequest))
+}
+
+// BackupFailoverEnabledEQ applies the EQ predicate on the "backup_failover_enabled" field.
+func BackupFailoverEnabledEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldBackupFailoverEnabled, v))
+}
+
+// BackupFailoverEnabledNEQ applies the NEQ predicate on the "backup_failover_enabled" field.
+func BackupFailoverEnabledNEQ(v bool) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldBackupFailoverEnabled, v))
+}
+
+// BackupGroupIDEQ applies the EQ predicate on the "backup_group_id" field.
+func BackupGroupIDEQ(v int64) predicate.Group {
+	return predicate.Group(sql.FieldEQ(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDNEQ applies the NEQ predicate on the "backup_group_id" field.
+func BackupGroupIDNEQ(v int64) predicate.Group {
+	return predicate.Group(sql.FieldNEQ(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDIn applies the In predicate on the "backup_group_id" field.
+func BackupGroupIDIn(vs ...int64) predicate.Group {
+	return predicate.Group(sql.FieldIn(FieldBackupGroupID, vs...))
+}
+
+// BackupGroupIDNotIn applies the NotIn predicate on the "backup_group_id" field.
+func BackupGroupIDNotIn(vs ...int64) predicate.Group {
+	return predicate.Group(sql.FieldNotIn(FieldBackupGroupID, vs...))
+}
+
+// BackupGroupIDGT applies the GT predicate on the "backup_group_id" field.
+func BackupGroupIDGT(v int64) predicate.Group {
+	return predicate.Group(sql.FieldGT(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDGTE applies the GTE predicate on the "backup_group_id" field.
+func BackupGroupIDGTE(v int64) predicate.Group {
+	return predicate.Group(sql.FieldGTE(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDLT applies the LT predicate on the "backup_group_id" field.
+func BackupGroupIDLT(v int64) predicate.Group {
+	return predicate.Group(sql.FieldLT(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDLTE applies the LTE predicate on the "backup_group_id" field.
+func BackupGroupIDLTE(v int64) predicate.Group {
+	return predicate.Group(sql.FieldLTE(FieldBackupGroupID, v))
+}
+
+// BackupGroupIDIsNil applies the IsNil predicate on the "backup_group_id" field.
+func BackupGroupIDIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldBackupGroupID))
+}
+
+// BackupGroupIDNotNil applies the NotNil predicate on the "backup_group_id" field.
+func BackupGroupIDNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldBackupGroupID))
+}
+
+// BackupFailoverConfigIsNil applies the IsNil predicate on the "backup_failover_config" field.
+func BackupFailoverConfigIsNil() predicate.Group {
+	return predicate.Group(sql.FieldIsNull(FieldBackupFailoverConfig))
+}
+
+// BackupFailoverConfigNotNil applies the NotNil predicate on the "backup_failover_config" field.
+func BackupFailoverConfigNotNil() predicate.Group {
+	return predicate.Group(sql.FieldNotNull(FieldBackupFailoverConfig))
 }
 
 // ModelRoutingIsNil applies the IsNil predicate on the "model_routing" field.

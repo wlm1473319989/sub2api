@@ -720,6 +720,30 @@ func (u *SubscriptionPlanUpsert) UpdateProductName() *SubscriptionPlanUpsert {
 	return u
 }
 
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsert) SetPurchaseLimitPerUser(v int) *SubscriptionPlanUpsert {
+	u.Set(subscriptionplan.FieldPurchaseLimitPerUser, v)
+	return u
+}
+
+// UpdatePurchaseLimitPerUser sets the "purchase_limit_per_user" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsert) UpdatePurchaseLimitPerUser() *SubscriptionPlanUpsert {
+	u.SetExcluded(subscriptionplan.FieldPurchaseLimitPerUser)
+	return u
+}
+
+// AddPurchaseLimitPerUser adds v to the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsert) AddPurchaseLimitPerUser(v int) *SubscriptionPlanUpsert {
+	u.Add(subscriptionplan.FieldPurchaseLimitPerUser, v)
+	return u
+}
+
+// ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsert) ClearPurchaseLimitPerUser() *SubscriptionPlanUpsert {
+	u.SetNull(subscriptionplan.FieldPurchaseLimitPerUser)
+	return u
+}
+
 // SetForSale sets the "for_sale" field.
 func (u *SubscriptionPlanUpsert) SetForSale(v bool) *SubscriptionPlanUpsert {
 	u.Set(subscriptionplan.FieldForSale, v)
@@ -1028,6 +1052,34 @@ func (u *SubscriptionPlanUpsertOne) SetProductName(v string) *SubscriptionPlanUp
 func (u *SubscriptionPlanUpsertOne) UpdateProductName() *SubscriptionPlanUpsertOne {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertOne) SetPurchaseLimitPerUser(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetPurchaseLimitPerUser(v)
+	})
+}
+
+// AddPurchaseLimitPerUser adds v to the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertOne) AddPurchaseLimitPerUser(v int) *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddPurchaseLimitPerUser(v)
+	})
+}
+
+// UpdatePurchaseLimitPerUser sets the "purchase_limit_per_user" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertOne) UpdatePurchaseLimitPerUser() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdatePurchaseLimitPerUser()
+	})
+}
+
+// ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertOne) ClearPurchaseLimitPerUser() *SubscriptionPlanUpsertOne {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearPurchaseLimitPerUser()
 	})
 }
 
@@ -1512,6 +1564,34 @@ func (u *SubscriptionPlanUpsertBulk) SetProductName(v string) *SubscriptionPlanU
 func (u *SubscriptionPlanUpsertBulk) UpdateProductName() *SubscriptionPlanUpsertBulk {
 	return u.Update(func(s *SubscriptionPlanUpsert) {
 		s.UpdateProductName()
+	})
+}
+
+// SetPurchaseLimitPerUser sets the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertBulk) SetPurchaseLimitPerUser(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.SetPurchaseLimitPerUser(v)
+	})
+}
+
+// AddPurchaseLimitPerUser adds v to the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertBulk) AddPurchaseLimitPerUser(v int) *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.AddPurchaseLimitPerUser(v)
+	})
+}
+
+// UpdatePurchaseLimitPerUser sets the "purchase_limit_per_user" field to the value that was provided on create.
+func (u *SubscriptionPlanUpsertBulk) UpdatePurchaseLimitPerUser() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.UpdatePurchaseLimitPerUser()
+	})
+}
+
+// ClearPurchaseLimitPerUser clears the value of the "purchase_limit_per_user" field.
+func (u *SubscriptionPlanUpsertBulk) ClearPurchaseLimitPerUser() *SubscriptionPlanUpsertBulk {
+	return u.Update(func(s *SubscriptionPlanUpsert) {
+		s.ClearPurchaseLimitPerUser()
 	})
 }
 

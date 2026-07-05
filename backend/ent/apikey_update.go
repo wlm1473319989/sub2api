@@ -438,6 +438,20 @@ func (_u *APIKeyUpdate) ClearWindow7dStart() *APIKeyUpdate {
 	return _u
 }
 
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (_u *APIKeyUpdate) SetAllowPaidFailover(v bool) *APIKeyUpdate {
+	_u.mutation.SetAllowPaidFailover(v)
+	return _u
+}
+
+// SetNillableAllowPaidFailover sets the "allow_paid_failover" field if the given value is not nil.
+func (_u *APIKeyUpdate) SetNillableAllowPaidFailover(v *bool) *APIKeyUpdate {
+	if v != nil {
+		_u.SetAllowPaidFailover(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *APIKeyUpdate) SetUser(v *User) *APIKeyUpdate {
 	return _u.SetUserID(v.ID)
@@ -695,6 +709,9 @@ func (_u *APIKeyUpdate) sqlSave(ctx context.Context) (_node int, err error) {
 	}
 	if _u.mutation.Window7dStartCleared() {
 		_spec.ClearField(apikey.FieldWindow7dStart, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AllowPaidFailover(); ok {
+		_spec.SetField(apikey.FieldAllowPaidFailover, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{
@@ -1225,6 +1242,20 @@ func (_u *APIKeyUpdateOne) ClearWindow7dStart() *APIKeyUpdateOne {
 	return _u
 }
 
+// SetAllowPaidFailover sets the "allow_paid_failover" field.
+func (_u *APIKeyUpdateOne) SetAllowPaidFailover(v bool) *APIKeyUpdateOne {
+	_u.mutation.SetAllowPaidFailover(v)
+	return _u
+}
+
+// SetNillableAllowPaidFailover sets the "allow_paid_failover" field if the given value is not nil.
+func (_u *APIKeyUpdateOne) SetNillableAllowPaidFailover(v *bool) *APIKeyUpdateOne {
+	if v != nil {
+		_u.SetAllowPaidFailover(*v)
+	}
+	return _u
+}
+
 // SetUser sets the "user" edge to the User entity.
 func (_u *APIKeyUpdateOne) SetUser(v *User) *APIKeyUpdateOne {
 	return _u.SetUserID(v.ID)
@@ -1512,6 +1543,9 @@ func (_u *APIKeyUpdateOne) sqlSave(ctx context.Context) (_node *APIKey, err erro
 	}
 	if _u.mutation.Window7dStartCleared() {
 		_spec.ClearField(apikey.FieldWindow7dStart, field.TypeTime)
+	}
+	if value, ok := _u.mutation.AllowPaidFailover(); ok {
+		_spec.SetField(apikey.FieldAllowPaidFailover, field.TypeBool, value)
 	}
 	if _u.mutation.UserCleared() {
 		edge := &sqlgraph.EdgeSpec{

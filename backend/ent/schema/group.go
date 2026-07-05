@@ -94,6 +94,17 @@ func (Group) Fields() []ent.Field {
 			Optional().
 			Nillable().
 			Comment("无效请求兜底使用的分组 ID"),
+		field.Bool("backup_failover_enabled").
+			Default(false).
+			Comment("是否启用 OpenAI 备用分组自动熔断切换"),
+		field.Int64("backup_group_id").
+			Optional().
+			Nillable().
+			Comment("OpenAI 自动熔断切换使用的备用分组 ID"),
+		field.JSON("backup_failover_config", domain.DefaultGroupBackupFailoverConfig()).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}).
+			Comment("OpenAI 备用分组熔断配置"),
 
 		// 模型路由配置 (added by migration 040)
 		field.JSON("model_routing", map[string][]int64{}).

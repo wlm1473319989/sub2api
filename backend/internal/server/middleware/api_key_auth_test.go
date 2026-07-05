@@ -1327,6 +1327,13 @@ func (r *stubUserSubscriptionRepo) ActivateWindows(ctx context.Context, id int64
 	return errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) ActivateWindowStarts(ctx context.Context, id int64, dailyStart, weeklyStart, monthlyStart time.Time) error {
+	if r.activateWindow != nil {
+		return r.activateWindow(ctx, id, dailyStart)
+	}
+	return errors.New("not implemented")
+}
+
 func (r *stubUserSubscriptionRepo) ResetDailyUsage(ctx context.Context, id int64, newWindowStart time.Time) error {
 	if r.resetDaily != nil {
 		return r.resetDaily(ctx, id, newWindowStart)
