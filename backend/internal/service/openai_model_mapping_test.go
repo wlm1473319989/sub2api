@@ -121,6 +121,15 @@ func TestResolveOpenAIForwardModel(t *testing.T) {
 			defaultMappedModel: "gpt-5.4",
 			expectedModel:      "gpt-5.5-openai-compact",
 		},
+		{
+			name: "preserves gpt-5.6 instead of group default",
+			account: &Account{
+				Credentials: map[string]any{},
+			},
+			requestedModel:     "gpt-5.6-sol",
+			defaultMappedModel: "gpt-5.4",
+			expectedModel:      "gpt-5.6-sol",
+		},
 	}
 
 	for _, tt := range tests {
@@ -218,15 +227,19 @@ func TestResolveOpenAICompactForwardModel(t *testing.T) {
 
 func TestNormalizeCodexModel(t *testing.T) {
 	cases := map[string]string{
-		"gpt-5.3-codex-spark":       "gpt-5.3-codex-spark",
-		"gpt-5.3-codex-spark-high":  "gpt-5.3-codex-spark",
-		"gpt-5.3-codex-spark-xhigh": "gpt-5.3-codex-spark",
-		"gpt-5.3":                   "gpt-5.3-codex",
-		"gpt-image-2":               "gpt-image-2",
-		"gpt-5.4-nano":              "gpt-5.4-nano",
-		"gpt-5.4-nano-high":         "gpt-5.4-nano",
-		"gpt6":                      "gpt6",
-		"claude-opus-4-6":           "claude-opus-4-6",
+		"gpt-5.3-codex-spark":         "gpt-5.3-codex-spark",
+		"gpt-5.3-codex-spark-high":    "gpt-5.3-codex-spark",
+		"gpt-5.3-codex-spark-xhigh":   "gpt-5.3-codex-spark",
+		"gpt-5.3":                     "gpt-5.3-codex",
+		"gpt-image-2":                 "gpt-image-2",
+		"gpt-5.4-nano":                "gpt-5.4-nano",
+		"gpt-5.4-nano-high":           "gpt-5.4-nano",
+		"gpt-5.6-sol":                 "gpt-5.6-sol",
+		"gpt-5.6-sol-high":            "gpt-5.6-sol",
+		"gpt-5.6-terra-xhigh":         "gpt-5.6-terra",
+		"gpt-5.6-luna-openai-compact": "gpt-5.6-luna",
+		"gpt6":                        "gpt6",
+		"claude-opus-4-6":             "claude-opus-4-6",
 	}
 
 	for input, expected := range cases {
