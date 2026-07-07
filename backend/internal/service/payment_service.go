@@ -30,6 +30,7 @@ const (
 	OrderStatusFailed            = payment.OrderStatusFailed
 	OrderStatusRefundRequested   = payment.OrderStatusRefundRequested
 	OrderStatusRefunding         = payment.OrderStatusRefunding
+	OrderStatusRefundPending     = payment.OrderStatusRefundPending
 	OrderStatusPartiallyRefunded = payment.OrderStatusPartiallyRefunded
 	OrderStatusRefunded          = payment.OrderStatusRefunded
 	OrderStatusRefundFailed      = payment.OrderStatusRefundFailed
@@ -293,7 +294,7 @@ func (s *PaymentService) loadProviders(ctx context.Context) {
 
 func psIsRefundStatus(s string) bool {
 	switch s {
-	case OrderStatusRefundRequested, OrderStatusRefunding, OrderStatusPartiallyRefunded, OrderStatusRefunded, OrderStatusRefundFailed:
+	case OrderStatusRefundRequested, OrderStatusRefunding, OrderStatusRefundPending, OrderStatusPartiallyRefunded, OrderStatusRefunded, OrderStatusRefundFailed:
 		return true
 	}
 	return false
@@ -378,18 +379,21 @@ func psSliceContains(sl []string, s string) bool {
 
 // Subscription validity period unit constants.
 const (
-	validityUnitWeek  = "week"
-	validityUnitMonth = "month"
-	validityUnitYear  = "year"
+	validityUnitWeek   = "week"
+	validityUnitWeeks  = "weeks"
+	validityUnitMonth  = "month"
+	validityUnitMonths = "months"
+	validityUnitYear   = "year"
+	validityUnitYears  = "years"
 )
 
 func psComputeValidityDays(days int, unit string) int {
 	switch unit {
-	case validityUnitWeek:
+	case validityUnitWeek, validityUnitWeeks:
 		return days * 7
-	case validityUnitMonth:
+	case validityUnitMonth, validityUnitMonths:
 		return days * 30
-	case validityUnitYear:
+	case validityUnitYear, validityUnitYears:
 		return days * 365
 	default:
 		return days

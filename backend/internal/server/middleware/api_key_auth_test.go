@@ -1256,6 +1256,10 @@ func (r *stubUserSubscriptionRepo) GetByID(ctx context.Context, id int64) (*serv
 	return nil, errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) GetByIDIncludeDeleted(ctx context.Context, id int64) (*service.UserSubscription, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (r *stubUserSubscriptionRepo) GetActiveByUserID(ctx context.Context, userID int64) (*service.UserSubscription, error) {
 	if r.getActive != nil {
 		return r.getActive(ctx, userID)
@@ -1282,6 +1286,10 @@ func (r *stubUserSubscriptionRepo) Delete(ctx context.Context, id int64) error {
 	return errors.New("not implemented")
 }
 
+func (r *stubUserSubscriptionRepo) Restore(ctx context.Context, subscriptionID int64, restoredStatus string) (*service.UserSubscription, error) {
+	return nil, errors.New("not implemented")
+}
+
 func (r *stubUserSubscriptionRepo) ListByUserID(ctx context.Context, userID int64) ([]service.UserSubscription, error) {
 	return nil, errors.New("not implemented")
 }
@@ -1303,6 +1311,10 @@ func (r *stubUserSubscriptionRepo) HasActiveByUserID(ctx context.Context, userID
 		return false, service.ErrMultipleActiveSubscriptions
 	}
 	return len(subs) == 1, nil
+}
+
+func (r *stubUserSubscriptionRepo) ExistsActiveByUserIDAndGroupID(ctx context.Context, userID, groupID int64) (bool, error) {
+	return false, errors.New("not implemented")
 }
 
 func (r *stubUserSubscriptionRepo) ExtendExpiry(ctx context.Context, subscriptionID int64, newExpiresAt time.Time) error {

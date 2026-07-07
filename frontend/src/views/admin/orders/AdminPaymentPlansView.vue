@@ -74,7 +74,7 @@
       </DataTable>
     </div>
 
-    <PlanEditDialog :show="showPlanDialog" :plan="editingPlan" :groups="groups" @close="showPlanDialog = false" @saved="loadPlans" />
+    <PlanEditDialog :show="showPlanDialog" :plan="editingPlan" :groups="groups" :payment-config="paymentConfig" @close="showPlanDialog = false" @saved="loadPlans" />
 
     <ConfirmDialog
       :show="showDeletePlanDialog"
@@ -91,13 +91,14 @@
 <script setup lang="ts">
 import { computed, onMounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
+import { useAppStore } from '@/stores/app'
 import adminAPI from '@/api/admin'
 import { adminPaymentAPI } from '@/api/admin/payment'
+import type { AdminPaymentConfig } from '@/api/admin/payment'
 import type { SubscriptionPlan } from '@/types/payment'
 import type { AdminGroup } from '@/types'
 import type { Column } from '@/components/common/types'
 import { extractI18nErrorMessage } from '@/utils/apiError'
-import { useAppStore } from '@/stores/app'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import DataTable from '@/components/common/DataTable.vue'
@@ -108,6 +109,7 @@ const { t } = useI18n()
 const appStore = useAppStore()
 
 const groups = ref<AdminGroup[]>([])
+const paymentConfig = ref<AdminPaymentConfig | null>(null)
 const plans = ref<SubscriptionPlan[]>([])
 const plansLoading = ref(false)
 const showPlanDialog = ref(false)
@@ -157,6 +159,15 @@ async function loadGroups() {
     groups.value = await adminAPI.groups.getAll()
   } catch {
     // ignore group preview failures
+  }
+}
+
+async function loadPaymentConfig() {
+  try {
+    const res = await adminPaymentAPI.getConfig()
+    paymentConfig.value = res.data
+  } catch {
+    // ignore payment preview failures
   }
 }
 
@@ -210,6 +221,7 @@ async function handleDeletePlan() {
 
 onMounted(() => {
   loadGroups()
+  loadPaymentConfig()
   loadPlans()
 })
 </script>

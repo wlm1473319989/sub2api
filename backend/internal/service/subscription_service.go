@@ -31,6 +31,8 @@ var (
 	ErrSubscriptionSuspended            = infraerrors.Forbidden("SUBSCRIPTION_SUSPENDED", "subscription is suspended")
 	ErrSubscriptionAlreadyExists        = infraerrors.Conflict("SUBSCRIPTION_ALREADY_EXISTS", "subscription already exists for this user")
 	ErrMultipleActiveSubscriptions      = infraerrors.Conflict("MULTIPLE_ACTIVE_SUBSCRIPTIONS", "multiple active subscriptions found for user")
+	ErrSubscriptionNotRevoked           = infraerrors.Conflict("SUBSCRIPTION_NOT_REVOKED", "subscription is not revoked")
+	ErrSubscriptionRestoreConflict      = infraerrors.Conflict("SUBSCRIPTION_RESTORE_CONFLICT", "subscription already exists for this user")
 	ErrInvalidInput                     = infraerrors.BadRequest("INVALID_INPUT", "at least one of resetDaily, resetWeekly, or resetMonthly must be true")
 	ErrDailyLimitExceeded               = infraerrors.TooManyRequests("DAILY_LIMIT_EXCEEDED", "daily usage limit exceeded")
 	ErrWeeklyLimitExceeded              = infraerrors.TooManyRequests("WEEKLY_LIMIT_EXCEEDED", "weekly usage limit exceeded")
@@ -66,6 +68,7 @@ func NewSubscriptionService(groupRepo GroupRepository, userSubRepo UserSubscript
 	}
 	svc.initSubCache(cfg)
 	svc.initMaintenanceQueue(cfg)
+	svc.StartSubCacheInvalidationSubscriber(context.Background())
 	return svc
 }
 
@@ -135,12 +138,37 @@ func (s *SubscriptionService) jitteredTTL(ttl time.Duration) time.Duration {
 	return time.Duration(float64(ttl) * factor)
 }
 
-// InvalidateSubCache 失效指定用户+分组的订阅 L1 缓存
+// InvalidateSubCache 失效指定用户的订阅 L1 缓存
 func (s *SubscriptionService) InvalidateSubCache(userID int64) {
 	if s.subCacheL1 == nil {
 		return
 	}
 	s.subCacheL1.Del(subCacheKey(userID))
+}
+
+// InvalidateSubCacheSync 失效订阅 L1 缓存并等待 Ristretto 删除操作生效。
+func (s *SubscriptionService) InvalidateSubCacheSync(userID int64) {
+	s.invalidateSubCacheKeySync(subCacheKey(userID))
+}
+
+func (s *SubscriptionService) invalidateSubCacheKeySync(key string) {
+	if s.subCacheL1 == nil {
+		return
+	}
+	s.subCacheL1.Del(key)
+	s.subCacheL1.Wait()
+}
+
+// StartSubCacheInvalidationSubscriber 启动跨实例订阅 L1 缓存失效订阅。
+func (s *SubscriptionService) StartSubCacheInvalidationSubscriber(ctx context.Context) {
+	if s.billingCacheService == nil || s.subCacheL1 == nil {
+		return
+	}
+	if err := s.billingCacheService.SubscribeSubscriptionCacheInvalidation(ctx, func(cacheKey string) {
+		s.invalidateSubCacheKeySync(cacheKey)
+	}); err != nil {
+		log.Printf("Warning: failed to start subscription cache invalidation subscriber: %v", err)
+	}
 }
 
 // AssignSubscriptionInput 分配订阅输入
@@ -453,6 +481,39 @@ func (s *SubscriptionService) RevokeSubscription(ctx context.Context, input *Rev
 	return s.userSubRepo.GetByID(ctx, revokedSubscriptionID)
 }
 
+// RestoreSubscription 恢复已撤销订阅
+func (s *SubscriptionService) RestoreSubscription(ctx context.Context, subscriptionID int64) (*UserSubscription, error) {
+	sub, err := s.userSubRepo.GetByIDIncludeDeleted(ctx, subscriptionID)
+	if err != nil {
+		return nil, err
+	}
+	if sub.DeletedAt == nil {
+		return nil, ErrSubscriptionNotRevoked
+	}
+
+	exists, err := s.userSubRepo.HasActiveByUserID(ctx, sub.UserID)
+	if err != nil {
+		return nil, err
+	}
+	if exists {
+		return nil, ErrSubscriptionRestoreConflict
+	}
+
+	restoredStatus := sub.Status
+	now := time.Now()
+	if restoredStatus == SubscriptionStatusActive && !sub.ExpiresAt.After(now) {
+		restoredStatus = SubscriptionStatusExpired
+	}
+
+	restored, err := s.userSubRepo.Restore(ctx, subscriptionID, restoredStatus)
+	if err != nil {
+		return nil, err
+	}
+
+	s.invalidateSubscriptionCaches(restored.UserID)
+	return restored, nil
+}
+
 // ExtendSubscription 调整订阅时长（正数延长，负数缩短）
 func (s *SubscriptionService) ExtendSubscription(ctx context.Context, subscriptionID int64, days int) (*UserSubscription, error) {
 	sub, err := s.userSubRepo.GetByID(ctx, subscriptionID)
@@ -709,10 +770,7 @@ func (s *SubscriptionService) AdminResetQuota(ctx context.Context, subscriptionI
 	// Invalidate L1 ristretto cache. Ristretto's Del() is asynchronous by design,
 	// so call Wait() immediately after to flush pending operations and guarantee
 	// the deleted key is not returned on the very next Get() call.
-	s.InvalidateSubCache(sub.UserID)
-	if s.subCacheL1 != nil {
-		s.subCacheL1.Wait()
-	}
+	s.InvalidateSubCacheSync(sub.UserID)
 	if s.billingCacheService != nil {
 		_ = s.billingCacheService.InvalidateSubscription(ctx, sub.UserID)
 	}

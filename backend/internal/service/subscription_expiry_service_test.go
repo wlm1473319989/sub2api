@@ -22,6 +22,10 @@ func (r *subscriptionExpiryRepoStub) GetByID(context.Context, int64) (*UserSubsc
 	return nil, ErrSubscriptionNotFound
 }
 
+func (r *subscriptionExpiryRepoStub) GetByIDIncludeDeleted(context.Context, int64) (*UserSubscription, error) {
+	return nil, ErrSubscriptionNotFound
+}
+
 func (r *subscriptionExpiryRepoStub) GetActiveByUserID(context.Context, int64) (*UserSubscription, error) {
 	return nil, ErrSubscriptionNotFound
 }
@@ -32,6 +36,10 @@ func (r *subscriptionExpiryRepoStub) Update(context.Context, *UserSubscription) 
 
 func (r *subscriptionExpiryRepoStub) Delete(context.Context, int64) error {
 	return nil
+}
+
+func (r *subscriptionExpiryRepoStub) Restore(context.Context, int64, string) (*UserSubscription, error) {
+	return nil, ErrSubscriptionNotFound
 }
 
 func (r *subscriptionExpiryRepoStub) ListByUserID(context.Context, int64) ([]UserSubscription, error) {

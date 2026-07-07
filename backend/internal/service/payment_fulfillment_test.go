@@ -627,7 +627,7 @@ func TestExecuteSubscriptionFulfillmentAppliesAffiliateRebate(t *testing.T) {
 	require.Len(t, affiliateRepo.accrueCalls, 1)
 	require.Equal(t, inviterID, affiliateRepo.accrueCalls[0].inviterID)
 	require.Equal(t, user.ID, affiliateRepo.accrueCalls[0].inviteeUserID)
-	require.Equal(t, 24.0, affiliateRepo.accrueCalls[0].amount)
+	require.InDelta(t, 24.0, affiliateRepo.accrueCalls[0].amount, 0.00000001)
 	require.NotNil(t, affiliateRepo.accrueCalls[0].sourceOrderID)
 	require.Equal(t, order.ID, *affiliateRepo.accrueCalls[0].sourceOrderID)
 	require.Equal(t, 1, h.userSubRepo.createCalls)

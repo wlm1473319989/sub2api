@@ -113,12 +113,13 @@ func (r *usageBillingRepository) applyUsageBillingEffects(ctx context.Context, t
 	}
 
 	if cmd.BalanceCost > 0 {
-		newBalance, deducted, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
+		newBalance, deducted, overdrafted, err := deductUsageBillingBalance(ctx, tx, cmd.UserID, cmd.BalanceCost)
 		if err != nil {
 			return err
 		}
 		result.NewBalance = &newBalance
 		result.BalanceDeducted = &deducted
+		result.BalanceOverdrafted = overdrafted
 	}
 
 	if cmd.APIKeyQuotaCost > 0 {
@@ -174,7 +175,7 @@ func incrementUsageBillingSubscription(ctx context.Context, tx *sql.Tx, subscrip
 	return service.ErrSubscriptionNotFound
 }
 
-func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, float64, error) {
+func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, amount float64) (float64, float64, bool, error) {
 	var newBalance float64
 	var deducted float64
 	err := tx.QueryRowContext(ctx, `
@@ -203,12 +204,12 @@ func deductUsageBillingBalance(ctx context.Context, tx *sql.Tx, userID int64, am
 		SELECT new_balance, deducted FROM updated
 	`, amount, userID).Scan(&newBalance, &deducted)
 	if errors.Is(err, sql.ErrNoRows) {
-		return 0, 0, service.ErrUserNotFound
+		return 0, 0, false, service.ErrUserNotFound
 	}
 	if err != nil {
-		return 0, 0, err
+		return 0, 0, false, err
 	}
-	return newBalance, deducted, nil
+	return newBalance, deducted, false, nil
 }
 
 func incrementUsageBillingAPIKeyQuota(ctx context.Context, tx *sql.Tx, apiKeyID int64, amount float64) (bool, error) {

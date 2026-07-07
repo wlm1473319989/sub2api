@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { flushPromises, mount } from '@vue/test-utils'
-import { createPinia, setActivePinia } from 'pinia'
+import type { AdminPaymentConfig } from '@/api/admin/payment'
 
 import PlanEditDialog from '../PlanEditDialog.vue'
 
@@ -29,9 +29,20 @@ vi.mock('@/utils/apiError', () => ({
   extractApiErrorMessage: () => 'error',
 }))
 
+vi.mock('@/components/payment/currency', () => ({
+  formatPaymentAmount: (amount: number, currency?: string | null) => {
+    const symbol = currency === 'CNY' ? '¥' : ''
+    return `${symbol}${amount.toFixed(2)}`
+  },
+}))
+
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, params?: Record<string, unknown>) => {
+      if (key === 'payment.admin.subscriptionCnyPayPreview') return `preview ${params?.amount}`
+      if (key === 'payment.admin.subscriptionCnyPayPreviewWithFee') return `fee ${params?.feeRate} ${params?.total}`
+      return key
+    },
   }),
 }))
 
@@ -40,37 +51,34 @@ const BaseDialogStub = {
   template: '<div v-if="show"><slot /><slot name="footer" /></div>',
 }
 
+function mountDialog(paymentConfig: Partial<AdminPaymentConfig> | null = null) {
+  return mount(PlanEditDialog, {
+    props: {
+      show: true,
+      plan: null,
+      groups: [],
+      paymentConfig: paymentConfig as AdminPaymentConfig | null,
+    },
+    global: {
+      stubs: {
+        BaseDialog: BaseDialogStub,
+        GroupBadge: { template: '<div />' },
+        Icon: { template: '<div />' },
+        Teleport: true,
+        Transition: false,
+      },
+    },
+  })
+}
+
 describe('PlanEditDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks()
-    setActivePinia(createPinia())
     createPlan.mockResolvedValue({ data: { id: 1 } })
   })
 
   it('creates user-level plans without requiring a group', async () => {
-    const wrapper = mount(PlanEditDialog, {
-      props: {
-        show: true,
-        plan: null,
-        groups: [
-          {
-            id: 7,
-            name: 'openai-default',
-            platform: 'openai',
-            rate_multiplier: 1,
-          },
-        ],
-      },
-      global: {
-        stubs: {
-          BaseDialog: BaseDialogStub,
-          GroupBadge: { template: '<div />' },
-          Icon: { template: '<div />' },
-          Teleport: true,
-          Transition: false,
-        },
-      },
-    })
+    const wrapper = mountDialog()
 
     expect(wrapper.find('.select-trigger').exists()).toBe(true)
     expect(wrapper.find('.select-trigger').text()).toContain('payment.admin.days')
@@ -97,5 +105,31 @@ describe('PlanEditDialog', () => {
       validity_unit: 'day',
     }))
     expect(showSuccess).toHaveBeenCalled()
+  })
+
+  it('shows CNY channel charge using the configured subscription rate and fee', async () => {
+    const wrapper = mountDialog({
+      subscription_usd_to_cny_rate: 7.15,
+      recharge_fee_rate: 2.5,
+    })
+
+    await wrapper.find('input[type="number"]').setValue('9.99')
+
+    expect(wrapper.text()).toContain('preview')
+    expect(wrapper.text()).toContain('¥71.43')
+    expect(wrapper.text()).toContain('fee 2.5')
+    expect(wrapper.text()).toContain('¥73.22')
+  })
+
+  it('hides the preview when the subscription rate is not configured', async () => {
+    const wrapper = mountDialog({
+      subscription_usd_to_cny_rate: 0,
+      recharge_fee_rate: 2.5,
+    })
+
+    await wrapper.find('input[type="number"]').setValue('9.99')
+
+    expect(wrapper.text()).not.toContain('preview')
+    expect(wrapper.text()).not.toContain('¥71.43')
   })
 })
