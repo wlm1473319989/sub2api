@@ -53,6 +53,8 @@ pnpm-debug.log*
 .env.*.local
 *.env
 !.env.example
+deploy/.env.*
+!deploy/.env.example
 docker-compose.override.yml
 
 # ===================

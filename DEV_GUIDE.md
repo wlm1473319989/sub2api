@@ -31,6 +31,37 @@
 | 端口 | 6379 |
 | 密码 | 无 |
 
+### Docker dev 本地部署
+
+本机已经长期部署了一套 Docker dev 环境，不要默认认为本地服务没跑。排查或本地发版前先看容器状态：
+
+```powershell
+docker ps --format "table {{.Names}}\t{{.Image}}\t{{.Ports}}\t{{.CreatedAt}}"
+```
+
+当前约定：
+
+| 项 | 值 |
+|----|----|
+| Compose 文件 | `deploy/docker-compose.dev.yml` |
+| 应用容器 | `sub2api-dev` |
+| 镜像 | `deploy-sub2api` |
+| PostgreSQL 容器 | `sub2api-postgres-dev` |
+| Redis 容器 | `sub2api-redis-dev` |
+| 本地访问 | `http://127.0.0.1:18080` |
+| 健康检查 | `http://127.0.0.1:18080/health` |
+| 本地数据库密码 | `sub2api_dev_pw` |
+
+本地代码提交或切换分支后，运行中的容器不会自动更新；需要重新构建镜像并在原容器上发版：
+
+```powershell
+$env:POSTGRES_PASSWORD='sub2api_dev_pw'
+docker compose -f deploy/docker-compose.dev.yml build sub2api
+docker compose -f deploy/docker-compose.dev.yml up -d sub2api
+```
+
+启动时后端会自动执行 `backend/migrations/*.sql` 中尚未记录到 `schema_migrations` 的迁移。
+
 ### 开发工具
 
 ```bash
