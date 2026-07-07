@@ -36,57 +36,69 @@ docker run --rm -v sub2api-go-mod-cache:/go/pkg/mod -v sub2api-go-build-cache:/r
 
 这些提交优先逐个审计。原则：保留本地架构，只引入明确 bugfix，不整包引入官方大功能。
 
-- [ ] `0da1fe28` 修复 text-only `/v1/responses` 被误判为图片计费  
+- [x] `0da1fe28` 修复 text-only `/v1/responses` 被误判为图片计费  
   风险：中。涉及本地图片计费、`image_output_accounting`。  
-  完成记录：
+  完成记录：本地提交 `ee7b3c8e`。
 
-- [ ] `df51edfb` OAuth Codex 保留 instructions，同时保留 developer input  
+- [x] `df51edfb` OAuth Codex 保留 instructions，同时保留 developer input  
   风险：中。影响 Codex 请求转换和 developer/system 输入合并。  
-  完成记录：
+  完成记录：本地提交 `79eb94d5`。
 
-- [ ] `ae5e980d` `/v1/chat/completions` 也执行 `codex_cli_only` 限制  
+- [x] `ae5e980d` `/v1/chat/completions` 也执行 `codex_cli_only` 限制  
   风险：低中。权限策略修复，需要确认本地 chat bridge 是否同语义。  
-  完成记录：
+  完成记录：本地提交 `6dbbfdbc`。
 
-- [ ] `65fa7289` OpenAI chat transport error 支持 failover  
+- [x] `65fa7289` OpenAI chat transport error 支持 failover  
   风险：中。影响故障切换和错误分类。  
-  完成记录：
+  完成记录：本地提交 `2bcc733d`。
 
-- [ ] `dbdbfb11` chat bridge 避免注入默认 Codex instructions  
+- [x] `dbdbfb11` chat bridge 避免注入默认 Codex instructions  
   风险：中。影响模型行为，需核对本地默认 instructions 策略。  
-  完成记录：
+  完成记录：本地提交 `967f738e`。
 
-- [ ] `2b49d662` 去重 passthrough function call args  
+- [x] `2b49d662` 去重 passthrough function call args  
   风险：中。影响工具调用兼容，需覆盖单 chunk 上游响应。  
-  完成记录：
+  完成记录：本地提交 `61b3739b`。
 
-- [ ] `01127820` Codex Spark 剥离 `image_generation` 工具，修复 502  
+- [x] `01127820` Codex Spark 剥离 `image_generation` 工具，修复 502  
   风险：中。和本地 image bridge、Spark 策略交叉。  
-  完成记录：
+  完成记录：本地提交 `25904088`。
 
-- [ ] `cc7612bd` 识别 OpenAI overloaded 错误码  
+- [x] `cc7612bd` 识别 OpenAI overloaded 错误码  
   风险：低中。影响调度、限流、账号暂停判断。  
-  完成记录：
+  完成记录：本地提交 `adf364c2`。
 
-- [ ] `29122e30` 避免单 chunk 上游重复 tool_call arguments  
+- [x] `29122e30` 避免单 chunk 上游重复 tool_call arguments  
   风险：低中。API compat 修复。  
-  完成记录：
+  完成记录：本地提交 `b70025ee`。
 
-- [ ] `7cbf82ed` 避免 OpenAI 上下文窗口错误误触发账号切换  
+- [x] `7cbf82ed` 避免 OpenAI 上下文窗口错误误触发账号切换  
   风险：中高。影响 failover 策略和错误透传。  
-  完成记录：
+  完成记录：本地提交 `ea54c912`。冲突处理：保留本地 failover 测试，并加入官方 context window 透传/脱敏测试。
 
-- [ ] `73de2ea7` Codex OAuth 多轮保留 encrypted reasoning  
+- [x] `73de2ea7` Codex OAuth 多轮保留 encrypted reasoning  
   风险：中。影响续链、reasoning item 保留。  
-  完成记录：
+  完成记录：本地提交 `5978cc0c`。
 
-- [ ] `c797159b` `/responses/compact` 跳过 Codex image bridge 注入  
+- [x] `c797159b` `/responses/compact` 跳过 Codex image bridge 注入  
   风险：中。和已合入 compact endpoint 逻辑强相关。  
-  完成记录：
+  完成记录：本地提交 `9b98f859`。冲突处理：保留本地图片控制测试，并加入 compact 跳过注入测试。
 
-- [ ] `82553c4d` OpenAI usage billing 保留 quota platform  
+- [x] `82553c4d` OpenAI usage billing 保留 quota platform  
   风险：中高。和本地计费链路、订阅倍率、费率倍率需要核对。  
-  完成记录：
+  完成记录：本地提交 `fabce533`。冲突处理：保留本地 failover 记录字段、订阅/余额拆分倍率字段，并加入 `QuotaPlatform`。
+
+- [x] `8a7269f` 补充依赖：脱敏 verbose OpenAI `response.failed` 事件  
+  风险：低中。`7cbf82ed` 的新增测试依赖该行为；否则 context window 错误会把上游 `instructions/output/usage` 原样透传给客户端。  
+  完成记录：本地提交 `64be840b`。冲突处理：保留 `7cbf82ed` 已引入的 context-window 透传测试，并补入 passthrough 脱敏测试。
+
+A 组验证记录：
+
+```powershell
+docker run --rm -v sub2api-go-mod-cache:/go/pkg/mod -v sub2api-go-build-cache:/root/.cache/go-build -v C:\project\sub2api:/workspace -w /workspace/backend golang:1.26.4-alpine go test ./internal/handler ./internal/service ./internal/pkg/apicompat -run "TestOpenAIImageOutputCounter|TestApplyCodexOAuthTransform_(CodexCLI|NonCodexCLI|JsonObject|Preserves|StripsImageGenerationTool|KeepsImageGenerationTool)|TestFilterCodexInput_PreservesReasoning|TestForwardAsChatCompletions_(OAuthDoesNotInjectDefaultInstructions|.*ContextWindow|.*Transport|StreamsUsage|.*TopLevelTerminalUsage)|TestHandleOpenAIUpstreamTransportError|TestForwardAsRawChatCompletions_TransportErrorFailsOver|TestHandleStreamingResponsePassthroughDeduplicatesFunctionCallArguments|TestForwardResponsesChatCompletionsFallbackKeepsFunctionArgumentsSingle|TestOpenAIGatewayService_Forward_(CodexSpark|StripsImageGenerationToolForSparkAPIKey|CodexBridgeInjectionSetsImageBilling)|TestOpenAIStreaming(ResponseFailed|ContextWindow|Preamble|PassthroughResponseFailed|PolicyResponseFailed|ReadError)|TestOpenAIGatewayServiceForward_(CodexBridge|CodexImageInjection|ChannelBridge|ExplicitImageTool|DisabledGroup)|TestOpenAIRecordUsageInputsCarryQuotaPlatform|TestStream_ToolCallArgumentsInFirstChunkNotDoubled"
+```
+
+结果：`handler`、`service`、`apicompat` 均通过。
 
 ## 第二批优先级 B
 
