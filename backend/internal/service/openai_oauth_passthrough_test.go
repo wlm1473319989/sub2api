@@ -784,7 +784,7 @@ func TestOpenAIGatewayService_OAuthPassthrough_UpstreamErrorIncludesPassthroughF
 
 	_, err := svc.Forward(context.Background(), c, account, originalBody)
 	require.Error(t, err)
-	require.True(t, c.Writer.Written(), "非 429/529 的 passthrough 错误应继续原样写回客户端")
+	require.True(t, c.Writer.Written(), "非 429/529/5xx 的 passthrough 错误应继续原样写回客户端")
 	require.Equal(t, http.StatusBadRequest, rec.Code)
 
 	// should append an upstream error event with passthrough=true
@@ -797,7 +797,7 @@ func TestOpenAIGatewayService_OAuthPassthrough_UpstreamErrorIncludesPassthroughF
 	require.Equal(t, "http_error", arr[len(arr)-1].Kind)
 }
 
-func TestOpenAIGatewayService_OpenAIPassthrough_429And529TriggerFailover(t *testing.T) {
+func TestOpenAIGatewayService_OpenAIPassthrough_429529And5xxTriggerFailover(t *testing.T) {
 	gin.SetMode(gin.TestMode)
 	originalBody := []byte(`{"model":"gpt-5.2","stream":false,"instructions":"local-test-instructions","input":[{"type":"text","text":"hi"}]}`)
 
@@ -855,6 +855,16 @@ func TestOpenAIGatewayService_OpenAIPassthrough_429And529TriggerFailover(t *test
 			},
 		},
 		{
+			name:        "oauth_500_server_error",
+			accountType: AccountTypeOAuth,
+			statusCode:  http.StatusInternalServerError,
+			body:        `{"error":{"message":"internal server error","type":"server_error"}}`,
+			assertRepo: func(t *testing.T, repo *openAIPassthroughFailoverRepo, _ time.Time) {
+				require.Empty(t, repo.rateLimitCalls)
+				require.Empty(t, repo.overloadCalls)
+			},
+		},
+		{
 			name:        "apikey_429_rate_limit",
 			accountType: AccountTypeAPIKey,
 			statusCode:  http.StatusTooManyRequests,
@@ -877,6 +887,16 @@ func TestOpenAIGatewayService_OpenAIPassthrough_429And529TriggerFailover(t *test
 				require.Empty(t, repo.rateLimitCalls)
 				require.Len(t, repo.overloadCalls, 1)
 				require.WithinDuration(t, start.Add(10*time.Minute), repo.overloadCalls[0], 5*time.Second)
+			},
+		},
+		{
+			name:        "apikey_503_server_error",
+			accountType: AccountTypeAPIKey,
+			statusCode:  http.StatusServiceUnavailable,
+			body:        `{"error":{"message":"service unavailable","type":"server_error"}}`,
+			assertRepo: func(t *testing.T, repo *openAIPassthroughFailoverRepo, _ time.Time) {
+				require.Empty(t, repo.rateLimitCalls)
+				require.Empty(t, repo.overloadCalls)
 			},
 		},
 	}
@@ -919,7 +939,7 @@ func TestOpenAIGatewayService_OpenAIPassthrough_429And529TriggerFailover(t *test
 			var failoverErr *UpstreamFailoverError
 			require.ErrorAs(t, err, &failoverErr)
 			require.Equal(t, tc.statusCode, failoverErr.StatusCode)
-			require.False(t, c.Writer.Written(), "429/529 passthrough 应返回 failover 错误给上层换号，而不是直接向客户端写响应")
+			require.False(t, c.Writer.Written(), "429/529/5xx passthrough 应返回 failover 错误给上层换号，而不是直接向客户端写响应")
 
 			v, ok := c.Get(OpsUpstreamErrorsKey)
 			require.True(t, ok)
