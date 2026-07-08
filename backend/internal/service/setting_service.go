@@ -1938,6 +1938,11 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 		settings.AffiliateRebatePerInviteeCap = AffiliateRebatePerInviteeCapDefault
 	}
 	updates[SettingKeyAffiliateRebatePerInviteeCap] = strconv.FormatFloat(settings.AffiliateRebatePerInviteeCap, 'f', 8, 64)
+	updates[SettingKeyAffiliateGroupGrantEnabled] = strconv.FormatBool(settings.AffiliateGroupGrantEnabled)
+	if settings.AffiliateGroupGrantGroupID < 0 {
+		settings.AffiliateGroupGrantGroupID = AffiliateGroupGrantGroupIDDefault
+	}
+	updates[SettingKeyAffiliateGroupGrantGroupID] = strconv.FormatInt(settings.AffiliateGroupGrantGroupID, 10)
 	updates[SettingKeyDefaultUserRPMLimit] = strconv.Itoa(settings.DefaultUserRPMLimit)
 	defaultSubsJSON, err := json.Marshal(settings.DefaultSubscriptions)
 	if err != nil {
@@ -2582,6 +2587,34 @@ func (s *SettingService) GetAffiliateRebatePerInviteeCap(ctx context.Context) fl
 	return cap
 }
 
+// IsAffiliateGroupGrantEnabled 检查是否启用邀请支付赠送限时专属分组。
+func (s *SettingService) IsAffiliateGroupGrantEnabled(ctx context.Context) bool {
+	if s == nil || s.settingRepo == nil {
+		return AffiliateGroupGrantEnabledDefault
+	}
+	value, err := s.settingRepo.GetValue(ctx, SettingKeyAffiliateGroupGrantEnabled)
+	if err != nil {
+		return AffiliateGroupGrantEnabledDefault
+	}
+	return value == "true"
+}
+
+// GetAffiliateGroupGrantGroupID 返回邀请支付赠送的目标专属分组 ID。
+func (s *SettingService) GetAffiliateGroupGrantGroupID(ctx context.Context) int64 {
+	if s == nil || s.settingRepo == nil {
+		return AffiliateGroupGrantGroupIDDefault
+	}
+	raw, err := s.settingRepo.GetValue(ctx, SettingKeyAffiliateGroupGrantGroupID)
+	if err != nil {
+		return AffiliateGroupGrantGroupIDDefault
+	}
+	groupID, err := strconv.ParseInt(strings.TrimSpace(raw), 10, 64)
+	if err != nil || groupID < 0 {
+		return AffiliateGroupGrantGroupIDDefault
+	}
+	return groupID
+}
+
 // IsPasswordResetEnabled 检查是否启用密码重置功能
 // 要求：必须同时开启邮件验证
 func (s *SettingService) IsPasswordResetEnabled(ctx context.Context) bool {
@@ -2872,6 +2905,8 @@ func (s *SettingService) InitializeDefaultSettings(ctx context.Context) error {
 		SettingKeyAffiliateRebateFreezeHours:                strconv.Itoa(AffiliateRebateFreezeHoursDefault),
 		SettingKeyAffiliateRebateDurationDays:               strconv.Itoa(AffiliateRebateDurationDaysDefault),
 		SettingKeyAffiliateRebatePerInviteeCap:              strconv.FormatFloat(AffiliateRebatePerInviteeCapDefault, 'f', 2, 64),
+		SettingKeyAffiliateGroupGrantEnabled:                strconv.FormatBool(AffiliateGroupGrantEnabledDefault),
+		SettingKeyAffiliateGroupGrantGroupID:                strconv.FormatInt(AffiliateGroupGrantGroupIDDefault, 10),
 		SettingKeyDefaultUserRPMLimit:                       "0",
 		SettingKeyDefaultSubscriptions:                      "[]",
 		SettingKeyAuthSourceDefaultEmailBalance:             "0",
@@ -3065,6 +3100,10 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 	}
 	if perInviteeCap, err := strconv.ParseFloat(settings[SettingKeyAffiliateRebatePerInviteeCap], 64); err == nil && perInviteeCap >= 0 {
 		result.AffiliateRebatePerInviteeCap = perInviteeCap
+	}
+	result.AffiliateGroupGrantEnabled = settings[SettingKeyAffiliateGroupGrantEnabled] == "true"
+	if groupID, err := strconv.ParseInt(strings.TrimSpace(settings[SettingKeyAffiliateGroupGrantGroupID]), 10, 64); err == nil && groupID >= 0 {
+		result.AffiliateGroupGrantGroupID = groupID
 	}
 	result.DefaultSubscriptions = parseDefaultSubscriptions(settings[SettingKeyDefaultSubscriptions])
 

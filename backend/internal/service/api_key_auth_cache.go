@@ -32,12 +32,13 @@ type APIKeyAuthSnapshot struct {
 
 // APIKeyAuthUserSnapshot 用户快照
 type APIKeyAuthUserSnapshot struct {
-	ID            int64   `json:"id"`
-	Status        string  `json:"status"`
-	Role          string  `json:"role"`
-	Balance       float64 `json:"balance"`
-	Concurrency   int     `json:"concurrency"`
-	AllowedGroups []int64 `json:"allowed_groups,omitempty"`
+	ID               int64                               `json:"id"`
+	Status           string                              `json:"status"`
+	Role             string                              `json:"role"`
+	Balance          float64                             `json:"balance"`
+	Concurrency      int                                 `json:"concurrency"`
+	AllowedGroups    []int64                             `json:"allowed_groups,omitempty"`
+	TimedGroupGrants []APIKeyAuthTimedGroupGrantSnapshot `json:"timed_group_grants,omitempty"`
 
 	// Balance notification fields (required for CheckBalanceAfterDeduction)
 	Email                      string             `json:"email"`
@@ -54,6 +55,11 @@ type APIKeyAuthUserSnapshot struct {
 	// UserGroupRPMOverride 该 API Key 对应的 (user, group) 专属 RPM 覆盖值。
 	// nil = 无 override（回退到 group/user 级）；0 = 不限流；>0 = 专属上限。
 	UserGroupRPMOverride *int `json:"user_group_rpm_override,omitempty"`
+}
+
+type APIKeyAuthTimedGroupGrantSnapshot struct {
+	GroupID   int64     `json:"group_id"`
+	ExpiresAt time.Time `json:"expires_at"`
 }
 
 // APIKeyAuthGroupSnapshot 分组快照

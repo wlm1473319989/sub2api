@@ -537,6 +537,7 @@ export interface Group {
   require_privacy_set: boolean
   created_at: string
   updated_at: string
+  access_expires_at?: string | null
 }
 
 export interface AdminGroup extends Group {

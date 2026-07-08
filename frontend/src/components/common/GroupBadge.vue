@@ -33,12 +33,16 @@ interface Props {
   userRateMultiplier?: number | null
   showRate?: boolean
   daysRemaining?: number | null
+  accessExpiresAt?: string | null
+  nowMs?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   showRate: true,
   daysRemaining: null,
-  userRateMultiplier: null
+  userRateMultiplier: null,
+  accessExpiresAt: null,
+  nowMs: undefined
 })
 
 const { t } = useI18n()
@@ -82,6 +86,7 @@ const hasSplitRate = computed(() => {
 
 const showLabel = computed(() => {
   if (props.daysRemaining !== null && props.daysRemaining !== undefined) return true
+  if (accessExpiresAtMs.value !== null) return true
   if (!props.showRate) return false
   return (
     displayBalanceRate.value !== undefined ||
@@ -91,6 +96,9 @@ const showLabel = computed(() => {
 })
 
 const labelText = computed(() => {
+  if (accessExpiresAtMs.value !== null) {
+    return t('keys.timedGroupAccessRemaining', { time: accessCountdownText.value })
+  }
   if (props.daysRemaining !== null && props.daysRemaining !== undefined) {
     if (props.daysRemaining <= 0) {
       return t('admin.users.expired')
@@ -110,6 +118,16 @@ const labelText = computed(() => {
 const labelClass = computed(() => {
   const base = 'rounded px-1.5 py-0.5 text-[10px] font-semibold'
 
+  if (accessExpiresAtMs.value !== null) {
+    if (accessRemainingMs.value <= 3 * 24 * 60 * 60 * 1000) {
+      return `${base} bg-red-200/80 text-red-800 dark:bg-red-800/50 dark:text-red-300`
+    }
+    if (accessRemainingMs.value <= 7 * 24 * 60 * 60 * 1000) {
+      return `${base} bg-amber-200/80 text-amber-800 dark:bg-amber-800/50 dark:text-amber-300`
+    }
+    return `${base} bg-emerald-200/60 text-emerald-800 dark:bg-emerald-800/40 dark:text-emerald-300`
+  }
+
   if (props.daysRemaining === null || props.daysRemaining === undefined) {
     return `${base} bg-black/10 dark:bg-white/10`
   }
@@ -121,6 +139,39 @@ const labelClass = computed(() => {
   }
   return `${base} bg-emerald-200/60 text-emerald-800 dark:bg-emerald-800/40 dark:text-emerald-300`
 })
+
+const currentNowMs = computed(() => props.nowMs ?? Date.now())
+
+const accessExpiresAtMs = computed(() => {
+  if (!props.accessExpiresAt) return null
+  const parsed = Date.parse(props.accessExpiresAt)
+  return Number.isFinite(parsed) ? parsed : null
+})
+
+const accessRemainingMs = computed(() => {
+  if (accessExpiresAtMs.value === null) return 0
+  return accessExpiresAtMs.value - currentNowMs.value
+})
+
+const accessCountdownText = computed(() => formatAccessRemaining(accessRemainingMs.value))
+
+function formatAccessRemaining(ms: number): string {
+  if (ms <= 0) return t('keys.timedGroupAccessExpired')
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000))
+  if (totalMinutes < 60) {
+    return t('keys.timeRemainingMinutes', { minutes: totalMinutes })
+  }
+  const totalHours = Math.ceil(totalMinutes / 60)
+  if (totalHours < 24) {
+    return t('keys.timeRemainingHours', { hours: totalHours })
+  }
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+  if (hours > 0) {
+    return t('keys.timeRemainingDaysHours', { days, hours })
+  }
+  return t('keys.timeRemainingDays', { days })
+}
 
 const badgeClass = computed(() => {
   if (props.platform === 'anthropic') {

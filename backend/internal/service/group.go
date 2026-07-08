@@ -85,6 +85,10 @@ type Group struct {
 	AccountCount            int64
 	ActiveAccountCount      int64
 	RateLimitedAccountCount int64
+
+	// AccessExpiresAt is populated only in user-facing effective-access views
+	// when access comes from a temporary grant rather than permanent allowed_groups.
+	AccessExpiresAt *time.Time
 }
 
 func (g *Group) IsActive() bool {

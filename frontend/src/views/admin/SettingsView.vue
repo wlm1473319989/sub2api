@@ -5497,6 +5497,37 @@
                 </p>
               </div>
 
+              <div class="border-t border-gray-100 pt-6 dark:border-dark-700">
+                <div class="flex items-center justify-between gap-4">
+                  <div>
+                    <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                      {{ t('admin.settings.features.affiliate.groupGrantEnabled') }}
+                    </label>
+                    <p class="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
+                      {{ t('admin.settings.features.affiliate.groupGrantEnabledHint') }}
+                    </p>
+                  </div>
+                  <Toggle v-model="form.affiliate_group_grant_enabled" />
+                </div>
+
+                <div v-if="form.affiliate_group_grant_enabled" class="mt-4">
+                  <label class="input-label">
+                    {{ t('admin.settings.features.affiliate.groupGrantGroupId') }}
+                  </label>
+                  <input
+                    v-model.number="form.affiliate_group_grant_group_id"
+                    type="number"
+                    step="1"
+                    min="0"
+                    class="input"
+                    placeholder="0"
+                  />
+                  <p class="mt-1 text-xs text-gray-400">
+                    {{ t('admin.settings.features.affiliate.groupGrantGroupIdDesc') }}
+                  </p>
+                </div>
+              </div>
+
               <!-- 专属用户管理 -->
               <div class="border-t border-gray-100 pt-6 dark:border-dark-700">
                 <div class="mb-3 flex items-center justify-between">
@@ -7495,6 +7526,8 @@ const form = reactive<SettingsForm>({
   affiliate_rebate_freeze_hours: 0,
   affiliate_rebate_duration_days: 0,
   affiliate_rebate_per_invitee_cap: 0,
+  affiliate_group_grant_enabled: false,
+  affiliate_group_grant_group_id: 0,
   default_concurrency: 1,
   default_subscriptions: [],
   force_email_on_third_party_signup: false,
@@ -8690,6 +8723,8 @@ async function saveSettings() {
       affiliate_rebate_freeze_hours: Math.max(0, Math.min(720, Number(form.affiliate_rebate_freeze_hours) || 0)),
       affiliate_rebate_duration_days: Math.max(0, Math.min(3650, Math.floor(Number(form.affiliate_rebate_duration_days) || 0))),
       affiliate_rebate_per_invitee_cap: Math.max(0, Number(form.affiliate_rebate_per_invitee_cap) || 0),
+      affiliate_group_grant_enabled: form.affiliate_group_grant_enabled,
+      affiliate_group_grant_group_id: Math.max(0, Math.floor(Number(form.affiliate_group_grant_group_id) || 0)),
       default_concurrency: form.default_concurrency,
       default_subscriptions: serializedDefaultSubscriptions,
       force_email_on_third_party_signup: form.force_email_on_third_party_signup,

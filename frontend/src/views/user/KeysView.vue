@@ -112,6 +112,8 @@
                   :rate-multiplier="row.group.rate_multiplier"
                   :subscription-rate-multiplier="row.group.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[row.group.id]"
+                  :access-expires-at="groupAccessExpiresAt(row.group.id)"
+                  :now-ms="nowMs"
                 />
                 <span v-else class="text-sm text-gray-400 dark:text-dark-500">{{
                   t('keys.noGroup')
@@ -422,6 +424,8 @@
                 :rate-multiplier="(option as unknown as GroupOption).rate"
                 :subscription-rate-multiplier="(option as unknown as GroupOption).subscriptionRate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
+                :access-expires-at="(option as unknown as GroupOption).accessExpiresAt"
+                :now-ms="nowMs"
               />
               <span v-else class="text-gray-400">{{ t('keys.selectGroup') }}</span>
             </template>
@@ -433,6 +437,8 @@
                 :subscription-rate-multiplier="(option as unknown as GroupOption).subscriptionRate"
                 :user-rate-multiplier="(option as unknown as GroupOption).userRate"
                 :description="(option as unknown as GroupOption).description"
+                :access-expires-at="(option as unknown as GroupOption).accessExpiresAt"
+                :now-ms="nowMs"
                 :selected="selected"
               />
             </template>
@@ -1066,6 +1072,8 @@
               :subscription-rate-multiplier="option.subscriptionRate"
               :user-rate-multiplier="option.userRate"
               :description="option.description"
+              :access-expires-at="option.accessExpiresAt"
+              :now-ms="nowMs"
               :selected="
                 selectedKeyForGroup?.group_id === option.value ||
                 (!selectedKeyForGroup?.group_id && option.value === null)
@@ -1131,6 +1139,7 @@ interface GroupOption {
   subscriptionRate: number
   userRate: number | null
   platform: GroupPlatform
+  accessExpiresAt: string | null
 }
 
 const appStore = useAppStore()
@@ -1158,6 +1167,7 @@ const now = ref(new Date())
 let resetTimer: ReturnType<typeof setInterval> | null = null
 const usageStats = ref<Record<string, BatchApiKeyUsageStats>>({})
 const userGroupRates = ref<Record<number, number>>({})
+const nowMs = computed(() => now.value.getTime())
 
 const pagination = ref({
   page: 1,
@@ -1289,9 +1299,25 @@ const groupOptions = computed(() =>
     rate: group.rate_multiplier,
     subscriptionRate: group.subscription_rate_multiplier,
     userRate: userGroupRates.value[group.id] ?? null,
-    platform: group.platform
+    platform: group.platform,
+    accessExpiresAt: group.access_expires_at ?? null
   }))
 )
+
+const groupAccessExpiresAtMap = computed(() => {
+  const out = new Map<number, string>()
+  for (const group of groups.value) {
+    if (group.access_expires_at) {
+      out.set(group.id, group.access_expires_at)
+    }
+  }
+  return out
+})
+
+const groupAccessExpiresAt = (groupId: number | null | undefined): string | null => {
+  if (!groupId) return null
+  return groupAccessExpiresAtMap.value.get(groupId) ?? null
+}
 
 const selectedFormGroup = computed(() =>
   groups.value.find((group) => group.id === formData.value.group_id) || null

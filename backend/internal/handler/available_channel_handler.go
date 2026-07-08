@@ -2,6 +2,7 @@ package handler
 
 import (
 	"sort"
+	"time"
 
 	"github.com/Wei-Shaw/sub2api/internal/pkg/response"
 	"github.com/Wei-Shaw/sub2api/internal/server/middleware"
@@ -53,12 +54,13 @@ func (h *AvailableChannelHandler) featureEnabled(c *gin.Context) bool {
 // 订阅视觉加深），并用 RateMultiplier 作为默认倍率；用户专属倍率前端走
 // /groups/rates，和 API 密钥页面保持一致。
 type userAvailableGroup struct {
-	ID                         int64   `json:"id"`
-	Name                       string  `json:"name"`
-	Platform                   string  `json:"platform"`
-	RateMultiplier             float64 `json:"rate_multiplier"`
-	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
-	IsExclusive                bool    `json:"is_exclusive"`
+	ID                         int64      `json:"id"`
+	Name                       string     `json:"name"`
+	Platform                   string     `json:"platform"`
+	RateMultiplier             float64    `json:"rate_multiplier"`
+	SubscriptionRateMultiplier float64    `json:"subscription_rate_multiplier"`
+	IsExclusive                bool       `json:"is_exclusive"`
+	AccessExpiresAt            *time.Time `json:"access_expires_at,omitempty"`
 }
 
 // userSupportedModelPricing 用户可见的定价字段白名单。
@@ -132,9 +134,9 @@ func (h *AvailableChannelHandler) List(c *gin.Context) {
 		response.ErrorFrom(c, err)
 		return
 	}
-	allowedGroupIDs := make(map[int64]struct{}, len(userGroups))
+	allowedGroupIDs := make(map[int64]*time.Time, len(userGroups))
 	for i := range userGroups {
-		allowedGroupIDs[userGroups[i].ID] = struct{}{}
+		allowedGroupIDs[userGroups[i].ID] = userGroups[i].AccessExpiresAt
 	}
 
 	channels, err := h.channelService.ListAvailable(c.Request.Context())
@@ -205,11 +207,12 @@ func buildPlatformSections(
 // filterUserVisibleGroups 仅保留用户可访问的分组。
 func filterUserVisibleGroups(
 	groups []service.AvailableGroupRef,
-	allowed map[int64]struct{},
+	allowed map[int64]*time.Time,
 ) []userAvailableGroup {
 	visible := make([]userAvailableGroup, 0, len(groups))
 	for _, g := range groups {
-		if _, ok := allowed[g.ID]; !ok {
+		expiresAt, ok := allowed[g.ID]
+		if !ok {
 			continue
 		}
 		visible = append(visible, userAvailableGroup{
@@ -219,6 +222,7 @@ func filterUserVisibleGroups(
 			RateMultiplier:             g.RateMultiplier,
 			SubscriptionRateMultiplier: g.SubscriptionRateMultiplier,
 			IsExclusive:                g.IsExclusive,
+			AccessExpiresAt:            expiresAt,
 		})
 	}
 	return visible

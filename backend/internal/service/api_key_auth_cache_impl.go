@@ -14,7 +14,7 @@ import (
 	"github.com/dgraph-io/ristretto"
 )
 
-const apiKeyAuthSnapshotVersion = 14 // v14: include OpenAI backup failover and allow_paid_failover fields
+const apiKeyAuthSnapshotVersion = 15 // v15: include timed affiliate group grants with expiry metadata
 
 type apiKeyAuthCacheConfig struct {
 	l1Size        int
@@ -205,6 +205,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 	if apiKey == nil || apiKey.User == nil {
 		return nil
 	}
+	timedGroupGrants := s.authTimedGroupGrantSnapshots(ctx, apiKey.UserID)
 	snapshot := &APIKeyAuthSnapshot{
 		Version:           apiKeyAuthSnapshotVersion,
 		APIKeyID:          apiKey.ID,
@@ -228,6 +229,7 @@ func (s *APIKeyService) snapshotFromAPIKey(ctx context.Context, apiKey *APIKey) 
 			Balance:                    apiKey.User.Balance,
 			Concurrency:                apiKey.User.Concurrency,
 			AllowedGroups:              apiKey.User.AllowedGroups,
+			TimedGroupGrants:           timedGroupGrants,
 			Email:                      apiKey.User.Email,
 			Username:                   apiKey.User.Username,
 			BalanceNotifyEnabled:       apiKey.User.BalanceNotifyEnabled,
@@ -286,6 +288,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 	if snapshot == nil {
 		return nil
 	}
+	allowedGroups := effectiveAllowedGroupsFromSnapshot(snapshot.User.AllowedGroups, snapshot.User.TimedGroupGrants, time.Now())
 	apiKey := &APIKey{
 		ID:                snapshot.APIKeyID,
 		UserID:            snapshot.UserID,
@@ -308,7 +311,7 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 			Role:                       snapshot.User.Role,
 			Balance:                    snapshot.User.Balance,
 			Concurrency:                snapshot.User.Concurrency,
-			AllowedGroups:              snapshot.User.AllowedGroups,
+			AllowedGroups:              allowedGroups,
 			Email:                      snapshot.User.Email,
 			Username:                   snapshot.User.Username,
 			BalanceNotifyEnabled:       snapshot.User.BalanceNotifyEnabled,
@@ -355,4 +358,55 @@ func (s *APIKeyService) snapshotToAPIKey(key string, snapshot *APIKeyAuthSnapsho
 	}
 	s.compileAPIKeyIPRules(apiKey)
 	return apiKey
+}
+
+func (s *APIKeyService) authTimedGroupGrantSnapshots(ctx context.Context, userID int64) []APIKeyAuthTimedGroupGrantSnapshot {
+	if s == nil || s.affiliateGroupGrantRepo == nil || userID <= 0 {
+		return nil
+	}
+	now := time.Now()
+	grants, err := s.affiliateGroupGrantRepo.ListActiveByUserID(ctx, userID, now)
+	if err != nil {
+		return nil
+	}
+	out := make([]APIKeyAuthTimedGroupGrantSnapshot, 0, len(grants))
+	for _, grant := range grants {
+		if grant.GroupID <= 0 || !grant.ExpiresAt.After(now) {
+			continue
+		}
+		out = append(out, APIKeyAuthTimedGroupGrantSnapshot{
+			GroupID:   grant.GroupID,
+			ExpiresAt: grant.ExpiresAt,
+		})
+	}
+	return out
+}
+
+func effectiveAllowedGroupsFromSnapshot(permanent []int64, timed []APIKeyAuthTimedGroupGrantSnapshot, now time.Time) []int64 {
+	if len(timed) == 0 {
+		return permanent
+	}
+	out := make([]int64, 0, len(permanent)+len(timed))
+	seen := make(map[int64]struct{}, len(permanent)+len(timed))
+	for _, groupID := range permanent {
+		if groupID <= 0 {
+			continue
+		}
+		if _, ok := seen[groupID]; ok {
+			continue
+		}
+		seen[groupID] = struct{}{}
+		out = append(out, groupID)
+	}
+	for _, grant := range timed {
+		if grant.GroupID <= 0 || !grant.ExpiresAt.After(now) {
+			continue
+		}
+		if _, ok := seen[grant.GroupID]; ok {
+			continue
+		}
+		seen[grant.GroupID] = struct{}{}
+		out = append(out, grant.GroupID)
+	}
+	return out
 }

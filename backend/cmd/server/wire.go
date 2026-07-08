@@ -99,6 +99,7 @@ func provideCleanup(
 	scheduledTestRunner *service.ScheduledTestRunnerService,
 	backupSvc *service.BackupService,
 	paymentOrderExpiry *service.PaymentOrderExpiryService,
+	affiliateGroupGrantExpiry *service.AffiliateGroupGrantExpiryService,
 	channelMonitorRunner *service.ChannelMonitorRunner,
 	quotaFlusher *service.UserPlatformQuotaUsageFlusher,
 ) func() {
@@ -250,6 +251,12 @@ func provideCleanup(
 			{"PaymentOrderExpiryService", func() error {
 				if paymentOrderExpiry != nil {
 					paymentOrderExpiry.Stop()
+				}
+				return nil
+			}},
+			{"AffiliateGroupGrantExpiryService", func() error {
+				if affiliateGroupGrantExpiry != nil {
+					affiliateGroupGrantExpiry.Stop()
 				}
 				return nil
 			}},

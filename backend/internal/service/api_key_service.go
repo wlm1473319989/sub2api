@@ -198,19 +198,20 @@ type RateLimitCacheInvalidator interface {
 }
 
 type APIKeyService struct {
-	apiKeyRepo            APIKeyRepository
-	userRepo              UserRepository
-	groupRepo             GroupRepository
-	userSubRepo           UserSubscriptionRepository
-	userGroupRateRepo     UserGroupRateRepository
-	cache                 APIKeyCache
-	rateLimitCacheInvalid RateLimitCacheInvalidator // optional: invalidate Redis rate limit cache
-	cfg                   *config.Config
-	authCacheL1           *ristretto.Cache
-	authCfg               apiKeyAuthCacheConfig
-	authGroup             singleflight.Group
-	lastUsedTouchL1       sync.Map // keyID -> nextAllowedAt(time.Time)
-	lastUsedTouchSF       singleflight.Group
+	apiKeyRepo              APIKeyRepository
+	userRepo                UserRepository
+	groupRepo               GroupRepository
+	userSubRepo             UserSubscriptionRepository
+	userGroupRateRepo       UserGroupRateRepository
+	affiliateGroupGrantRepo AffiliateGroupGrantRepository
+	cache                   APIKeyCache
+	rateLimitCacheInvalid   RateLimitCacheInvalidator // optional: invalidate Redis rate limit cache
+	cfg                     *config.Config
+	authCacheL1             *ristretto.Cache
+	authCfg                 apiKeyAuthCacheConfig
+	authGroup               singleflight.Group
+	lastUsedTouchL1         sync.Map // keyID -> nextAllowedAt(time.Time)
+	lastUsedTouchSF         singleflight.Group
 }
 
 // NewAPIKeyService 创建API Key服务实例
@@ -240,6 +241,13 @@ func NewAPIKeyService(
 // Called after construction (e.g. in wire) to avoid circular dependencies.
 func (s *APIKeyService) SetRateLimitCacheInvalidator(inv RateLimitCacheInvalidator) {
 	s.rateLimitCacheInvalid = inv
+}
+
+// SetAffiliateGroupGrantRepository attaches the optional repository used for
+// temporary exclusive-group grants. It is a setter to avoid breaking tests that
+// construct APIKeyService directly.
+func (s *APIKeyService) SetAffiliateGroupGrantRepository(repo AffiliateGroupGrantRepository) {
+	s.affiliateGroupGrantRepo = repo
 }
 
 func (s *APIKeyService) compileAPIKeyIPRules(apiKey *APIKey) {
@@ -318,10 +326,28 @@ func (s *APIKeyService) incrementAPIKeyErrorCount(ctx context.Context, userID in
 }
 
 // canUserBindGroup checks whether the user may bind the target group.
-// Group access is determined only by allowed_groups and is_exclusive.
+// Group access is determined by permanent allowed_groups plus active timed
+// affiliate grants.
 func (s *APIKeyService) canUserBindGroup(ctx context.Context, user *User, group *Group) bool {
-	_ = ctx
-	return user.CanBindGroup(group.ID, group.IsExclusive)
+	if user == nil || group == nil {
+		return false
+	}
+	if user.CanBindGroup(group.ID, group.IsExclusive) {
+		return true
+	}
+	if !group.IsExclusive || s.affiliateGroupGrantRepo == nil {
+		return false
+	}
+	grants, err := s.affiliateGroupGrantRepo.ListActiveByUserID(ctx, user.ID, time.Now())
+	if err != nil {
+		return false
+	}
+	for _, grant := range grants {
+		if grant.GroupID == group.ID && grant.ExpiresAt.After(time.Now()) {
+			return true
+		}
+	}
+	return false
 }
 
 // Create 创建API Key
@@ -762,12 +788,12 @@ func (s *APIKeyService) GetAvailableGroups(ctx context.Context, userID int64) ([
 		return nil, fmt.Errorf("list active groups: %w", err)
 	}
 
-	// 分组可见性仅由 allowed_groups 和 is_exclusive 决定。
+	timedGrantExpirations := s.activeTimedGrantExpirations(ctx, userID)
 
 	// 过滤出用户有权限的分组
 	availableGroups := make([]Group, 0)
 	for _, group := range allGroups {
-		if s.canUserBindGroupInternal(user, &group) {
+		if s.canUserBindGroupInternal(user, &group, timedGrantExpirations) {
 			availableGroups = append(availableGroups, group)
 		}
 	}
@@ -776,8 +802,43 @@ func (s *APIKeyService) GetAvailableGroups(ctx context.Context, userID int64) ([
 }
 
 // canUserBindGroupInternal is the eager-loaded variant of canUserBindGroup.
-func (s *APIKeyService) canUserBindGroupInternal(user *User, group *Group) bool {
-	return user.CanBindGroup(group.ID, group.IsExclusive)
+func (s *APIKeyService) canUserBindGroupInternal(user *User, group *Group, timedGrantExpirations map[int64]time.Time) bool {
+	if user == nil || group == nil {
+		return false
+	}
+	if user.CanBindGroup(group.ID, group.IsExclusive) {
+		return true
+	}
+	if !group.IsExclusive {
+		return true
+	}
+	if expiresAt, ok := timedGrantExpirations[group.ID]; ok && expiresAt.After(time.Now()) {
+		t := expiresAt
+		group.AccessExpiresAt = &t
+		return true
+	}
+	return false
+}
+
+func (s *APIKeyService) activeTimedGrantExpirations(ctx context.Context, userID int64) map[int64]time.Time {
+	if s == nil || s.affiliateGroupGrantRepo == nil || userID <= 0 {
+		return nil
+	}
+	now := time.Now()
+	grants, err := s.affiliateGroupGrantRepo.ListActiveByUserID(ctx, userID, now)
+	if err != nil {
+		return nil
+	}
+	out := make(map[int64]time.Time, len(grants))
+	for _, grant := range grants {
+		if grant.GroupID <= 0 || !grant.ExpiresAt.After(now) {
+			continue
+		}
+		if existing, ok := out[grant.GroupID]; !ok || grant.ExpiresAt.After(existing) {
+			out[grant.GroupID] = grant.ExpiresAt
+		}
+	}
+	return out
 }
 
 func (s *APIKeyService) SearchAPIKeys(ctx context.Context, userID int64, keyword string, limit int) ([]APIKey, error) {

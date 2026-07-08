@@ -93,6 +93,8 @@
                   :rate-multiplier="g.rate_multiplier"
                   :subscription-rate-multiplier="g.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
+                  :access-expires-at="g.access_expires_at"
+                  :now-ms="nowMs"
                 />
               </div>
               <div
@@ -114,6 +116,8 @@
                   :rate-multiplier="g.rate_multiplier"
                   :subscription-rate-multiplier="g.subscription_rate_multiplier"
                   :user-rate-multiplier="userGroupRates[g.id] ?? null"
+                  :access-expires-at="g.access_expires_at"
+                  :now-ms="nowMs"
                 />
               </div>
               <span v-if="section.groups.length === 0" class="text-xs text-gray-400">-</span>
@@ -144,6 +148,7 @@
 </template>
 
 <script setup lang="ts">
+import { computed, onMounted, onUnmounted, ref } from 'vue'
 import { useI18n } from 'vue-i18n'
 import Icon from '@/components/icons/Icon.vue'
 import PlatformIcon from '@/components/common/PlatformIcon.vue'
@@ -176,6 +181,9 @@ const props = defineProps<{
 void props.userGroupRates
 
 const { t } = useI18n()
+const now = ref(new Date())
+const nowMs = computed(() => now.value.getTime())
+let nowTimer: ReturnType<typeof setInterval> | null = null
 
 function exclusiveGroups(section: UserChannelPlatformSection): UserAvailableGroup[] {
   return section.groups.filter((g) => g.is_exclusive)
@@ -184,4 +192,14 @@ function exclusiveGroups(section: UserChannelPlatformSection): UserAvailableGrou
 function publicGroups(section: UserChannelPlatformSection): UserAvailableGroup[] {
   return section.groups.filter((g) => !g.is_exclusive)
 }
+
+onMounted(() => {
+  nowTimer = setInterval(() => {
+    now.value = new Date()
+  }, 60000)
+})
+
+onUnmounted(() => {
+  if (nowTimer) clearInterval(nowTimer)
+})
 </script>

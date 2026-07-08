@@ -194,6 +194,7 @@ func groupFromServiceBase(g *service.Group) Group {
 		RPMLimit:                        g.RPMLimit,
 		CreatedAt:                       g.CreatedAt,
 		UpdatedAt:                       g.UpdatedAt,
+		AccessExpiresAt:                 g.AccessExpiresAt,
 	}
 }
 

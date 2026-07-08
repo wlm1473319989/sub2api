@@ -16,6 +16,8 @@ export interface UserAvailableGroup {
   subscription_rate_multiplier: number
   /** true = 专属分组（小范围授权）；false = 公开分组。 */
   is_exclusive: boolean
+  /** 限时授权的到期时间；永久授权或公开分组为空。 */
+  access_expires_at?: string | null
 }
 
 export interface UserPricingInterval {

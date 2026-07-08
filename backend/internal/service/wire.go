@@ -510,12 +510,14 @@ func ProvideAPIKeyService(
 	groupRepo GroupRepository,
 	userSubRepo UserSubscriptionRepository,
 	userGroupRateRepo UserGroupRateRepository,
+	affiliateGroupGrantRepo AffiliateGroupGrantRepository,
 	cache APIKeyCache,
 	cfg *config.Config,
 	billingCacheService *BillingCacheService,
 ) *APIKeyService {
 	svc := NewAPIKeyService(apiKeyRepo, userRepo, groupRepo, userSubRepo, userGroupRateRepo, cache, cfg)
 	svc.SetRateLimitCacheInvalidator(billingCacheService)
+	svc.SetAffiliateGroupGrantRepository(affiliateGroupGrantRepo)
 	return svc
 }
 
@@ -608,10 +610,12 @@ var ProviderSet = wire.NewSet(
 	NewModelPricingResolver,
 	NewContentModerationService,
 	NewAffiliateService,
+	NewAffiliateGroupGrantService,
 	ProvidePaymentConfigService,
 	ProvidePaymentService,
 	ProvideSettlementRefundService,
 	ProvidePaymentOrderExpiryService,
+	ProvideAffiliateGroupGrantExpiryService,
 	ProvideBalanceNotifyService,
 	ProvideChannelMonitorService,
 	ProvideChannelMonitorRunner,
@@ -640,8 +644,9 @@ func ProvideBalanceNotifyService(emailService *EmailService, settingRepo Setting
 }
 
 // ProvidePaymentService creates PaymentService and attaches notification email delivery.
-func ProvidePaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService, notificationEmailService *NotificationEmailService) *PaymentService {
+func ProvidePaymentService(entClient *dbent.Client, registry *payment.Registry, loadBalancer payment.LoadBalancer, redeemService *RedeemService, subscriptionSvc *SubscriptionService, configService *PaymentConfigService, userRepo UserRepository, groupRepo GroupRepository, affiliateService *AffiliateService, affiliateGroupGrantService *AffiliateGroupGrantService, notificationEmailService *NotificationEmailService) *PaymentService {
 	svc := NewPaymentService(entClient, registry, loadBalancer, redeemService, subscriptionSvc, configService, userRepo, groupRepo, affiliateService)
+	svc.SetAffiliateGroupGrantService(affiliateGroupGrantService)
 	svc.SetNotificationEmailService(notificationEmailService)
 	return svc
 }
@@ -656,6 +661,15 @@ func ProvideSettlementRefundService(entClient *dbent.Client, subscriptionSvc *Su
 // ProvidePaymentOrderExpiryService creates and starts PaymentOrderExpiryService.
 func ProvidePaymentOrderExpiryService(paymentSvc *PaymentService, lockCache LeaderLockCache, db *sql.DB) *PaymentOrderExpiryService {
 	svc := NewPaymentOrderExpiryService(paymentSvc, 60*time.Second)
+	svc.SetLeaderLock(lockCache, db)
+	svc.Start()
+	return svc
+}
+
+// ProvideAffiliateGroupGrantExpiryService creates and starts the daily expired
+// temporary group-grant cache cleanup.
+func ProvideAffiliateGroupGrantExpiryService(repo AffiliateGroupGrantRepository, invalidator APIKeyAuthCacheInvalidator, lockCache LeaderLockCache, db *sql.DB) *AffiliateGroupGrantExpiryService {
+	svc := NewAffiliateGroupGrantExpiryService(repo, invalidator)
 	svc.SetLeaderLock(lockCache, db)
 	svc.Start()
 	return svc

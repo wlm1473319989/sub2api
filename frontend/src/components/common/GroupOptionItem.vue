@@ -10,6 +10,8 @@
         :name="name"
         :platform="platform"
         :subscription-rate-multiplier="subscriptionRateMultiplier"
+        :access-expires-at="accessExpiresAt"
+        :now-ms="nowMs"
         :show-rate="false"
         class="groupOptionItemBadge"
       />
@@ -24,6 +26,13 @@
 
     <!-- Right: rate pill + checkmark (vertically centered to first row) -->
     <div class="flex shrink-0 items-center gap-2 pt-0.5">
+      <span
+        v-if="accessCountdownText"
+        :class="['inline-flex items-center whitespace-nowrap rounded-full px-2.5 py-1 text-xs font-semibold', accessPillClass]"
+        :title="accessExpiresAtTitle"
+      >
+        {{ accessCountdownText }}
+      </span>
       <!-- Rate pill (platform color) -->
       <span v-if="rateText" :class="['inline-flex items-center whitespace-nowrap rounded-full px-3 py-1 text-xs font-semibold', ratePillClass]">
         <template v-if="hasCustomRate && !hasSplitRate">
@@ -64,12 +73,16 @@ interface Props {
   description?: string | null
   selected?: boolean
   showCheckmark?: boolean
+  accessExpiresAt?: string | null
+  nowMs?: number
 }
 
 const props = withDefaults(defineProps<Props>(), {
   selected: false,
   showCheckmark: true,
-  userRateMultiplier: null
+  userRateMultiplier: null,
+  accessExpiresAt: null,
+  nowMs: undefined
 })
 
 const { t } = useI18n()
@@ -122,6 +135,59 @@ const rateText = computed(() => {
   const rate = displayBalanceRate.value ?? displaySubscriptionRate.value
   return rate !== undefined ? `${rate}x` : ''
 })
+
+const currentNowMs = computed(() => props.nowMs ?? Date.now())
+
+const accessExpiresAtMs = computed(() => {
+  if (!props.accessExpiresAt) return null
+  const parsed = Date.parse(props.accessExpiresAt)
+  return Number.isFinite(parsed) ? parsed : null
+})
+
+const accessRemainingMs = computed(() => {
+  if (accessExpiresAtMs.value === null) return 0
+  return accessExpiresAtMs.value - currentNowMs.value
+})
+
+const accessCountdownText = computed(() => {
+  if (accessExpiresAtMs.value === null) return ''
+  return t('keys.timedGroupAccessRemaining', { time: formatAccessRemaining(accessRemainingMs.value) })
+})
+
+const accessExpiresAtTitle = computed(() => {
+  if (!props.accessExpiresAt || accessExpiresAtMs.value === null) return ''
+  return t('keys.timedGroupAccessExpiresAt', {
+    time: new Date(accessExpiresAtMs.value).toLocaleString()
+  })
+})
+
+const accessPillClass = computed(() => {
+  if (accessRemainingMs.value <= 3 * 24 * 60 * 60 * 1000) {
+    return 'bg-red-50 text-red-700 dark:bg-red-900/20 dark:text-red-300'
+  }
+  if (accessRemainingMs.value <= 7 * 24 * 60 * 60 * 1000) {
+    return 'bg-amber-50 text-amber-700 dark:bg-amber-900/20 dark:text-amber-300'
+  }
+  return 'bg-emerald-50 text-emerald-700 dark:bg-emerald-900/20 dark:text-emerald-300'
+})
+
+function formatAccessRemaining(ms: number): string {
+  if (ms <= 0) return t('keys.timedGroupAccessExpired')
+  const totalMinutes = Math.max(1, Math.ceil(ms / 60000))
+  if (totalMinutes < 60) {
+    return t('keys.timeRemainingMinutes', { minutes: totalMinutes })
+  }
+  const totalHours = Math.ceil(totalMinutes / 60)
+  if (totalHours < 24) {
+    return t('keys.timeRemainingHours', { hours: totalHours })
+  }
+  const days = Math.floor(totalHours / 24)
+  const hours = totalHours % 24
+  if (hours > 0) {
+    return t('keys.timeRemainingDaysHours', { days, hours })
+  }
+  return t('keys.timeRemainingDays', { days })
+}
 
 // Rate pill color matches platform badge color
 const ratePillClass = computed(() => {

@@ -283,6 +283,9 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 		if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
 			return err
 		}
+		if err := s.applyAffiliateGroupGrantForOrder(ctx, o); err != nil {
+			return err
+		}
 		// Code already created and redeemed — just mark completed
 		return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
 	case redeemActionCreate:
@@ -297,6 +300,9 @@ func (s *PaymentService) doBalance(ctx context.Context, o *dbent.PaymentOrder) e
 		return fmt.Errorf("redeem balance: %w", err)
 	}
 	if err := s.applyAffiliateRebateForOrder(ctx, o); err != nil {
+		return err
+	}
+	if err := s.applyAffiliateGroupGrantForOrder(ctx, o); err != nil {
 		return err
 	}
 	return s.markCompleted(ctx, o, "RECHARGE_SUCCESS")
@@ -569,6 +575,9 @@ func (s *PaymentService) doUserLevelSubscriptionFulfillment(ctx context.Context,
 	if err := s.applyAffiliateRebateForOrder(ctx, order); err != nil {
 		return err
 	}
+	if err := s.applyAffiliateGroupGrantForOrder(ctx, order); err != nil {
+		return err
+	}
 
 	s.writeAuditLog(ctx, order.ID, "SUBSCRIPTION_SUCCESS", "system", map[string]any{
 		"rechargeCode":   order.RechargeCode,
@@ -721,6 +730,23 @@ func affiliateRebateBaseAmount(o *dbent.PaymentOrder) float64 {
 	default:
 		return 0
 	}
+}
+
+func (s *PaymentService) applyAffiliateGroupGrantForOrder(ctx context.Context, o *dbent.PaymentOrder) error {
+	if o == nil || s == nil || s.affiliateGroupGrantService == nil {
+		return nil
+	}
+	if !affiliateGroupGrantOrderTypeEligible(o.OrderType) || o.PayAmount <= 0 {
+		return nil
+	}
+	if err := s.affiliateGroupGrantService.ApplyForPaymentOrder(ctx, o); err != nil {
+		s.writeAuditLog(ctx, o.ID, "AFFILIATE_GROUP_GRANT_FAILED", "system", map[string]any{
+			"error":     err.Error(),
+			"payAmount": o.PayAmount,
+		})
+		return err
+	}
+	return nil
 }
 
 func (s *PaymentService) tryClaimAffiliateRebateAudit(ctx context.Context, client *dbent.Client, orderID int64, baseAmount float64) (bool, error) {
