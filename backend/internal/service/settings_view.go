@@ -221,6 +221,11 @@ type SystemSettings struct {
 	BalanceLowNotifyThreshold   float64
 	BalanceLowNotifyRechargeURL string
 
+	// 余额不足错误返回自定义
+	InsufficientBalanceErrorCustomEnabled bool
+	InsufficientBalanceErrorCode          string
+	InsufficientBalanceErrorMessage       string
+
 	// 订阅到期提醒
 	SubscriptionExpiryNotifyEnabled bool
 

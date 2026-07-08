@@ -457,6 +457,11 @@ const (
 	SettingKeyBalanceLowNotifyThreshold   = "balance_low_notify_threshold"    // 默认阈值（USD）
 	SettingKeyBalanceLowNotifyRechargeURL = "balance_low_notify_recharge_url" // 充值页面 URL
 
+	// 余额不足错误返回自定义
+	SettingKeyInsufficientBalanceErrorCustomEnabled = "insufficient_balance_error_custom_enabled"
+	SettingKeyInsufficientBalanceErrorCode          = "insufficient_balance_error_code"
+	SettingKeyInsufficientBalanceErrorMessage       = "insufficient_balance_error_message"
+
 	// 订阅到期提醒
 	SettingKeySubscriptionExpiryNotifyEnabled = "subscription_expiry_notify_enabled" // 订阅到期提醒全局开关，默认开启
 

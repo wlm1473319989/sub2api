@@ -4502,6 +4502,54 @@
                 <span class="toggle-slider"></span>
               </label>
             </div>
+            <div class="border-t border-gray-100 pt-4 dark:border-dark-700">
+              <div class="flex items-center justify-between gap-4">
+                <div>
+                  <label class="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.insufficientBalanceError.enabled') }}
+                  </label>
+                  <p class="text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.insufficientBalanceError.description') }}
+                  </p>
+                </div>
+                <Toggle v-model="form.insufficient_balance_error_custom_enabled" />
+              </div>
+              <div
+                v-if="form.insufficient_balance_error_custom_enabled"
+                class="mt-4 grid gap-4 md:grid-cols-2"
+              >
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.insufficientBalanceError.code') }}
+                  </label>
+                  <input
+                    v-model="form.insufficient_balance_error_code"
+                    type="text"
+                    maxlength="128"
+                    class="input"
+                    :placeholder="t('admin.settings.insufficientBalanceError.codePlaceholder')"
+                  />
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.insufficientBalanceError.codeHint') }}
+                  </p>
+                </div>
+                <div>
+                  <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
+                    {{ t('admin.settings.insufficientBalanceError.message') }}
+                  </label>
+                  <textarea
+                    v-model="form.insufficient_balance_error_message"
+                    maxlength="1024"
+                    rows="3"
+                    class="textarea"
+                    :placeholder="t('admin.settings.insufficientBalanceError.messagePlaceholder')"
+                  ></textarea>
+                  <p class="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t('admin.settings.insufficientBalanceError.messageHint') }}
+                  </p>
+                </div>
+              </div>
+            </div>
           </div>
         </div>
         </div>
@@ -7712,6 +7760,9 @@ const form = reactive<SettingsForm>({
   balance_low_notify_enabled: false,
   balance_low_notify_threshold: 0,
   balance_low_notify_recharge_url: "",
+  insufficient_balance_error_custom_enabled: false,
+  insufficient_balance_error_code: "",
+  insufficient_balance_error_message: "",
   subscription_expiry_notify_enabled: true,
   account_quota_notify_enabled: false,
   account_quota_notify_emails: [] as NotifyEmailEntry[],
@@ -8906,6 +8957,12 @@ async function saveSettings() {
         Number(form.balance_low_notify_threshold) || 0,
       balance_low_notify_recharge_url: (form.balance_low_notify_recharge_url =
         form.balance_low_notify_recharge_url || currentOrigin),
+      insufficient_balance_error_custom_enabled:
+        form.insufficient_balance_error_custom_enabled,
+      insufficient_balance_error_code:
+        form.insufficient_balance_error_code?.trim() || "",
+      insufficient_balance_error_message:
+        form.insufficient_balance_error_message?.trim() || "",
       subscription_expiry_notify_enabled:
         form.subscription_expiry_notify_enabled,
       account_quota_notify_enabled: form.account_quota_notify_enabled,

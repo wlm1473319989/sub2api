@@ -227,6 +227,41 @@ type SettingService struct {
 	openAIQuotaAutoPauseSettingsSF    singleflight.Group
 }
 
+const (
+	DefaultInsufficientBalanceAuthCode       = "INSUFFICIENT_BALANCE"
+	DefaultInsufficientBalanceAuthMessage    = "Insufficient account balance"
+	DefaultInsufficientBalanceBillingCode    = "billing_error"
+	DefaultInsufficientBalanceBillingMessage = "insufficient balance"
+)
+
+type InsufficientBalanceErrorConfig struct {
+	Enabled bool
+	Code    string
+	Message string
+}
+
+func (cfg InsufficientBalanceErrorConfig) Apply(defaultCode, defaultMessage string) (string, string) {
+	if !cfg.Enabled {
+		return defaultCode, defaultMessage
+	}
+	code := strings.TrimSpace(cfg.Code)
+	if code == "" || len(code) > 128 {
+		code = defaultCode
+	}
+	message := strings.TrimSpace(cfg.Message)
+	if message == "" || len(message) > 1024 {
+		message = defaultMessage
+	}
+	return code, message
+}
+
+func ResolveInsufficientBalanceError(ctx context.Context, settingService *SettingService, defaultCode, defaultMessage string) (string, string) {
+	if settingService == nil {
+		return defaultCode, defaultMessage
+	}
+	return settingService.GetInsufficientBalanceErrorConfig(ctx).Apply(defaultCode, defaultMessage)
+}
+
 // DefaultPlatformQuotaSetting 单 platform 三档限额（nil = 沿用上层；0 = 显式禁用；>0 = 上限）
 type DefaultPlatformQuotaSetting struct {
 	DailyLimitUSD   *float64 `json:"daily"`
@@ -699,6 +734,26 @@ func (s *SettingService) LoadAPIKeyACLTrustForwardedIPSetting(ctx context.Contex
 	enabled := value == "true"
 	s.cfg.SetTrustForwardedIPForAPIKeyACL(enabled)
 	return nil
+}
+
+func (s *SettingService) GetInsufficientBalanceErrorConfig(ctx context.Context) InsufficientBalanceErrorConfig {
+	cfg := InsufficientBalanceErrorConfig{}
+	if s == nil || s.settingRepo == nil {
+		return cfg
+	}
+	values, err := s.settingRepo.GetMultiple(ctx, []string{
+		SettingKeyInsufficientBalanceErrorCustomEnabled,
+		SettingKeyInsufficientBalanceErrorCode,
+		SettingKeyInsufficientBalanceErrorMessage,
+	})
+	if err != nil {
+		slog.Warn("failed to get insufficient balance error settings, using defaults", "error", err)
+		return cfg
+	}
+	cfg.Enabled = values[SettingKeyInsufficientBalanceErrorCustomEnabled] == "true"
+	cfg.Code = strings.TrimSpace(values[SettingKeyInsufficientBalanceErrorCode])
+	cfg.Message = strings.TrimSpace(values[SettingKeyInsufficientBalanceErrorMessage])
+	return cfg
 }
 
 // GetAllSettings 获取所有系统设置
@@ -2025,6 +2080,9 @@ func (s *SettingService) buildSystemSettingsUpdates(ctx context.Context, setting
 	updates[SettingKeyBalanceLowNotifyEnabled] = strconv.FormatBool(settings.BalanceLowNotifyEnabled)
 	updates[SettingKeyBalanceLowNotifyThreshold] = strconv.FormatFloat(settings.BalanceLowNotifyThreshold, 'f', 8, 64)
 	updates[SettingKeyBalanceLowNotifyRechargeURL] = settings.BalanceLowNotifyRechargeURL
+	updates[SettingKeyInsufficientBalanceErrorCustomEnabled] = strconv.FormatBool(settings.InsufficientBalanceErrorCustomEnabled)
+	updates[SettingKeyInsufficientBalanceErrorCode] = strings.TrimSpace(settings.InsufficientBalanceErrorCode)
+	updates[SettingKeyInsufficientBalanceErrorMessage] = strings.TrimSpace(settings.InsufficientBalanceErrorMessage)
 	updates[SettingKeySubscriptionExpiryNotifyEnabled] = strconv.FormatBool(settings.SubscriptionExpiryNotifyEnabled)
 	updates[SettingKeyAccountQuotaNotifyEnabled] = strconv.FormatBool(settings.AccountQuotaNotifyEnabled)
 	updates[SettingKeyAccountQuotaNotifyEmails] = MarshalNotifyEmails(settings.AccountQuotaNotifyEmails)
@@ -3553,6 +3611,9 @@ func (s *SettingService) parseSettings(settings map[string]string) *SystemSettin
 		result.BalanceLowNotifyThreshold = v
 	}
 	result.BalanceLowNotifyRechargeURL = settings[SettingKeyBalanceLowNotifyRechargeURL]
+	result.InsufficientBalanceErrorCustomEnabled = settings[SettingKeyInsufficientBalanceErrorCustomEnabled] == "true"
+	result.InsufficientBalanceErrorCode = strings.TrimSpace(settings[SettingKeyInsufficientBalanceErrorCode])
+	result.InsufficientBalanceErrorMessage = strings.TrimSpace(settings[SettingKeyInsufficientBalanceErrorMessage])
 	result.SubscriptionExpiryNotifyEnabled = !isFalseSettingValue(settings[SettingKeySubscriptionExpiryNotifyEnabled])
 
 	// 账号限额通知

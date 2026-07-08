@@ -95,7 +95,7 @@ func (h *OpenAIGatewayHandler) Embeddings(c *gin.Context) {
 		resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
 		if err != nil {
 			reqLog.Info("openai_embeddings.billing_check_failed", zap.Error(err))
-			status, code, message, retryAfter := billingErrorDetails(err)
+			status, code, message, retryAfter := billingErrorDetailsForRequest(c, h.settingService, err)
 			if retryAfter > 0 {
 				c.Header("Retry-After", strconv.Itoa(retryAfter))
 			}

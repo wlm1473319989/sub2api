@@ -1,14 +1,56 @@
 package handler
 
 import (
+	"context"
 	"errors"
 	"net/http"
+	"net/http/httptest"
 	"testing"
 	"time"
 
+	"github.com/Wei-Shaw/sub2api/internal/config"
 	"github.com/Wei-Shaw/sub2api/internal/service"
+	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+type billingErrorSettingsRepoStub struct {
+	values map[string]string
+}
+
+func (s *billingErrorSettingsRepoStub) Get(ctx context.Context, key string) (*service.Setting, error) {
+	panic("unexpected Get call")
+}
+
+func (s *billingErrorSettingsRepoStub) GetValue(ctx context.Context, key string) (string, error) {
+	panic("unexpected GetValue call")
+}
+
+func (s *billingErrorSettingsRepoStub) Set(ctx context.Context, key, value string) error {
+	panic("unexpected Set call")
+}
+
+func (s *billingErrorSettingsRepoStub) GetMultiple(ctx context.Context, keys []string) (map[string]string, error) {
+	out := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if value, ok := s.values[key]; ok {
+			out[key] = value
+		}
+	}
+	return out, nil
+}
+
+func (s *billingErrorSettingsRepoStub) SetMultiple(ctx context.Context, settings map[string]string) error {
+	panic("unexpected SetMultiple call")
+}
+
+func (s *billingErrorSettingsRepoStub) GetAll(ctx context.Context) (map[string]string, error) {
+	panic("unexpected GetAll call")
+}
+
+func (s *billingErrorSettingsRepoStub) Delete(ctx context.Context, key string) error {
+	panic("unexpected Delete call")
+}
 
 func TestBillingErrorDetails_MapsGroupRPMExceededToTooManyRequests(t *testing.T) {
 	status, code, msg, retryAfter := billingErrorDetails(service.ErrGroupRPMExceeded)
@@ -53,6 +95,52 @@ func TestBillingErrorDetails_UnknownErrorFallsBackTo403(t *testing.T) {
 	require.Equal(t, http.StatusForbidden, status)
 	require.Equal(t, "billing_error", code)
 	require.NotEmpty(t, msg)
+}
+
+func TestBillingErrorDetails_InsufficientBalanceUsesCustomSettings(t *testing.T) {
+	settingService := service.NewSettingService(&billingErrorSettingsRepoStub{
+		values: map[string]string{
+			service.SettingKeyInsufficientBalanceErrorCustomEnabled: "true",
+			service.SettingKeyInsufficientBalanceErrorCode:          "recharge_required",
+			service.SettingKeyInsufficientBalanceErrorMessage:       "Please recharge before retrying.",
+		},
+	}, &config.Config{})
+
+	status, code, msg, retryAfter := billingErrorDetailsWithSettings(context.Background(), settingService, service.ErrInsufficientBalance)
+
+	require.Equal(t, http.StatusForbidden, status)
+	require.Equal(t, "recharge_required", code)
+	require.Equal(t, "Please recharge before retrying.", msg)
+	require.Equal(t, 0, retryAfter)
+}
+
+func TestBillingErrorDetailsForRequest_MarksInsufficientBalanceBusinessLimited(t *testing.T) {
+	gin.SetMode(gin.TestMode)
+	c, _ := gin.CreateTestContext(httptest.NewRecorder())
+	c.Request = httptest.NewRequest(http.MethodPost, "/v1/messages", nil)
+
+	_, _, _, _ = billingErrorDetailsForRequest(c, nil, service.ErrInsufficientBalance)
+
+	require.True(t, service.HasOpsClientBusinessLimited(c))
+	reason, ok := c.Get(service.OpsClientBusinessLimitedReasonKey)
+	require.True(t, ok)
+	require.Equal(t, service.OpsClientBusinessLimitedReasonInsufficientBalance, reason)
+}
+
+func TestBillingErrorDetails_CustomSettingsDoNotAffectRateLimit(t *testing.T) {
+	settingService := service.NewSettingService(&billingErrorSettingsRepoStub{
+		values: map[string]string{
+			service.SettingKeyInsufficientBalanceErrorCustomEnabled: "true",
+			service.SettingKeyInsufficientBalanceErrorCode:          "recharge_required",
+			service.SettingKeyInsufficientBalanceErrorMessage:       "Please recharge before retrying.",
+		},
+	}, &config.Config{})
+
+	status, code, _, retryAfter := billingErrorDetailsWithSettings(context.Background(), settingService, service.ErrAPIKeyRateLimit1dExceeded)
+
+	require.Equal(t, http.StatusTooManyRequests, status)
+	require.Equal(t, "rate_limit_exceeded", code)
+	require.Equal(t, 0, retryAfter)
 }
 
 func TestExtractQuotaResetSeconds_T19_HappyPath(t *testing.T) {

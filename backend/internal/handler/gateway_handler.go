@@ -229,7 +229,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
 	if err != nil {
 		reqLog.Info("gateway.billing_eligibility_check_failed", zap.Error(err))
-		status, code, message, retryAfter := billingErrorDetails(err)
+		status, code, message, retryAfter := billingErrorDetailsForRequest(c, h.settingService, err)
 		if retryAfter > 0 {
 			c.Header("Retry-After", strconv.Itoa(retryAfter))
 		}
@@ -826,7 +826,7 @@ func (h *GatewayHandler) Messages(c *gin.Context) {
 						}
 						fallbackAPIKey := cloneAPIKeyWithGroup(apiKey, fallbackGroup)
 						if _, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), fallbackAPIKey.User, fallbackAPIKey, fallbackGroup, nil, service.PlatformFromAPIKey(fallbackAPIKey)); err != nil {
-							status, code, message, retryAfter := billingErrorDetails(err)
+							status, code, message, retryAfter := billingErrorDetailsForRequest(c, h.settingService, err)
 							if retryAfter > 0 {
 								c.Header("Retry-After", strconv.Itoa(retryAfter))
 							}
@@ -1780,7 +1780,7 @@ func (h *GatewayHandler) CountTokens(c *gin.Context) {
 	// 【注意】不计算并发，但需要校验订阅/余额
 	resolvedSubscription, err := h.billingCacheService.CheckBillingEligibility(c.Request.Context(), apiKey.User, apiKey, apiKey.Group, subscription, service.QuotaPlatform(c.Request.Context(), apiKey))
 	if err != nil {
-		status, code, message, retryAfter := billingErrorDetails(err)
+		status, code, message, retryAfter := billingErrorDetailsForRequest(c, h.settingService, err)
 		if retryAfter > 0 {
 			c.Header("Retry-After", strconv.Itoa(retryAfter))
 		}
@@ -2058,6 +2058,23 @@ func extractQuotaResetSeconds(err error) int {
 }
 
 func billingErrorDetails(err error) (status int, code, message string, retryAfter int) {
+	return billingErrorDetailsWithSettings(context.Background(), nil, err)
+}
+
+func billingErrorDetailsForRequest(c *gin.Context, settingService *service.SettingService, err error) (status int, code, message string, retryAfter int) {
+	ctx := context.Background()
+	if c != nil {
+		if c.Request != nil {
+			ctx = c.Request.Context()
+		}
+		if errors.Is(err, service.ErrInsufficientBalance) {
+			service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonInsufficientBalance)
+		}
+	}
+	return billingErrorDetailsWithSettings(ctx, settingService, err)
+}
+
+func billingErrorDetailsWithSettings(ctx context.Context, settingService *service.SettingService, err error) (status int, code, message string, retryAfter int) {
 	if errors.Is(err, service.ErrBillingServiceUnavailable) {
 		msg := pkgerrors.Message(err)
 		if msg == "" {
@@ -2091,6 +2108,15 @@ func billingErrorDetails(err error) (status int, code, message string, retryAfte
 		// 错误码用 rate_limit_exceeded 与 OpenAI 兼容客户端一致；细分类型由 ErrCode + window_resets_at metadata 区分。
 		msg := pkgerrors.Message(err)
 		return http.StatusTooManyRequests, "rate_limit_exceeded", msg, extractQuotaResetSeconds(err)
+	}
+	if errors.Is(err, service.ErrInsufficientBalance) {
+		code, msg := service.ResolveInsufficientBalanceError(
+			ctx,
+			settingService,
+			service.DefaultInsufficientBalanceBillingCode,
+			service.DefaultInsufficientBalanceBillingMessage,
+		)
+		return http.StatusForbidden, code, msg, 0
 	}
 	msg := pkgerrors.Message(err)
 	if msg == "" {

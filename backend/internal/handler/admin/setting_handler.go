@@ -27,6 +27,8 @@ var semverPattern = regexp.MustCompile(`^\d+\.\d+\.\d+$`)
 // menuItemIDPattern validates custom menu item IDs: alphanumeric, hyphens, underscores only.
 var menuItemIDPattern = regexp.MustCompile(`^[a-zA-Z0-9_-]+$`)
 
+var insufficientBalanceErrorCodePattern = regexp.MustCompile(`^[A-Za-z0-9_-]+$`)
+
 func isSameSiteAbsolutePath(raw string) bool {
 	return strings.HasPrefix(raw, "/") &&
 		!strings.HasPrefix(raw, "//") &&
@@ -279,6 +281,9 @@ func (h *SettingHandler) GetSettings(c *gin.Context) {
 		BalanceLowNotifyEnabled:                settings.BalanceLowNotifyEnabled,
 		BalanceLowNotifyThreshold:              settings.BalanceLowNotifyThreshold,
 		BalanceLowNotifyRechargeURL:            settings.BalanceLowNotifyRechargeURL,
+		InsufficientBalanceErrorCustomEnabled:  settings.InsufficientBalanceErrorCustomEnabled,
+		InsufficientBalanceErrorCode:           settings.InsufficientBalanceErrorCode,
+		InsufficientBalanceErrorMessage:        settings.InsufficientBalanceErrorMessage,
 		SubscriptionExpiryNotifyEnabled:        settings.SubscriptionExpiryNotifyEnabled,
 		AccountQuotaNotifyEnabled:              settings.AccountQuotaNotifyEnabled,
 		AccountQuotaNotifyEmails:               dto.NotifyEmailEntriesFromService(settings.AccountQuotaNotifyEmails),
@@ -617,12 +622,15 @@ type UpdateSettingsRequest struct {
 	OpenAIAdvancedSchedulerEnabled *bool `json:"openai_advanced_scheduler_enabled"`
 
 	// 余额不足提醒
-	BalanceLowNotifyEnabled         *bool                   `json:"balance_low_notify_enabled"`
-	BalanceLowNotifyThreshold       *float64                `json:"balance_low_notify_threshold"`
-	BalanceLowNotifyRechargeURL     *string                 `json:"balance_low_notify_recharge_url"`
-	SubscriptionExpiryNotifyEnabled *bool                   `json:"subscription_expiry_notify_enabled"`
-	AccountQuotaNotifyEnabled       *bool                   `json:"account_quota_notify_enabled"`
-	AccountQuotaNotifyEmails        *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
+	BalanceLowNotifyEnabled               *bool                   `json:"balance_low_notify_enabled"`
+	BalanceLowNotifyThreshold             *float64                `json:"balance_low_notify_threshold"`
+	BalanceLowNotifyRechargeURL           *string                 `json:"balance_low_notify_recharge_url"`
+	InsufficientBalanceErrorCustomEnabled *bool                   `json:"insufficient_balance_error_custom_enabled"`
+	InsufficientBalanceErrorCode          *string                 `json:"insufficient_balance_error_code"`
+	InsufficientBalanceErrorMessage       *string                 `json:"insufficient_balance_error_message"`
+	SubscriptionExpiryNotifyEnabled       *bool                   `json:"subscription_expiry_notify_enabled"`
+	AccountQuotaNotifyEnabled             *bool                   `json:"account_quota_notify_enabled"`
+	AccountQuotaNotifyEmails              *[]dto.NotifyEmailEntry `json:"account_quota_notify_emails"`
 
 	// Payment configuration (integrated into settings, full replace)
 	PaymentEnabled                   *bool    `json:"payment_enabled"`
@@ -1494,6 +1502,28 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 		response.BadRequest(c, "cyber_session_block_ttl_seconds must be > 0")
 		return
 	}
+	if req.InsufficientBalanceErrorCode != nil {
+		normalized := strings.TrimSpace(*req.InsufficientBalanceErrorCode)
+		req.InsufficientBalanceErrorCode = &normalized
+		if normalized != "" {
+			if len(normalized) > 128 {
+				response.BadRequest(c, "insufficient_balance_error_code must be at most 128 characters")
+				return
+			}
+			if !insufficientBalanceErrorCodePattern.MatchString(normalized) {
+				response.BadRequest(c, "insufficient_balance_error_code may only contain letters, numbers, hyphens, and underscores")
+				return
+			}
+		}
+	}
+	if req.InsufficientBalanceErrorMessage != nil {
+		normalized := strings.TrimSpace(*req.InsufficientBalanceErrorMessage)
+		req.InsufficientBalanceErrorMessage = &normalized
+		if len(normalized) > 1024 {
+			response.BadRequest(c, "insufficient_balance_error_message must be at most 1024 characters")
+			return
+		}
+	}
 
 	settings := &service.SystemSettings{
 		// 系统全局 platform quota 默认值（整体替换语义）
@@ -1783,6 +1813,24 @@ func (h *SettingHandler) UpdateSettings(c *gin.Context) {
 				return *req.BalanceLowNotifyRechargeURL
 			}
 			return previousSettings.BalanceLowNotifyRechargeURL
+		}(),
+		InsufficientBalanceErrorCustomEnabled: func() bool {
+			if req.InsufficientBalanceErrorCustomEnabled != nil {
+				return *req.InsufficientBalanceErrorCustomEnabled
+			}
+			return previousSettings.InsufficientBalanceErrorCustomEnabled
+		}(),
+		InsufficientBalanceErrorCode: func() string {
+			if req.InsufficientBalanceErrorCode != nil {
+				return *req.InsufficientBalanceErrorCode
+			}
+			return previousSettings.InsufficientBalanceErrorCode
+		}(),
+		InsufficientBalanceErrorMessage: func() string {
+			if req.InsufficientBalanceErrorMessage != nil {
+				return *req.InsufficientBalanceErrorMessage
+			}
+			return previousSettings.InsufficientBalanceErrorMessage
 		}(),
 		SubscriptionExpiryNotifyEnabled: func() bool {
 			if req.SubscriptionExpiryNotifyEnabled != nil {

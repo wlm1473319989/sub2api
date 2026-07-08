@@ -21,6 +21,10 @@ func APIKeyAuthGoogle(apiKeyService *service.APIKeyService, cfg *config.Config) 
 //
 // It is intended for Gemini native endpoints (/v1beta) to match Gemini SDK expectations.
 func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config) gin.HandlerFunc {
+	return APIKeyAuthWithSubscriptionGoogleWithSettings(apiKeyService, subscriptionService, cfg, nil)
+}
+
+func APIKeyAuthWithSubscriptionGoogleWithSettings(apiKeyService *service.APIKeyService, subscriptionService *service.SubscriptionService, cfg *config.Config, settingService *service.SettingService) gin.HandlerFunc {
 	return func(c *gin.Context) {
 		if v := strings.TrimSpace(c.Query("api_key")); v != "" {
 			abortWithGoogleError(c, 400, "Query parameter api_key is deprecated. Use Authorization header or key instead.")
@@ -117,7 +121,14 @@ func APIKeyAuthWithSubscriptionGoogle(apiKeyService *service.APIKeyService, subs
 		}
 		if subscription == nil {
 			if apiKey.User.Balance <= 0 {
-				abortWithGoogleError(c, 403, "Insufficient account balance")
+				service.MarkOpsClientBusinessLimited(c, service.OpsClientBusinessLimitedReasonInsufficientBalance)
+				_, message := service.ResolveInsufficientBalanceError(
+					c.Request.Context(),
+					settingService,
+					service.DefaultInsufficientBalanceAuthCode,
+					service.DefaultInsufficientBalanceAuthMessage,
+				)
+				abortWithGoogleError(c, 403, message)
 				return
 			}
 		}
