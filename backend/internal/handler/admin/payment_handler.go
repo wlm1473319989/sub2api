@@ -193,7 +193,7 @@ func (h *PaymentHandler) PreviewRefund(c *gin.Context) {
 			response.ErrorFrom(c, previewErr)
 			return
 		}
-		response.Success(c, buildLegacySubscriptionRefundPreviewResponse(order, preview))
+		response.Success(c, buildLegacySubscriptionRefundPreviewResponse(order, preview, h.paymentService.RefundAffiliateRewardInfo(c.Request.Context(), orderID)))
 		return
 	}
 
@@ -324,7 +324,7 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 	response.Success(c, result)
 }
 
-func buildLegacySubscriptionRefundPreviewResponse(order *dbent.PaymentOrder, preview *service.SettlementRefundPreview) gin.H {
+func buildLegacySubscriptionRefundPreviewResponse(order *dbent.PaymentOrder, preview *service.SettlementRefundPreview, affiliateReward *service.RefundAffiliateRewardInfo) gin.H {
 	return gin.H{
 		"order_amount":                       order.Amount,
 		"pay_amount":                         order.PayAmount,
@@ -366,6 +366,7 @@ func buildLegacySubscriptionRefundPreviewResponse(order *dbent.PaymentOrder, pre
 			"current_residual_value": preview.AfterSettlementValue,
 			"refund_residual_value":  preview.RefundResidualValue,
 		},
+		"affiliate_reward": affiliateReward,
 	}
 }
 

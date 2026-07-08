@@ -90,8 +90,12 @@ type AffiliateDetail struct {
 	// EffectiveRebateRatePercent 是当前用户作为邀请人时实际生效的返利比例：
 	// 优先用户自己的专属比例（aff_rebate_rate_percent），否则回退到全局比例。
 	// 用于在用户的 /affiliate 页面直观展示「分享后能拿到多少」。
-	EffectiveRebateRatePercent float64            `json:"effective_rebate_rate_percent"`
-	Invitees                   []AffiliateInvitee `json:"invitees"`
+	EffectiveRebateRatePercent   float64            `json:"effective_rebate_rate_percent"`
+	AffiliateRebateFreezeHours   int                `json:"affiliate_rebate_freeze_hours"`
+	AffiliateRebateDurationDays  int                `json:"affiliate_rebate_duration_days"`
+	AffiliateRebatePerInviteeCap float64            `json:"affiliate_rebate_per_invitee_cap"`
+	AffiliateGroupGrantEnabled   bool               `json:"affiliate_group_grant_enabled"`
+	Invitees                     []AffiliateInvitee `json:"invitees"`
 }
 
 type AffiliateRepository interface {
@@ -254,15 +258,19 @@ func (s *AffiliateService) GetAffiliateDetail(ctx context.Context, userID int64)
 		return nil, err
 	}
 	return &AffiliateDetail{
-		UserID:                     summary.UserID,
-		AffCode:                    summary.AffCode,
-		InviterID:                  summary.InviterID,
-		AffCount:                   summary.AffCount,
-		AffQuota:                   summary.AffQuota,
-		AffFrozenQuota:             summary.AffFrozenQuota,
-		AffHistoryQuota:            summary.AffHistoryQuota,
-		EffectiveRebateRatePercent: s.resolveRebateRatePercent(ctx, summary),
-		Invitees:                   invitees,
+		UserID:                       summary.UserID,
+		AffCode:                      summary.AffCode,
+		InviterID:                    summary.InviterID,
+		AffCount:                     summary.AffCount,
+		AffQuota:                     summary.AffQuota,
+		AffFrozenQuota:               summary.AffFrozenQuota,
+		AffHistoryQuota:              summary.AffHistoryQuota,
+		EffectiveRebateRatePercent:   s.resolveRebateRatePercent(ctx, summary),
+		AffiliateRebateFreezeHours:   s.affiliateRebateFreezeHours(ctx),
+		AffiliateRebateDurationDays:  s.affiliateRebateDurationDays(ctx),
+		AffiliateRebatePerInviteeCap: s.affiliateRebatePerInviteeCap(ctx),
+		AffiliateGroupGrantEnabled:   s.affiliateGroupGrantEnabled(ctx),
+		Invitees:                     invitees,
 	}, nil
 }
 
@@ -406,6 +414,34 @@ func (s *AffiliateService) globalRebateRatePercent(ctx context.Context) float64 
 		return AffiliateRebateRateDefault
 	}
 	return s.settingService.GetAffiliateRebateRatePercent(ctx)
+}
+
+func (s *AffiliateService) affiliateRebateFreezeHours(ctx context.Context) int {
+	if s == nil || s.settingService == nil {
+		return AffiliateRebateFreezeHoursDefault
+	}
+	return s.settingService.GetAffiliateRebateFreezeHours(ctx)
+}
+
+func (s *AffiliateService) affiliateRebateDurationDays(ctx context.Context) int {
+	if s == nil || s.settingService == nil {
+		return AffiliateRebateDurationDaysDefault
+	}
+	return s.settingService.GetAffiliateRebateDurationDays(ctx)
+}
+
+func (s *AffiliateService) affiliateRebatePerInviteeCap(ctx context.Context) float64 {
+	if s == nil || s.settingService == nil {
+		return AffiliateRebatePerInviteeCapDefault
+	}
+	return s.settingService.GetAffiliateRebatePerInviteeCap(ctx)
+}
+
+func (s *AffiliateService) affiliateGroupGrantEnabled(ctx context.Context) bool {
+	if s == nil || s.settingService == nil {
+		return AffiliateGroupGrantEnabledDefault
+	}
+	return s.settingService.IsAffiliateGroupGrantEnabled(ctx) && s.settingService.GetAffiliateGroupGrantGroupID(ctx) > 0
 }
 
 func (s *AffiliateService) TransferAffiliateQuota(ctx context.Context, userID int64) (float64, float64, error) {

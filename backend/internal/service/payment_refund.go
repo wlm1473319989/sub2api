@@ -2,6 +2,8 @@ package service
 
 import (
 	"context"
+	"database/sql"
+	"encoding/json"
 	"fmt"
 	"log/slog"
 	"math"
@@ -337,7 +339,11 @@ func (s *PaymentService) PreviewRefund(ctx context.Context, oid int64, amt float
 	if err != nil {
 		return nil, err
 	}
-	return refundPreviewFromPlan(p, earlyResult), nil
+	preview := refundPreviewFromPlan(p, earlyResult)
+	if preview != nil {
+		preview.AffiliateReward = s.RefundAffiliateRewardInfo(ctx, oid)
+	}
+	return preview, nil
 }
 
 func (s *PaymentService) PreviewUserRefund(ctx context.Context, oid, uid int64) (*RefundPreview, error) {
@@ -439,6 +445,159 @@ func refundPreviewFromPlan(p *RefundPlan, earlyResult *RefundResult) *RefundPrev
 		}
 	}
 	return preview
+}
+
+func (s *PaymentService) RefundAffiliateRewardInfo(ctx context.Context, orderID int64) *RefundAffiliateRewardInfo {
+	if s == nil || s.entClient == nil || orderID <= 0 {
+		return nil
+	}
+
+	info := &RefundAffiliateRewardInfo{}
+	if err := s.loadRefundAffiliateRebateInfo(ctx, orderID, info); err != nil {
+		slog.Warn("refund preview: failed to load affiliate rebate info", "orderID", orderID, "error", err)
+	}
+	if err := s.loadRefundAffiliateGroupGrantInfo(ctx, orderID, info); err != nil {
+		slog.Warn("refund preview: failed to load affiliate group grant info", "orderID", orderID, "error", err)
+	}
+
+	if !info.HasReward {
+		return nil
+	}
+	return info
+}
+
+func (s *PaymentService) loadRefundAffiliateRebateInfo(ctx context.Context, orderID int64, info *RefundAffiliateRewardInfo) error {
+	if info == nil {
+		return nil
+	}
+
+	amountExpr := "COALESCE(SUM(amount), 0)"
+	placeholder := "?"
+	if paymentAuditDialect(s.entClient) == "postgres" {
+		amountExpr = "COALESCE(SUM(amount), 0)::double precision"
+		placeholder = "$1"
+	}
+	rows, err := s.entClient.QueryContext(ctx, fmt.Sprintf(`
+SELECT %s, MIN(user_id), COUNT(*)
+FROM user_affiliate_ledger
+WHERE action = 'accrue'
+  AND source_order_id = %s`, amountExpr, placeholder), orderID)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var amount float64
+	var inviterID sql.NullInt64
+	var count int64
+	if rows.Next() {
+		if err := rows.Scan(&amount, &inviterID, &count); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if count > 0 {
+		info.HasReward = true
+		info.RebateApplied = true
+		info.RebateAmount = amount
+		if inviterID.Valid {
+			v := inviterID.Int64
+			info.InviterID = &v
+		}
+		return nil
+	}
+
+	return s.loadRefundAffiliateRebateAuditFallback(ctx, orderID, info)
+}
+
+func (s *PaymentService) loadRefundAffiliateRebateAuditFallback(ctx context.Context, orderID int64, info *RefundAffiliateRewardInfo) error {
+	if info == nil {
+		return nil
+	}
+	placeholder := "?"
+	if paymentAuditDialect(s.entClient) == "postgres" {
+		placeholder = "$1"
+	}
+	rows, err := s.entClient.QueryContext(ctx, fmt.Sprintf(`
+SELECT detail
+FROM payment_audit_logs
+WHERE order_id = %s
+  AND action = 'AFFILIATE_REBATE_APPLIED'
+LIMIT 1`, placeholder), strconv.FormatInt(orderID, 10))
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var detail sql.NullString
+	if rows.Next() {
+		if err := rows.Scan(&detail); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if !detail.Valid {
+		return nil
+	}
+
+	info.HasReward = true
+	info.RebateApplied = true
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(detail.String), &payload); err == nil {
+		if v, ok := payload["rebateAmount"].(float64); ok {
+			info.RebateAmount = v
+		}
+	}
+	return nil
+}
+
+func (s *PaymentService) loadRefundAffiliateGroupGrantInfo(ctx context.Context, orderID int64, info *RefundAffiliateRewardInfo) error {
+	if info == nil {
+		return nil
+	}
+
+	daysExpr := "COALESCE(SUM(grant_days), 0)"
+	placeholder := "?"
+	if paymentAuditDialect(s.entClient) == "postgres" {
+		daysExpr = "COALESCE(SUM(grant_days), 0)::bigint"
+		placeholder = "$1"
+	}
+	rows, err := s.entClient.QueryContext(ctx, fmt.Sprintf(`
+SELECT %s, MAX(expires_at), COUNT(*)
+FROM affiliate_group_grants
+WHERE source_order_id = %s`, daysExpr, placeholder), orderID)
+	if err != nil {
+		return err
+	}
+	defer func() { _ = rows.Close() }()
+
+	var days int64
+	var expiresAt sql.NullTime
+	var count int64
+	if rows.Next() {
+		if err := rows.Scan(&days, &expiresAt, &count); err != nil {
+			return err
+		}
+	}
+	if err := rows.Err(); err != nil {
+		return err
+	}
+	if count == 0 {
+		return nil
+	}
+
+	info.HasReward = true
+	info.GroupGrantApplied = true
+	info.GroupGrantDays = int(days)
+	if expiresAt.Valid {
+		v := expiresAt.Time
+		info.GroupGrantExpiresAt = &v
+	}
+	return nil
 }
 
 func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, p *RefundPlan, force bool) *RefundResult {

@@ -83,6 +83,27 @@
         </div>
       </div>
       <div
+        v-if="affiliateReward?.has_reward"
+        class="space-y-2 rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800 dark:border-red-800 dark:bg-red-900/20 dark:text-red-200"
+      >
+        <div class="font-medium">{{ t('payment.admin.affiliateRewardWarningTitle') }}</div>
+        <p>{{ t('payment.admin.affiliateRewardWarningBody') }}</p>
+        <div class="space-y-1 text-xs text-red-700 dark:text-red-300">
+          <p v-if="affiliateReward.rebate_applied">
+            {{ t('payment.admin.affiliateRebateApplied', { amount: formatAffiliateAmount(affiliateReward.rebate_amount || 0) }) }}
+          </p>
+          <p v-if="affiliateReward.inviter_id">
+            {{ t('payment.admin.affiliateInviterId', { id: affiliateReward.inviter_id }) }}
+          </p>
+          <p v-if="affiliateReward.group_grant_applied">
+            {{ t('payment.admin.affiliateGroupGrantApplied', { days: affiliateReward.group_grant_days || 0 }) }}
+          </p>
+          <p v-if="affiliateReward.group_grant_expires_at">
+            {{ t('payment.admin.affiliateGroupGrantExpiresAt', { time: formatDateTime(affiliateReward.group_grant_expires_at) }) }}
+          </p>
+        </div>
+      </div>
+      <div
         v-if="refundPreview?.settlement_head"
         class="space-y-3 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-900 dark:border-amber-800 dark:bg-amber-900/20 dark:text-amber-100"
       >
@@ -284,6 +305,7 @@ const balanceInsufficient = computed(() => {
 
 const effectiveRequireForce = computed(() => props.requireForce || !!refundPreview.value?.require_force)
 const effectiveWarning = computed(() => refundPreview.value?.warning || props.warning || '')
+const affiliateReward = computed(() => refundPreview.value?.affiliate_reward || null)
 const deductLabel = computed(() => props.order?.order_type === 'subscription' ? t('payment.admin.deductSubscription') : t('payment.admin.deductBalance'))
 const deductHint = computed(() => props.order?.order_type === 'subscription' ? t('payment.admin.deductSubscriptionHint') : t('payment.admin.deductBalanceHint'))
 const manualDifference = computed(() => {
@@ -329,6 +351,10 @@ function formatOrderMoney(amount: number): string {
 
 function formatGatewayMoney(amount: number): string {
   return `¥${amount.toFixed(4)}`
+}
+
+function formatAffiliateAmount(amount: number): string {
+  return `$${amount.toFixed(4)}`
 }
 
 function clearPreviewTimer() {

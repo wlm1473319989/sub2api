@@ -148,17 +148,28 @@ type RefundResult struct {
 }
 
 type RefundPreview struct {
-	OrderAmount     float64                   `json:"order_amount"`
-	PayAmount       float64                   `json:"pay_amount"`
-	RefundAmount    float64                   `json:"refund_amount"`
-	GatewayAmount   float64                   `json:"gateway_amount"`
-	Currency        string                    `json:"currency,omitempty"`
-	DeductionType   string                    `json:"deduction_type,omitempty"`
-	BalanceToDeduct float64                   `json:"balance_to_deduct,omitempty"`
-	SubDaysToDeduct int                       `json:"subscription_days_to_deduct,omitempty"`
-	Warning         string                    `json:"warning,omitempty"`
-	RequireForce    bool                      `json:"require_force,omitempty"`
-	SettlementHead  *RefundSettlementHeadInfo `json:"settlement_head,omitempty"`
+	OrderAmount     float64                    `json:"order_amount"`
+	PayAmount       float64                    `json:"pay_amount"`
+	RefundAmount    float64                    `json:"refund_amount"`
+	GatewayAmount   float64                    `json:"gateway_amount"`
+	Currency        string                     `json:"currency,omitempty"`
+	DeductionType   string                     `json:"deduction_type,omitempty"`
+	BalanceToDeduct float64                    `json:"balance_to_deduct,omitempty"`
+	SubDaysToDeduct int                        `json:"subscription_days_to_deduct,omitempty"`
+	Warning         string                     `json:"warning,omitempty"`
+	RequireForce    bool                       `json:"require_force,omitempty"`
+	SettlementHead  *RefundSettlementHeadInfo  `json:"settlement_head,omitempty"`
+	AffiliateReward *RefundAffiliateRewardInfo `json:"affiliate_reward,omitempty"`
+}
+
+type RefundAffiliateRewardInfo struct {
+	HasReward           bool       `json:"has_reward"`
+	RebateApplied       bool       `json:"rebate_applied"`
+	RebateAmount        float64    `json:"rebate_amount,omitempty"`
+	InviterID           *int64     `json:"inviter_id,omitempty"`
+	GroupGrantApplied   bool       `json:"group_grant_applied"`
+	GroupGrantDays      int        `json:"group_grant_days,omitempty"`
+	GroupGrantExpiresAt *time.Time `json:"group_grant_expires_at,omitempty"`
 }
 
 type RefundSettlementHeadInfo struct {

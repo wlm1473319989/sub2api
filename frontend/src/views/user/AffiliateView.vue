@@ -75,10 +75,9 @@
           <div class="mt-5 rounded-xl border border-primary-200 bg-primary-50 p-4 dark:border-primary-900/40 dark:bg-primary-900/20">
             <p class="text-sm font-medium text-primary-800 dark:text-primary-200">{{ t('affiliate.tips.title') }}</p>
             <ul class="mt-2 space-y-1 text-sm text-primary-700 dark:text-primary-300">
-              <li>1. {{ t('affiliate.tips.line1') }}</li>
-              <li>2. {{ t('affiliate.tips.line2', { rate: `${formattedRebateRate}%` }) }}</li>
-              <li>3. {{ t('affiliate.tips.line3') }}</li>
-              <li v-if="detail.aff_frozen_quota > 0">4. {{ t('affiliate.tips.line4') }}</li>
+              <li v-for="(line, index) in affiliateTipLines" :key="index">
+                {{ index + 1 }}. {{ line }}
+              </li>
             </ul>
           </div>
         </div>
@@ -174,6 +173,59 @@ const formattedRebateRate = computed(() => {
   const rounded = Math.round(v * 100) / 100
   return Number.isInteger(rounded) ? String(rounded) : rounded.toString()
 })
+
+const freezeRuleText = computed(() => {
+  const hours = detail.value?.affiliate_rebate_freeze_hours ?? 0
+  if (hours <= 0) return t('affiliate.tips.noFreezeRule')
+  return t('affiliate.tips.freezeRule', { freeze: formatHoursText(hours) })
+})
+const rebateDurationText = computed(() => formatDaysText(detail.value?.affiliate_rebate_duration_days ?? 0))
+const perInviteeCapText = computed(() => {
+  const cap = detail.value?.affiliate_rebate_per_invitee_cap ?? 0
+  return cap > 0 ? formatCurrency(cap) : t('affiliate.tips.unlimited')
+})
+
+const affiliateTipLines = computed(() => {
+  if (!detail.value) return []
+
+  const lines = [
+    t('affiliate.tips.share'),
+    t('affiliate.tips.paymentReward'),
+    t('affiliate.tips.rebate', {
+      rate: `${formattedRebateRate.value}%`,
+      freezeRule: freezeRuleText.value
+    }),
+    t('affiliate.tips.limits', {
+      duration: rebateDurationText.value,
+      cap: perInviteeCapText.value
+    })
+  ]
+
+  if (detail.value.affiliate_group_grant_enabled) {
+    lines.push(
+      t('affiliate.tips.groupGrant'),
+      t('affiliate.tips.groupGrantDays'),
+      t('affiliate.tips.groupGrantStack')
+    )
+  }
+
+  lines.push(t('affiliate.tips.once'))
+  return lines
+})
+
+function formatHoursText(hours: number): string {
+  if (hours <= 0) return t('affiliate.tips.noFreeze')
+  if (hours < 24) return t('affiliate.tips.hours', { count: hours })
+  const days = Math.floor(hours / 24)
+  const restHours = hours % 24
+  if (restHours === 0) return t('affiliate.tips.days', { count: days })
+  return t('affiliate.tips.daysHours', { days, hours: restHours })
+}
+
+function formatDaysText(days: number): string {
+  if (days <= 0) return t('affiliate.tips.permanent')
+  return t('affiliate.tips.days', { count: days })
+}
 
 function formatCount(value: number): string {
   return value.toLocaleString()

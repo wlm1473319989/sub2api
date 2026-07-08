@@ -144,6 +144,16 @@ export interface RefundResult {
   settlement_head?: RefundSettlementHeadInfo
 }
 
+export interface RefundAffiliateRewardInfo {
+  has_reward: boolean
+  rebate_applied: boolean
+  rebate_amount?: number
+  inviter_id?: number
+  group_grant_applied: boolean
+  group_grant_days?: number
+  group_grant_expires_at?: string
+}
+
 export interface RefundPreview {
   order_amount: number
   pay_amount: number
@@ -182,6 +192,7 @@ export interface RefundPreview {
   after_complete_subscription_status?: string
   allocations?: RefundPreviewAllocation[]
   settlement_head?: RefundSettlementHeadInfo
+  affiliate_reward?: RefundAffiliateRewardInfo | null
 }
 
 // ==================== Plans & Channels ====================
