@@ -809,7 +809,7 @@ func OpsErrorLoggerMiddleware(ops *service.OpsService) gin.HandlerFunc {
 		}
 
 		// Skip logging if the error should be filtered based on settings
-		if shouldSkipOpsErrorLog(c.Request.Context(), ops, parsed.Message, string(body), c.Request.URL.Path) {
+		if shouldSkipOpsErrorLog(c.Request.Context(), ops, status, parsed.Message, string(body), c.Request.URL.Path) {
 			return
 		}
 
@@ -1419,7 +1419,7 @@ func strconvItoa(v int) string {
 
 // shouldSkipOpsErrorLog determines if an error should be skipped from logging based on settings.
 // Returns true for errors that should be filtered according to OpsAdvancedSettings.
-func shouldSkipOpsErrorLog(ctx context.Context, ops *service.OpsService, message, body, requestPath string) bool {
+func shouldSkipOpsErrorLog(ctx context.Context, ops *service.OpsService, status int, message, body, requestPath string) bool {
 	if ops == nil {
 		return false
 	}
@@ -1441,7 +1441,9 @@ func shouldSkipOpsErrorLog(ctx context.Context, ops *service.OpsService, message
 
 	// Check if context canceled errors should be ignored (client disconnects)
 	if settings.IgnoreContextCanceled {
-		if strings.Contains(msgLower, opsErrContextCanceled) || strings.Contains(bodyLower, opsErrContextCanceled) {
+		if status == statusClientClosedRequest ||
+			strings.Contains(msgLower, opsErrContextCanceled) ||
+			strings.Contains(bodyLower, opsErrContextCanceled) {
 			return true
 		}
 	}

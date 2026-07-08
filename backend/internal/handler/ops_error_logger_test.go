@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"context"
 	"net/http"
 	"net/http/httptest"
 	"sync"
@@ -11,6 +12,65 @@ import (
 	"github.com/gin-gonic/gin"
 	"github.com/stretchr/testify/require"
 )
+
+type opsErrorLoggerSettingRepoStub struct {
+	values map[string]string
+}
+
+func (s *opsErrorLoggerSettingRepoStub) Get(ctx context.Context, key string) (*service.Setting, error) {
+	if value, ok := s.values[key]; ok {
+		return &service.Setting{Key: key, Value: value}, nil
+	}
+	return nil, service.ErrSettingNotFound
+}
+
+func (s *opsErrorLoggerSettingRepoStub) GetValue(ctx context.Context, key string) (string, error) {
+	if value, ok := s.values[key]; ok {
+		return value, nil
+	}
+	return "", service.ErrSettingNotFound
+}
+
+func (s *opsErrorLoggerSettingRepoStub) Set(ctx context.Context, key, value string) error {
+	if s.values == nil {
+		s.values = map[string]string{}
+	}
+	s.values[key] = value
+	return nil
+}
+
+func (s *opsErrorLoggerSettingRepoStub) GetMultiple(ctx context.Context, keys []string) (map[string]string, error) {
+	out := make(map[string]string, len(keys))
+	for _, key := range keys {
+		if value, ok := s.values[key]; ok {
+			out[key] = value
+		}
+	}
+	return out, nil
+}
+
+func (s *opsErrorLoggerSettingRepoStub) SetMultiple(ctx context.Context, settings map[string]string) error {
+	if s.values == nil {
+		s.values = map[string]string{}
+	}
+	for key, value := range settings {
+		s.values[key] = value
+	}
+	return nil
+}
+
+func (s *opsErrorLoggerSettingRepoStub) GetAll(ctx context.Context) (map[string]string, error) {
+	out := make(map[string]string, len(s.values))
+	for key, value := range s.values {
+		out[key] = value
+	}
+	return out, nil
+}
+
+func (s *opsErrorLoggerSettingRepoStub) Delete(ctx context.Context, key string) error {
+	delete(s.values, key)
+	return nil
+}
 
 func resetOpsErrorLoggerStateForTest(t *testing.T) {
 	t.Helper()
@@ -42,6 +102,40 @@ func resetOpsErrorLoggerStateForTest(t *testing.T) {
 	opsErrorLogShutdownCh = make(chan struct{})
 	opsErrorLogShutdownOnce = sync.Once{}
 	opsErrorLogDrained.Store(false)
+}
+
+func TestShouldSkipOpsErrorLog_IgnoresClientClosedStatus(t *testing.T) {
+	ops := service.NewOpsService(nil, &opsErrorLoggerSettingRepoStub{}, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	got := shouldSkipOpsErrorLog(
+		context.Background(),
+		ops,
+		statusClientClosedRequest,
+		"Client Closed Request",
+		`{"error":{"message":"Client Closed Request"}}`,
+		"/v1/messages",
+	)
+
+	require.True(t, got)
+}
+
+func TestShouldSkipOpsErrorLog_ClientClosedStatusRespectsSetting(t *testing.T) {
+	ops := service.NewOpsService(nil, &opsErrorLoggerSettingRepoStub{
+		values: map[string]string{
+			service.SettingKeyOpsAdvancedSettings: `{"ignore_context_canceled":false}`,
+		},
+	}, nil, nil, nil, nil, nil, nil, nil, nil, nil)
+
+	got := shouldSkipOpsErrorLog(
+		context.Background(),
+		ops,
+		statusClientClosedRequest,
+		"Client Closed Request",
+		`{"error":{"message":"Client Closed Request"}}`,
+		"/v1/messages",
+	)
+
+	require.False(t, got)
 }
 
 func TestEnqueueOpsErrorLog_QueueFullDrop(t *testing.T) {
