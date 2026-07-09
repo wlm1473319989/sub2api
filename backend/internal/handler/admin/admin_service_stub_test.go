@@ -318,6 +318,26 @@ func (s *stubAdminService) BatchSetGroupRPMOverrides(_ context.Context, _ int64,
 	return nil
 }
 
+func (s *stubAdminService) GetGroupAccountPriorities(_ context.Context, groupID int64) ([]service.GroupAccountPriority, error) {
+	return []service.GroupAccountPriority{
+		{
+			GroupID:         groupID,
+			AccountID:       1,
+			Priority:        1,
+			AccountName:     "account",
+			AccountPlatform: service.PlatformAnthropic,
+			AccountType:     service.AccountTypeOAuth,
+			AccountStatus:   service.StatusActive,
+			AccountPriority: 1,
+			Schedulable:     true,
+		},
+	}, nil
+}
+
+func (s *stubAdminService) UpdateGroupAccountPriorities(_ context.Context, _ int64, _ []service.GroupAccountPriorityUpdate) error {
+	return nil
+}
+
 func (s *stubAdminService) ListAccounts(ctx context.Context, page, pageSize int, platform, accountType, status, search string, groupID int64, privacyMode string, sortBy, sortOrder string) ([]service.Account, int64, error) {
 	s.lastListAccounts.platform = platform
 	s.lastListAccounts.accountType = accountType

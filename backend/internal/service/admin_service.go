@@ -68,6 +68,8 @@ type AdminService interface {
 	ClearGroupRPMOverrides(ctx context.Context, groupID int64) error
 	BatchSetGroupRPMOverrides(ctx context.Context, groupID int64, entries []GroupRPMOverrideInput) error
 	UpdateGroupSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error
+	GetGroupAccountPriorities(ctx context.Context, groupID int64) ([]GroupAccountPriority, error)
+	UpdateGroupAccountPriorities(ctx context.Context, groupID int64, updates []GroupAccountPriorityUpdate) error
 
 	// API Key management (admin)
 	AdminUpdateAPIKeyGroupID(ctx context.Context, keyID int64, groupID *int64) (*AdminUpdateAPIKeyGroupIDResult, error)
@@ -492,6 +494,11 @@ type ProxyExitInfoProber interface {
 
 type groupExistenceBatchReader interface {
 	ExistsByIDs(ctx context.Context, ids []int64) (map[int64]bool, error)
+}
+
+type groupAccountPriorityRepository interface {
+	ListGroupAccountPriorities(ctx context.Context, groupID int64) ([]GroupAccountPriority, error)
+	UpdateGroupAccountPriorities(ctx context.Context, groupID int64, updates []GroupAccountPriorityUpdate) error
 }
 
 type proxyQualityTarget struct {
@@ -2426,6 +2433,54 @@ func (s *adminServiceImpl) BatchSetGroupRPMOverrides(ctx context.Context, groupI
 
 func (s *adminServiceImpl) UpdateGroupSortOrders(ctx context.Context, updates []GroupSortOrderUpdate) error {
 	return s.groupRepo.UpdateSortOrders(ctx, updates)
+}
+
+func (s *adminServiceImpl) GetGroupAccountPriorities(ctx context.Context, groupID int64) ([]GroupAccountPriority, error) {
+	if groupID <= 0 {
+		return nil, infraerrors.BadRequest("INVALID_GROUP_ID", "group_id must be positive")
+	}
+	if _, err := s.groupRepo.GetByIDLite(ctx, groupID); err != nil {
+		return nil, err
+	}
+	repo, ok := s.groupRepo.(groupAccountPriorityRepository)
+	if !ok {
+		return nil, errors.New("group account priority repository is not available")
+	}
+	return repo.ListGroupAccountPriorities(ctx, groupID)
+}
+
+func (s *adminServiceImpl) UpdateGroupAccountPriorities(ctx context.Context, groupID int64, updates []GroupAccountPriorityUpdate) error {
+	if groupID <= 0 {
+		return infraerrors.BadRequest("INVALID_GROUP_ID", "group_id must be positive")
+	}
+	if _, err := s.groupRepo.GetByIDLite(ctx, groupID); err != nil {
+		return err
+	}
+	if len(updates) == 0 {
+		return nil
+	}
+
+	normalized := make([]GroupAccountPriorityUpdate, 0, len(updates))
+	seen := make(map[int64]struct{}, len(updates))
+	for _, update := range updates {
+		if update.AccountID <= 0 {
+			return infraerrors.BadRequest("INVALID_ACCOUNT_ID", "account_id must be positive")
+		}
+		if update.Priority <= 0 {
+			return infraerrors.BadRequest("INVALID_GROUP_ACCOUNT_PRIORITY", "priority must be positive")
+		}
+		if _, exists := seen[update.AccountID]; exists {
+			return infraerrors.BadRequest("DUPLICATE_GROUP_ACCOUNT_PRIORITY", "duplicate account_id in priority updates")
+		}
+		seen[update.AccountID] = struct{}{}
+		normalized = append(normalized, update)
+	}
+
+	repo, ok := s.groupRepo.(groupAccountPriorityRepository)
+	if !ok {
+		return errors.New("group account priority repository is not available")
+	}
+	return repo.UpdateGroupAccountPriorities(ctx, groupID, normalized)
 }
 
 // AdminUpdateAPIKeyGroupID 管理员修改 API Key 分组绑定

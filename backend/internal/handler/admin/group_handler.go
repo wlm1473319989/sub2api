@@ -528,6 +528,62 @@ type UpdateSortOrderRequest struct {
 	} `json:"updates" binding:"required,min=1"`
 }
 
+type UpdateGroupAccountPrioritiesRequest struct {
+	Updates []struct {
+		AccountID int64 `json:"account_id" binding:"required"`
+		Priority  int   `json:"priority" binding:"required,min=1"`
+	} `json:"updates"`
+}
+
+// GetGroupAccountPriorities handles listing accounts bound to a group in scheduling order.
+// GET /api/v1/admin/groups/:id/accounts
+func (h *GroupHandler) GetGroupAccountPriorities(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+
+	entries, err := h.adminService.GetGroupAccountPriorities(c.Request.Context(), groupID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, entries)
+}
+
+// UpdateGroupAccountPriorities handles updating account scheduling priority inside a group.
+// PUT /api/v1/admin/groups/:id/account-priorities
+func (h *GroupHandler) UpdateGroupAccountPriorities(c *gin.Context) {
+	groupID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil {
+		response.BadRequest(c, "Invalid group ID")
+		return
+	}
+
+	var req UpdateGroupAccountPrioritiesRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+
+	updates := make([]service.GroupAccountPriorityUpdate, 0, len(req.Updates))
+	for _, u := range req.Updates {
+		updates = append(updates, service.GroupAccountPriorityUpdate{
+			AccountID: u.AccountID,
+			Priority:  u.Priority,
+		})
+	}
+
+	if err := h.adminService.UpdateGroupAccountPriorities(c.Request.Context(), groupID, updates); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	response.Success(c, gin.H{"message": "Group account priorities updated successfully"})
+}
+
 // UpdateSortOrder handles updating group sort orders
 // PUT /api/v1/admin/groups/sort-order
 func (h *GroupHandler) UpdateSortOrder(c *gin.Context) {

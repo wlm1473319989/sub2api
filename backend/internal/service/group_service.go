@@ -3,14 +3,16 @@ package service
 import (
 	"context"
 	"fmt"
+	"time"
 
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 )
 
 var (
-	ErrGroupNotFound = infraerrors.NotFound("GROUP_NOT_FOUND", "group not found")
-	ErrGroupExists   = infraerrors.Conflict("GROUP_EXISTS", "group name already exists")
+	ErrGroupNotFound               = infraerrors.NotFound("GROUP_NOT_FOUND", "group not found")
+	ErrGroupExists                 = infraerrors.Conflict("GROUP_EXISTS", "group name already exists")
+	ErrGroupAccountBindingNotFound = infraerrors.BadRequest("GROUP_ACCOUNT_BINDING_NOT_FOUND", "one or more accounts are not bound to this group")
 )
 
 type GroupRepository interface {
@@ -43,29 +45,49 @@ type GroupSortOrderUpdate struct {
 	SortOrder int   `json:"sort_order"`
 }
 
+// GroupAccountPriority describes one account binding inside a group.
+type GroupAccountPriority struct {
+	GroupID         int64     `json:"group_id"`
+	AccountID       int64     `json:"account_id"`
+	Priority        int       `json:"priority"`
+	AccountName     string    `json:"account_name"`
+	AccountPlatform string    `json:"account_platform"`
+	AccountType     string    `json:"account_type"`
+	AccountStatus   string    `json:"account_status"`
+	AccountPriority int       `json:"account_priority"`
+	Schedulable     bool      `json:"schedulable"`
+	CreatedAt       time.Time `json:"created_at"`
+}
+
+// GroupAccountPriorityUpdate updates the priority of one account binding in a group.
+type GroupAccountPriorityUpdate struct {
+	AccountID int64 `json:"account_id"`
+	Priority  int   `json:"priority"`
+}
+
 // CreateGroupRequest 创建分组请求
 type CreateGroupRequest struct {
-	Name                 string   `json:"name"`
-	Description          string   `json:"description"`
-	RateMultiplier       float64  `json:"rate_multiplier"`
-	SubscriptionRateMultiplier float64 `json:"subscription_rate_multiplier"`
-	IsExclusive          bool     `json:"is_exclusive"`
-	AllowImageGeneration bool     `json:"allow_image_generation"`
-	ImageRateIndependent bool     `json:"image_rate_independent"`
-	ImageRateMultiplier  *float64 `json:"image_rate_multiplier"`
+	Name                       string   `json:"name"`
+	Description                string   `json:"description"`
+	RateMultiplier             float64  `json:"rate_multiplier"`
+	SubscriptionRateMultiplier float64  `json:"subscription_rate_multiplier"`
+	IsExclusive                bool     `json:"is_exclusive"`
+	AllowImageGeneration       bool     `json:"allow_image_generation"`
+	ImageRateIndependent       bool     `json:"image_rate_independent"`
+	ImageRateMultiplier        *float64 `json:"image_rate_multiplier"`
 }
 
 // UpdateGroupRequest 更新分组请求
 type UpdateGroupRequest struct {
-	Name                 *string  `json:"name"`
-	Description          *string  `json:"description"`
-	RateMultiplier       *float64 `json:"rate_multiplier"`
+	Name                       *string  `json:"name"`
+	Description                *string  `json:"description"`
+	RateMultiplier             *float64 `json:"rate_multiplier"`
 	SubscriptionRateMultiplier *float64 `json:"subscription_rate_multiplier"`
-	IsExclusive          *bool    `json:"is_exclusive"`
-	Status               *string  `json:"status"`
-	AllowImageGeneration *bool    `json:"allow_image_generation"`
-	ImageRateIndependent *bool    `json:"image_rate_independent"`
-	ImageRateMultiplier  *float64 `json:"image_rate_multiplier"`
+	IsExclusive                *bool    `json:"is_exclusive"`
+	Status                     *string  `json:"status"`
+	AllowImageGeneration       *bool    `json:"allow_image_generation"`
+	ImageRateIndependent       *bool    `json:"image_rate_independent"`
+	ImageRateMultiplier        *float64 `json:"image_rate_multiplier"`
 }
 
 // GroupService 分组管理服务
@@ -106,16 +128,16 @@ func (s *GroupService) Create(ctx context.Context, req CreateGroupRequest) (*Gro
 
 	// 创建分组
 	group := &Group{
-		Name:                 req.Name,
-		Description:          req.Description,
-		Platform:             PlatformAnthropic,
-		RateMultiplier:       req.RateMultiplier,
+		Name:                       req.Name,
+		Description:                req.Description,
+		Platform:                   PlatformAnthropic,
+		RateMultiplier:             req.RateMultiplier,
 		SubscriptionRateMultiplier: subscriptionRateMultiplier,
-		IsExclusive:          req.IsExclusive,
-		Status:               StatusActive,
-		AllowImageGeneration: req.AllowImageGeneration,
-		ImageRateIndependent: req.ImageRateIndependent,
-		ImageRateMultiplier:  imageRateMultiplier,
+		IsExclusive:                req.IsExclusive,
+		Status:                     StatusActive,
+		AllowImageGeneration:       req.AllowImageGeneration,
+		ImageRateIndependent:       req.ImageRateIndependent,
+		ImageRateMultiplier:        imageRateMultiplier,
 	}
 
 	if err := s.groupRepo.Create(ctx, group); err != nil {

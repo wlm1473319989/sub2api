@@ -250,6 +250,15 @@
                 }}</span>
               </button>
               <button
+                @click="handleAccountPriorities(row)"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-emerald-600 dark:hover:bg-dark-700 dark:hover:text-emerald-400"
+              >
+                <Icon name="arrowsUpDown" size="sm" />
+                <span class="text-xs">{{
+                  t("admin.groups.accountPriority.action")
+                }}</span>
+              </button>
+              <button
                 @click="handleDelete(row)"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
               >
@@ -3156,6 +3165,154 @@
       </template>
     </BaseDialog>
 
+    <!-- Group Account Priority Modal -->
+    <BaseDialog
+      :show="showAccountPriorityModal"
+      :title="
+        t('admin.groups.accountPriority.title', {
+          name: accountPriorityGroup?.name || '',
+        })
+      "
+      width="wide"
+      @close="closeAccountPriorityModal"
+    >
+      <div class="space-y-4">
+        <p class="text-sm text-gray-500 dark:text-gray-400">
+          {{ t("admin.groups.accountPriority.hint") }}
+        </p>
+
+        <div
+          v-if="accountPriorityLoading"
+          class="flex items-center justify-center py-10 text-sm text-gray-500 dark:text-gray-400"
+        >
+          <Icon name="refresh" size="md" class="mr-2 animate-spin" />
+          {{ t("common.loading") }}
+        </div>
+
+        <div
+          v-else-if="accountPriorityEntries.length === 0"
+          class="rounded-lg border border-dashed border-gray-300 p-8 text-center text-sm text-gray-500 dark:border-dark-600 dark:text-gray-400"
+        >
+          {{ t("admin.groups.accountPriority.empty") }}
+        </div>
+
+        <VueDraggable
+          v-else
+          v-model="accountPriorityEntries"
+          :animation="200"
+          class="space-y-2"
+        >
+          <div
+            v-for="(entry, index) in accountPriorityEntries"
+            :key="entry.account_id"
+            class="grid cursor-grab grid-cols-[2.75rem_minmax(0,1fr)_auto] items-center gap-3 rounded-lg border border-gray-200 bg-white p-3 transition-shadow hover:shadow-md active:cursor-grabbing dark:border-dark-600 dark:bg-dark-700"
+          >
+            <div
+              class="flex h-9 w-9 items-center justify-center rounded-md bg-gray-100 text-sm font-medium text-gray-600 dark:bg-dark-600 dark:text-gray-300"
+            >
+              {{ index + 1 }}
+            </div>
+
+            <div class="min-w-0">
+              <div class="flex min-w-0 flex-wrap items-center gap-2">
+                <Icon
+                  name="menu"
+                  size="sm"
+                  class="flex-shrink-0 text-gray-400"
+                />
+                <span
+                  class="truncate text-sm font-medium text-gray-900 dark:text-white"
+                >
+                  {{ entry.account_name }}
+                </span>
+                <span class="text-xs text-gray-400">#{{ entry.account_id }}</span>
+              </div>
+              <div
+                class="mt-1 flex flex-wrap items-center gap-2 text-xs text-gray-500 dark:text-gray-400"
+              >
+                <span
+                  :class="[
+                    'inline-flex items-center gap-1 rounded-full px-2 py-0.5 font-medium',
+                    entry.account_platform === 'anthropic'
+                      ? 'bg-orange-100 text-orange-700 dark:bg-orange-900/30 dark:text-orange-400'
+                      : entry.account_platform === 'openai'
+                        ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400'
+                        : entry.account_platform === 'antigravity'
+                          ? 'bg-purple-100 text-purple-700 dark:bg-purple-900/30 dark:text-purple-400'
+                          : 'bg-blue-100 text-blue-700 dark:bg-blue-900/30 dark:text-blue-400',
+                  ]"
+                >
+                  <PlatformIcon :platform="entry.account_platform" size="xs" />
+                  {{ t("admin.groups.platforms." + entry.account_platform) }}
+                </span>
+                <span :class="accountPriorityStatusClass(entry.account_status)">
+                  {{ t("admin.accounts.status." + entry.account_status) }}
+                </span>
+                <span>
+                  {{
+                    t("admin.groups.accountPriority.accountPriority", {
+                      value: entry.account_priority,
+                    })
+                  }}
+                </span>
+                <span v-if="!entry.schedulable" class="text-amber-600 dark:text-amber-400">
+                  {{ t("admin.groups.accountPriority.unschedulable") }}
+                </span>
+              </div>
+            </div>
+
+            <div class="flex items-center gap-1">
+              <button
+                type="button"
+                class="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                :title="t('admin.groups.accountPriority.moveUp')"
+                :disabled="index === 0"
+                @click="moveAccountPriority(index, index - 1)"
+              >
+                <Icon name="arrowUp" size="sm" />
+              </button>
+              <button
+                type="button"
+                class="rounded-md p-1.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-700 disabled:cursor-not-allowed disabled:opacity-40 dark:text-gray-400 dark:hover:bg-dark-600 dark:hover:text-gray-200"
+                :title="t('admin.groups.accountPriority.moveDown')"
+                :disabled="index === accountPriorityEntries.length - 1"
+                @click="moveAccountPriority(index, index + 1)"
+              >
+                <Icon name="arrowDown" size="sm" />
+              </button>
+            </div>
+          </div>
+        </VueDraggable>
+      </div>
+
+      <template #footer>
+        <div class="flex justify-end gap-3 pt-4">
+          <button
+            @click="closeAccountPriorityModal"
+            type="button"
+            class="btn btn-secondary"
+          >
+            {{ t("common.cancel") }}
+          </button>
+          <button
+            @click="saveAccountPriority"
+            :disabled="accountPrioritySubmitting || accountPriorityLoading"
+            class="btn btn-primary"
+          >
+            <Icon
+              v-if="accountPrioritySubmitting"
+              name="refresh"
+              size="sm"
+              class="mr-2 animate-spin"
+            />
+            {{
+              accountPrioritySubmitting ? t("common.saving") : t("common.save")
+            }}
+          </button>
+        </div>
+      </template>
+    </BaseDialog>
+
     <!-- Group Rate Multipliers Modal -->
     <GroupRateMultipliersModal
       :show="showRateMultipliersModal"
@@ -3180,6 +3337,7 @@ import { useI18n } from "vue-i18n";
 import { useAppStore } from "@/stores/app";
 import { useOnboardingStore } from "@/stores/onboarding";
 import { adminAPI } from "@/api/admin";
+import type { GroupAccountPriorityEntry } from "@/api/admin/groups";
 import type {
   AdminGroup,
   GroupBackupFailoverConfig,
@@ -3524,15 +3682,20 @@ const showCreateModal = ref(false);
 const showEditModal = ref(false);
 const showDeleteDialog = ref(false);
 const showSortModal = ref(false);
+const showAccountPriorityModal = ref(false);
 const submitting = ref(false);
 const sortSubmitting = ref(false);
+const accountPriorityLoading = ref(false);
+const accountPrioritySubmitting = ref(false);
 const editingGroup = ref<AdminGroup | null>(null);
 const deletingGroup = ref<AdminGroup | null>(null);
+const accountPriorityGroup = ref<AdminGroup | null>(null);
 const showRateMultipliersModal = ref(false);
 const rateMultipliersGroup = ref<AdminGroup | null>(null);
 const showRPMOverridesModal = ref(false);
 const rpmOverridesGroup = ref<AdminGroup | null>(null);
 const sortableGroups = ref<AdminGroup[]>([]);
+const accountPriorityEntries = ref<GroupAccountPriorityEntry[]>([]);
 const createMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
 const editMessagesDispatchDefaults = createDefaultMessagesDispatchFormState();
 const createModelsListState = reactive(createInitialModelsListState());
@@ -4439,6 +4602,84 @@ const handleRateMultipliers = (group: AdminGroup) => {
 const handleRPMOverrides = (group: AdminGroup) => {
   rpmOverridesGroup.value = group;
   showRPMOverridesModal.value = true;
+};
+
+const accountPriorityStatusClass = (status: string) => [
+  "inline-flex rounded-full px-2 py-0.5 font-medium",
+  status === "active"
+    ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-400"
+    : status === "error"
+      ? "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-400"
+      : "bg-gray-100 text-gray-700 dark:bg-dark-600 dark:text-gray-300",
+];
+
+const handleAccountPriorities = async (group: AdminGroup) => {
+  accountPriorityGroup.value = group;
+  accountPriorityEntries.value = [];
+  showAccountPriorityModal.value = true;
+  accountPriorityLoading.value = true;
+  try {
+    const entries = await adminAPI.groups.getGroupAccountPriorities(group.id);
+    accountPriorityEntries.value = [...entries].sort((a, b) => {
+      if (a.priority !== b.priority) return a.priority - b.priority;
+      if (a.account_priority !== b.account_priority) {
+        return a.account_priority - b.account_priority;
+      }
+      return a.account_id - b.account_id;
+    });
+  } catch (error: any) {
+    appStore.showError(
+      error.response?.data?.detail ||
+        t("admin.groups.accountPriority.failedToLoad"),
+    );
+    console.error("Error loading group account priorities:", error);
+  } finally {
+    accountPriorityLoading.value = false;
+  }
+};
+
+const closeAccountPriorityModal = () => {
+  showAccountPriorityModal.value = false;
+  accountPriorityGroup.value = null;
+  accountPriorityEntries.value = [];
+};
+
+const moveAccountPriority = (fromIndex: number, toIndex: number) => {
+  if (
+    fromIndex < 0 ||
+    toIndex < 0 ||
+    fromIndex >= accountPriorityEntries.value.length ||
+    toIndex >= accountPriorityEntries.value.length
+  ) {
+    return;
+  }
+  const [entry] = accountPriorityEntries.value.splice(fromIndex, 1);
+  accountPriorityEntries.value.splice(toIndex, 0, entry);
+};
+
+const saveAccountPriority = async () => {
+  if (!accountPriorityGroup.value) return;
+  accountPrioritySubmitting.value = true;
+  try {
+    const updates = accountPriorityEntries.value.map((entry, index) => ({
+      account_id: entry.account_id,
+      priority: index + 1,
+    }));
+    await adminAPI.groups.updateGroupAccountPriorities(
+      accountPriorityGroup.value.id,
+      updates,
+    );
+    appStore.showSuccess(t("admin.groups.accountPriority.updated"));
+    closeAccountPriorityModal();
+  } catch (error: any) {
+    appStore.showError(
+      error.response?.data?.detail ||
+        t("admin.groups.accountPriority.failedToUpdate"),
+    );
+    console.error("Error updating group account priorities:", error);
+  } finally {
+    accountPrioritySubmitting.value = false;
+  }
 };
 
 const handleDelete = (group: AdminGroup) => {

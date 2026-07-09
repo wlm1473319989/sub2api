@@ -222,6 +222,35 @@ export async function updateSortOrder(
   return data
 }
 
+export interface GroupAccountPriorityEntry {
+  group_id: number
+  account_id: number
+  priority: number
+  account_name: string
+  account_platform: GroupPlatform
+  account_type: string
+  account_status: 'active' | 'inactive' | 'error'
+  account_priority: number
+  schedulable: boolean
+  created_at: string
+}
+
+export async function getGroupAccountPriorities(id: number): Promise<GroupAccountPriorityEntry[]> {
+  const { data } = await apiClient.get<GroupAccountPriorityEntry[]>(`/admin/groups/${id}/accounts`)
+  return data
+}
+
+export async function updateGroupAccountPriorities(
+  id: number,
+  updates: Array<{ account_id: number; priority: number }>
+): Promise<{ message: string }> {
+  const { data } = await apiClient.put<{ message: string }>(
+    `/admin/groups/${id}/account-priorities`,
+    { updates }
+  )
+  return data
+}
+
 /**
  * Clear all rate multipliers for a group
  * @param id - Group ID
@@ -349,6 +378,8 @@ export const groupsAPI = {
   clearGroupRPMOverrides,
   batchSetGroupRPMOverrides,
   updateSortOrder,
+  getGroupAccountPriorities,
+  updateGroupAccountPriorities,
   getUsageSummary,
   getCapacitySummary
 }

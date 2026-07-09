@@ -738,6 +738,129 @@ func (r *groupRepository) GetAccountIDsByGroupIDs(ctx context.Context, groupIDs 
 	return accountIDs, nil
 }
 
+func (r *groupRepository) ListGroupAccountPriorities(ctx context.Context, groupID int64) ([]service.GroupAccountPriority, error) {
+	rows, err := r.sql.QueryContext(
+		ctx,
+		`SELECT
+			ag.group_id,
+			ag.account_id,
+			ag.priority,
+			ag.created_at,
+			a.name,
+			a.platform,
+			a.type,
+			a.status,
+			a.priority,
+			a.schedulable
+		FROM account_groups ag
+		JOIN accounts a ON a.id = ag.account_id
+		WHERE ag.group_id = $1 AND a.deleted_at IS NULL
+		ORDER BY ag.priority ASC, a.priority ASC, a.id ASC`,
+		groupID,
+	)
+	if err != nil {
+		return nil, err
+	}
+	defer func() { _ = rows.Close() }()
+
+	entries := make([]service.GroupAccountPriority, 0)
+	for rows.Next() {
+		var entry service.GroupAccountPriority
+		if err := rows.Scan(
+			&entry.GroupID,
+			&entry.AccountID,
+			&entry.Priority,
+			&entry.CreatedAt,
+			&entry.AccountName,
+			&entry.AccountPlatform,
+			&entry.AccountType,
+			&entry.AccountStatus,
+			&entry.AccountPriority,
+			&entry.Schedulable,
+		); err != nil {
+			return nil, err
+		}
+		entries = append(entries, entry)
+	}
+	if err := rows.Err(); err != nil {
+		return nil, err
+	}
+	return entries, nil
+}
+
+func (r *groupRepository) UpdateGroupAccountPriorities(ctx context.Context, groupID int64, updates []service.GroupAccountPriorityUpdate) error {
+	if len(updates) == 0 {
+		return nil
+	}
+
+	accountIDs := make([]int64, 0, len(updates))
+	priorityByAccountID := make(map[int64]int, len(updates))
+	for _, update := range updates {
+		if update.AccountID <= 0 {
+			continue
+		}
+		if _, exists := priorityByAccountID[update.AccountID]; !exists {
+			accountIDs = append(accountIDs, update.AccountID)
+		}
+		priorityByAccountID[update.AccountID] = update.Priority
+	}
+	if len(accountIDs) == 0 {
+		return nil
+	}
+
+	var existingCount int
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		`SELECT COUNT(*) FROM account_groups WHERE group_id = $1 AND account_id = ANY($2)`,
+		[]any{groupID, pq.Array(accountIDs)},
+		&existingCount,
+	); err != nil {
+		return err
+	}
+	if existingCount != len(accountIDs) {
+		return service.ErrGroupAccountBindingNotFound
+	}
+
+	args := make([]any, 0, len(accountIDs)*2+2)
+	caseClauses := make([]string, 0, len(accountIDs))
+	placeholder := 1
+	for _, accountID := range accountIDs {
+		caseClauses = append(caseClauses, fmt.Sprintf("WHEN $%d THEN $%d", placeholder, placeholder+1))
+		args = append(args, accountID, priorityByAccountID[accountID])
+		placeholder += 2
+	}
+	groupPlaceholder := placeholder
+	idsPlaceholder := placeholder + 1
+	args = append(args, groupID, pq.Array(accountIDs))
+
+	query := fmt.Sprintf(`
+		UPDATE account_groups
+		SET priority = CASE account_id
+			%s
+			ELSE priority
+		END
+		WHERE group_id = $%d AND account_id = ANY($%d)
+	`, strings.Join(caseClauses, "\n\t\t\t"), groupPlaceholder, idsPlaceholder)
+
+	result, err := r.sql.ExecContext(ctx, query, args...)
+	if err != nil {
+		return err
+	}
+	affected, err := result.RowsAffected()
+	if err != nil {
+		return err
+	}
+	if affected != int64(len(accountIDs)) {
+		return service.ErrGroupAccountBindingNotFound
+	}
+
+	if err := enqueueSchedulerOutbox(ctx, r.sql, service.SchedulerOutboxEventGroupChanged, nil, &groupID, nil); err != nil {
+		logger.LegacyPrintf("repository.group", "[SchedulerOutbox] enqueue group account priority update failed: group=%d err=%v", groupID, err)
+	}
+	return nil
+}
+
 // BindAccountsToGroup 将多个账号绑定到指定分组（批量插入，忽略已存在的绑定）
 func (r *groupRepository) BindAccountsToGroup(ctx context.Context, groupID int64, accountIDs []int64) error {
 	if len(accountIDs) == 0 {
