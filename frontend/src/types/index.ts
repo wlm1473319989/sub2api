@@ -1395,6 +1395,9 @@ export interface DashboardStats {
   hourly_active_users: number // 当前小时活跃用户数（UTC）
   stats_updated_at: string // 统计更新时间（UTC RFC3339）
   stats_stale: boolean // 统计是否过期
+  total_remaining_usd: number // 用户总剩余额度
+  subscription_remaining_usd: number // 订阅剩余额度
+  balance_remaining_usd: number // 现金余额剩余额度
 
   // API Key 统计
   total_api_keys: number

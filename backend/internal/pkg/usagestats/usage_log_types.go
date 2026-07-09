@@ -34,6 +34,11 @@ type DashboardStats struct {
 	// 小时活跃用户数（UTC 当前小时）
 	HourlyActiveUsers int64 `json:"hourly_active_users"`
 
+	// 用户剩余额度统计（USD）
+	TotalRemainingUSD        float64 `json:"total_remaining_usd"`
+	SubscriptionRemainingUSD float64 `json:"subscription_remaining_usd"`
+	BalanceRemainingUSD      float64 `json:"balance_remaining_usd"`
+
 	// 预聚合新鲜度
 	StatsUpdatedAt string `json:"stats_updated_at"`
 	StatsStale     bool   `json:"stats_stale"`

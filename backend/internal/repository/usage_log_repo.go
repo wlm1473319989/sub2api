@@ -1632,6 +1632,10 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		return err
 	}
 
+	if err := r.fillDashboardRemainingBalanceStats(ctx, stats, now); err != nil {
+		return err
+	}
+
 	apiKeyStatsQuery := `
 		SELECT
 			COUNT(*) as total_api_keys,
@@ -1674,6 +1678,92 @@ func (r *usageLogRepository) fillDashboardEntityStats(ctx context.Context, stats
 		return err
 	}
 
+	return nil
+}
+
+func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Context, stats *DashboardStats, now time.Time) error {
+	balanceRemainingQuery := `
+		SELECT COALESCE(SUM(GREATEST(balance, 0)), 0) AS balance_remaining_usd
+		FROM users
+		WHERE deleted_at IS NULL
+	`
+	if err := scanSingleRow(ctx, r.sql, balanceRemainingQuery, nil, &stats.BalanceRemainingUSD); err != nil {
+		return err
+	}
+
+	subscriptionRemainingQuery := `
+		WITH active_subscriptions AS (
+			SELECT
+				daily_quota_knives,
+				weekly_quota_knives,
+				monthly_quota_knives,
+				CASE
+					WHEN daily_quota_knives IS NOT NULL AND daily_quota_knives > 0 THEN
+						GREATEST(
+							daily_quota_knives - CASE
+								WHEN daily_window_start IS NOT NULL
+									AND expires_at > starts_at + INTERVAL '1 day'
+									AND daily_window_start + INTERVAL '24 hours' <= $1::timestamptz
+								THEN 0
+								ELSE daily_used_knives
+							END,
+							0
+						)
+					ELSE NULL
+				END AS daily_remaining,
+				CASE
+					WHEN weekly_quota_knives IS NOT NULL AND weekly_quota_knives > 0 THEN
+						GREATEST(
+							weekly_quota_knives - CASE
+								WHEN weekly_window_start IS NOT NULL
+									AND weekly_window_start + INTERVAL '7 days' <= $1::timestamptz
+								THEN 0
+								ELSE weekly_used_knives
+							END,
+							0
+						)
+					ELSE NULL
+				END AS weekly_remaining,
+				CASE
+					WHEN monthly_quota_knives IS NOT NULL AND monthly_quota_knives > 0 THEN
+						GREATEST(
+							monthly_quota_knives - CASE
+								WHEN monthly_window_start IS NOT NULL
+									AND monthly_window_start + INTERVAL '30 days' <= $1::timestamptz
+								THEN 0
+								ELSE monthly_used_knives
+							END,
+							0
+						)
+					ELSE NULL
+				END AS monthly_remaining
+			FROM user_subscriptions
+			WHERE deleted_at IS NULL
+				AND status = $2
+				AND expires_at > $1::timestamptz
+		),
+		per_subscription AS (
+			SELECT COALESCE((
+				SELECT MIN(v)
+				FROM (VALUES (daily_remaining), (weekly_remaining), (monthly_remaining)) AS quota(v)
+				WHERE v IS NOT NULL
+			), 0) AS remaining_usd
+			FROM active_subscriptions
+		)
+		SELECT COALESCE(SUM(remaining_usd), 0) AS subscription_remaining_usd
+		FROM per_subscription
+	`
+	if err := scanSingleRow(
+		ctx,
+		r.sql,
+		subscriptionRemainingQuery,
+		[]any{now, service.SubscriptionStatusActive},
+		&stats.SubscriptionRemainingUSD,
+	); err != nil {
+		return err
+	}
+
+	stats.TotalRemainingUSD = stats.BalanceRemainingUSD + stats.SubscriptionRemainingUSD
 	return nil
 }
 

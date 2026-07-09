@@ -656,16 +656,48 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	todayStart := truncateToDayUTC(now)
 	baseStats, err := s.repo.GetDashboardStats(s.ctx)
 	s.Require().NoError(err, "GetDashboardStats base")
+	floatPtr := func(v float64) *float64 { return &v }
 
 	userToday := mustCreateUser(s.T(), s.client, &service.User{
 		Email:     "today@example.com",
+		Balance:   12.50,
 		CreatedAt: testMaxTime(todayStart.Add(10*time.Second), now.Add(-10*time.Second)),
 		UpdatedAt: now,
 	})
 	userOld := mustCreateUser(s.T(), s.client, &service.User{
 		Email:     "old@example.com",
+		Balance:   3.25,
 		CreatedAt: todayStart.Add(-24 * time.Hour),
 		UpdatedAt: todayStart.Add(-24 * time.Hour),
+	})
+	expiredWindowStart := now.Add(-25 * time.Hour)
+	mustCreateSubscription(s.T(), s.client, &service.UserSubscription{
+		UserID:             userToday.ID,
+		StartsAt:           now.Add(-48 * time.Hour),
+		ExpiresAt:          now.Add(48 * time.Hour),
+		DailyQuotaKnives:   floatPtr(10),
+		WeeklyQuotaKnives:  floatPtr(40),
+		MonthlyQuotaKnives: floatPtr(100),
+		DailyUsedKnives:    2,
+		WeeklyUsedKnives:   10,
+		MonthlyUsedKnives:  70,
+	})
+	mustCreateSubscription(s.T(), s.client, &service.UserSubscription{
+		UserID:            userOld.ID,
+		StartsAt:          now.Add(-72 * time.Hour),
+		ExpiresAt:         now.Add(72 * time.Hour),
+		DailyWindowStart:  &expiredWindowStart,
+		DailyQuotaKnives:  floatPtr(10),
+		WeeklyQuotaKnives: floatPtr(50),
+		DailyUsedKnives:   9,
+		WeeklyUsedKnives:  20,
+	})
+	mustCreateSubscription(s.T(), s.client, &service.UserSubscription{
+		UserID:             userOld.ID,
+		StartsAt:           now.Add(-72 * time.Hour),
+		ExpiresAt:          now.Add(-time.Hour),
+		MonthlyQuotaKnives: floatPtr(100),
+		MonthlyUsedKnives:  1,
 	})
 
 	group := mustCreateGroup(s.T(), s.client, &service.Group{Name: "g-ul"})
@@ -744,6 +776,9 @@ func (s *UsageLogRepoSuite) TestDashboardStats_TodayTotalsAndPerformance() {
 	s.Require().Equal(baseStats.ErrorAccounts+1, stats.ErrorAccounts, "ErrorAccounts mismatch")
 	s.Require().Equal(baseStats.RateLimitAccounts+1, stats.RateLimitAccounts, "RateLimitAccounts mismatch")
 	s.Require().Equal(baseStats.OverloadAccounts+1, stats.OverloadAccounts, "OverloadAccounts mismatch")
+	s.Require().InDelta(baseStats.BalanceRemainingUSD+15.75, stats.BalanceRemainingUSD, 1e-6, "BalanceRemainingUSD mismatch")
+	s.Require().InDelta(baseStats.SubscriptionRemainingUSD+18.0, stats.SubscriptionRemainingUSD, 1e-6, "SubscriptionRemainingUSD mismatch")
+	s.Require().InDelta(baseStats.TotalRemainingUSD+33.75, stats.TotalRemainingUSD, 1e-6, "TotalRemainingUSD mismatch")
 
 	s.Require().Equal(baseStats.TotalRequests+3, stats.TotalRequests, "TotalRequests mismatch")
 	s.Require().Equal(baseStats.TotalInputTokens+int64(16), stats.TotalInputTokens, "TotalInputTokens mismatch")

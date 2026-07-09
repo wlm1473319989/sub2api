@@ -8,7 +8,33 @@
 
       <template v-else-if="stats">
         <!-- Row 1: Core Stats -->
-        <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+        <div class="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5">
+          <!-- User Remaining USD -->
+          <div class="card p-4">
+            <div class="flex items-center gap-3">
+              <div class="rounded-lg bg-cyan-100 p-2 dark:bg-cyan-900/30">
+                <Icon name="dollar" size="md" class="text-cyan-600 dark:text-cyan-400" :stroke-width="2" />
+              </div>
+              <div class="min-w-0">
+                <p class="text-xs font-medium text-gray-500 dark:text-gray-400">
+                  {{ t('admin.dashboard.remainingCredit') }}
+                </p>
+                <p class="text-xl font-bold text-gray-900 dark:text-white">
+                  ${{ formatCost(stats.total_remaining_usd) }}
+                </p>
+                <p class="truncate text-xs text-gray-500 dark:text-gray-400">
+                  <span :title="t('admin.dashboard.remainingSubscription')"
+                    >{{ t('admin.dashboard.remainingSubscription') }} ${{ formatCost(stats.subscription_remaining_usd) }}</span
+                  >
+                  <span class="text-gray-400 dark:text-gray-500"> / </span>
+                  <span :title="t('admin.dashboard.remainingBalance')"
+                    >{{ t('admin.dashboard.remainingBalance') }} ${{ formatCost(stats.balance_remaining_usd) }}</span
+                  >
+                </p>
+              </div>
+            </div>
+          </div>
+
           <!-- Total API Keys -->
           <div class="card p-4">
             <div class="flex items-center gap-3">
@@ -537,15 +563,16 @@ const formatNumber = (value: number): string => {
   return value.toLocaleString()
 }
 
-const formatCost = (value: number): string => {
-  if (value >= 1000) {
-    return (value / 1000).toFixed(2) + 'K'
-  } else if (value >= 1) {
-    return value.toFixed(2)
-  } else if (value >= 0.01) {
-    return value.toFixed(3)
+const formatCost = (value: number | null | undefined): string => {
+  const normalized = Number(value) || 0
+  if (normalized >= 1000) {
+    return (normalized / 1000).toFixed(2) + 'K'
+  } else if (normalized >= 1) {
+    return normalized.toFixed(2)
+  } else if (normalized >= 0.01) {
+    return normalized.toFixed(3)
   }
-  return value.toFixed(4)
+  return normalized.toFixed(4)
 }
 
 const formatDuration = (ms: number): string => {

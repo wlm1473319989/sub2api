@@ -375,10 +375,31 @@ func mustCreateSubscription(t *testing.T, client *dbent.Client, s *service.UserS
 		SetNotes(s.Notes).
 		SetDailyUsageUsd(s.DailyUsageUSD).
 		SetWeeklyUsageUsd(s.WeeklyUsageUSD).
-		SetMonthlyUsageUsd(s.MonthlyUsageUSD)
+		SetMonthlyUsageUsd(s.MonthlyUsageUSD).
+		SetDailyUsedKnives(s.DailyUsedKnives).
+		SetWeeklyUsedKnives(s.WeeklyUsedKnives).
+		SetMonthlyUsedKnives(s.MonthlyUsedKnives)
 
 	if s.AssignedBy != nil {
 		create.SetAssignedBy(*s.AssignedBy)
+	}
+	if s.DailyWindowStart != nil {
+		create.SetDailyWindowStart(*s.DailyWindowStart)
+	}
+	if s.WeeklyWindowStart != nil {
+		create.SetWeeklyWindowStart(*s.WeeklyWindowStart)
+	}
+	if s.MonthlyWindowStart != nil {
+		create.SetMonthlyWindowStart(*s.MonthlyWindowStart)
+	}
+	if s.DailyQuotaKnives != nil {
+		create.SetDailyQuotaKnives(*s.DailyQuotaKnives)
+	}
+	if s.WeeklyQuotaKnives != nil {
+		create.SetWeeklyQuotaKnives(*s.WeeklyQuotaKnives)
+	}
+	if s.MonthlyQuotaKnives != nil {
+		create.SetMonthlyQuotaKnives(*s.MonthlyQuotaKnives)
 	}
 	if !s.CreatedAt.IsZero() {
 		create.SetCreatedAt(s.CreatedAt)
