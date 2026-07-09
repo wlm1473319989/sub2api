@@ -1686,27 +1686,103 @@ func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Cont
 		SELECT COALESCE(SUM(GREATEST(balance, 0)), 0) AS balance_remaining_usd
 		FROM users
 		WHERE deleted_at IS NULL
+			AND role <> $1
 	`
-	if err := scanSingleRow(ctx, r.sql, balanceRemainingQuery, nil, &stats.BalanceRemainingUSD); err != nil {
+	if err := scanSingleRow(ctx, r.sql, balanceRemainingQuery, []any{service.RoleAdmin}, &stats.BalanceRemainingUSD); err != nil {
 		return err
 	}
 
 	subscriptionRemainingQuery := `
 		WITH active_subscriptions AS (
 			SELECT
+				starts_at,
+				expires_at,
+				daily_quota_knives,
+				weekly_quota_knives,
+				monthly_quota_knives,
+				daily_window_start,
+				weekly_window_start,
+				monthly_window_start,
+				daily_used_knives,
+				weekly_used_knives,
+				monthly_used_knives,
+				GREATEST($1::timestamptz, starts_at) AS meter_at
+			FROM user_subscriptions us
+			JOIN users u ON u.id = us.user_id
+				AND u.deleted_at IS NULL
+				AND u.role <> $3
+			WHERE us.deleted_at IS NULL
+				AND us.status = $2
+				AND us.expires_at > $1::timestamptz
+		),
+		window_state AS (
+			SELECT
+				expires_at,
 				daily_quota_knives,
 				weekly_quota_knives,
 				monthly_quota_knives,
 				CASE
+					WHEN daily_window_start IS NOT NULL
+						AND (
+							expires_at <= starts_at + INTERVAL '1 day'
+							OR daily_window_start + INTERVAL '24 hours' > meter_at
+						)
+					THEN daily_window_start
+					ELSE date_trunc('day', meter_at)
+				END AS daily_current_start,
+				CASE
+					WHEN weekly_window_start IS NOT NULL
+						AND weekly_window_start + INTERVAL '7 days' > meter_at
+					THEN weekly_window_start
+					ELSE date_trunc('day', starts_at)
+						+ (
+							FLOOR(EXTRACT(EPOCH FROM (date_trunc('day', meter_at) - date_trunc('day', starts_at))) / 604800)::bigint
+							* INTERVAL '7 days'
+						)
+				END AS weekly_current_start,
+				CASE
+					WHEN monthly_window_start IS NOT NULL
+						AND monthly_window_start + INTERVAL '30 days' > meter_at
+					THEN monthly_window_start
+					ELSE date_trunc('day', starts_at)
+						+ (
+							FLOOR(EXTRACT(EPOCH FROM (date_trunc('day', meter_at) - date_trunc('day', starts_at))) / 2592000)::bigint
+							* INTERVAL '30 days'
+						)
+				END AS monthly_current_start,
+				CASE
+					WHEN starts_at > $1::timestamptz THEN 0
+					WHEN daily_window_start IS NOT NULL
+						AND expires_at > starts_at + INTERVAL '1 day'
+						AND daily_window_start + INTERVAL '24 hours' <= meter_at
+					THEN 0
+					ELSE daily_used_knives
+				END AS daily_current_used,
+				CASE
+					WHEN starts_at > $1::timestamptz THEN 0
+					WHEN weekly_window_start IS NOT NULL
+						AND weekly_window_start + INTERVAL '7 days' <= meter_at
+					THEN 0
+					ELSE weekly_used_knives
+				END AS weekly_current_used,
+				CASE
+					WHEN starts_at > $1::timestamptz THEN 0
+					WHEN monthly_window_start IS NOT NULL
+						AND monthly_window_start + INTERVAL '30 days' <= meter_at
+					THEN 0
+					ELSE monthly_used_knives
+				END AS monthly_current_used
+			FROM active_subscriptions
+		),
+		remaining_by_window AS (
+			SELECT
+				CASE
 					WHEN daily_quota_knives IS NOT NULL AND daily_quota_knives > 0 THEN
 						GREATEST(
-							daily_quota_knives - CASE
-								WHEN daily_window_start IS NOT NULL
-									AND expires_at > starts_at + INTERVAL '1 day'
-									AND daily_window_start + INTERVAL '24 hours' <= $1::timestamptz
-								THEN 0
-								ELSE daily_used_knives
-							END,
+							daily_quota_knives - daily_current_used,
+							0
+						) + daily_quota_knives * GREATEST(
+							CEIL(EXTRACT(EPOCH FROM (expires_at - daily_current_start)) / 86400)::bigint - 1,
 							0
 						)
 					ELSE NULL
@@ -1714,12 +1790,10 @@ func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Cont
 				CASE
 					WHEN weekly_quota_knives IS NOT NULL AND weekly_quota_knives > 0 THEN
 						GREATEST(
-							weekly_quota_knives - CASE
-								WHEN weekly_window_start IS NOT NULL
-									AND weekly_window_start + INTERVAL '7 days' <= $1::timestamptz
-								THEN 0
-								ELSE weekly_used_knives
-							END,
+							weekly_quota_knives - weekly_current_used,
+							0
+						) + weekly_quota_knives * GREATEST(
+							CEIL(EXTRACT(EPOCH FROM (expires_at - weekly_current_start)) / 604800)::bigint - 1,
 							0
 						)
 					ELSE NULL
@@ -1727,20 +1801,15 @@ func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Cont
 				CASE
 					WHEN monthly_quota_knives IS NOT NULL AND monthly_quota_knives > 0 THEN
 						GREATEST(
-							monthly_quota_knives - CASE
-								WHEN monthly_window_start IS NOT NULL
-									AND monthly_window_start + INTERVAL '30 days' <= $1::timestamptz
-								THEN 0
-								ELSE monthly_used_knives
-							END,
+							monthly_quota_knives - monthly_current_used,
+							0
+						) + monthly_quota_knives * GREATEST(
+							CEIL(EXTRACT(EPOCH FROM (expires_at - monthly_current_start)) / 2592000)::bigint - 1,
 							0
 						)
 					ELSE NULL
 				END AS monthly_remaining
-			FROM user_subscriptions
-			WHERE deleted_at IS NULL
-				AND status = $2
-				AND expires_at > $1::timestamptz
+			FROM window_state
 		),
 		per_subscription AS (
 			SELECT COALESCE((
@@ -1748,7 +1817,7 @@ func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Cont
 				FROM (VALUES (daily_remaining), (weekly_remaining), (monthly_remaining)) AS quota(v)
 				WHERE v IS NOT NULL
 			), 0) AS remaining_usd
-			FROM active_subscriptions
+			FROM remaining_by_window
 		)
 		SELECT COALESCE(SUM(remaining_usd), 0) AS subscription_remaining_usd
 		FROM per_subscription
@@ -1757,7 +1826,7 @@ func (r *usageLogRepository) fillDashboardRemainingBalanceStats(ctx context.Cont
 		ctx,
 		r.sql,
 		subscriptionRemainingQuery,
-		[]any{now, service.SubscriptionStatusActive},
+		[]any{now, service.SubscriptionStatusActive, service.RoleAdmin},
 		&stats.SubscriptionRemainingUSD,
 	); err != nil {
 		return err
