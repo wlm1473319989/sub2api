@@ -210,7 +210,7 @@ type ResponsesRequest struct {
 
 // ResponsesReasoning configures reasoning effort in the Responses API.
 type ResponsesReasoning struct {
-	Effort  string `json:"effort"`            // "low" | "medium" | "high" | "xhigh"
+	Effort  string `json:"effort"`            // "low" | "medium" | "high" | "xhigh" | "max"
 	Summary string `json:"summary,omitempty"` // "auto" | "concise" | "detailed"
 }
 
@@ -435,7 +435,7 @@ type ChatCompletionsRequest struct {
 	StreamOptions       *ChatStreamOptions `json:"stream_options,omitempty"`
 	Tools               []ChatTool         `json:"tools,omitempty"`
 	ToolChoice          json.RawMessage    `json:"tool_choice,omitempty"`
-	ReasoningEffort     string             `json:"reasoning_effort,omitempty"` // "low" | "medium" | "high" | "xhigh"
+	ReasoningEffort     string             `json:"reasoning_effort,omitempty"` // "low" | "medium" | "high" | "xhigh" | "max"
 	ServiceTier         string             `json:"service_tier,omitempty"`
 	Stop                json.RawMessage    `json:"stop,omitempty"` // string or []string
 
