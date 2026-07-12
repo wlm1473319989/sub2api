@@ -389,6 +389,7 @@ const baseSettingsResponse = {
   antigravity_user_agent_version: "",
   openai_codex_user_agent: "",
   payment_enabled: true,
+  payment_allow_custom_recharge_amount: true,
   payment_min_amount: 1,
   payment_max_amount: 10000,
   payment_daily_limit: 50000,
@@ -611,6 +612,25 @@ describe("admin SettingsView payment visible method controls", () => {
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_source");
     expect(payload).not.toHaveProperty("payment_visible_method_alipay_enabled");
     expect(payload).not.toHaveProperty("payment_visible_method_wxpay_enabled");
+  });
+
+  it("submits the custom recharge amount permission", async () => {
+    getSettings.mockResolvedValueOnce({
+      ...baseSettingsResponse,
+      payment_allow_custom_recharge_amount: false,
+    });
+
+    const wrapper = mountView();
+
+    await flushPromises();
+    await wrapper.find("form").trigger("submit.prevent");
+    await flushPromises();
+
+    expect(updateSettings).toHaveBeenCalledWith(
+      expect.objectContaining({
+        payment_allow_custom_recharge_amount: false,
+      }),
+    );
   });
 
   it("submits Anthropic cache TTL injection gateway setting", async () => {

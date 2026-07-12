@@ -24,7 +24,7 @@
     </div>
 
     <!-- Custom Amount Input -->
-    <div>
+    <div v-if="allowCustom">
       <label class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300">
         {{ t('payment.customAmount') }}
       </label>
@@ -54,10 +54,12 @@ const props = withDefaults(defineProps<{
   modelValue: number | null
   min?: number
   max?: number
+  allowCustom?: boolean
 }>(), {
   amounts: () => [10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
   min: 0,
   max: 0,
+  allowCustom: true,
 })
 
 const emit = defineEmits<{
@@ -83,7 +85,7 @@ const placeholderText = computed(() => {
 const AMOUNT_PATTERN = /^\d*(\.\d{0,2})?$/
 
 function selectAmount(amt: number) {
-  customText.value = String(amt)
+  customText.value = props.allowCustom ? String(amt) : ''
   emit('update:modelValue', amt)
 }
 

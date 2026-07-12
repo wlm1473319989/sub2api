@@ -129,7 +129,19 @@ func (s *PaymentService) validateOrderInput(ctx context.Context, req CreateOrder
 		return nil, nil, infraerrors.BadRequest("INVALID_AMOUNT", "amount out of range").
 			WithMetadata(map[string]string{"min": fmt.Sprintf("%.2f", cfg.MinAmount), "max": fmt.Sprintf("%.2f", cfg.MaxAmount)})
 	}
+	if req.OrderType == payment.OrderTypeBalance && !cfg.AllowCustomRechargeAmount && !isDefaultRechargeAmount(req.Amount) {
+		return nil, nil, infraerrors.BadRequest("CUSTOM_RECHARGE_AMOUNT_DISABLED", "custom recharge amount is disabled")
+	}
 	return nil, nil, nil
+}
+
+func isDefaultRechargeAmount(amount float64) bool {
+	for _, preset := range defaultRechargeAmounts {
+		if amount == preset {
+			return true
+		}
+	}
+	return false
 }
 
 func (s *PaymentService) validateSubOrder(ctx context.Context, req CreateOrderRequest) (*dbent.SubscriptionPlan, *subscriptionOrderDecision, error) {

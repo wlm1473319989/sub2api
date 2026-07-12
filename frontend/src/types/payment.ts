@@ -28,6 +28,7 @@ export type SubscriptionAction = 'purchase' | 'renew' | 'upgrade' | 'unavailable
 
 export interface PaymentConfig {
   payment_enabled: boolean
+  allow_custom_recharge_amount: boolean
   min_amount: number
   max_amount: number
   daily_limit: number
@@ -66,6 +67,8 @@ export interface CheckoutInfoResponse {
   global_max: number
   plans: SubscriptionPlan[]
   balance_disabled: boolean
+  allow_custom_recharge_amount: boolean
+  quick_amounts: number[]
   balance_recharge_multiplier: number
   recharge_fee_rate: number
   help_text: string

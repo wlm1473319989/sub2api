@@ -15,6 +15,7 @@ import (
 
 const (
 	SettingPaymentEnabled      = "payment_enabled"
+	SettingAllowCustomAmount   = "ALLOW_CUSTOM_RECHARGE_AMOUNT"
 	SettingMinRechargeAmount   = "MIN_RECHARGE_AMOUNT"
 	SettingMaxRechargeAmount   = "MAX_RECHARGE_AMOUNT"
 	SettingDailyRechargeLimit  = "DAILY_RECHARGE_LIMIT"
@@ -43,9 +44,19 @@ const (
 	defaultMaxPendingOrders = 3
 )
 
+var defaultRechargeAmounts = [...]float64{10, 20, 50, 100, 200, 500, 1000, 2000, 5000}
+
+// QuickRechargeAmounts returns the balance recharge presets exposed to users.
+func QuickRechargeAmounts() []float64 {
+	amounts := make([]float64, len(defaultRechargeAmounts))
+	copy(amounts, defaultRechargeAmounts[:])
+	return amounts
+}
+
 // PaymentConfig holds the payment system configuration.
 type PaymentConfig struct {
 	Enabled                   bool     `json:"enabled"`
+	AllowCustomRechargeAmount bool     `json:"allow_custom_recharge_amount"`
 	MinAmount                 float64  `json:"min_amount"`
 	MaxAmount                 float64  `json:"max_amount"`
 	DailyLimit                float64  `json:"daily_limit"`
@@ -76,6 +87,7 @@ type PaymentConfig struct {
 // UpdatePaymentConfigRequest contains fields to update payment configuration.
 type UpdatePaymentConfigRequest struct {
 	Enabled                   *bool    `json:"enabled"`
+	AllowCustomRechargeAmount *bool    `json:"allow_custom_recharge_amount"`
 	MinAmount                 *float64 `json:"min_amount"`
 	MaxAmount                 *float64 `json:"max_amount"`
 	DailyLimit                *float64 `json:"daily_limit"`
@@ -208,7 +220,7 @@ func (s *PaymentConfigService) IsPaymentEnabled(ctx context.Context) bool {
 // GetPaymentConfig returns the full payment configuration.
 func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentConfig, error) {
 	keys := []string{
-		SettingPaymentEnabled, SettingMinRechargeAmount, SettingMaxRechargeAmount,
+		SettingPaymentEnabled, SettingAllowCustomAmount, SettingMinRechargeAmount, SettingMaxRechargeAmount,
 		SettingDailyRechargeLimit, SettingOrderTimeoutMinutes, SettingMaxPendingOrders,
 		SettingEnabledPaymentTypes, SettingBalancePayDisabled, SettingBalanceRechargeMult, SettingRechargeFeeRate, SettingLoadBalanceStrategy,
 		SettingProductNamePrefix, SettingProductNameSuffix,
@@ -232,6 +244,7 @@ func (s *PaymentConfigService) GetPaymentConfig(ctx context.Context) (*PaymentCo
 func (s *PaymentConfigService) parsePaymentConfig(vals map[string]string) *PaymentConfig {
 	cfg := &PaymentConfig{
 		Enabled:                   vals[SettingPaymentEnabled] == "true",
+		AllowCustomRechargeAmount: vals[SettingAllowCustomAmount] != "false",
 		MinAmount:                 pcParseFloat(vals[SettingMinRechargeAmount], 1),
 		MaxAmount:                 pcParseFloat(vals[SettingMaxRechargeAmount], 0),
 		DailyLimit:                pcParseFloat(vals[SettingDailyRechargeLimit], 0),
@@ -335,6 +348,9 @@ func (s *PaymentConfigService) UpdatePaymentConfig(ctx context.Context, req Upda
 		SettingPaymentVisibleMethodWxpaySource:   derefStr(req.VisibleMethodWxpaySource),
 		SettingPaymentVisibleMethodAlipayEnabled: formatBoolOrEmpty(req.VisibleMethodAlipayEnabled),
 		SettingPaymentVisibleMethodWxpayEnabled:  formatBoolOrEmpty(req.VisibleMethodWxpayEnabled),
+	}
+	if req.AllowCustomRechargeAmount != nil {
+		m[SettingAllowCustomAmount] = strconv.FormatBool(*req.AllowCustomRechargeAmount)
 	}
 	if req.EnabledTypes != nil {
 		m[SettingEnabledPaymentTypes] = strings.Join(req.EnabledTypes, ",")

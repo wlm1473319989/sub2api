@@ -44,9 +44,10 @@
             <div class="card p-6">
               <AmountInput
                 v-model="amount"
-                :amounts="[10, 20, 50, 100, 200, 500, 1000, 2000, 5000]"
+                :amounts="checkout.quick_amounts"
                 :min="globalMinAmount"
                 :max="globalMaxAmount"
+                :allow-custom="checkout.allow_custom_recharge_amount"
               />
               <p v-if="amountError" class="mt-2 text-xs text-amber-600 dark:text-amber-300">{{ amountError }}</p>
             </div>
@@ -532,13 +533,15 @@ function onPaymentSettled() {
 // All checkout data from single API call
 const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
-  plans: [], balance_disabled: false, balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
+  plans: [], balance_disabled: false, allow_custom_recharge_amount: true,
+  quick_amounts: [10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
+  balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 
 const tabs = computed(() => {
   const result: { key: 'recharge' | 'subscription'; label: string }[] = []
-  if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
   result.push({ key: 'subscription', label: t('payment.tabSubscribe') })
+  if (!checkout.value.balance_disabled) result.push({ key: 'recharge', label: t('payment.tabTopUp') })
   return result
 })
 

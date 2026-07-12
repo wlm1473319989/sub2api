@@ -206,6 +206,7 @@ type SystemSettings struct {
 
 	// Payment configuration
 	PaymentEnabled                   bool     `json:"payment_enabled"`
+	PaymentAllowCustomRechargeAmount bool     `json:"payment_allow_custom_recharge_amount"`
 	PaymentMinAmount                 float64  `json:"payment_min_amount"`
 	PaymentMaxAmount                 float64  `json:"payment_max_amount"`
 	PaymentDailyLimit                float64  `json:"payment_daily_limit"`

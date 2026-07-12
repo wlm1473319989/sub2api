@@ -84,6 +84,9 @@ func TestParsePaymentConfig(t *testing.T) {
 		if cfg.Enabled {
 			t.Fatal("expected Enabled=false by default")
 		}
+		if !cfg.AllowCustomRechargeAmount {
+			t.Fatal("expected custom recharge amounts to be allowed by default")
+		}
 		if cfg.MinAmount != 1 {
 			t.Fatalf("expected MinAmount=1, got %v", cfg.MinAmount)
 		}
@@ -108,6 +111,7 @@ func TestParsePaymentConfig(t *testing.T) {
 		t.Parallel()
 		vals := map[string]string{
 			SettingPaymentEnabled:      "true",
+			SettingAllowCustomAmount:   "false",
 			SettingMinRechargeAmount:   "5.00",
 			SettingMaxRechargeAmount:   "1000.00",
 			SettingDailyRechargeLimit:  "5000.00",
@@ -123,6 +127,9 @@ func TestParsePaymentConfig(t *testing.T) {
 
 		if !cfg.Enabled {
 			t.Fatal("expected Enabled=true")
+		}
+		if cfg.AllowCustomRechargeAmount {
+			t.Fatal("expected custom recharge amounts to be disabled")
 		}
 		if cfg.MinAmount != 5 {
 			t.Fatalf("MinAmount = %v, want 5", cfg.MinAmount)
@@ -429,6 +436,37 @@ func TestUpdatePaymentConfig_PersistsVisibleMethodRouting(t *testing.T) {
 	}
 	if repo.values[SettingPaymentVisibleMethodWxpaySource] != VisibleMethodSourceOfficialWechat {
 		t.Fatalf("wxpay source = %q, want %q", repo.values[SettingPaymentVisibleMethodWxpaySource], VisibleMethodSourceOfficialWechat)
+	}
+}
+
+func TestUpdatePaymentConfig_PersistsAllowCustomRechargeAmount(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{}}
+	svc := &PaymentConfigService{settingRepo: repo}
+	allowCustom := false
+
+	err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{
+		AllowCustomRechargeAmount: &allowCustom,
+	})
+	if err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+	if repo.values[SettingAllowCustomAmount] != "false" {
+		t.Fatalf("allow custom amount = %q, want false", repo.values[SettingAllowCustomAmount])
+	}
+}
+
+func TestUpdatePaymentConfig_OmittedAllowCustomRechargeAmountPreservesValue(t *testing.T) {
+	repo := &paymentConfigSettingRepoStub{values: map[string]string{
+		SettingAllowCustomAmount: "false",
+	}}
+	svc := &PaymentConfigService{settingRepo: repo}
+
+	err := svc.UpdatePaymentConfig(context.Background(), UpdatePaymentConfigRequest{})
+	if err != nil {
+		t.Fatalf("UpdatePaymentConfig returned error: %v", err)
+	}
+	if repo.values[SettingAllowCustomAmount] != "false" {
+		t.Fatalf("allow custom amount = %q, want preserved false", repo.values[SettingAllowCustomAmount])
 	}
 }
 
