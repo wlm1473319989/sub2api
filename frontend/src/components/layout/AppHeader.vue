@@ -26,6 +26,12 @@
         <!-- Announcement Bell -->
         <AnnouncementBell v-if="user" />
 
+        <!-- Group chat and customer service numbers -->
+        <SupportContactMenu
+          :qq-group-number="qqGroupNumber"
+          :contact-info="contactInfo"
+        />
+
         <!-- Docs Link -->
         <a
           v-if="docUrl"
@@ -222,6 +228,7 @@ import LocaleSwitcher from '@/components/common/LocaleSwitcher.vue'
 import SubscriptionProgressMini from '@/components/common/SubscriptionProgressMini.vue'
 import AnnouncementBell from '@/components/common/AnnouncementBell.vue'
 import Icon from '@/components/icons/Icon.vue'
+import SupportContactMenu from './SupportContactMenu.vue'
 
 const router = useRouter()
 const route = useRoute()
@@ -235,6 +242,7 @@ const user = computed(() => authStore.user)
 const dropdownOpen = ref(false)
 const dropdownRef = ref<HTMLElement | null>(null)
 const contactInfo = computed(() => appStore.contactInfo)
+const qqGroupNumber = computed(() => appStore.qqGroupNumber)
 const docUrl = computed(() => appStore.docUrl)
 const avatarUrl = computed(() => user.value?.avatar_url?.trim() || '')
 

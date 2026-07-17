@@ -4819,22 +4819,44 @@
                 </button>
               </div>
 
-              <!-- Contact Info -->
-              <div>
-                <label
-                  class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
-                >
-                  {{ t("admin.settings.site.contactInfo") }}
-                </label>
-                <input
-                  v-model="form.contact_info"
-                  type="text"
-                  class="input"
-                  :placeholder="t('admin.settings.site.contactInfoPlaceholder')"
-                />
-                <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
-                  {{ t("admin.settings.site.contactInfoHint") }}
-                </p>
+              <!-- Support Contacts -->
+              <div class="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.site.qqGroupNumber") }}
+                  </label>
+                  <input
+                    v-model="form.qq_group_number"
+                    type="text"
+                    inputmode="numeric"
+                    maxlength="32"
+                    class="input"
+                    :placeholder="t('admin.settings.site.qqGroupNumberPlaceholder')"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.qqGroupNumberHint") }}
+                  </p>
+                </div>
+
+                <div>
+                  <label
+                    class="mb-2 block text-sm font-medium text-gray-700 dark:text-gray-300"
+                  >
+                    {{ t("admin.settings.site.contactInfo") }}
+                  </label>
+                  <input
+                    v-model="form.contact_info"
+                    type="text"
+                    maxlength="64"
+                    class="input"
+                    :placeholder="t('admin.settings.site.contactInfoPlaceholder')"
+                  />
+                  <p class="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+                    {{ t("admin.settings.site.contactInfoHint") }}
+                  </p>
+                </div>
               </div>
 
               <!-- Doc URL -->
@@ -7596,6 +7618,7 @@ const form = reactive<SettingsForm>({
   site_subtitle: "Subscription to API Conversion Platform",
   api_base_url: "",
   contact_info: "",
+  qq_group_number: "",
   doc_url: "",
   home_content: "",
   backend_mode_enabled: false,
@@ -8797,6 +8820,7 @@ async function saveSettings() {
       site_subtitle: form.site_subtitle,
       api_base_url: form.api_base_url,
       contact_info: form.contact_info,
+      qq_group_number: form.qq_group_number.trim(),
       doc_url: form.doc_url,
       home_content: form.home_content,
       backend_mode_enabled: form.backend_mode_enabled,
