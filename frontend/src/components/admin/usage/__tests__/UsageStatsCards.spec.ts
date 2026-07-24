@@ -13,7 +13,8 @@ const messages: Record<string, string> = {
   'usage.cacheBreakdown': 'Cache Token Breakdown',
   'usage.cacheCreationTokensLabel': 'Cache Creation',
   'usage.cacheReadTokensLabel': 'Cache Read',
-  'usage.totalCost': 'Total Cost',
+  'usage.subscriptionTotalCost': 'Subscription Cost',
+  'usage.balanceTotalCost': 'Balance Cost',
   'usage.accountCost': 'Cost',
   'usage.standardCost': 'Standard',
   'usage.avgDuration': 'Avg Duration',
@@ -39,6 +40,8 @@ const stats = {
   total_tokens: 184,
   total_cost: 0.001,
   total_actual_cost: 0.001,
+  total_subscription_cost: 0.0007,
+  total_balance_cost: 0.0003,
   total_account_cost: 0.001,
   average_duration_ms: 250,
 }
@@ -63,5 +66,18 @@ describe('UsageStatsCards', () => {
     expect(text).toContain('12')
     expect(text).toContain('Cache Read')
     expect(text).toContain('22')
+  })
+
+  it('shows subscription and balance costs separately', () => {
+    const wrapper = mount(UsageStatsCards, {
+      props: { stats },
+      global: { stubs: { Icon: true } },
+    })
+
+    const text = wrapper.text()
+    expect(text).toContain('Subscription Cost')
+    expect(text).toContain('$0.0007')
+    expect(text).toContain('Balance Cost')
+    expect(text).toContain('$0.0003')
   })
 })

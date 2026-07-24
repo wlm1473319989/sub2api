@@ -910,6 +910,8 @@ export default {
     cacheCreationTokensLabel: '缓存创建',
     cacheReadTokensLabel: '缓存读取',
     totalCost: '总消费',
+    subscriptionTotalCost: '订阅总消费',
+    balanceTotalCost: '余额总消费',
     standardCost: '标准',
     actualCost: '实际',
     accountCost: '成本',

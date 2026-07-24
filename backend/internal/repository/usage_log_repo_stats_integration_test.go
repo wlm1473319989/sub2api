@@ -29,7 +29,7 @@ func TestUsageLog_GetStatsWithFilters_AggregatesAndEndpoints(t *testing.T) {
 		_, err := repo.Create(ctx, &service.UsageLog{
 			UserID: user.ID, APIKeyID: apiKey.ID, AccountID: account.ID,
 			Model: "claude-3", InputTokens: 2, OutputTokens: 3,
-			TotalCost: 0.5, ActualCost: 0.4, CreatedAt: now,
+			TotalCost: 0.5, ActualCost: 0.4, SubscriptionCost: 0.25, BalanceCost: 0.15, CreatedAt: now,
 			InboundEndpoint: &inboundEndpoint, UpstreamEndpoint: &upstreamEndpoint,
 		})
 		require.NoError(t, err)
@@ -45,6 +45,8 @@ func TestUsageLog_GetStatsWithFilters_AggregatesAndEndpoints(t *testing.T) {
 	require.Equal(t, int64(6), stats.TotalInputTokens)
 	require.Equal(t, int64(9), stats.TotalOutputTokens)
 	require.InDelta(t, 1.2, stats.TotalActualCost, 1e-9)
+	require.InDelta(t, 0.75, stats.TotalSubscriptionCost, 1e-9)
+	require.InDelta(t, 0.45, stats.TotalBalanceCost, 1e-9)
 	require.NotEmpty(t, stats.Endpoints)
 	require.NotEmpty(t, stats.UpstreamEndpoints)
 	require.NotEmpty(t, stats.EndpointPaths)

@@ -906,6 +906,8 @@ export default {
     cacheCreationTokensLabel: 'Cache Creation',
     cacheReadTokensLabel: 'Cache Read',
     totalCost: 'Total Cost',
+    subscriptionTotalCost: 'Subscription Cost',
+    balanceTotalCost: 'Balance Cost',
     standardCost: 'Standard',
     actualCost: 'Actual',
     accountCost: 'Cost',

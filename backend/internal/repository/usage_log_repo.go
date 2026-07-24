@@ -3827,6 +3827,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			COALESCE(SUM(cache_creation_tokens + cache_read_tokens), 0) as total_cache_tokens,
 			COALESCE(SUM(total_cost), 0) as total_cost,
 			COALESCE(SUM(actual_cost), 0) as total_actual_cost,
+			COALESCE(SUM(subscription_cost), 0) as total_subscription_cost,
+			COALESCE(SUM(balance_cost), 0) as total_balance_cost,
 			COALESCE(SUM(COALESCE(account_stats_cost, total_cost) * COALESCE(account_rate_multiplier, 1)), 0) as total_account_cost,
 			COALESCE(AVG(duration_ms), 0) as avg_duration_ms
 		FROM usage_logs
@@ -3857,6 +3859,8 @@ func (r *usageLogRepository) GetStatsWithFilters(ctx context.Context, filters Us
 			&stats.TotalCacheTokens,
 			&stats.TotalCost,
 			&stats.TotalActualCost,
+			&stats.TotalSubscriptionCost,
+			&stats.TotalBalanceCost,
 			&totalAccountCost,
 			&stats.AverageDurationMs,
 		)

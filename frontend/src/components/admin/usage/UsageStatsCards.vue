@@ -1,5 +1,5 @@
 <template>
-  <div class="grid grid-cols-2 gap-4 lg:grid-cols-4">
+  <div class="grid grid-cols-2 gap-4 lg:grid-cols-3 xl:grid-cols-5">
     <div class="card p-4 flex items-center gap-3">
       <div class="rounded-lg bg-blue-100 p-2 dark:bg-blue-900/30 text-blue-600">
         <Icon name="document" size="md" />
@@ -63,15 +63,23 @@
         <Icon name="dollar" size="md" />
       </div>
       <div class="min-w-0 flex-1">
-        <p class="text-xs font-medium text-gray-500">{{ t('usage.totalCost') }}</p>
+        <p class="text-xs font-medium text-gray-500">{{ t('usage.subscriptionTotalCost') }}</p>
         <p class="text-xl font-bold text-green-600">
-          ${{ (stats?.total_actual_cost || 0).toFixed(4) }}
+          ${{ (stats?.total_subscription_cost || 0).toFixed(4) }}
         </p>
-        <p class="text-xs text-gray-400">
-          <span class="text-orange-500">{{ t('usage.accountCost') }} ${{ (stats?.total_account_cost || 0).toFixed(4) }}</span>
-          <span> · </span>
-          <span>{{ t('usage.standardCost') }} ${{ (stats?.total_cost || 0).toFixed(4) }}</span>
+        <p class="text-xs text-gray-400">{{ t('usage.inSelectedRange') }}</p>
+      </div>
+    </div>
+    <div class="card p-4 flex items-center gap-3">
+      <div class="rounded-lg bg-orange-100 p-2 dark:bg-orange-900/30 text-orange-600">
+        <Icon name="dollar" size="md" />
+      </div>
+      <div class="min-w-0 flex-1">
+        <p class="text-xs font-medium text-gray-500">{{ t('usage.balanceTotalCost') }}</p>
+        <p class="text-xl font-bold text-orange-600">
+          ${{ (stats?.total_balance_cost || 0).toFixed(4) }}
         </p>
+        <p class="text-xs text-gray-400">{{ t('usage.inSelectedRange') }}</p>
       </div>
     </div>
     <div class="card p-4 flex items-center gap-3">
