@@ -46,13 +46,14 @@ jobs:
           REPOSITORY_OWNER: ${{ github.repository_owner }}
           GHCR_USERNAME: ${{ secrets.GHCR_USERNAME }}
           GHCR_TOKEN: ${{ secrets.GHCR_TOKEN }}
+          DEPLOY_TOTP_ENCRYPTION_KEY: ${{ secrets.TOTP_ENCRYPTION_KEY }}
         with:
           host: ${{ secrets.SSH_HOST }}
           port: ${{ secrets.SSH_PORT || '22' }}
           username: ${{ secrets.SSH_USER }}
           key: ${{ secrets.SSH_KEY }}
           password: ${{ secrets.SSH_PASSWORD }}
-          envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,WAIT_SECONDS,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN
+          envs: DEPLOY_PATH,COMPOSE_FILE,RAW_IMAGE_TAG,WAIT_SECONDS,REPOSITORY_OWNER,GHCR_USERNAME,GHCR_TOKEN,DEPLOY_TOTP_ENCRYPTION_KEY
           command_timeout: 30m
           script: |
             set -e
@@ -62,6 +63,75 @@ jobs:
 
             cd "$DEPLOY_PATH"
             test -f "$COMPOSE_FILE"
+
+            if [ ! -f .env ]; then
+              echo "Missing $DEPLOY_PATH/.env; deployment secrets must be persisted on the server."
+              exit 1
+            fi
+
+            is_valid_encryption_key() {
+              key="$1"
+              [ "${#key}" -eq 64 ] || return 1
+              case "$key" in
+                *[!0-9a-fA-F]*) return 1 ;;
+              esac
+            }
+
+            incoming_totp_key="${DEPLOY_TOTP_ENCRYPTION_KEY:-}"
+            if [ -n "$incoming_totp_key" ] && ! is_valid_encryption_key "$incoming_totp_key"; then
+              echo "GitHub Environment secret TOTP_ENCRYPTION_KEY must be exactly 64 hexadecimal characters."
+              exit 1
+            fi
+
+            server_totp_key=$(awk -F= '
+              $1 == "TOTP_ENCRYPTION_KEY" {
+                value = substr($0, index($0, "=") + 1)
+              }
+              END { print value }
+            ' .env | tr -d '\r')
+
+            if [ -n "$server_totp_key" ]; then
+              if ! is_valid_encryption_key "$server_totp_key"; then
+                echo "Server .env contains an invalid TOTP_ENCRYPTION_KEY; refusing to overwrite it automatically."
+                exit 1
+              fi
+              if [ -n "$incoming_totp_key" ]; then
+                normalized_server_key=$(printf '%s' "$server_totp_key" | tr '[:upper:]' '[:lower:]')
+                normalized_incoming_key=$(printf '%s' "$incoming_totp_key" | tr '[:upper:]' '[:lower:]')
+                if [ "$normalized_server_key" != "$normalized_incoming_key" ]; then
+                  echo "GitHub TOTP_ENCRYPTION_KEY differs from the server key; refusing unsafe key rotation."
+                  exit 1
+                fi
+              fi
+              effective_totp_key="$server_totp_key"
+            else
+              if [ -z "$incoming_totp_key" ]; then
+                echo "TOTP_ENCRYPTION_KEY is missing. Add it to the selected GitHub Environment secrets."
+                exit 1
+              fi
+
+              effective_totp_key="$incoming_totp_key"
+              umask 077
+              env_tmp=".env.tmp.$$"
+              awk -v key="$effective_totp_key" '
+                BEGIN { written = 0 }
+                /^TOTP_ENCRYPTION_KEY=/ {
+                  if (!written) {
+                    print "TOTP_ENCRYPTION_KEY=" key
+                    written = 1
+                  }
+                  next
+                }
+                { print }
+                END {
+                  if (!written) print "TOTP_ENCRYPTION_KEY=" key
+                }
+              ' .env > "$env_tmp"
+              chmod 600 "$env_tmp"
+              mv "$env_tmp" .env
+              echo "Persisted TOTP_ENCRYPTION_KEY to the server .env."
+            fi
+            chmod 600 .env
 
             IMAGE_TAG="${RAW_IMAGE_TAG#v}"
             REPOSITORY_OWNER_LOWER=$(printf '%s' "$REPOSITORY_OWNER" | tr '[:upper:]' '[:lower:]')
@@ -92,5 +162,20 @@ jobs:
               sleep 5
             done
 
+            runtime_totp_key=$(docker inspect sub2api --format='{{range .Config.Env}}{{println .}}{{end}}' \
+              | awk -F= '$1 == "TOTP_ENCRYPTION_KEY" { value = substr($0, index($0, "=") + 1) } END { print value }' \
+              | tr -d '\r')
+            if ! is_valid_encryption_key "$runtime_totp_key"; then
+              echo "Deployed container does not have a valid TOTP_ENCRYPTION_KEY."
+              exit 1
+            fi
+            normalized_runtime_key=$(printf '%s' "$runtime_totp_key" | tr '[:upper:]' '[:lower:]')
+            normalized_effective_key=$(printf '%s' "$effective_totp_key" | tr '[:upper:]' '[:lower:]')
+            if [ "$normalized_runtime_key" != "$normalized_effective_key" ]; then
+              echo "Deployed container loaded an unexpected TOTP_ENCRYPTION_KEY."
+              exit 1
+            fi
+
             echo "Deployed image: $IMAGE"
+            echo "Payment resume signing key verified."
             docker compose -f "$COMPOSE_FILE" ps
