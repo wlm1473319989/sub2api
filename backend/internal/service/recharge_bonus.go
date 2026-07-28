@@ -62,6 +62,11 @@ type RechargeQuote struct {
 	snapshot map[string]any
 }
 
+type QuickRechargeBonus struct {
+	Amount float64 `json:"amount"`
+	Bonus  float64 `json:"bonus"`
+}
+
 func (s *PaymentConfigService) ListRechargeBonusRules(ctx context.Context) ([]*dbent.RechargeBonusRule, error) {
 	rules, err := s.entClient.RechargeBonusRule.Query().
 		Order(dbent.Desc(rechargebonusrule.FieldPriority), dbent.Asc(rechargebonusrule.FieldMinAmount), dbent.Asc(rechargebonusrule.FieldID)).
@@ -316,6 +321,38 @@ func (s *PaymentService) matchRechargeBonusRule(ctx context.Context, amount floa
 	if err != nil {
 		return nil, fmt.Errorf("match recharge bonus rule: %w", err)
 	}
+	return matchRechargeBonusRuleFromList(rules, amount, now), nil
+}
+
+// QuickRechargeBonuses calculates display-only bonus labels for preset amounts.
+// Order creation still relies on the signed recharge quote.
+func (s *PaymentService) QuickRechargeBonuses(ctx context.Context, amounts []float64, multiplier float64) ([]QuickRechargeBonus, error) {
+	rules, err := s.entClient.RechargeBonusRule.Query().Where(rechargebonusrule.EnabledEQ(true)).
+		Order(dbent.Desc(rechargebonusrule.FieldPriority), dbent.Asc(rechargebonusrule.FieldMinAmount), dbent.Asc(rechargebonusrule.FieldID)).All(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("list quick recharge bonuses: %w", err)
+	}
+
+	now := time.Now()
+	normalizedMultiplier := normalizeBalanceRechargeMultiplier(multiplier)
+	bonuses := make([]QuickRechargeBonus, 0, len(amounts))
+	for _, amount := range amounts {
+		principal := decimal.NewFromFloat(amount).Round(2).InexactFloat64()
+		bonus := 0.0
+		if rule := matchRechargeBonusRuleFromList(rules, principal, now); rule != nil {
+			bonus = calculateRechargeRuleBonus(principal, rule.BonusType, rule.BonusValue)
+		} else {
+			credited := calculateCreditedBalance(principal, normalizedMultiplier)
+			bonus = decimal.NewFromFloat(credited).Sub(decimal.NewFromFloat(principal)).Round(2).InexactFloat64()
+		}
+		if bonus > 0 {
+			bonuses = append(bonuses, QuickRechargeBonus{Amount: principal, Bonus: bonus})
+		}
+	}
+	return bonuses, nil
+}
+
+func matchRechargeBonusRuleFromList(rules []*dbent.RechargeBonusRule, amount float64, now time.Time) *dbent.RechargeBonusRule {
 	for _, rule := range rules {
 		if amount < rule.MinAmount || (rule.MaxAmount != nil && amount > *rule.MaxAmount) {
 			continue
@@ -326,9 +363,9 @@ func (s *PaymentService) matchRechargeBonusRule(ctx context.Context, amount floa
 		if rule.EndsAt != nil && now.After(*rule.EndsAt) {
 			continue
 		}
-		return rule, nil
+		return rule
 	}
-	return nil, nil
+	return nil
 }
 
 func calculateRechargeRuleBonus(principal float64, bonusType string, value float64) float64 {

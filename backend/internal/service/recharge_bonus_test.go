@@ -98,6 +98,32 @@ func TestCalculateRechargeQuoteUsesRuleThenLegacyMultiplier(t *testing.T) {
 	require.Equal(t, rechargeBonusSourceMultiplier, quote.Rule.Source)
 }
 
+func TestQuickRechargeBonusesUsesRulesAndLegacyMultiplier(t *testing.T) {
+	ctx := context.Background()
+	client := newPaymentConfigServiceTestClient(t)
+	svc := &PaymentService{entClient: client}
+
+	_, err := client.RechargeBonusRule.Create().
+		SetName("fixed bonus").
+		SetEnabled(true).
+		SetPriority(1).
+		SetMinAmount(100).
+		SetMaxAmount(200).
+		SetBonusType(RechargeBonusTypeFixed).
+		SetBonusValue(20).
+		Save(ctx)
+	require.NoError(t, err)
+
+	bonuses, err := svc.QuickRechargeBonuses(ctx, []float64{50, 100, 200, 500}, 1.1)
+	require.NoError(t, err)
+	require.Equal(t, []QuickRechargeBonus{
+		{Amount: 50, Bonus: 5},
+		{Amount: 100, Bonus: 20},
+		{Amount: 200, Bonus: 20},
+		{Amount: 500, Bonus: 50},
+	}, bonuses)
+}
+
 func TestRechargeQuoteTokenRejectsExpiryAndQuoteChanges(t *testing.T) {
 	resumeSvc := NewPaymentResumeService([]byte("recharge-quote-test-key"))
 	svc := &PaymentService{resumeService: resumeSvc}

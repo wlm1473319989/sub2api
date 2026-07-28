@@ -94,6 +94,12 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 	// Fetch plans
 	plans, _ := h.configService.ListPlansForSale(ctx)
 	planList := buildPublicCheckoutPlans(plans)
+	quickAmounts := service.QuickRechargeAmounts()
+	quickAmountBonuses, err := h.paymentService.QuickRechargeBonuses(ctx, quickAmounts, cfg.BalanceRechargeMultiplier)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
 
 	response.Success(c, checkoutInfoResponse{
 		Methods:                   limitsResp.Methods,
@@ -102,7 +108,8 @@ func (h *PaymentHandler) GetCheckoutInfo(c *gin.Context) {
 		Plans:                     planList,
 		BalanceDisabled:           cfg.BalanceDisabled,
 		AllowCustomRechargeAmount: cfg.AllowCustomRechargeAmount,
-		QuickAmounts:              service.QuickRechargeAmounts(),
+		QuickAmounts:              quickAmounts,
+		QuickAmountBonuses:        quickAmountBonuses,
 		BalanceRechargeMultiplier: cfg.BalanceRechargeMultiplier,
 		RechargeFeeRate:           cfg.RechargeFeeRate,
 		HelpText:                  cfg.HelpText,
@@ -120,6 +127,7 @@ type checkoutInfoResponse struct {
 	BalanceDisabled           bool                            `json:"balance_disabled"`
 	AllowCustomRechargeAmount bool                            `json:"allow_custom_recharge_amount"`
 	QuickAmounts              []float64                       `json:"quick_amounts"`
+	QuickAmountBonuses        []service.QuickRechargeBonus    `json:"quick_amount_bonuses"`
 	BalanceRechargeMultiplier float64                         `json:"balance_recharge_multiplier"`
 	RechargeFeeRate           float64                         `json:"recharge_fee_rate"`
 	HelpText                  string                          `json:"help_text"`

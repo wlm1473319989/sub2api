@@ -45,6 +45,7 @@
               <AmountInput
                 v-model="amount"
                 :amounts="checkout.quick_amounts"
+                :bonuses="checkout.quick_amount_bonuses"
                 :min="globalMinAmount"
                 :max="globalMaxAmount"
                 :allow-custom="checkout.allow_custom_recharge_amount"
@@ -552,6 +553,7 @@ const checkout = ref<CheckoutInfoResponse>({
   methods: {}, global_min: 0, global_max: 0,
   plans: [], balance_disabled: false, allow_custom_recharge_amount: true,
   quick_amounts: [10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
+  quick_amount_bonuses: [],
   balance_recharge_multiplier: 1, recharge_fee_rate: 0, help_text: '', help_image_url: '', stripe_publishable_key: '',
 })
 

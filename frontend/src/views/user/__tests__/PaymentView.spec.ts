@@ -108,6 +108,7 @@ function checkoutInfoFixture() {
       balance_disabled: false,
       allow_custom_recharge_amount: true,
       quick_amounts: [10, 20, 50, 100, 200, 500, 1000, 2000, 5000],
+      quick_amount_bonuses: [],
       balance_recharge_multiplier: 1,
       recharge_fee_rate: 0,
       help_text: '',

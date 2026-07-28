@@ -7444,6 +7444,7 @@ export default {
     paymentAmount: '支付金额',
     creditedBalance: '到账余额',
     quickAmounts: '快捷金额',
+    quickAmountBonus: '赠 ${amount}',
     customAmount: '自定义金额',
     enterAmount: '输入金额',
     paymentMethod: '支付方式',

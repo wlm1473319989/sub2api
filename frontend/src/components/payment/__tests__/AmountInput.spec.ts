@@ -4,7 +4,7 @@ import AmountInput from '../AmountInput.vue'
 
 vi.mock('vue-i18n', () => ({
   useI18n: () => ({
-    t: (key: string) => key,
+    t: (key: string, params?: { amount?: string }) => params?.amount ? `${key}:${params.amount}` : key,
   }),
 }))
 
@@ -29,5 +29,23 @@ describe('AmountInput', () => {
     })
 
     expect(wrapper.find('input').exists()).toBe(true)
+  })
+
+  it('shows bonus labels only on eligible quick amounts', () => {
+    const wrapper = mount(AmountInput, {
+      props: {
+        modelValue: null,
+        amounts: [50, 100, 200],
+        bonuses: [
+          { amount: 100, bonus: 10 },
+          { amount: 200, bonus: 25.5 },
+        ],
+      },
+    })
+
+    const labels = wrapper.findAll('[data-testid="quick-amount-bonus"]')
+    expect(labels).toHaveLength(2)
+    expect(labels[0].text()).toBe('payment.quickAmountBonus:10')
+    expect(labels[1].text()).toBe('payment.quickAmountBonus:25.5')
   })
 })

@@ -53,6 +53,11 @@ export interface MethodLimit {
   available: boolean
 }
 
+export interface QuickRechargeBonus {
+  amount: number
+  bonus: number
+}
+
 /** Response from /payment/limits API */
 export interface MethodLimitsResponse {
   methods: Record<string, MethodLimit>
@@ -69,6 +74,7 @@ export interface CheckoutInfoResponse {
   balance_disabled: boolean
   allow_custom_recharge_amount: boolean
   quick_amounts: number[]
+  quick_amount_bonuses: QuickRechargeBonus[]
   balance_recharge_multiplier: number
   recharge_fee_rate: number
   help_text: string
