@@ -3,6 +3,7 @@ package handler
 import (
 	"context"
 	"database/sql"
+	"encoding/json"
 	"fmt"
 	"strings"
 	"testing"
@@ -37,6 +38,52 @@ func newPaymentHandlerTestClient(t *testing.T) *dbent.Client {
 	client := enttest.NewClient(t, enttest.WithOptions(dbent.Driver(drv)))
 	t.Cleanup(func() { _ = client.Close() })
 	return client
+}
+
+func TestPaymentOrderResponseRechargeBonusFieldsStayAuthenticated(t *testing.T) {
+	ruleID := int64(42)
+	order := &dbent.PaymentOrder{
+		RechargePrincipal:       100,
+		RechargeBonus:           20,
+		RechargeBonusRuleID:     &ruleID,
+		RechargeBonusSnapshot:   map[string]any{"source": "rule"},
+		RefundedBonusAmount:     20,
+		RefundedPrincipalAmount: 30,
+		RefundedGatewayAmount:   30,
+	}
+
+	authenticated := sanitizePaymentOrderForResponse(order)
+	if authenticated == nil {
+		t.Fatal("authenticated payment order response is nil")
+	}
+	if authenticated.RechargePrincipal != 100 || authenticated.RechargeBonus != 20 {
+		t.Fatalf("unexpected recharge split: principal=%v bonus=%v", authenticated.RechargePrincipal, authenticated.RechargeBonus)
+	}
+	if authenticated.RechargeBonusRuleID == nil || *authenticated.RechargeBonusRuleID != ruleID {
+		t.Fatalf("recharge bonus rule id = %v, want %d", authenticated.RechargeBonusRuleID, ruleID)
+	}
+	if authenticated.RechargeBonusSnapshot["source"] != "rule" {
+		t.Fatalf("recharge bonus snapshot = %v", authenticated.RechargeBonusSnapshot)
+	}
+	if authenticated.RefundedBonusAmount != 20 || authenticated.RefundedPrincipalAmount != 30 || authenticated.RefundedGatewayAmount != 30 {
+		t.Fatalf("unexpected refund totals: bonus=%v principal=%v gateway=%v", authenticated.RefundedBonusAmount, authenticated.RefundedPrincipalAmount, authenticated.RefundedGatewayAmount)
+	}
+
+	public := buildPublicOrderResult(order)
+	encoded, err := json.Marshal(public)
+	if err != nil {
+		t.Fatalf("marshal public payment order response: %v", err)
+	}
+	var publicFields map[string]any
+	if err := json.Unmarshal(encoded, &publicFields); err != nil {
+		t.Fatalf("unmarshal public payment order response: %v", err)
+	}
+	if _, ok := publicFields["recharge_bonus_snapshot"]; ok {
+		t.Fatal("public payment order response exposes recharge bonus snapshot")
+	}
+	if _, ok := publicFields["recharge_bonus_rule_id"]; ok {
+		t.Fatal("public payment order response exposes recharge bonus rule id")
+	}
 }
 
 func TestBuildPublicCheckoutPlansIncludesAllForSalePlans(t *testing.T) {

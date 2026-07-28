@@ -84,6 +84,8 @@ type CreateOrderRequest struct {
 	OrderType       string
 	PlanID          int64
 	Locale          string
+	QuoteToken      string
+	rechargeQuote   *RechargeQuote
 }
 
 type CreateOrderResponse struct {
@@ -122,20 +124,28 @@ type OrderListParams struct {
 }
 
 type RefundPlan struct {
-	OrderID              int64
-	Order                *dbent.PaymentOrder
-	RefundAmount         float64
-	GatewayAmount        float64
-	Reason               string
-	Force                bool
-	DeductBalance        bool
-	DeductionType        string
-	BalanceToDeduct      float64
-	SubDaysToDeduct      int
-	SubscriptionID       int64
-	SubscriptionSnapshot *UserSubscription
-	SettlementHead       *dbent.SubscriptionSettlementOrder
-	SettlementResidual   float64
+	OrderID                   int64
+	Order                     *dbent.PaymentOrder
+	RefundAmount              float64
+	GatewayAmount             float64
+	Reason                    string
+	Force                     bool
+	DeductBalance             bool
+	DeductionType             string
+	BalanceToDeduct           float64
+	SubDaysToDeduct           int
+	SubscriptionID            int64
+	SubscriptionSnapshot      *UserSubscription
+	SettlementHead            *dbent.SubscriptionSettlementOrder
+	SettlementResidual        float64
+	RecoveryAmount            float64
+	BonusRecoveryAmount       float64
+	PrincipalRefundAmount     float64
+	CumulativeRecoveryAmount  float64
+	CumulativeBonusAmount     float64
+	CumulativePrincipalAmount float64
+	CumulativeGatewayAmount   float64
+	RechargeBonusRefund       bool
 }
 
 type RefundResult struct {
@@ -148,18 +158,22 @@ type RefundResult struct {
 }
 
 type RefundPreview struct {
-	OrderAmount     float64                    `json:"order_amount"`
-	PayAmount       float64                    `json:"pay_amount"`
-	RefundAmount    float64                    `json:"refund_amount"`
-	GatewayAmount   float64                    `json:"gateway_amount"`
-	Currency        string                     `json:"currency,omitempty"`
-	DeductionType   string                     `json:"deduction_type,omitempty"`
-	BalanceToDeduct float64                    `json:"balance_to_deduct,omitempty"`
-	SubDaysToDeduct int                        `json:"subscription_days_to_deduct,omitempty"`
-	Warning         string                     `json:"warning,omitempty"`
-	RequireForce    bool                       `json:"require_force,omitempty"`
-	SettlementHead  *RefundSettlementHeadInfo  `json:"settlement_head,omitempty"`
-	AffiliateReward *RefundAffiliateRewardInfo `json:"affiliate_reward,omitempty"`
+	OrderAmount           float64                    `json:"order_amount"`
+	PayAmount             float64                    `json:"pay_amount"`
+	RefundAmount          float64                    `json:"refund_amount"`
+	GatewayAmount         float64                    `json:"gateway_amount"`
+	Currency              string                     `json:"currency,omitempty"`
+	DeductionType         string                     `json:"deduction_type,omitempty"`
+	BalanceToDeduct       float64                    `json:"balance_to_deduct,omitempty"`
+	SubDaysToDeduct       int                        `json:"subscription_days_to_deduct,omitempty"`
+	Warning               string                     `json:"warning,omitempty"`
+	RequireForce          bool                       `json:"require_force,omitempty"`
+	SettlementHead        *RefundSettlementHeadInfo  `json:"settlement_head,omitempty"`
+	AffiliateReward       *RefundAffiliateRewardInfo `json:"affiliate_reward,omitempty"`
+	RecoveryAmount        float64                    `json:"recovery_amount,omitempty"`
+	BonusRecoveryAmount   float64                    `json:"bonus_recovery_amount,omitempty"`
+	PrincipalRefundAmount float64                    `json:"principal_refund_amount,omitempty"`
+	RemainingAmount       float64                    `json:"remaining_amount,omitempty"`
 }
 
 type RefundAffiliateRewardInfo struct {

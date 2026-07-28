@@ -11,6 +11,7 @@ import (
 	"entgo.io/ent"
 	"entgo.io/ent/dialect/sql"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/ent/rechargebonusrule"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
 
@@ -33,6 +34,20 @@ type PaymentOrder struct {
 	PayAmount float64 `json:"pay_amount,omitempty"`
 	// FeeRate holds the value of the "fee_rate" field.
 	FeeRate float64 `json:"fee_rate,omitempty"`
+	// RechargePrincipal holds the value of the "recharge_principal" field.
+	RechargePrincipal float64 `json:"recharge_principal,omitempty"`
+	// RechargeBonus holds the value of the "recharge_bonus" field.
+	RechargeBonus float64 `json:"recharge_bonus,omitempty"`
+	// RechargeBonusRuleID holds the value of the "recharge_bonus_rule_id" field.
+	RechargeBonusRuleID *int64 `json:"recharge_bonus_rule_id,omitempty"`
+	// RechargeBonusSnapshot holds the value of the "recharge_bonus_snapshot" field.
+	RechargeBonusSnapshot map[string]interface{} `json:"recharge_bonus_snapshot,omitempty"`
+	// RefundedBonusAmount holds the value of the "refunded_bonus_amount" field.
+	RefundedBonusAmount float64 `json:"refunded_bonus_amount,omitempty"`
+	// RefundedPrincipalAmount holds the value of the "refunded_principal_amount" field.
+	RefundedPrincipalAmount float64 `json:"refunded_principal_amount,omitempty"`
+	// RefundedGatewayAmount holds the value of the "refunded_gateway_amount" field.
+	RefundedGatewayAmount float64 `json:"refunded_gateway_amount,omitempty"`
 	// RechargeCode holds the value of the "recharge_code" field.
 	RechargeCode string `json:"recharge_code,omitempty"`
 	// OutTradeNo holds the value of the "out_trade_no" field.
@@ -119,9 +134,11 @@ type PaymentOrderEdges struct {
 	User *User `json:"user,omitempty"`
 	// SubscriptionRefundAllocations holds the value of the subscription_refund_allocations edge.
 	SubscriptionRefundAllocations []*SubscriptionRefundAllocation `json:"subscription_refund_allocations,omitempty"`
+	// RechargeBonusRule holds the value of the recharge_bonus_rule edge.
+	RechargeBonusRule *RechargeBonusRule `json:"recharge_bonus_rule,omitempty"`
 	// loadedTypes holds the information for reporting if a
 	// type was loaded (or requested) in eager-loading or not.
-	loadedTypes [2]bool
+	loadedTypes [3]bool
 }
 
 // UserOrErr returns the User value or an error if the edge
@@ -144,18 +161,29 @@ func (e PaymentOrderEdges) SubscriptionRefundAllocationsOrErr() ([]*Subscription
 	return nil, &NotLoadedError{edge: "subscription_refund_allocations"}
 }
 
+// RechargeBonusRuleOrErr returns the RechargeBonusRule value or an error if the edge
+// was not loaded in eager-loading, or loaded but was not found.
+func (e PaymentOrderEdges) RechargeBonusRuleOrErr() (*RechargeBonusRule, error) {
+	if e.RechargeBonusRule != nil {
+		return e.RechargeBonusRule, nil
+	} else if e.loadedTypes[2] {
+		return nil, &NotFoundError{label: rechargebonusrule.Label}
+	}
+	return nil, &NotLoadedError{edge: "recharge_bonus_rule"}
+}
+
 // scanValues returns the types for scanning values from sql.Rows.
 func (*PaymentOrder) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case paymentorder.FieldProviderSnapshot:
+		case paymentorder.FieldRechargeBonusSnapshot, paymentorder.FieldProviderSnapshot:
 			values[i] = new([]byte)
 		case paymentorder.FieldForceRefund:
 			values[i] = new(sql.NullBool)
-		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldSubscriptionPlanPriceSnapshot, paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, paymentorder.FieldRefundAmount:
+		case paymentorder.FieldAmount, paymentorder.FieldPayAmount, paymentorder.FieldFeeRate, paymentorder.FieldRechargePrincipal, paymentorder.FieldRechargeBonus, paymentorder.FieldRefundedBonusAmount, paymentorder.FieldRefundedPrincipalAmount, paymentorder.FieldRefundedGatewayAmount, paymentorder.FieldSubscriptionPlanPriceSnapshot, paymentorder.FieldSubscriptionDailyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionWeeklyQuotaKnivesSnapshot, paymentorder.FieldSubscriptionMonthlyQuotaKnivesSnapshot, paymentorder.FieldRefundAmount:
 			values[i] = new(sql.NullFloat64)
-		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionValidityDaysSnapshot:
+		case paymentorder.FieldID, paymentorder.FieldUserID, paymentorder.FieldRechargeBonusRuleID, paymentorder.FieldPlanID, paymentorder.FieldSubscriptionValidityDaysSnapshot:
 			values[i] = new(sql.NullInt64)
 		case paymentorder.FieldUserEmail, paymentorder.FieldUserName, paymentorder.FieldUserNotes, paymentorder.FieldRechargeCode, paymentorder.FieldOutTradeNo, paymentorder.FieldPaymentType, paymentorder.FieldPaymentTradeNo, paymentorder.FieldPayURL, paymentorder.FieldQrCode, paymentorder.FieldQrCodeImg, paymentorder.FieldOrderType, paymentorder.FieldSubscriptionAction, paymentorder.FieldSubscriptionPlanNameSnapshot, paymentorder.FieldProviderInstanceID, paymentorder.FieldProviderKey, paymentorder.FieldStatus, paymentorder.FieldRefundReason, paymentorder.FieldRefundRequestReason, paymentorder.FieldRefundRequestedBy, paymentorder.FieldFailedReason, paymentorder.FieldClientIP, paymentorder.FieldSrcHost, paymentorder.FieldSrcURL:
 			values[i] = new(sql.NullString)
@@ -224,6 +252,51 @@ func (_m *PaymentOrder) assignValues(columns []string, values []any) error {
 				return fmt.Errorf("unexpected type %T for field fee_rate", values[i])
 			} else if value.Valid {
 				_m.FeeRate = value.Float64
+			}
+		case paymentorder.FieldRechargePrincipal:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field recharge_principal", values[i])
+			} else if value.Valid {
+				_m.RechargePrincipal = value.Float64
+			}
+		case paymentorder.FieldRechargeBonus:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field recharge_bonus", values[i])
+			} else if value.Valid {
+				_m.RechargeBonus = value.Float64
+			}
+		case paymentorder.FieldRechargeBonusRuleID:
+			if value, ok := values[i].(*sql.NullInt64); !ok {
+				return fmt.Errorf("unexpected type %T for field recharge_bonus_rule_id", values[i])
+			} else if value.Valid {
+				_m.RechargeBonusRuleID = new(int64)
+				*_m.RechargeBonusRuleID = value.Int64
+			}
+		case paymentorder.FieldRechargeBonusSnapshot:
+			if value, ok := values[i].(*[]byte); !ok {
+				return fmt.Errorf("unexpected type %T for field recharge_bonus_snapshot", values[i])
+			} else if value != nil && len(*value) > 0 {
+				if err := json.Unmarshal(*value, &_m.RechargeBonusSnapshot); err != nil {
+					return fmt.Errorf("unmarshal field recharge_bonus_snapshot: %w", err)
+				}
+			}
+		case paymentorder.FieldRefundedBonusAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field refunded_bonus_amount", values[i])
+			} else if value.Valid {
+				_m.RefundedBonusAmount = value.Float64
+			}
+		case paymentorder.FieldRefundedPrincipalAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field refunded_principal_amount", values[i])
+			} else if value.Valid {
+				_m.RefundedPrincipalAmount = value.Float64
+			}
+		case paymentorder.FieldRefundedGatewayAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field refunded_gateway_amount", values[i])
+			} else if value.Valid {
+				_m.RefundedGatewayAmount = value.Float64
 			}
 		case paymentorder.FieldRechargeCode:
 			if value, ok := values[i].(*sql.NullString); !ok {
@@ -495,6 +568,11 @@ func (_m *PaymentOrder) QuerySubscriptionRefundAllocations() *SubscriptionRefund
 	return NewPaymentOrderClient(_m.config).QuerySubscriptionRefundAllocations(_m)
 }
 
+// QueryRechargeBonusRule queries the "recharge_bonus_rule" edge of the PaymentOrder entity.
+func (_m *PaymentOrder) QueryRechargeBonusRule() *RechargeBonusRuleQuery {
+	return NewPaymentOrderClient(_m.config).QueryRechargeBonusRule(_m)
+}
+
 // Update returns a builder for updating this PaymentOrder.
 // Note that you need to call PaymentOrder.Unwrap() before calling this method if this PaymentOrder
 // was returned from a transaction, and the transaction was committed or rolled back.
@@ -540,6 +618,29 @@ func (_m *PaymentOrder) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("fee_rate=")
 	builder.WriteString(fmt.Sprintf("%v", _m.FeeRate))
+	builder.WriteString(", ")
+	builder.WriteString("recharge_principal=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RechargePrincipal))
+	builder.WriteString(", ")
+	builder.WriteString("recharge_bonus=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RechargeBonus))
+	builder.WriteString(", ")
+	if v := _m.RechargeBonusRuleID; v != nil {
+		builder.WriteString("recharge_bonus_rule_id=")
+		builder.WriteString(fmt.Sprintf("%v", *v))
+	}
+	builder.WriteString(", ")
+	builder.WriteString("recharge_bonus_snapshot=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RechargeBonusSnapshot))
+	builder.WriteString(", ")
+	builder.WriteString("refunded_bonus_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefundedBonusAmount))
+	builder.WriteString(", ")
+	builder.WriteString("refunded_principal_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefundedPrincipalAmount))
+	builder.WriteString(", ")
+	builder.WriteString("refunded_gateway_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefundedGatewayAmount))
 	builder.WriteString(", ")
 	builder.WriteString("recharge_code=")
 	builder.WriteString(_m.RechargeCode)

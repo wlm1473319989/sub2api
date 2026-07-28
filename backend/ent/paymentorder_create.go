@@ -12,6 +12,7 @@ import (
 	"entgo.io/ent/dialect/sql/sqlgraph"
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
+	"github.com/Wei-Shaw/sub2api/ent/rechargebonusrule"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
@@ -78,6 +79,96 @@ func (_c *PaymentOrderCreate) SetFeeRate(v float64) *PaymentOrderCreate {
 func (_c *PaymentOrderCreate) SetNillableFeeRate(v *float64) *PaymentOrderCreate {
 	if v != nil {
 		_c.SetFeeRate(*v)
+	}
+	return _c
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (_c *PaymentOrderCreate) SetRechargePrincipal(v float64) *PaymentOrderCreate {
+	_c.mutation.SetRechargePrincipal(v)
+	return _c
+}
+
+// SetNillableRechargePrincipal sets the "recharge_principal" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRechargePrincipal(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRechargePrincipal(*v)
+	}
+	return _c
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (_c *PaymentOrderCreate) SetRechargeBonus(v float64) *PaymentOrderCreate {
+	_c.mutation.SetRechargeBonus(v)
+	return _c
+}
+
+// SetNillableRechargeBonus sets the "recharge_bonus" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRechargeBonus(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRechargeBonus(*v)
+	}
+	return _c
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (_c *PaymentOrderCreate) SetRechargeBonusRuleID(v int64) *PaymentOrderCreate {
+	_c.mutation.SetRechargeBonusRuleID(v)
+	return _c
+}
+
+// SetNillableRechargeBonusRuleID sets the "recharge_bonus_rule_id" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRechargeBonusRuleID(v *int64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRechargeBonusRuleID(*v)
+	}
+	return _c
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (_c *PaymentOrderCreate) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderCreate {
+	_c.mutation.SetRechargeBonusSnapshot(v)
+	return _c
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (_c *PaymentOrderCreate) SetRefundedBonusAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetRefundedBonusAmount(v)
+	return _c
+}
+
+// SetNillableRefundedBonusAmount sets the "refunded_bonus_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRefundedBonusAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRefundedBonusAmount(*v)
+	}
+	return _c
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (_c *PaymentOrderCreate) SetRefundedPrincipalAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetRefundedPrincipalAmount(v)
+	return _c
+}
+
+// SetNillableRefundedPrincipalAmount sets the "refunded_principal_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRefundedPrincipalAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRefundedPrincipalAmount(*v)
+	}
+	return _c
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (_c *PaymentOrderCreate) SetRefundedGatewayAmount(v float64) *PaymentOrderCreate {
+	_c.mutation.SetRefundedGatewayAmount(v)
+	return _c
+}
+
+// SetNillableRefundedGatewayAmount sets the "refunded_gateway_amount" field if the given value is not nil.
+func (_c *PaymentOrderCreate) SetNillableRefundedGatewayAmount(v *float64) *PaymentOrderCreate {
+	if v != nil {
+		_c.SetRefundedGatewayAmount(*v)
 	}
 	return _c
 }
@@ -564,6 +655,11 @@ func (_c *PaymentOrderCreate) AddSubscriptionRefundAllocations(v ...*Subscriptio
 	return _c.AddSubscriptionRefundAllocationIDs(ids...)
 }
 
+// SetRechargeBonusRule sets the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (_c *PaymentOrderCreate) SetRechargeBonusRule(v *RechargeBonusRule) *PaymentOrderCreate {
+	return _c.SetRechargeBonusRuleID(v.ID)
+}
+
 // Mutation returns the PaymentOrderMutation object of the builder.
 func (_c *PaymentOrderCreate) Mutation() *PaymentOrderMutation {
 	return _c.mutation
@@ -602,6 +698,26 @@ func (_c *PaymentOrderCreate) defaults() {
 	if _, ok := _c.mutation.FeeRate(); !ok {
 		v := paymentorder.DefaultFeeRate
 		_c.mutation.SetFeeRate(v)
+	}
+	if _, ok := _c.mutation.RechargePrincipal(); !ok {
+		v := paymentorder.DefaultRechargePrincipal
+		_c.mutation.SetRechargePrincipal(v)
+	}
+	if _, ok := _c.mutation.RechargeBonus(); !ok {
+		v := paymentorder.DefaultRechargeBonus
+		_c.mutation.SetRechargeBonus(v)
+	}
+	if _, ok := _c.mutation.RefundedBonusAmount(); !ok {
+		v := paymentorder.DefaultRefundedBonusAmount
+		_c.mutation.SetRefundedBonusAmount(v)
+	}
+	if _, ok := _c.mutation.RefundedPrincipalAmount(); !ok {
+		v := paymentorder.DefaultRefundedPrincipalAmount
+		_c.mutation.SetRefundedPrincipalAmount(v)
+	}
+	if _, ok := _c.mutation.RefundedGatewayAmount(); !ok {
+		v := paymentorder.DefaultRefundedGatewayAmount
+		_c.mutation.SetRefundedGatewayAmount(v)
 	}
 	if _, ok := _c.mutation.OutTradeNo(); !ok {
 		v := paymentorder.DefaultOutTradeNo
@@ -662,6 +778,21 @@ func (_c *PaymentOrderCreate) check() error {
 	}
 	if _, ok := _c.mutation.FeeRate(); !ok {
 		return &ValidationError{Name: "fee_rate", err: errors.New(`ent: missing required field "PaymentOrder.fee_rate"`)}
+	}
+	if _, ok := _c.mutation.RechargePrincipal(); !ok {
+		return &ValidationError{Name: "recharge_principal", err: errors.New(`ent: missing required field "PaymentOrder.recharge_principal"`)}
+	}
+	if _, ok := _c.mutation.RechargeBonus(); !ok {
+		return &ValidationError{Name: "recharge_bonus", err: errors.New(`ent: missing required field "PaymentOrder.recharge_bonus"`)}
+	}
+	if _, ok := _c.mutation.RefundedBonusAmount(); !ok {
+		return &ValidationError{Name: "refunded_bonus_amount", err: errors.New(`ent: missing required field "PaymentOrder.refunded_bonus_amount"`)}
+	}
+	if _, ok := _c.mutation.RefundedPrincipalAmount(); !ok {
+		return &ValidationError{Name: "refunded_principal_amount", err: errors.New(`ent: missing required field "PaymentOrder.refunded_principal_amount"`)}
+	}
+	if _, ok := _c.mutation.RefundedGatewayAmount(); !ok {
+		return &ValidationError{Name: "refunded_gateway_amount", err: errors.New(`ent: missing required field "PaymentOrder.refunded_gateway_amount"`)}
 	}
 	if _, ok := _c.mutation.RechargeCode(); !ok {
 		return &ValidationError{Name: "recharge_code", err: errors.New(`ent: missing required field "PaymentOrder.recharge_code"`)}
@@ -820,6 +951,30 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 	if value, ok := _c.mutation.FeeRate(); ok {
 		_spec.SetField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
 		_node.FeeRate = value
+	}
+	if value, ok := _c.mutation.RechargePrincipal(); ok {
+		_spec.SetField(paymentorder.FieldRechargePrincipal, field.TypeFloat64, value)
+		_node.RechargePrincipal = value
+	}
+	if value, ok := _c.mutation.RechargeBonus(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonus, field.TypeFloat64, value)
+		_node.RechargeBonus = value
+	}
+	if value, ok := _c.mutation.RechargeBonusSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonusSnapshot, field.TypeJSON, value)
+		_node.RechargeBonusSnapshot = value
+	}
+	if value, ok := _c.mutation.RefundedBonusAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedBonusAmount, field.TypeFloat64, value)
+		_node.RefundedBonusAmount = value
+	}
+	if value, ok := _c.mutation.RefundedPrincipalAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedPrincipalAmount, field.TypeFloat64, value)
+		_node.RefundedPrincipalAmount = value
+	}
+	if value, ok := _c.mutation.RefundedGatewayAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedGatewayAmount, field.TypeFloat64, value)
+		_node.RefundedGatewayAmount = value
 	}
 	if value, ok := _c.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -1002,6 +1157,23 @@ func (_c *PaymentOrderCreate) createSpec() (*PaymentOrder, *sqlgraph.CreateSpec)
 		}
 		_spec.Edges = append(_spec.Edges, edge)
 	}
+	if nodes := _c.mutation.RechargeBonusRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   paymentorder.RechargeBonusRuleTable,
+			Columns: []string{paymentorder.RechargeBonusRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rechargebonusrule.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_node.RechargeBonusRuleID = &nodes[0]
+		_spec.Edges = append(_spec.Edges, edge)
+	}
 	return _node, _spec
 }
 
@@ -1159,6 +1331,132 @@ func (u *PaymentOrderUpsert) UpdateFeeRate() *PaymentOrderUpsert {
 // AddFeeRate adds v to the "fee_rate" field.
 func (u *PaymentOrderUpsert) AddFeeRate(v float64) *PaymentOrderUpsert {
 	u.Add(paymentorder.FieldFeeRate, v)
+	return u
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (u *PaymentOrderUpsert) SetRechargePrincipal(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRechargePrincipal, v)
+	return u
+}
+
+// UpdateRechargePrincipal sets the "recharge_principal" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRechargePrincipal() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRechargePrincipal)
+	return u
+}
+
+// AddRechargePrincipal adds v to the "recharge_principal" field.
+func (u *PaymentOrderUpsert) AddRechargePrincipal(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldRechargePrincipal, v)
+	return u
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (u *PaymentOrderUpsert) SetRechargeBonus(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRechargeBonus, v)
+	return u
+}
+
+// UpdateRechargeBonus sets the "recharge_bonus" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRechargeBonus() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRechargeBonus)
+	return u
+}
+
+// AddRechargeBonus adds v to the "recharge_bonus" field.
+func (u *PaymentOrderUpsert) AddRechargeBonus(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldRechargeBonus, v)
+	return u
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsert) SetRechargeBonusRuleID(v int64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRechargeBonusRuleID, v)
+	return u
+}
+
+// UpdateRechargeBonusRuleID sets the "recharge_bonus_rule_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRechargeBonusRuleID() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRechargeBonusRuleID)
+	return u
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsert) ClearRechargeBonusRuleID() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldRechargeBonusRuleID)
+	return u
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsert) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRechargeBonusSnapshot, v)
+	return u
+}
+
+// UpdateRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRechargeBonusSnapshot() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRechargeBonusSnapshot)
+	return u
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsert) ClearRechargeBonusSnapshot() *PaymentOrderUpsert {
+	u.SetNull(paymentorder.FieldRechargeBonusSnapshot)
+	return u
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsert) SetRefundedBonusAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRefundedBonusAmount, v)
+	return u
+}
+
+// UpdateRefundedBonusAmount sets the "refunded_bonus_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRefundedBonusAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRefundedBonusAmount)
+	return u
+}
+
+// AddRefundedBonusAmount adds v to the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsert) AddRefundedBonusAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldRefundedBonusAmount, v)
+	return u
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsert) SetRefundedPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRefundedPrincipalAmount, v)
+	return u
+}
+
+// UpdateRefundedPrincipalAmount sets the "refunded_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRefundedPrincipalAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRefundedPrincipalAmount)
+	return u
+}
+
+// AddRefundedPrincipalAmount adds v to the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsert) AddRefundedPrincipalAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldRefundedPrincipalAmount, v)
+	return u
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsert) SetRefundedGatewayAmount(v float64) *PaymentOrderUpsert {
+	u.Set(paymentorder.FieldRefundedGatewayAmount, v)
+	return u
+}
+
+// UpdateRefundedGatewayAmount sets the "refunded_gateway_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsert) UpdateRefundedGatewayAmount() *PaymentOrderUpsert {
+	u.SetExcluded(paymentorder.FieldRefundedGatewayAmount)
+	return u
+}
+
+// AddRefundedGatewayAmount adds v to the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsert) AddRefundedGatewayAmount(v float64) *PaymentOrderUpsert {
+	u.Add(paymentorder.FieldRefundedGatewayAmount, v)
 	return u
 }
 
@@ -1948,6 +2246,153 @@ func (u *PaymentOrderUpsertOne) AddFeeRate(v float64) *PaymentOrderUpsertOne {
 func (u *PaymentOrderUpsertOne) UpdateFeeRate() *PaymentOrderUpsertOne {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (u *PaymentOrderUpsertOne) SetRechargePrincipal(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargePrincipal(v)
+	})
+}
+
+// AddRechargePrincipal adds v to the "recharge_principal" field.
+func (u *PaymentOrderUpsertOne) AddRechargePrincipal(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRechargePrincipal(v)
+	})
+}
+
+// UpdateRechargePrincipal sets the "recharge_principal" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRechargePrincipal() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargePrincipal()
+	})
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (u *PaymentOrderUpsertOne) SetRechargeBonus(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonus(v)
+	})
+}
+
+// AddRechargeBonus adds v to the "recharge_bonus" field.
+func (u *PaymentOrderUpsertOne) AddRechargeBonus(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRechargeBonus(v)
+	})
+}
+
+// UpdateRechargeBonus sets the "recharge_bonus" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRechargeBonus() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonus()
+	})
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsertOne) SetRechargeBonusRuleID(v int64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonusRuleID(v)
+	})
+}
+
+// UpdateRechargeBonusRuleID sets the "recharge_bonus_rule_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRechargeBonusRuleID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonusRuleID()
+	})
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsertOne) ClearRechargeBonusRuleID() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearRechargeBonusRuleID()
+	})
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsertOne) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonusSnapshot(v)
+	})
+}
+
+// UpdateRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRechargeBonusSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonusSnapshot()
+	})
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsertOne) ClearRechargeBonusSnapshot() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearRechargeBonusSnapshot()
+	})
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsertOne) SetRefundedBonusAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedBonusAmount(v)
+	})
+}
+
+// AddRefundedBonusAmount adds v to the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsertOne) AddRefundedBonusAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedBonusAmount(v)
+	})
+}
+
+// UpdateRefundedBonusAmount sets the "refunded_bonus_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRefundedBonusAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedBonusAmount()
+	})
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsertOne) SetRefundedPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedPrincipalAmount(v)
+	})
+}
+
+// AddRefundedPrincipalAmount adds v to the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsertOne) AddRefundedPrincipalAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedPrincipalAmount(v)
+	})
+}
+
+// UpdateRefundedPrincipalAmount sets the "refunded_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRefundedPrincipalAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedPrincipalAmount()
+	})
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsertOne) SetRefundedGatewayAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedGatewayAmount(v)
+	})
+}
+
+// AddRefundedGatewayAmount adds v to the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsertOne) AddRefundedGatewayAmount(v float64) *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedGatewayAmount(v)
+	})
+}
+
+// UpdateRefundedGatewayAmount sets the "refunded_gateway_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertOne) UpdateRefundedGatewayAmount() *PaymentOrderUpsertOne {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedGatewayAmount()
 	})
 }
 
@@ -3006,6 +3451,153 @@ func (u *PaymentOrderUpsertBulk) AddFeeRate(v float64) *PaymentOrderUpsertBulk {
 func (u *PaymentOrderUpsertBulk) UpdateFeeRate() *PaymentOrderUpsertBulk {
 	return u.Update(func(s *PaymentOrderUpsert) {
 		s.UpdateFeeRate()
+	})
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (u *PaymentOrderUpsertBulk) SetRechargePrincipal(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargePrincipal(v)
+	})
+}
+
+// AddRechargePrincipal adds v to the "recharge_principal" field.
+func (u *PaymentOrderUpsertBulk) AddRechargePrincipal(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRechargePrincipal(v)
+	})
+}
+
+// UpdateRechargePrincipal sets the "recharge_principal" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRechargePrincipal() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargePrincipal()
+	})
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (u *PaymentOrderUpsertBulk) SetRechargeBonus(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonus(v)
+	})
+}
+
+// AddRechargeBonus adds v to the "recharge_bonus" field.
+func (u *PaymentOrderUpsertBulk) AddRechargeBonus(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRechargeBonus(v)
+	})
+}
+
+// UpdateRechargeBonus sets the "recharge_bonus" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRechargeBonus() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonus()
+	})
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsertBulk) SetRechargeBonusRuleID(v int64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonusRuleID(v)
+	})
+}
+
+// UpdateRechargeBonusRuleID sets the "recharge_bonus_rule_id" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRechargeBonusRuleID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonusRuleID()
+	})
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (u *PaymentOrderUpsertBulk) ClearRechargeBonusRuleID() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearRechargeBonusRuleID()
+	})
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsertBulk) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRechargeBonusSnapshot(v)
+	})
+}
+
+// UpdateRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRechargeBonusSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRechargeBonusSnapshot()
+	})
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (u *PaymentOrderUpsertBulk) ClearRechargeBonusSnapshot() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.ClearRechargeBonusSnapshot()
+	})
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsertBulk) SetRefundedBonusAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedBonusAmount(v)
+	})
+}
+
+// AddRefundedBonusAmount adds v to the "refunded_bonus_amount" field.
+func (u *PaymentOrderUpsertBulk) AddRefundedBonusAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedBonusAmount(v)
+	})
+}
+
+// UpdateRefundedBonusAmount sets the "refunded_bonus_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRefundedBonusAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedBonusAmount()
+	})
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) SetRefundedPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedPrincipalAmount(v)
+	})
+}
+
+// AddRefundedPrincipalAmount adds v to the "refunded_principal_amount" field.
+func (u *PaymentOrderUpsertBulk) AddRefundedPrincipalAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedPrincipalAmount(v)
+	})
+}
+
+// UpdateRefundedPrincipalAmount sets the "refunded_principal_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRefundedPrincipalAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedPrincipalAmount()
+	})
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsertBulk) SetRefundedGatewayAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.SetRefundedGatewayAmount(v)
+	})
+}
+
+// AddRefundedGatewayAmount adds v to the "refunded_gateway_amount" field.
+func (u *PaymentOrderUpsertBulk) AddRefundedGatewayAmount(v float64) *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.AddRefundedGatewayAmount(v)
+	})
+}
+
+// UpdateRefundedGatewayAmount sets the "refunded_gateway_amount" field to the value that was provided on create.
+func (u *PaymentOrderUpsertBulk) UpdateRefundedGatewayAmount() *PaymentOrderUpsertBulk {
+	return u.Update(func(s *PaymentOrderUpsert) {
+		s.UpdateRefundedGatewayAmount()
 	})
 }
 

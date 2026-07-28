@@ -31,17 +31,18 @@ func RegisterPaymentRoutes(
 		authenticated.GET("/channels", paymentHandler.GetChannels)
 		authenticated.GET("/limits", paymentHandler.GetLimits)
 		authenticated.POST("/subscription/preview", paymentHandler.PreviewSubscriptionOrder)
+		authenticated.POST("/recharge/preview", paymentHandler.PreviewRecharge)
 
 		orders := authenticated.Group("/orders")
 		{
 			orders.POST("", paymentHandler.CreateOrder)
 			orders.POST("/verify", paymentHandler.VerifyOrder)
 			orders.GET("/my", paymentHandler.GetMyOrders)
+			orders.GET("/refund-eligible-providers", paymentHandler.GetRefundEligibleProviders)
 			orders.GET("/:id", paymentHandler.GetOrder)
 			orders.POST("/:id/cancel", paymentHandler.CancelOrder)
 			orders.POST("/:id/refund-preview", paymentHandler.PreviewRefund)
 			orders.POST("/:id/refund-request", paymentHandler.RequestRefund)
-			orders.GET("/refund-eligible-providers", paymentHandler.GetRefundEligibleProviders)
 		}
 	}
 
@@ -97,6 +98,14 @@ func RegisterPaymentRoutes(
 			plans.POST("", adminPaymentHandler.CreatePlan)
 			plans.PUT("/:id", adminPaymentHandler.UpdatePlan)
 			plans.DELETE("/:id", adminPaymentHandler.DeletePlan)
+		}
+
+		bonusRules := adminGroup.Group("/recharge-bonus-rules")
+		{
+			bonusRules.GET("", adminPaymentHandler.ListRechargeBonusRules)
+			bonusRules.POST("", adminPaymentHandler.CreateRechargeBonusRule)
+			bonusRules.PUT("/:id", adminPaymentHandler.UpdateRechargeBonusRule)
+			bonusRules.DELETE("/:id", adminPaymentHandler.DeleteRechargeBonusRule)
 		}
 
 		// Provider Instances

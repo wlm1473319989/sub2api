@@ -11,7 +11,9 @@ import type {
   SubscriptionPlan,
   ProviderInstance,
   RefundPreview,
-  RefundResult
+	RefundResult,
+	RechargeBonusRule,
+	RechargeBonusRulePayload,
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
 
@@ -82,6 +84,24 @@ export const adminPaymentAPI = {
   updateConfig(data: UpdatePaymentConfigRequest) {
     return apiClient.put('/admin/payment/config', data)
   },
+
+	// ==================== Recharge Promotions ====================
+
+	listRechargeBonusRules() {
+		return apiClient.get<RechargeBonusRule[]>('/admin/payment/recharge-bonus-rules')
+	},
+
+	createRechargeBonusRule(data: RechargeBonusRulePayload) {
+		return apiClient.post<RechargeBonusRule>('/admin/payment/recharge-bonus-rules', data)
+	},
+
+	updateRechargeBonusRule(id: number, data: RechargeBonusRulePayload) {
+		return apiClient.put<RechargeBonusRule>(`/admin/payment/recharge-bonus-rules/${id}`, data)
+	},
+
+	deleteRechargeBonusRule(id: number) {
+		return apiClient.delete(`/admin/payment/recharge-bonus-rules/${id}`)
+	},
 
   // ==================== Dashboard ====================
 

@@ -47,6 +47,15 @@ describe('payment api', () => {
     })
   })
 
+	it('posts to the signed recharge preview endpoint', async () => {
+		await paymentAPI.previewRecharge(100, 'wxpay')
+
+		expect(post).toHaveBeenCalledWith('/payment/recharge/preview', {
+			amount: 100,
+			payment_type: 'wxpay',
+		})
+	})
+
   it('posts refund preview request body to legacy order endpoint', async () => {
     await paymentAPI.previewRefund(12, { reason: 'changed mind' })
 

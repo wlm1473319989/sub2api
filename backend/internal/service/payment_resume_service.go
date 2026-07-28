@@ -35,12 +35,14 @@ const (
 	VisibleMethodSourceEasyPayWechat  = "easypay_wxpay"
 
 	wechatPaymentResumeTokenType = "wechat_payment_resume"
+	rechargeQuoteTokenType       = "recharge_quote"
 
 	paymentResumeNotConfiguredCode    = "PAYMENT_RESUME_NOT_CONFIGURED"
 	paymentResumeNotConfiguredMessage = "payment resume tokens require a configured signing key"
 
 	paymentResumeTokenTTL       = 24 * time.Hour
 	wechatPaymentResumeTokenTTL = 15 * time.Minute
+	rechargeQuoteTokenTTL       = 5 * time.Minute
 )
 
 type ResumeTokenClaims struct {
@@ -61,10 +63,27 @@ type WeChatPaymentResumeClaims struct {
 	Amount      string `json:"amt,omitempty"`
 	OrderType   string `json:"ot,omitempty"`
 	PlanID      int64  `json:"pid,omitempty"`
+	QuoteToken  string `json:"qt,omitempty"`
 	RedirectTo  string `json:"rd,omitempty"`
 	Scope       string `json:"scp,omitempty"`
 	IssuedAt    int64  `json:"iat"`
 	ExpiresAt   int64  `json:"exp,omitempty"`
+}
+
+type RechargeQuoteClaims struct {
+	TokenType      string `json:"tk,omitempty"`
+	PaymentType    string `json:"pt"`
+	Principal      string `json:"p"`
+	Bonus          string `json:"b"`
+	CreditedAmount string `json:"c"`
+	PayAmount      string `json:"pa"`
+	FeeRate        string `json:"fr"`
+	Currency       string `json:"cur"`
+	Source         string `json:"src"`
+	RuleID         int64  `json:"rid,omitempty"`
+	RuleVersion    string `json:"rv,omitempty"`
+	IssuedAt       int64  `json:"iat"`
+	ExpiresAt      int64  `json:"exp"`
 }
 
 type PaymentResumeService struct {
@@ -415,6 +434,31 @@ func (s *PaymentResumeService) ParseWeChatPaymentResumeToken(token string) (*WeC
 	}
 	if claims.OrderType == "" {
 		claims.OrderType = payment.OrderTypeBalance
+	}
+	return &claims, nil
+}
+
+func (s *PaymentResumeService) CreateRechargeQuoteToken(claims RechargeQuoteClaims) (string, error) {
+	if err := s.ensureSigningKey(); err != nil {
+		return "", err
+	}
+	now := time.Now()
+	claims.TokenType = rechargeQuoteTokenType
+	claims.IssuedAt = now.Unix()
+	claims.ExpiresAt = now.Add(rechargeQuoteTokenTTL).Unix()
+	return s.createSignedToken(claims)
+}
+
+func (s *PaymentResumeService) ParseRechargeQuoteToken(token string) (*RechargeQuoteClaims, error) {
+	if err := s.ensureSigningKey(); err != nil {
+		return nil, err
+	}
+	var claims RechargeQuoteClaims
+	if err := s.parseSignedToken(strings.TrimSpace(token), &claims); err != nil || claims.TokenType != rechargeQuoteTokenType {
+		return nil, infraerrors.Conflict("RECHARGE_QUOTE_CHANGED", "recharge quote is invalid; refresh the quote")
+	}
+	if err := validatePaymentResumeExpiry(claims.ExpiresAt, "RECHARGE_QUOTE_CHANGED", "recharge quote has expired; refresh the quote"); err != nil {
+		return nil, infraerrors.Conflict("RECHARGE_QUOTE_CHANGED", "recharge quote has expired; refresh the quote")
 	}
 	return &claims, nil
 }

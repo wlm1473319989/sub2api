@@ -35,6 +35,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rechargebonusrule"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -85,6 +86,7 @@ const (
 	TypePromoCode                     = "PromoCode"
 	TypePromoCodeUsage                = "PromoCodeUsage"
 	TypeProxy                         = "Proxy"
+	TypeRechargeBonusRule             = "RechargeBonusRule"
 	TypeRedeemCode                    = "RedeemCode"
 	TypeSecuritySecret                = "SecuritySecret"
 	TypeSetting                       = "Setting"
@@ -20531,6 +20533,17 @@ type PaymentOrderMutation struct {
 	addpay_amount                                 *float64
 	fee_rate                                      *float64
 	addfee_rate                                   *float64
+	recharge_principal                            *float64
+	addrecharge_principal                         *float64
+	recharge_bonus                                *float64
+	addrecharge_bonus                             *float64
+	recharge_bonus_snapshot                       *map[string]interface{}
+	refunded_bonus_amount                         *float64
+	addrefunded_bonus_amount                      *float64
+	refunded_principal_amount                     *float64
+	addrefunded_principal_amount                  *float64
+	refunded_gateway_amount                       *float64
+	addrefunded_gateway_amount                    *float64
 	recharge_code                                 *string
 	out_trade_no                                  *string
 	payment_type                                  *string
@@ -20581,6 +20594,8 @@ type PaymentOrderMutation struct {
 	subscription_refund_allocations               map[int64]struct{}
 	removedsubscription_refund_allocations        map[int64]struct{}
 	clearedsubscription_refund_allocations        bool
+	recharge_bonus_rule                           *int64
+	clearedrecharge_bonus_rule                    bool
 	done                                          bool
 	oldValue                                      func(context.Context) (*PaymentOrder, error)
 	predicates                                    []predicate.PaymentOrder
@@ -21007,6 +21022,384 @@ func (m *PaymentOrderMutation) AddedFeeRate() (r float64, exists bool) {
 func (m *PaymentOrderMutation) ResetFeeRate() {
 	m.fee_rate = nil
 	m.addfee_rate = nil
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (m *PaymentOrderMutation) SetRechargePrincipal(f float64) {
+	m.recharge_principal = &f
+	m.addrecharge_principal = nil
+}
+
+// RechargePrincipal returns the value of the "recharge_principal" field in the mutation.
+func (m *PaymentOrderMutation) RechargePrincipal() (r float64, exists bool) {
+	v := m.recharge_principal
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRechargePrincipal returns the old "recharge_principal" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRechargePrincipal(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRechargePrincipal is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRechargePrincipal requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRechargePrincipal: %w", err)
+	}
+	return oldValue.RechargePrincipal, nil
+}
+
+// AddRechargePrincipal adds f to the "recharge_principal" field.
+func (m *PaymentOrderMutation) AddRechargePrincipal(f float64) {
+	if m.addrecharge_principal != nil {
+		*m.addrecharge_principal += f
+	} else {
+		m.addrecharge_principal = &f
+	}
+}
+
+// AddedRechargePrincipal returns the value that was added to the "recharge_principal" field in this mutation.
+func (m *PaymentOrderMutation) AddedRechargePrincipal() (r float64, exists bool) {
+	v := m.addrecharge_principal
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRechargePrincipal resets all changes to the "recharge_principal" field.
+func (m *PaymentOrderMutation) ResetRechargePrincipal() {
+	m.recharge_principal = nil
+	m.addrecharge_principal = nil
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (m *PaymentOrderMutation) SetRechargeBonus(f float64) {
+	m.recharge_bonus = &f
+	m.addrecharge_bonus = nil
+}
+
+// RechargeBonus returns the value of the "recharge_bonus" field in the mutation.
+func (m *PaymentOrderMutation) RechargeBonus() (r float64, exists bool) {
+	v := m.recharge_bonus
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRechargeBonus returns the old "recharge_bonus" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRechargeBonus(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRechargeBonus is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRechargeBonus requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRechargeBonus: %w", err)
+	}
+	return oldValue.RechargeBonus, nil
+}
+
+// AddRechargeBonus adds f to the "recharge_bonus" field.
+func (m *PaymentOrderMutation) AddRechargeBonus(f float64) {
+	if m.addrecharge_bonus != nil {
+		*m.addrecharge_bonus += f
+	} else {
+		m.addrecharge_bonus = &f
+	}
+}
+
+// AddedRechargeBonus returns the value that was added to the "recharge_bonus" field in this mutation.
+func (m *PaymentOrderMutation) AddedRechargeBonus() (r float64, exists bool) {
+	v := m.addrecharge_bonus
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRechargeBonus resets all changes to the "recharge_bonus" field.
+func (m *PaymentOrderMutation) ResetRechargeBonus() {
+	m.recharge_bonus = nil
+	m.addrecharge_bonus = nil
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (m *PaymentOrderMutation) SetRechargeBonusRuleID(i int64) {
+	m.recharge_bonus_rule = &i
+}
+
+// RechargeBonusRuleID returns the value of the "recharge_bonus_rule_id" field in the mutation.
+func (m *PaymentOrderMutation) RechargeBonusRuleID() (r int64, exists bool) {
+	v := m.recharge_bonus_rule
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRechargeBonusRuleID returns the old "recharge_bonus_rule_id" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRechargeBonusRuleID(ctx context.Context) (v *int64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRechargeBonusRuleID is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRechargeBonusRuleID requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRechargeBonusRuleID: %w", err)
+	}
+	return oldValue.RechargeBonusRuleID, nil
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (m *PaymentOrderMutation) ClearRechargeBonusRuleID() {
+	m.recharge_bonus_rule = nil
+	m.clearedFields[paymentorder.FieldRechargeBonusRuleID] = struct{}{}
+}
+
+// RechargeBonusRuleIDCleared returns if the "recharge_bonus_rule_id" field was cleared in this mutation.
+func (m *PaymentOrderMutation) RechargeBonusRuleIDCleared() bool {
+	_, ok := m.clearedFields[paymentorder.FieldRechargeBonusRuleID]
+	return ok
+}
+
+// ResetRechargeBonusRuleID resets all changes to the "recharge_bonus_rule_id" field.
+func (m *PaymentOrderMutation) ResetRechargeBonusRuleID() {
+	m.recharge_bonus_rule = nil
+	delete(m.clearedFields, paymentorder.FieldRechargeBonusRuleID)
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (m *PaymentOrderMutation) SetRechargeBonusSnapshot(value map[string]interface{}) {
+	m.recharge_bonus_snapshot = &value
+}
+
+// RechargeBonusSnapshot returns the value of the "recharge_bonus_snapshot" field in the mutation.
+func (m *PaymentOrderMutation) RechargeBonusSnapshot() (r map[string]interface{}, exists bool) {
+	v := m.recharge_bonus_snapshot
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRechargeBonusSnapshot returns the old "recharge_bonus_snapshot" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRechargeBonusSnapshot(ctx context.Context) (v map[string]interface{}, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRechargeBonusSnapshot is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRechargeBonusSnapshot requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRechargeBonusSnapshot: %w", err)
+	}
+	return oldValue.RechargeBonusSnapshot, nil
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (m *PaymentOrderMutation) ClearRechargeBonusSnapshot() {
+	m.recharge_bonus_snapshot = nil
+	m.clearedFields[paymentorder.FieldRechargeBonusSnapshot] = struct{}{}
+}
+
+// RechargeBonusSnapshotCleared returns if the "recharge_bonus_snapshot" field was cleared in this mutation.
+func (m *PaymentOrderMutation) RechargeBonusSnapshotCleared() bool {
+	_, ok := m.clearedFields[paymentorder.FieldRechargeBonusSnapshot]
+	return ok
+}
+
+// ResetRechargeBonusSnapshot resets all changes to the "recharge_bonus_snapshot" field.
+func (m *PaymentOrderMutation) ResetRechargeBonusSnapshot() {
+	m.recharge_bonus_snapshot = nil
+	delete(m.clearedFields, paymentorder.FieldRechargeBonusSnapshot)
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (m *PaymentOrderMutation) SetRefundedBonusAmount(f float64) {
+	m.refunded_bonus_amount = &f
+	m.addrefunded_bonus_amount = nil
+}
+
+// RefundedBonusAmount returns the value of the "refunded_bonus_amount" field in the mutation.
+func (m *PaymentOrderMutation) RefundedBonusAmount() (r float64, exists bool) {
+	v := m.refunded_bonus_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundedBonusAmount returns the old "refunded_bonus_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRefundedBonusAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundedBonusAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundedBonusAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundedBonusAmount: %w", err)
+	}
+	return oldValue.RefundedBonusAmount, nil
+}
+
+// AddRefundedBonusAmount adds f to the "refunded_bonus_amount" field.
+func (m *PaymentOrderMutation) AddRefundedBonusAmount(f float64) {
+	if m.addrefunded_bonus_amount != nil {
+		*m.addrefunded_bonus_amount += f
+	} else {
+		m.addrefunded_bonus_amount = &f
+	}
+}
+
+// AddedRefundedBonusAmount returns the value that was added to the "refunded_bonus_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedRefundedBonusAmount() (r float64, exists bool) {
+	v := m.addrefunded_bonus_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRefundedBonusAmount resets all changes to the "refunded_bonus_amount" field.
+func (m *PaymentOrderMutation) ResetRefundedBonusAmount() {
+	m.refunded_bonus_amount = nil
+	m.addrefunded_bonus_amount = nil
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (m *PaymentOrderMutation) SetRefundedPrincipalAmount(f float64) {
+	m.refunded_principal_amount = &f
+	m.addrefunded_principal_amount = nil
+}
+
+// RefundedPrincipalAmount returns the value of the "refunded_principal_amount" field in the mutation.
+func (m *PaymentOrderMutation) RefundedPrincipalAmount() (r float64, exists bool) {
+	v := m.refunded_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundedPrincipalAmount returns the old "refunded_principal_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRefundedPrincipalAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundedPrincipalAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundedPrincipalAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundedPrincipalAmount: %w", err)
+	}
+	return oldValue.RefundedPrincipalAmount, nil
+}
+
+// AddRefundedPrincipalAmount adds f to the "refunded_principal_amount" field.
+func (m *PaymentOrderMutation) AddRefundedPrincipalAmount(f float64) {
+	if m.addrefunded_principal_amount != nil {
+		*m.addrefunded_principal_amount += f
+	} else {
+		m.addrefunded_principal_amount = &f
+	}
+}
+
+// AddedRefundedPrincipalAmount returns the value that was added to the "refunded_principal_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedRefundedPrincipalAmount() (r float64, exists bool) {
+	v := m.addrefunded_principal_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRefundedPrincipalAmount resets all changes to the "refunded_principal_amount" field.
+func (m *PaymentOrderMutation) ResetRefundedPrincipalAmount() {
+	m.refunded_principal_amount = nil
+	m.addrefunded_principal_amount = nil
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (m *PaymentOrderMutation) SetRefundedGatewayAmount(f float64) {
+	m.refunded_gateway_amount = &f
+	m.addrefunded_gateway_amount = nil
+}
+
+// RefundedGatewayAmount returns the value of the "refunded_gateway_amount" field in the mutation.
+func (m *PaymentOrderMutation) RefundedGatewayAmount() (r float64, exists bool) {
+	v := m.refunded_gateway_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundedGatewayAmount returns the old "refunded_gateway_amount" field's value of the PaymentOrder entity.
+// If the PaymentOrder object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *PaymentOrderMutation) OldRefundedGatewayAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundedGatewayAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundedGatewayAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundedGatewayAmount: %w", err)
+	}
+	return oldValue.RefundedGatewayAmount, nil
+}
+
+// AddRefundedGatewayAmount adds f to the "refunded_gateway_amount" field.
+func (m *PaymentOrderMutation) AddRefundedGatewayAmount(f float64) {
+	if m.addrefunded_gateway_amount != nil {
+		*m.addrefunded_gateway_amount += f
+	} else {
+		m.addrefunded_gateway_amount = &f
+	}
+}
+
+// AddedRefundedGatewayAmount returns the value that was added to the "refunded_gateway_amount" field in this mutation.
+func (m *PaymentOrderMutation) AddedRefundedGatewayAmount() (r float64, exists bool) {
+	v := m.addrefunded_gateway_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRefundedGatewayAmount resets all changes to the "refunded_gateway_amount" field.
+func (m *PaymentOrderMutation) ResetRefundedGatewayAmount() {
+	m.refunded_gateway_amount = nil
+	m.addrefunded_gateway_amount = nil
 }
 
 // SetRechargeCode sets the "recharge_code" field.
@@ -22880,6 +23273,33 @@ func (m *PaymentOrderMutation) ResetSubscriptionRefundAllocations() {
 	m.removedsubscription_refund_allocations = nil
 }
 
+// ClearRechargeBonusRule clears the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (m *PaymentOrderMutation) ClearRechargeBonusRule() {
+	m.clearedrecharge_bonus_rule = true
+	m.clearedFields[paymentorder.FieldRechargeBonusRuleID] = struct{}{}
+}
+
+// RechargeBonusRuleCleared reports if the "recharge_bonus_rule" edge to the RechargeBonusRule entity was cleared.
+func (m *PaymentOrderMutation) RechargeBonusRuleCleared() bool {
+	return m.RechargeBonusRuleIDCleared() || m.clearedrecharge_bonus_rule
+}
+
+// RechargeBonusRuleIDs returns the "recharge_bonus_rule" edge IDs in the mutation.
+// Note that IDs always returns len(IDs) <= 1 for unique edges, and you should use
+// RechargeBonusRuleID instead. It exists only for internal usage by the builders.
+func (m *PaymentOrderMutation) RechargeBonusRuleIDs() (ids []int64) {
+	if id := m.recharge_bonus_rule; id != nil {
+		ids = append(ids, *id)
+	}
+	return
+}
+
+// ResetRechargeBonusRule resets all changes to the "recharge_bonus_rule" edge.
+func (m *PaymentOrderMutation) ResetRechargeBonusRule() {
+	m.recharge_bonus_rule = nil
+	m.clearedrecharge_bonus_rule = false
+}
+
 // Where appends a list predicates to the PaymentOrderMutation builder.
 func (m *PaymentOrderMutation) Where(ps ...predicate.PaymentOrder) {
 	m.predicates = append(m.predicates, ps...)
@@ -22914,7 +23334,7 @@ func (m *PaymentOrderMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *PaymentOrderMutation) Fields() []string {
-	fields := make([]string, 0, 44)
+	fields := make([]string, 0, 51)
 	if m.user != nil {
 		fields = append(fields, paymentorder.FieldUserID)
 	}
@@ -22935,6 +23355,27 @@ func (m *PaymentOrderMutation) Fields() []string {
 	}
 	if m.fee_rate != nil {
 		fields = append(fields, paymentorder.FieldFeeRate)
+	}
+	if m.recharge_principal != nil {
+		fields = append(fields, paymentorder.FieldRechargePrincipal)
+	}
+	if m.recharge_bonus != nil {
+		fields = append(fields, paymentorder.FieldRechargeBonus)
+	}
+	if m.recharge_bonus_rule != nil {
+		fields = append(fields, paymentorder.FieldRechargeBonusRuleID)
+	}
+	if m.recharge_bonus_snapshot != nil {
+		fields = append(fields, paymentorder.FieldRechargeBonusSnapshot)
+	}
+	if m.refunded_bonus_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedBonusAmount)
+	}
+	if m.refunded_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedPrincipalAmount)
+	}
+	if m.refunded_gateway_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedGatewayAmount)
 	}
 	if m.recharge_code != nil {
 		fields = append(fields, paymentorder.FieldRechargeCode)
@@ -23069,6 +23510,20 @@ func (m *PaymentOrderMutation) Field(name string) (ent.Value, bool) {
 		return m.PayAmount()
 	case paymentorder.FieldFeeRate:
 		return m.FeeRate()
+	case paymentorder.FieldRechargePrincipal:
+		return m.RechargePrincipal()
+	case paymentorder.FieldRechargeBonus:
+		return m.RechargeBonus()
+	case paymentorder.FieldRechargeBonusRuleID:
+		return m.RechargeBonusRuleID()
+	case paymentorder.FieldRechargeBonusSnapshot:
+		return m.RechargeBonusSnapshot()
+	case paymentorder.FieldRefundedBonusAmount:
+		return m.RefundedBonusAmount()
+	case paymentorder.FieldRefundedPrincipalAmount:
+		return m.RefundedPrincipalAmount()
+	case paymentorder.FieldRefundedGatewayAmount:
+		return m.RefundedGatewayAmount()
 	case paymentorder.FieldRechargeCode:
 		return m.RechargeCode()
 	case paymentorder.FieldOutTradeNo:
@@ -23166,6 +23621,20 @@ func (m *PaymentOrderMutation) OldField(ctx context.Context, name string) (ent.V
 		return m.OldPayAmount(ctx)
 	case paymentorder.FieldFeeRate:
 		return m.OldFeeRate(ctx)
+	case paymentorder.FieldRechargePrincipal:
+		return m.OldRechargePrincipal(ctx)
+	case paymentorder.FieldRechargeBonus:
+		return m.OldRechargeBonus(ctx)
+	case paymentorder.FieldRechargeBonusRuleID:
+		return m.OldRechargeBonusRuleID(ctx)
+	case paymentorder.FieldRechargeBonusSnapshot:
+		return m.OldRechargeBonusSnapshot(ctx)
+	case paymentorder.FieldRefundedBonusAmount:
+		return m.OldRefundedBonusAmount(ctx)
+	case paymentorder.FieldRefundedPrincipalAmount:
+		return m.OldRefundedPrincipalAmount(ctx)
+	case paymentorder.FieldRefundedGatewayAmount:
+		return m.OldRefundedGatewayAmount(ctx)
 	case paymentorder.FieldRechargeCode:
 		return m.OldRechargeCode(ctx)
 	case paymentorder.FieldOutTradeNo:
@@ -23297,6 +23766,55 @@ func (m *PaymentOrderMutation) SetField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetFeeRate(v)
+		return nil
+	case paymentorder.FieldRechargePrincipal:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRechargePrincipal(v)
+		return nil
+	case paymentorder.FieldRechargeBonus:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRechargeBonus(v)
+		return nil
+	case paymentorder.FieldRechargeBonusRuleID:
+		v, ok := value.(int64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRechargeBonusRuleID(v)
+		return nil
+	case paymentorder.FieldRechargeBonusSnapshot:
+		v, ok := value.(map[string]interface{})
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRechargeBonusSnapshot(v)
+		return nil
+	case paymentorder.FieldRefundedBonusAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundedBonusAmount(v)
+		return nil
+	case paymentorder.FieldRefundedPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundedPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldRefundedGatewayAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundedGatewayAmount(v)
 		return nil
 	case paymentorder.FieldRechargeCode:
 		v, ok := value.(string)
@@ -23574,6 +24092,21 @@ func (m *PaymentOrderMutation) AddedFields() []string {
 	if m.addfee_rate != nil {
 		fields = append(fields, paymentorder.FieldFeeRate)
 	}
+	if m.addrecharge_principal != nil {
+		fields = append(fields, paymentorder.FieldRechargePrincipal)
+	}
+	if m.addrecharge_bonus != nil {
+		fields = append(fields, paymentorder.FieldRechargeBonus)
+	}
+	if m.addrefunded_bonus_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedBonusAmount)
+	}
+	if m.addrefunded_principal_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedPrincipalAmount)
+	}
+	if m.addrefunded_gateway_amount != nil {
+		fields = append(fields, paymentorder.FieldRefundedGatewayAmount)
+	}
 	if m.addplan_id != nil {
 		fields = append(fields, paymentorder.FieldPlanID)
 	}
@@ -23609,6 +24142,16 @@ func (m *PaymentOrderMutation) AddedField(name string) (ent.Value, bool) {
 		return m.AddedPayAmount()
 	case paymentorder.FieldFeeRate:
 		return m.AddedFeeRate()
+	case paymentorder.FieldRechargePrincipal:
+		return m.AddedRechargePrincipal()
+	case paymentorder.FieldRechargeBonus:
+		return m.AddedRechargeBonus()
+	case paymentorder.FieldRefundedBonusAmount:
+		return m.AddedRefundedBonusAmount()
+	case paymentorder.FieldRefundedPrincipalAmount:
+		return m.AddedRefundedPrincipalAmount()
+	case paymentorder.FieldRefundedGatewayAmount:
+		return m.AddedRefundedGatewayAmount()
 	case paymentorder.FieldPlanID:
 		return m.AddedPlanID()
 	case paymentorder.FieldSubscriptionPlanPriceSnapshot:
@@ -23652,6 +24195,41 @@ func (m *PaymentOrderMutation) AddField(name string, value ent.Value) error {
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddFeeRate(v)
+		return nil
+	case paymentorder.FieldRechargePrincipal:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRechargePrincipal(v)
+		return nil
+	case paymentorder.FieldRechargeBonus:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRechargeBonus(v)
+		return nil
+	case paymentorder.FieldRefundedBonusAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundedBonusAmount(v)
+		return nil
+	case paymentorder.FieldRefundedPrincipalAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundedPrincipalAmount(v)
+		return nil
+	case paymentorder.FieldRefundedGatewayAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundedGatewayAmount(v)
 		return nil
 	case paymentorder.FieldPlanID:
 		v, ok := value.(int64)
@@ -23712,6 +24290,12 @@ func (m *PaymentOrderMutation) ClearedFields() []string {
 	var fields []string
 	if m.FieldCleared(paymentorder.FieldUserNotes) {
 		fields = append(fields, paymentorder.FieldUserNotes)
+	}
+	if m.FieldCleared(paymentorder.FieldRechargeBonusRuleID) {
+		fields = append(fields, paymentorder.FieldRechargeBonusRuleID)
+	}
+	if m.FieldCleared(paymentorder.FieldRechargeBonusSnapshot) {
+		fields = append(fields, paymentorder.FieldRechargeBonusSnapshot)
 	}
 	if m.FieldCleared(paymentorder.FieldPayURL) {
 		fields = append(fields, paymentorder.FieldPayURL)
@@ -23801,6 +24385,12 @@ func (m *PaymentOrderMutation) ClearField(name string) error {
 	switch name {
 	case paymentorder.FieldUserNotes:
 		m.ClearUserNotes()
+		return nil
+	case paymentorder.FieldRechargeBonusRuleID:
+		m.ClearRechargeBonusRuleID()
+		return nil
+	case paymentorder.FieldRechargeBonusSnapshot:
+		m.ClearRechargeBonusSnapshot()
 		return nil
 	case paymentorder.FieldPayURL:
 		m.ClearPayURL()
@@ -23902,6 +24492,27 @@ func (m *PaymentOrderMutation) ResetField(name string) error {
 		return nil
 	case paymentorder.FieldFeeRate:
 		m.ResetFeeRate()
+		return nil
+	case paymentorder.FieldRechargePrincipal:
+		m.ResetRechargePrincipal()
+		return nil
+	case paymentorder.FieldRechargeBonus:
+		m.ResetRechargeBonus()
+		return nil
+	case paymentorder.FieldRechargeBonusRuleID:
+		m.ResetRechargeBonusRuleID()
+		return nil
+	case paymentorder.FieldRechargeBonusSnapshot:
+		m.ResetRechargeBonusSnapshot()
+		return nil
+	case paymentorder.FieldRefundedBonusAmount:
+		m.ResetRefundedBonusAmount()
+		return nil
+	case paymentorder.FieldRefundedPrincipalAmount:
+		m.ResetRefundedPrincipalAmount()
+		return nil
+	case paymentorder.FieldRefundedGatewayAmount:
+		m.ResetRefundedGatewayAmount()
 		return nil
 	case paymentorder.FieldRechargeCode:
 		m.ResetRechargeCode()
@@ -24020,12 +24631,15 @@ func (m *PaymentOrderMutation) ResetField(name string) error {
 
 // AddedEdges returns all edge names that were set/added in this mutation.
 func (m *PaymentOrderMutation) AddedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.user != nil {
 		edges = append(edges, paymentorder.EdgeUser)
 	}
 	if m.subscription_refund_allocations != nil {
 		edges = append(edges, paymentorder.EdgeSubscriptionRefundAllocations)
+	}
+	if m.recharge_bonus_rule != nil {
+		edges = append(edges, paymentorder.EdgeRechargeBonusRule)
 	}
 	return edges
 }
@@ -24044,13 +24658,17 @@ func (m *PaymentOrderMutation) AddedIDs(name string) []ent.Value {
 			ids = append(ids, id)
 		}
 		return ids
+	case paymentorder.EdgeRechargeBonusRule:
+		if id := m.recharge_bonus_rule; id != nil {
+			return []ent.Value{*id}
+		}
 	}
 	return nil
 }
 
 // RemovedEdges returns all edge names that were removed in this mutation.
 func (m *PaymentOrderMutation) RemovedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.removedsubscription_refund_allocations != nil {
 		edges = append(edges, paymentorder.EdgeSubscriptionRefundAllocations)
 	}
@@ -24073,12 +24691,15 @@ func (m *PaymentOrderMutation) RemovedIDs(name string) []ent.Value {
 
 // ClearedEdges returns all edge names that were cleared in this mutation.
 func (m *PaymentOrderMutation) ClearedEdges() []string {
-	edges := make([]string, 0, 2)
+	edges := make([]string, 0, 3)
 	if m.cleareduser {
 		edges = append(edges, paymentorder.EdgeUser)
 	}
 	if m.clearedsubscription_refund_allocations {
 		edges = append(edges, paymentorder.EdgeSubscriptionRefundAllocations)
+	}
+	if m.clearedrecharge_bonus_rule {
+		edges = append(edges, paymentorder.EdgeRechargeBonusRule)
 	}
 	return edges
 }
@@ -24091,6 +24712,8 @@ func (m *PaymentOrderMutation) EdgeCleared(name string) bool {
 		return m.cleareduser
 	case paymentorder.EdgeSubscriptionRefundAllocations:
 		return m.clearedsubscription_refund_allocations
+	case paymentorder.EdgeRechargeBonusRule:
+		return m.clearedrecharge_bonus_rule
 	}
 	return false
 }
@@ -24101,6 +24724,9 @@ func (m *PaymentOrderMutation) ClearEdge(name string) error {
 	switch name {
 	case paymentorder.EdgeUser:
 		m.ClearUser()
+		return nil
+	case paymentorder.EdgeRechargeBonusRule:
+		m.ClearRechargeBonusRule()
 		return nil
 	}
 	return fmt.Errorf("unknown PaymentOrder unique edge %s", name)
@@ -24115,6 +24741,9 @@ func (m *PaymentOrderMutation) ResetEdge(name string) error {
 		return nil
 	case paymentorder.EdgeSubscriptionRefundAllocations:
 		m.ResetSubscriptionRefundAllocations()
+		return nil
+	case paymentorder.EdgeRechargeBonusRule:
+		m.ResetRechargeBonusRule()
 		return nil
 	}
 	return fmt.Errorf("unknown PaymentOrder edge %s", name)
@@ -29758,6 +30387,1234 @@ func (m *ProxyMutation) ResetEdge(name string) error {
 		return nil
 	}
 	return fmt.Errorf("unknown Proxy edge %s", name)
+}
+
+// RechargeBonusRuleMutation represents an operation that mutates the RechargeBonusRule nodes in the graph.
+type RechargeBonusRuleMutation struct {
+	config
+	op                    Op
+	typ                   string
+	id                    *int64
+	name                  *string
+	enabled               *bool
+	priority              *int
+	addpriority           *int
+	min_amount            *float64
+	addmin_amount         *float64
+	max_amount            *float64
+	addmax_amount         *float64
+	bonus_type            *string
+	bonus_value           *float64
+	addbonus_value        *float64
+	starts_at             *time.Time
+	ends_at               *time.Time
+	notes                 *string
+	created_at            *time.Time
+	updated_at            *time.Time
+	clearedFields         map[string]struct{}
+	payment_orders        map[int64]struct{}
+	removedpayment_orders map[int64]struct{}
+	clearedpayment_orders bool
+	done                  bool
+	oldValue              func(context.Context) (*RechargeBonusRule, error)
+	predicates            []predicate.RechargeBonusRule
+}
+
+var _ ent.Mutation = (*RechargeBonusRuleMutation)(nil)
+
+// rechargebonusruleOption allows management of the mutation configuration using functional options.
+type rechargebonusruleOption func(*RechargeBonusRuleMutation)
+
+// newRechargeBonusRuleMutation creates new mutation for the RechargeBonusRule entity.
+func newRechargeBonusRuleMutation(c config, op Op, opts ...rechargebonusruleOption) *RechargeBonusRuleMutation {
+	m := &RechargeBonusRuleMutation{
+		config:        c,
+		op:            op,
+		typ:           TypeRechargeBonusRule,
+		clearedFields: make(map[string]struct{}),
+	}
+	for _, opt := range opts {
+		opt(m)
+	}
+	return m
+}
+
+// withRechargeBonusRuleID sets the ID field of the mutation.
+func withRechargeBonusRuleID(id int64) rechargebonusruleOption {
+	return func(m *RechargeBonusRuleMutation) {
+		var (
+			err   error
+			once  sync.Once
+			value *RechargeBonusRule
+		)
+		m.oldValue = func(ctx context.Context) (*RechargeBonusRule, error) {
+			once.Do(func() {
+				if m.done {
+					err = errors.New("querying old values post mutation is not allowed")
+				} else {
+					value, err = m.Client().RechargeBonusRule.Get(ctx, id)
+				}
+			})
+			return value, err
+		}
+		m.id = &id
+	}
+}
+
+// withRechargeBonusRule sets the old RechargeBonusRule of the mutation.
+func withRechargeBonusRule(node *RechargeBonusRule) rechargebonusruleOption {
+	return func(m *RechargeBonusRuleMutation) {
+		m.oldValue = func(context.Context) (*RechargeBonusRule, error) {
+			return node, nil
+		}
+		m.id = &node.ID
+	}
+}
+
+// Client returns a new `ent.Client` from the mutation. If the mutation was
+// executed in a transaction (ent.Tx), a transactional client is returned.
+func (m RechargeBonusRuleMutation) Client() *Client {
+	client := &Client{config: m.config}
+	client.init()
+	return client
+}
+
+// Tx returns an `ent.Tx` for mutations that were executed in transactions;
+// it returns an error otherwise.
+func (m RechargeBonusRuleMutation) Tx() (*Tx, error) {
+	if _, ok := m.driver.(*txDriver); !ok {
+		return nil, errors.New("ent: mutation is not running in a transaction")
+	}
+	tx := &Tx{config: m.config}
+	tx.init()
+	return tx, nil
+}
+
+// ID returns the ID value in the mutation. Note that the ID is only available
+// if it was provided to the builder or after it was returned from the database.
+func (m *RechargeBonusRuleMutation) ID() (id int64, exists bool) {
+	if m.id == nil {
+		return
+	}
+	return *m.id, true
+}
+
+// IDs queries the database and returns the entity ids that match the mutation's predicate.
+// That means, if the mutation is applied within a transaction with an isolation level such
+// as sql.LevelSerializable, the returned ids match the ids of the rows that will be updated
+// or updated by the mutation.
+func (m *RechargeBonusRuleMutation) IDs(ctx context.Context) ([]int64, error) {
+	switch {
+	case m.op.Is(OpUpdateOne | OpDeleteOne):
+		id, exists := m.ID()
+		if exists {
+			return []int64{id}, nil
+		}
+		fallthrough
+	case m.op.Is(OpUpdate | OpDelete):
+		return m.Client().RechargeBonusRule.Query().Where(m.predicates...).IDs(ctx)
+	default:
+		return nil, fmt.Errorf("IDs is not allowed on %s operations", m.op)
+	}
+}
+
+// SetName sets the "name" field.
+func (m *RechargeBonusRuleMutation) SetName(s string) {
+	m.name = &s
+}
+
+// Name returns the value of the "name" field in the mutation.
+func (m *RechargeBonusRuleMutation) Name() (r string, exists bool) {
+	v := m.name
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldName returns the old "name" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldName(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldName is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldName requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldName: %w", err)
+	}
+	return oldValue.Name, nil
+}
+
+// ResetName resets all changes to the "name" field.
+func (m *RechargeBonusRuleMutation) ResetName() {
+	m.name = nil
+}
+
+// SetEnabled sets the "enabled" field.
+func (m *RechargeBonusRuleMutation) SetEnabled(b bool) {
+	m.enabled = &b
+}
+
+// Enabled returns the value of the "enabled" field in the mutation.
+func (m *RechargeBonusRuleMutation) Enabled() (r bool, exists bool) {
+	v := m.enabled
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEnabled returns the old "enabled" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldEnabled(ctx context.Context) (v bool, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEnabled is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEnabled requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEnabled: %w", err)
+	}
+	return oldValue.Enabled, nil
+}
+
+// ResetEnabled resets all changes to the "enabled" field.
+func (m *RechargeBonusRuleMutation) ResetEnabled() {
+	m.enabled = nil
+}
+
+// SetPriority sets the "priority" field.
+func (m *RechargeBonusRuleMutation) SetPriority(i int) {
+	m.priority = &i
+	m.addpriority = nil
+}
+
+// Priority returns the value of the "priority" field in the mutation.
+func (m *RechargeBonusRuleMutation) Priority() (r int, exists bool) {
+	v := m.priority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldPriority returns the old "priority" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldPriority(ctx context.Context) (v int, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldPriority is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldPriority requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldPriority: %w", err)
+	}
+	return oldValue.Priority, nil
+}
+
+// AddPriority adds i to the "priority" field.
+func (m *RechargeBonusRuleMutation) AddPriority(i int) {
+	if m.addpriority != nil {
+		*m.addpriority += i
+	} else {
+		m.addpriority = &i
+	}
+}
+
+// AddedPriority returns the value that was added to the "priority" field in this mutation.
+func (m *RechargeBonusRuleMutation) AddedPriority() (r int, exists bool) {
+	v := m.addpriority
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetPriority resets all changes to the "priority" field.
+func (m *RechargeBonusRuleMutation) ResetPriority() {
+	m.priority = nil
+	m.addpriority = nil
+}
+
+// SetMinAmount sets the "min_amount" field.
+func (m *RechargeBonusRuleMutation) SetMinAmount(f float64) {
+	m.min_amount = &f
+	m.addmin_amount = nil
+}
+
+// MinAmount returns the value of the "min_amount" field in the mutation.
+func (m *RechargeBonusRuleMutation) MinAmount() (r float64, exists bool) {
+	v := m.min_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMinAmount returns the old "min_amount" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldMinAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMinAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMinAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMinAmount: %w", err)
+	}
+	return oldValue.MinAmount, nil
+}
+
+// AddMinAmount adds f to the "min_amount" field.
+func (m *RechargeBonusRuleMutation) AddMinAmount(f float64) {
+	if m.addmin_amount != nil {
+		*m.addmin_amount += f
+	} else {
+		m.addmin_amount = &f
+	}
+}
+
+// AddedMinAmount returns the value that was added to the "min_amount" field in this mutation.
+func (m *RechargeBonusRuleMutation) AddedMinAmount() (r float64, exists bool) {
+	v := m.addmin_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetMinAmount resets all changes to the "min_amount" field.
+func (m *RechargeBonusRuleMutation) ResetMinAmount() {
+	m.min_amount = nil
+	m.addmin_amount = nil
+}
+
+// SetMaxAmount sets the "max_amount" field.
+func (m *RechargeBonusRuleMutation) SetMaxAmount(f float64) {
+	m.max_amount = &f
+	m.addmax_amount = nil
+}
+
+// MaxAmount returns the value of the "max_amount" field in the mutation.
+func (m *RechargeBonusRuleMutation) MaxAmount() (r float64, exists bool) {
+	v := m.max_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldMaxAmount returns the old "max_amount" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldMaxAmount(ctx context.Context) (v *float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldMaxAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldMaxAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldMaxAmount: %w", err)
+	}
+	return oldValue.MaxAmount, nil
+}
+
+// AddMaxAmount adds f to the "max_amount" field.
+func (m *RechargeBonusRuleMutation) AddMaxAmount(f float64) {
+	if m.addmax_amount != nil {
+		*m.addmax_amount += f
+	} else {
+		m.addmax_amount = &f
+	}
+}
+
+// AddedMaxAmount returns the value that was added to the "max_amount" field in this mutation.
+func (m *RechargeBonusRuleMutation) AddedMaxAmount() (r float64, exists bool) {
+	v := m.addmax_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ClearMaxAmount clears the value of the "max_amount" field.
+func (m *RechargeBonusRuleMutation) ClearMaxAmount() {
+	m.max_amount = nil
+	m.addmax_amount = nil
+	m.clearedFields[rechargebonusrule.FieldMaxAmount] = struct{}{}
+}
+
+// MaxAmountCleared returns if the "max_amount" field was cleared in this mutation.
+func (m *RechargeBonusRuleMutation) MaxAmountCleared() bool {
+	_, ok := m.clearedFields[rechargebonusrule.FieldMaxAmount]
+	return ok
+}
+
+// ResetMaxAmount resets all changes to the "max_amount" field.
+func (m *RechargeBonusRuleMutation) ResetMaxAmount() {
+	m.max_amount = nil
+	m.addmax_amount = nil
+	delete(m.clearedFields, rechargebonusrule.FieldMaxAmount)
+}
+
+// SetBonusType sets the "bonus_type" field.
+func (m *RechargeBonusRuleMutation) SetBonusType(s string) {
+	m.bonus_type = &s
+}
+
+// BonusType returns the value of the "bonus_type" field in the mutation.
+func (m *RechargeBonusRuleMutation) BonusType() (r string, exists bool) {
+	v := m.bonus_type
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusType returns the old "bonus_type" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldBonusType(ctx context.Context) (v string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusType is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusType requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusType: %w", err)
+	}
+	return oldValue.BonusType, nil
+}
+
+// ResetBonusType resets all changes to the "bonus_type" field.
+func (m *RechargeBonusRuleMutation) ResetBonusType() {
+	m.bonus_type = nil
+}
+
+// SetBonusValue sets the "bonus_value" field.
+func (m *RechargeBonusRuleMutation) SetBonusValue(f float64) {
+	m.bonus_value = &f
+	m.addbonus_value = nil
+}
+
+// BonusValue returns the value of the "bonus_value" field in the mutation.
+func (m *RechargeBonusRuleMutation) BonusValue() (r float64, exists bool) {
+	v := m.bonus_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldBonusValue returns the old "bonus_value" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldBonusValue(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldBonusValue is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldBonusValue requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldBonusValue: %w", err)
+	}
+	return oldValue.BonusValue, nil
+}
+
+// AddBonusValue adds f to the "bonus_value" field.
+func (m *RechargeBonusRuleMutation) AddBonusValue(f float64) {
+	if m.addbonus_value != nil {
+		*m.addbonus_value += f
+	} else {
+		m.addbonus_value = &f
+	}
+}
+
+// AddedBonusValue returns the value that was added to the "bonus_value" field in this mutation.
+func (m *RechargeBonusRuleMutation) AddedBonusValue() (r float64, exists bool) {
+	v := m.addbonus_value
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetBonusValue resets all changes to the "bonus_value" field.
+func (m *RechargeBonusRuleMutation) ResetBonusValue() {
+	m.bonus_value = nil
+	m.addbonus_value = nil
+}
+
+// SetStartsAt sets the "starts_at" field.
+func (m *RechargeBonusRuleMutation) SetStartsAt(t time.Time) {
+	m.starts_at = &t
+}
+
+// StartsAt returns the value of the "starts_at" field in the mutation.
+func (m *RechargeBonusRuleMutation) StartsAt() (r time.Time, exists bool) {
+	v := m.starts_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldStartsAt returns the old "starts_at" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldStartsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldStartsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldStartsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldStartsAt: %w", err)
+	}
+	return oldValue.StartsAt, nil
+}
+
+// ClearStartsAt clears the value of the "starts_at" field.
+func (m *RechargeBonusRuleMutation) ClearStartsAt() {
+	m.starts_at = nil
+	m.clearedFields[rechargebonusrule.FieldStartsAt] = struct{}{}
+}
+
+// StartsAtCleared returns if the "starts_at" field was cleared in this mutation.
+func (m *RechargeBonusRuleMutation) StartsAtCleared() bool {
+	_, ok := m.clearedFields[rechargebonusrule.FieldStartsAt]
+	return ok
+}
+
+// ResetStartsAt resets all changes to the "starts_at" field.
+func (m *RechargeBonusRuleMutation) ResetStartsAt() {
+	m.starts_at = nil
+	delete(m.clearedFields, rechargebonusrule.FieldStartsAt)
+}
+
+// SetEndsAt sets the "ends_at" field.
+func (m *RechargeBonusRuleMutation) SetEndsAt(t time.Time) {
+	m.ends_at = &t
+}
+
+// EndsAt returns the value of the "ends_at" field in the mutation.
+func (m *RechargeBonusRuleMutation) EndsAt() (r time.Time, exists bool) {
+	v := m.ends_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldEndsAt returns the old "ends_at" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldEndsAt(ctx context.Context) (v *time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldEndsAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldEndsAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldEndsAt: %w", err)
+	}
+	return oldValue.EndsAt, nil
+}
+
+// ClearEndsAt clears the value of the "ends_at" field.
+func (m *RechargeBonusRuleMutation) ClearEndsAt() {
+	m.ends_at = nil
+	m.clearedFields[rechargebonusrule.FieldEndsAt] = struct{}{}
+}
+
+// EndsAtCleared returns if the "ends_at" field was cleared in this mutation.
+func (m *RechargeBonusRuleMutation) EndsAtCleared() bool {
+	_, ok := m.clearedFields[rechargebonusrule.FieldEndsAt]
+	return ok
+}
+
+// ResetEndsAt resets all changes to the "ends_at" field.
+func (m *RechargeBonusRuleMutation) ResetEndsAt() {
+	m.ends_at = nil
+	delete(m.clearedFields, rechargebonusrule.FieldEndsAt)
+}
+
+// SetNotes sets the "notes" field.
+func (m *RechargeBonusRuleMutation) SetNotes(s string) {
+	m.notes = &s
+}
+
+// Notes returns the value of the "notes" field in the mutation.
+func (m *RechargeBonusRuleMutation) Notes() (r string, exists bool) {
+	v := m.notes
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldNotes returns the old "notes" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldNotes(ctx context.Context) (v *string, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldNotes is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldNotes requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldNotes: %w", err)
+	}
+	return oldValue.Notes, nil
+}
+
+// ClearNotes clears the value of the "notes" field.
+func (m *RechargeBonusRuleMutation) ClearNotes() {
+	m.notes = nil
+	m.clearedFields[rechargebonusrule.FieldNotes] = struct{}{}
+}
+
+// NotesCleared returns if the "notes" field was cleared in this mutation.
+func (m *RechargeBonusRuleMutation) NotesCleared() bool {
+	_, ok := m.clearedFields[rechargebonusrule.FieldNotes]
+	return ok
+}
+
+// ResetNotes resets all changes to the "notes" field.
+func (m *RechargeBonusRuleMutation) ResetNotes() {
+	m.notes = nil
+	delete(m.clearedFields, rechargebonusrule.FieldNotes)
+}
+
+// SetCreatedAt sets the "created_at" field.
+func (m *RechargeBonusRuleMutation) SetCreatedAt(t time.Time) {
+	m.created_at = &t
+}
+
+// CreatedAt returns the value of the "created_at" field in the mutation.
+func (m *RechargeBonusRuleMutation) CreatedAt() (r time.Time, exists bool) {
+	v := m.created_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldCreatedAt returns the old "created_at" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldCreatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldCreatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldCreatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldCreatedAt: %w", err)
+	}
+	return oldValue.CreatedAt, nil
+}
+
+// ResetCreatedAt resets all changes to the "created_at" field.
+func (m *RechargeBonusRuleMutation) ResetCreatedAt() {
+	m.created_at = nil
+}
+
+// SetUpdatedAt sets the "updated_at" field.
+func (m *RechargeBonusRuleMutation) SetUpdatedAt(t time.Time) {
+	m.updated_at = &t
+}
+
+// UpdatedAt returns the value of the "updated_at" field in the mutation.
+func (m *RechargeBonusRuleMutation) UpdatedAt() (r time.Time, exists bool) {
+	v := m.updated_at
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldUpdatedAt returns the old "updated_at" field's value of the RechargeBonusRule entity.
+// If the RechargeBonusRule object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *RechargeBonusRuleMutation) OldUpdatedAt(ctx context.Context) (v time.Time, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldUpdatedAt is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldUpdatedAt requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldUpdatedAt: %w", err)
+	}
+	return oldValue.UpdatedAt, nil
+}
+
+// ResetUpdatedAt resets all changes to the "updated_at" field.
+func (m *RechargeBonusRuleMutation) ResetUpdatedAt() {
+	m.updated_at = nil
+}
+
+// AddPaymentOrderIDs adds the "payment_orders" edge to the PaymentOrder entity by ids.
+func (m *RechargeBonusRuleMutation) AddPaymentOrderIDs(ids ...int64) {
+	if m.payment_orders == nil {
+		m.payment_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		m.payment_orders[ids[i]] = struct{}{}
+	}
+}
+
+// ClearPaymentOrders clears the "payment_orders" edge to the PaymentOrder entity.
+func (m *RechargeBonusRuleMutation) ClearPaymentOrders() {
+	m.clearedpayment_orders = true
+}
+
+// PaymentOrdersCleared reports if the "payment_orders" edge to the PaymentOrder entity was cleared.
+func (m *RechargeBonusRuleMutation) PaymentOrdersCleared() bool {
+	return m.clearedpayment_orders
+}
+
+// RemovePaymentOrderIDs removes the "payment_orders" edge to the PaymentOrder entity by IDs.
+func (m *RechargeBonusRuleMutation) RemovePaymentOrderIDs(ids ...int64) {
+	if m.removedpayment_orders == nil {
+		m.removedpayment_orders = make(map[int64]struct{})
+	}
+	for i := range ids {
+		delete(m.payment_orders, ids[i])
+		m.removedpayment_orders[ids[i]] = struct{}{}
+	}
+}
+
+// RemovedPaymentOrders returns the removed IDs of the "payment_orders" edge to the PaymentOrder entity.
+func (m *RechargeBonusRuleMutation) RemovedPaymentOrdersIDs() (ids []int64) {
+	for id := range m.removedpayment_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// PaymentOrdersIDs returns the "payment_orders" edge IDs in the mutation.
+func (m *RechargeBonusRuleMutation) PaymentOrdersIDs() (ids []int64) {
+	for id := range m.payment_orders {
+		ids = append(ids, id)
+	}
+	return
+}
+
+// ResetPaymentOrders resets all changes to the "payment_orders" edge.
+func (m *RechargeBonusRuleMutation) ResetPaymentOrders() {
+	m.payment_orders = nil
+	m.clearedpayment_orders = false
+	m.removedpayment_orders = nil
+}
+
+// Where appends a list predicates to the RechargeBonusRuleMutation builder.
+func (m *RechargeBonusRuleMutation) Where(ps ...predicate.RechargeBonusRule) {
+	m.predicates = append(m.predicates, ps...)
+}
+
+// WhereP appends storage-level predicates to the RechargeBonusRuleMutation builder. Using this method,
+// users can use type-assertion to append predicates that do not depend on any generated package.
+func (m *RechargeBonusRuleMutation) WhereP(ps ...func(*sql.Selector)) {
+	p := make([]predicate.RechargeBonusRule, len(ps))
+	for i := range ps {
+		p[i] = ps[i]
+	}
+	m.Where(p...)
+}
+
+// Op returns the operation name.
+func (m *RechargeBonusRuleMutation) Op() Op {
+	return m.op
+}
+
+// SetOp allows setting the mutation operation.
+func (m *RechargeBonusRuleMutation) SetOp(op Op) {
+	m.op = op
+}
+
+// Type returns the node type of this mutation (RechargeBonusRule).
+func (m *RechargeBonusRuleMutation) Type() string {
+	return m.typ
+}
+
+// Fields returns all fields that were changed during this mutation. Note that in
+// order to get all numeric fields that were incremented/decremented, call
+// AddedFields().
+func (m *RechargeBonusRuleMutation) Fields() []string {
+	fields := make([]string, 0, 12)
+	if m.name != nil {
+		fields = append(fields, rechargebonusrule.FieldName)
+	}
+	if m.enabled != nil {
+		fields = append(fields, rechargebonusrule.FieldEnabled)
+	}
+	if m.priority != nil {
+		fields = append(fields, rechargebonusrule.FieldPriority)
+	}
+	if m.min_amount != nil {
+		fields = append(fields, rechargebonusrule.FieldMinAmount)
+	}
+	if m.max_amount != nil {
+		fields = append(fields, rechargebonusrule.FieldMaxAmount)
+	}
+	if m.bonus_type != nil {
+		fields = append(fields, rechargebonusrule.FieldBonusType)
+	}
+	if m.bonus_value != nil {
+		fields = append(fields, rechargebonusrule.FieldBonusValue)
+	}
+	if m.starts_at != nil {
+		fields = append(fields, rechargebonusrule.FieldStartsAt)
+	}
+	if m.ends_at != nil {
+		fields = append(fields, rechargebonusrule.FieldEndsAt)
+	}
+	if m.notes != nil {
+		fields = append(fields, rechargebonusrule.FieldNotes)
+	}
+	if m.created_at != nil {
+		fields = append(fields, rechargebonusrule.FieldCreatedAt)
+	}
+	if m.updated_at != nil {
+		fields = append(fields, rechargebonusrule.FieldUpdatedAt)
+	}
+	return fields
+}
+
+// Field returns the value of a field with the given name. The second boolean
+// return value indicates that this field was not set, or was not defined in the
+// schema.
+func (m *RechargeBonusRuleMutation) Field(name string) (ent.Value, bool) {
+	switch name {
+	case rechargebonusrule.FieldName:
+		return m.Name()
+	case rechargebonusrule.FieldEnabled:
+		return m.Enabled()
+	case rechargebonusrule.FieldPriority:
+		return m.Priority()
+	case rechargebonusrule.FieldMinAmount:
+		return m.MinAmount()
+	case rechargebonusrule.FieldMaxAmount:
+		return m.MaxAmount()
+	case rechargebonusrule.FieldBonusType:
+		return m.BonusType()
+	case rechargebonusrule.FieldBonusValue:
+		return m.BonusValue()
+	case rechargebonusrule.FieldStartsAt:
+		return m.StartsAt()
+	case rechargebonusrule.FieldEndsAt:
+		return m.EndsAt()
+	case rechargebonusrule.FieldNotes:
+		return m.Notes()
+	case rechargebonusrule.FieldCreatedAt:
+		return m.CreatedAt()
+	case rechargebonusrule.FieldUpdatedAt:
+		return m.UpdatedAt()
+	}
+	return nil, false
+}
+
+// OldField returns the old value of the field from the database. An error is
+// returned if the mutation operation is not UpdateOne, or the query to the
+// database failed.
+func (m *RechargeBonusRuleMutation) OldField(ctx context.Context, name string) (ent.Value, error) {
+	switch name {
+	case rechargebonusrule.FieldName:
+		return m.OldName(ctx)
+	case rechargebonusrule.FieldEnabled:
+		return m.OldEnabled(ctx)
+	case rechargebonusrule.FieldPriority:
+		return m.OldPriority(ctx)
+	case rechargebonusrule.FieldMinAmount:
+		return m.OldMinAmount(ctx)
+	case rechargebonusrule.FieldMaxAmount:
+		return m.OldMaxAmount(ctx)
+	case rechargebonusrule.FieldBonusType:
+		return m.OldBonusType(ctx)
+	case rechargebonusrule.FieldBonusValue:
+		return m.OldBonusValue(ctx)
+	case rechargebonusrule.FieldStartsAt:
+		return m.OldStartsAt(ctx)
+	case rechargebonusrule.FieldEndsAt:
+		return m.OldEndsAt(ctx)
+	case rechargebonusrule.FieldNotes:
+		return m.OldNotes(ctx)
+	case rechargebonusrule.FieldCreatedAt:
+		return m.OldCreatedAt(ctx)
+	case rechargebonusrule.FieldUpdatedAt:
+		return m.OldUpdatedAt(ctx)
+	}
+	return nil, fmt.Errorf("unknown RechargeBonusRule field %s", name)
+}
+
+// SetField sets the value of a field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RechargeBonusRuleMutation) SetField(name string, value ent.Value) error {
+	switch name {
+	case rechargebonusrule.FieldName:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetName(v)
+		return nil
+	case rechargebonusrule.FieldEnabled:
+		v, ok := value.(bool)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEnabled(v)
+		return nil
+	case rechargebonusrule.FieldPriority:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetPriority(v)
+		return nil
+	case rechargebonusrule.FieldMinAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMinAmount(v)
+		return nil
+	case rechargebonusrule.FieldMaxAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetMaxAmount(v)
+		return nil
+	case rechargebonusrule.FieldBonusType:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusType(v)
+		return nil
+	case rechargebonusrule.FieldBonusValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetBonusValue(v)
+		return nil
+	case rechargebonusrule.FieldStartsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetStartsAt(v)
+		return nil
+	case rechargebonusrule.FieldEndsAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetEndsAt(v)
+		return nil
+	case rechargebonusrule.FieldNotes:
+		v, ok := value.(string)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetNotes(v)
+		return nil
+	case rechargebonusrule.FieldCreatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetCreatedAt(v)
+		return nil
+	case rechargebonusrule.FieldUpdatedAt:
+		v, ok := value.(time.Time)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetUpdatedAt(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RechargeBonusRule field %s", name)
+}
+
+// AddedFields returns all numeric fields that were incremented/decremented during
+// this mutation.
+func (m *RechargeBonusRuleMutation) AddedFields() []string {
+	var fields []string
+	if m.addpriority != nil {
+		fields = append(fields, rechargebonusrule.FieldPriority)
+	}
+	if m.addmin_amount != nil {
+		fields = append(fields, rechargebonusrule.FieldMinAmount)
+	}
+	if m.addmax_amount != nil {
+		fields = append(fields, rechargebonusrule.FieldMaxAmount)
+	}
+	if m.addbonus_value != nil {
+		fields = append(fields, rechargebonusrule.FieldBonusValue)
+	}
+	return fields
+}
+
+// AddedField returns the numeric value that was incremented/decremented on a field
+// with the given name. The second boolean return value indicates that this field
+// was not set, or was not defined in the schema.
+func (m *RechargeBonusRuleMutation) AddedField(name string) (ent.Value, bool) {
+	switch name {
+	case rechargebonusrule.FieldPriority:
+		return m.AddedPriority()
+	case rechargebonusrule.FieldMinAmount:
+		return m.AddedMinAmount()
+	case rechargebonusrule.FieldMaxAmount:
+		return m.AddedMaxAmount()
+	case rechargebonusrule.FieldBonusValue:
+		return m.AddedBonusValue()
+	}
+	return nil, false
+}
+
+// AddField adds the value to the field with the given name. It returns an error if
+// the field is not defined in the schema, or if the type mismatched the field
+// type.
+func (m *RechargeBonusRuleMutation) AddField(name string, value ent.Value) error {
+	switch name {
+	case rechargebonusrule.FieldPriority:
+		v, ok := value.(int)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddPriority(v)
+		return nil
+	case rechargebonusrule.FieldMinAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMinAmount(v)
+		return nil
+	case rechargebonusrule.FieldMaxAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddMaxAmount(v)
+		return nil
+	case rechargebonusrule.FieldBonusValue:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddBonusValue(v)
+		return nil
+	}
+	return fmt.Errorf("unknown RechargeBonusRule numeric field %s", name)
+}
+
+// ClearedFields returns all nullable fields that were cleared during this
+// mutation.
+func (m *RechargeBonusRuleMutation) ClearedFields() []string {
+	var fields []string
+	if m.FieldCleared(rechargebonusrule.FieldMaxAmount) {
+		fields = append(fields, rechargebonusrule.FieldMaxAmount)
+	}
+	if m.FieldCleared(rechargebonusrule.FieldStartsAt) {
+		fields = append(fields, rechargebonusrule.FieldStartsAt)
+	}
+	if m.FieldCleared(rechargebonusrule.FieldEndsAt) {
+		fields = append(fields, rechargebonusrule.FieldEndsAt)
+	}
+	if m.FieldCleared(rechargebonusrule.FieldNotes) {
+		fields = append(fields, rechargebonusrule.FieldNotes)
+	}
+	return fields
+}
+
+// FieldCleared returns a boolean indicating if a field with the given name was
+// cleared in this mutation.
+func (m *RechargeBonusRuleMutation) FieldCleared(name string) bool {
+	_, ok := m.clearedFields[name]
+	return ok
+}
+
+// ClearField clears the value of the field with the given name. It returns an
+// error if the field is not defined in the schema.
+func (m *RechargeBonusRuleMutation) ClearField(name string) error {
+	switch name {
+	case rechargebonusrule.FieldMaxAmount:
+		m.ClearMaxAmount()
+		return nil
+	case rechargebonusrule.FieldStartsAt:
+		m.ClearStartsAt()
+		return nil
+	case rechargebonusrule.FieldEndsAt:
+		m.ClearEndsAt()
+		return nil
+	case rechargebonusrule.FieldNotes:
+		m.ClearNotes()
+		return nil
+	}
+	return fmt.Errorf("unknown RechargeBonusRule nullable field %s", name)
+}
+
+// ResetField resets all changes in the mutation for the field with the given name.
+// It returns an error if the field is not defined in the schema.
+func (m *RechargeBonusRuleMutation) ResetField(name string) error {
+	switch name {
+	case rechargebonusrule.FieldName:
+		m.ResetName()
+		return nil
+	case rechargebonusrule.FieldEnabled:
+		m.ResetEnabled()
+		return nil
+	case rechargebonusrule.FieldPriority:
+		m.ResetPriority()
+		return nil
+	case rechargebonusrule.FieldMinAmount:
+		m.ResetMinAmount()
+		return nil
+	case rechargebonusrule.FieldMaxAmount:
+		m.ResetMaxAmount()
+		return nil
+	case rechargebonusrule.FieldBonusType:
+		m.ResetBonusType()
+		return nil
+	case rechargebonusrule.FieldBonusValue:
+		m.ResetBonusValue()
+		return nil
+	case rechargebonusrule.FieldStartsAt:
+		m.ResetStartsAt()
+		return nil
+	case rechargebonusrule.FieldEndsAt:
+		m.ResetEndsAt()
+		return nil
+	case rechargebonusrule.FieldNotes:
+		m.ResetNotes()
+		return nil
+	case rechargebonusrule.FieldCreatedAt:
+		m.ResetCreatedAt()
+		return nil
+	case rechargebonusrule.FieldUpdatedAt:
+		m.ResetUpdatedAt()
+		return nil
+	}
+	return fmt.Errorf("unknown RechargeBonusRule field %s", name)
+}
+
+// AddedEdges returns all edge names that were set/added in this mutation.
+func (m *RechargeBonusRuleMutation) AddedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.payment_orders != nil {
+		edges = append(edges, rechargebonusrule.EdgePaymentOrders)
+	}
+	return edges
+}
+
+// AddedIDs returns all IDs (to other nodes) that were added for the given edge
+// name in this mutation.
+func (m *RechargeBonusRuleMutation) AddedIDs(name string) []ent.Value {
+	switch name {
+	case rechargebonusrule.EdgePaymentOrders:
+		ids := make([]ent.Value, 0, len(m.payment_orders))
+		for id := range m.payment_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// RemovedEdges returns all edge names that were removed in this mutation.
+func (m *RechargeBonusRuleMutation) RemovedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.removedpayment_orders != nil {
+		edges = append(edges, rechargebonusrule.EdgePaymentOrders)
+	}
+	return edges
+}
+
+// RemovedIDs returns all IDs (to other nodes) that were removed for the edge with
+// the given name in this mutation.
+func (m *RechargeBonusRuleMutation) RemovedIDs(name string) []ent.Value {
+	switch name {
+	case rechargebonusrule.EdgePaymentOrders:
+		ids := make([]ent.Value, 0, len(m.removedpayment_orders))
+		for id := range m.removedpayment_orders {
+			ids = append(ids, id)
+		}
+		return ids
+	}
+	return nil
+}
+
+// ClearedEdges returns all edge names that were cleared in this mutation.
+func (m *RechargeBonusRuleMutation) ClearedEdges() []string {
+	edges := make([]string, 0, 1)
+	if m.clearedpayment_orders {
+		edges = append(edges, rechargebonusrule.EdgePaymentOrders)
+	}
+	return edges
+}
+
+// EdgeCleared returns a boolean which indicates if the edge with the given name
+// was cleared in this mutation.
+func (m *RechargeBonusRuleMutation) EdgeCleared(name string) bool {
+	switch name {
+	case rechargebonusrule.EdgePaymentOrders:
+		return m.clearedpayment_orders
+	}
+	return false
+}
+
+// ClearEdge clears the value of the edge with the given name. It returns an error
+// if that edge is not defined in the schema.
+func (m *RechargeBonusRuleMutation) ClearEdge(name string) error {
+	switch name {
+	}
+	return fmt.Errorf("unknown RechargeBonusRule unique edge %s", name)
+}
+
+// ResetEdge resets all changes to the edge with the given name in this mutation.
+// It returns an error if the edge is not defined in the schema.
+func (m *RechargeBonusRuleMutation) ResetEdge(name string) error {
+	switch name {
+	case rechargebonusrule.EdgePaymentOrders:
+		m.ResetPaymentOrders()
+		return nil
+	}
+	return fmt.Errorf("unknown RechargeBonusRule edge %s", name)
 }
 
 // RedeemCodeMutation represents an operation that mutates the RedeemCode nodes in the graph.

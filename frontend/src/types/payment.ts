@@ -96,6 +96,16 @@ export interface PaymentOrder {
   paid_at?: string
   completed_at?: string
   refund_amount: number
+	/** Original balance recharge amount paid by the user. */
+  recharge_principal?: number
+	/** Promotional balance credited in addition to the principal. */
+  recharge_bonus?: number
+	/** Promotion rule captured when the order was created. */
+  recharge_bonus_rule_id?: number
+	recharge_bonus_snapshot?: Record<string, unknown>
+	refunded_bonus_amount?: number
+	refunded_principal_amount?: number
+	refunded_gateway_amount?: number
   refund_reason?: string
   refund_requested_at?: string
   refund_requested_by?: number
@@ -196,6 +206,65 @@ export interface RefundPreview {
   allocations?: RefundPreviewAllocation[]
   settlement_head?: RefundSettlementHeadInfo
   affiliate_reward?: RefundAffiliateRewardInfo | null
+	recovery_amount?: number
+	bonus_recovery_amount?: number
+	principal_refund_amount?: number
+	remaining_amount?: number
+}
+
+// ==================== Recharge Promotions ====================
+
+export type RechargeBonusType = 'fixed' | 'percentage'
+export type RechargeBonusSource = 'rule' | 'legacy_multiplier' | 'none'
+
+export interface RechargeBonusSummary {
+	id?: number
+	name: string
+	bonus_type: RechargeBonusType
+	bonus_value: number
+	source: RechargeBonusSource
+}
+
+export interface RechargeQuote {
+	principal: number
+	bonus: number
+	credited_amount: number
+	fee_rate: number
+	fee_amount: number
+	pay_amount: number
+	currency: string
+	rule?: RechargeBonusSummary
+	quote_token: string
+	expires_at: string
+}
+
+export interface RechargeBonusRule {
+	id: number
+	name: string
+	enabled: boolean
+	priority: number
+	min_amount: number
+	max_amount?: number | null
+	bonus_type: RechargeBonusType
+	bonus_value: number
+	starts_at?: string | null
+	ends_at?: string | null
+	notes?: string | null
+	created_at: string
+	updated_at: string
+}
+
+export interface RechargeBonusRulePayload {
+	name: string
+	enabled: boolean
+	priority: number
+	min_amount: number
+	max_amount: number | null
+	bonus_type: RechargeBonusType
+	bonus_value: number
+	starts_at: string | null
+	ends_at: string | null
+	notes: string | null
 }
 
 // ==================== Plans & Channels ====================
@@ -289,6 +358,7 @@ export interface CreateOrderRequest {
   openid?: string
   wechat_resume_token?: string
   is_mobile?: boolean
+	quote_token?: string
 }
 
 export type CreateOrderResultType = 'order_created' | 'oauth_required' | 'jsapi_ready' | 'completed_directly'

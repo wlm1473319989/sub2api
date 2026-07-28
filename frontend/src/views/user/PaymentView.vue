@@ -62,23 +62,32 @@
               <div class="space-y-2 text-sm">
                 <div class="flex justify-between">
                   <span class="text-gray-500 dark:text-gray-400">{{ t('payment.paymentAmount') }}</span>
-                  <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(validAmount) }}</span>
+                  <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(rechargeQuote?.principal ?? validAmount) }}</span>
                 </div>
-                <div v-if="feeRate > 0" class="flex justify-between">
-                  <span class="text-gray-500 dark:text-gray-400">{{ t('payment.fee') }} ({{ feeRate }}%)</span>
+                <div v-if="rechargeQuoteLoading" class="flex items-center justify-between text-gray-400 dark:text-gray-500">
+                  <span>{{ t('payment.calculatingQuote') }}</span>
+                  <span class="h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent"></span>
+                </div>
+                <div v-if="rechargeQuote && rechargeQuote.bonus > 0" class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">{{ t('payment.rechargeBonus') }}</span>
+                  <span class="font-medium text-green-600 dark:text-green-400">+${{ rechargeQuote.bonus.toFixed(2) }}</span>
+                </div>
+                <div v-if="rechargeQuote" class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">{{ t('payment.creditedBalance') }}</span>
+                  <span class="font-medium text-gray-900 dark:text-white">${{ rechargeQuote.credited_amount.toFixed(2) }}</span>
+                </div>
+                <div v-if="rechargeQuote && rechargeQuote.fee_rate > 0" class="flex justify-between">
+                  <span class="text-gray-500 dark:text-gray-400">{{ t('payment.fee') }} ({{ rechargeQuote.fee_rate }}%)</span>
                   <span class="text-gray-900 dark:text-white">{{ formatSelectedPaymentAmount(feeAmount) }}</span>
                 </div>
-                <div v-if="feeRate > 0" class="flex justify-between border-t border-gray-200 pt-2 dark:border-dark-600">
+                <div v-if="rechargeQuote" class="flex justify-between border-t border-gray-200 pt-2 dark:border-dark-600">
                   <span class="font-medium text-gray-700 dark:text-gray-300">{{ t('payment.actualPay') }}</span>
                   <span class="text-lg font-bold text-primary-600 dark:text-primary-400">{{ formatSelectedPaymentAmount(totalAmount) }}</span>
                 </div>
-                <div v-if="balanceRechargeMultiplier !== 1" class="flex justify-between" :class="{ 'border-t border-gray-200 pt-2 dark:border-dark-600': feeRate <= 0 }">
-                  <span class="text-gray-500 dark:text-gray-400">{{ t('payment.creditedBalance') }}</span>
-                  <span class="text-gray-900 dark:text-white">${{ creditedAmount.toFixed(2) }}</span>
-                </div>
-                <p v-if="balanceRechargeMultiplier !== 1" class="border-t border-gray-200 pt-2 text-xs text-gray-500 dark:border-dark-600 dark:text-gray-400">
-                  {{ t('payment.rechargeRatePreview', { usd: balanceRechargeMultiplier.toFixed(2) }) }}
+                <p v-if="rechargeQuote?.rule" class="border-t border-gray-200 pt-2 text-xs text-green-600 dark:border-dark-600 dark:text-green-400">
+                  {{ t('payment.promotionApplied', { name: rechargeQuote.rule.name }) }}
                 </p>
+                <p v-if="rechargeQuoteError" class="text-xs text-red-600 dark:text-red-400">{{ rechargeQuoteError }}</p>
               </div>
             </div>
             <button :class="['btn w-full py-3 text-base font-medium', paymentButtonClass]" :disabled="!canSubmit || submitting" @click="handleSubmitRecharge">
@@ -287,6 +296,7 @@ import type {
   OrderType,
   SubscriptionAction,
   SubscriptionPreviewResponse,
+	RechargeQuote,
 } from '@/types/payment'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import AmountInput from '@/components/payment/AmountInput.vue'
@@ -347,8 +357,14 @@ const amount = ref<number | null>(null)
 const selectedMethod = ref('')
 const selectedPlan = ref<SubscriptionPlan | null>(null)
 const selectedPlanPreview = ref<SubscriptionPreviewResponse | null>(null)
+	const rechargeQuote = ref<RechargeQuote | null>(null)
+	const rechargeQuoteLoading = ref(false)
+	const rechargeQuoteError = ref('')
 const previewImage = ref('')
 let previewRequestId = 0
+	let rechargeQuoteRequestId = 0
+	let rechargeQuoteTimer: ReturnType<typeof setTimeout> | undefined
+	const rechargeQuoteKey = ref('')
 
 const paymentPhase = ref<'select' | 'paying'>('select')
 
@@ -358,6 +374,7 @@ interface CreateOrderOptions {
   paymentType?: string
   isResume?: boolean
   mobileQrFallbackAttempted?: boolean
+	quoteToken?: string
 }
 
 interface WeixinJSBridgeLike {
@@ -548,11 +565,6 @@ const tabs = computed(() => {
 const visibleMethods = computed(() => getVisibleMethods(checkout.value.methods))
 const enabledMethods = computed(() => Object.keys(visibleMethods.value))
 const validAmount = computed(() => amount.value ?? 0)
-const balanceRechargeMultiplier = computed(() => {
-  const multiplier = checkout.value.balance_recharge_multiplier
-  return multiplier > 0 ? multiplier : 1
-})
-const creditedAmount = computed(() => Math.round((validAmount.value * balanceRechargeMultiplier.value) * 100) / 100)
 
 const currentSubscription = computed<UserSubscription | null>(() => activeSubscriptions.value[0] ?? null)
 
@@ -667,16 +679,8 @@ const methodOptions = computed<PaymentMethodOption[]>(() =>
 )
 
 const feeRate = computed(() => checkout.value?.recharge_fee_rate ?? 0)
-const feeAmount = computed(() =>
-  feeRate.value > 0 && validAmount.value > 0
-    ? Math.ceil(((validAmount.value * feeRate.value) / 100) * 100) / 100
-    : 0
-)
-const totalAmount = computed(() =>
-  feeRate.value > 0 && validAmount.value > 0
-    ? Math.round((validAmount.value + feeAmount.value) * 100) / 100
-    : validAmount.value
-)
+const feeAmount = computed(() => rechargeQuote.value?.fee_amount ?? 0)
+const totalAmount = computed(() => rechargeQuote.value?.pay_amount ?? validAmount.value)
 
 const amountError = computed(() => {
   if (validAmount.value <= 0) return ''
@@ -697,6 +701,9 @@ const canSubmit = computed(() =>
   validAmount.value > 0
     && amountFitsMethod(validAmount.value, selectedMethod.value)
     && selectedLimit.value?.available !== false
+		&& !rechargeQuoteLoading.value
+		&& rechargeQuote.value !== null
+		&& rechargeQuoteKey.value === currentRechargeQuoteKey()
 )
 
 // Subscription-specific: method options based on plan price
@@ -739,6 +746,52 @@ watch(() => [validAmount.value, selectedMethod.value] as const, ([amt, method]) 
   const available = enabledMethods.value.find((m) => amountFitsMethod(amt, m))
   if (available) selectedMethod.value = available
 })
+
+	function currentRechargeQuoteKey(): string {
+		const method = normalizeVisibleMethod(selectedMethod.value) || selectedMethod.value
+		return `${validAmount.value.toFixed(2)}:${method}`
+	}
+
+	async function loadRechargeQuote(): Promise<RechargeQuote | null> {
+		const amountToQuote = validAmount.value
+		const method = normalizeVisibleMethod(selectedMethod.value) || selectedMethod.value
+		const requestKey = currentRechargeQuoteKey()
+		if (amountToQuote <= 0 || !method || !amountFitsMethod(amountToQuote, method)) {
+			rechargeQuote.value = null
+			rechargeQuoteKey.value = ''
+			return null
+		}
+		const requestId = ++rechargeQuoteRequestId
+		rechargeQuoteLoading.value = true
+		rechargeQuoteError.value = ''
+		rechargeQuote.value = null
+		rechargeQuoteKey.value = ''
+		try {
+			const response = await paymentAPI.previewRecharge(amountToQuote, method)
+			if (requestId !== rechargeQuoteRequestId || requestKey !== currentRechargeQuoteKey()) return null
+			rechargeQuote.value = response.data
+			rechargeQuoteKey.value = requestKey
+			return response.data
+		} catch (err: unknown) {
+			if (requestId === rechargeQuoteRequestId) {
+				rechargeQuoteError.value = extractI18nErrorMessage(err, t, 'payment.errors', t('payment.quoteUnavailable'))
+			}
+			return null
+		} finally {
+			if (requestId === rechargeQuoteRequestId) rechargeQuoteLoading.value = false
+		}
+	}
+
+	watch(() => [validAmount.value, selectedMethod.value, activeTab.value] as const, () => {
+		if (rechargeQuoteTimer) clearTimeout(rechargeQuoteTimer)
+		rechargeQuoteRequestId++
+		rechargeQuoteLoading.value = false
+		rechargeQuote.value = null
+		rechargeQuoteKey.value = ''
+		rechargeQuoteError.value = ''
+		if (activeTab.value !== 'recharge' || validAmount.value <= 0) return
+		rechargeQuoteTimer = setTimeout(() => { void loadRechargeQuote() }, 250)
+	})
 
 // Payment button class: follows selected payment method color
 const paymentButtonClass = computed(() => {
@@ -821,7 +874,9 @@ async function selectPlan(plan: SubscriptionPlan) {
 
 async function handleSubmitRecharge() {
   if (!canSubmit.value || submitting.value) return
-  await createOrder(validAmount.value, 'balance')
+	const quote = rechargeQuote.value
+	if (!quote) return
+	await createOrder(validAmount.value, 'balance', undefined, { quoteToken: quote.quote_token })
 }
 
 async function confirmSubscribe() {
@@ -849,6 +904,7 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
       isMobile: isMobileDevice(),
       isWechatBrowser: typeof window !== 'undefined' && /MicroMessenger/i.test(window.navigator.userAgent),
       forceQRCode: !!(checkout.value.alipay_force_qrcode && normalizeVisibleMethod(requestType) === 'alipay'),
+			quoteToken: orderType === 'balance' ? options.quoteToken : undefined,
     })
     if (options.openid) {
       payload.openid = options.openid
@@ -961,6 +1017,7 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
               planId,
               paymentType: visibleMethod,
               attempted: options.mobileQrFallbackAttempted === true,
+						quoteToken: options.quoteToken,
             },
           )
           if (!fallbackApplied) {
@@ -979,6 +1036,7 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
           planId,
           paymentType: visibleMethod,
           attempted: options.mobileQrFallbackAttempted === true,
+					quoteToken: options.quoteToken,
         })
         if (!fallbackApplied) {
           throw err
@@ -1002,12 +1060,17 @@ async function createOrder(orderAmount: number, orderType: OrderType, planId?: n
     } else if (apiErr.reason === 'CANCEL_RATE_LIMITED') {
       errorMessage.value = t('payment.errors.cancelRateLimited')
       errorHintMessage.value = ''
+		} else if (apiErr.reason === 'RECHARGE_QUOTE_CHANGED' && orderType === 'balance') {
+			errorMessage.value = t('payment.quoteChanged')
+			errorHintMessage.value = ''
+			void loadRechargeQuote()
     } else if (await attemptMobileQrFallback(err, {
       orderAmount,
       orderType,
       planId,
       paymentType: requestType,
       attempted: options.mobileQrFallbackAttempted === true,
+			quoteToken: options.quoteToken,
     })) {
       return
     } else {
@@ -1035,6 +1098,7 @@ interface MobileQrFallbackContext {
   planId?: number
   paymentType: string
   attempted: boolean
+	quoteToken?: string
 }
 
 function shouldFallbackToDesktopQr(err: unknown, paymentMethod: string, attempted: boolean): boolean {
@@ -1085,6 +1149,7 @@ async function attemptMobileQrFallback(err: unknown, context: MobileQrFallbackCo
       origin: typeof window !== 'undefined' ? window.location.origin : '',
       isMobile: false,
       isWechatBrowser: false,
+			quoteToken: context.orderType === 'balance' ? context.quoteToken : undefined,
     })
     const result = await paymentStore.createOrder(payload) as CreateOrderResult & { resume_token?: string }
     const stripeMethod = visibleMethod === 'wxpay' ? 'wechat_pay' : 'alipay'

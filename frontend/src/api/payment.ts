@@ -14,6 +14,7 @@ import type {
   CreateOrderResult,
   PaymentOrder,
   RefundPreview,
+	RechargeQuote,
   SubscriptionPreviewResponse,
 } from '@/types/payment'
 import type { BasePaginationResponse } from '@/types'
@@ -51,6 +52,14 @@ export const paymentAPI = {
       payment_type: paymentType,
     })
   },
+
+	/** Get a signed, server-authoritative balance recharge quote. */
+	previewRecharge(amount: number, paymentType: string) {
+		return apiClient.post<RechargeQuote>('/payment/recharge/preview', {
+			amount,
+			payment_type: paymentType,
+		})
+	},
 
   /** Create a new payment order */
   createOrder(data: CreateOrderRequest) {

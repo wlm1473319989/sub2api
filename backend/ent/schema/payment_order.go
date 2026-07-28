@@ -50,6 +50,27 @@ func (PaymentOrder) Fields() []ent.Field {
 		field.Float("fee_rate").
 			SchemaType(map[string]string{dialect.Postgres: "decimal(10,4)"}).
 			Default(0),
+		field.Float("recharge_principal").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		field.Float("recharge_bonus").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		field.Int64("recharge_bonus_rule_id").
+			Optional().
+			Nillable(),
+		field.JSON("recharge_bonus_snapshot", map[string]any{}).
+			Optional().
+			SchemaType(map[string]string{dialect.Postgres: "jsonb"}),
+		field.Float("refunded_bonus_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		field.Float("refunded_principal_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,2)"}).
+			Default(0),
+		field.Float("refunded_gateway_amount").
+			SchemaType(map[string]string{dialect.Postgres: "decimal(20,8)"}).
+			Default(0),
 		field.String("recharge_code").
 			MaxLen(64),
 
@@ -202,6 +223,10 @@ func (PaymentOrder) Edges() []ent.Edge {
 			Unique().
 			Required(),
 		edge.To("subscription_refund_allocations", SubscriptionRefundAllocation.Type),
+		edge.From("recharge_bonus_rule", RechargeBonusRule.Type).
+			Ref("payment_orders").
+			Field("recharge_bonus_rule_id").
+			Unique(),
 	}
 }
 
@@ -217,6 +242,7 @@ func (PaymentOrder) Indexes() []ent.Index {
 		index.Fields("paid_at"),
 		index.Fields("payment_type", "paid_at"),
 		index.Fields("order_type"),
+		index.Fields("recharge_bonus_rule_id"),
 		index.Fields("subscription_action"),
 	}
 }

@@ -19,6 +19,7 @@ const showInfo = vi.hoisted(() => vi.fn())
 const showWarning = vi.hoisted(() => vi.fn())
 const getCheckoutInfo = vi.hoisted(() => vi.fn())
 const previewSubscription = vi.hoisted(() => vi.fn())
+	const previewRecharge = vi.hoisted(() => vi.fn())
 const bridgeInvoke = vi.hoisted(() => vi.fn())
 
 vi.mock('vue-router', async () => {
@@ -79,6 +80,7 @@ vi.mock('@/api/payment', () => ({
   paymentAPI: {
     getCheckoutInfo,
     previewSubscription,
+		previewRecharge,
   },
 }))
 
@@ -188,6 +190,19 @@ describe('PaymentView WeChat JSAPI flow', () => {
     routerPush.mockReset().mockResolvedValue(undefined)
     routerResolve.mockClear()
     createOrder.mockReset()
+		previewRecharge.mockReset().mockResolvedValue({
+			data: {
+				principal: 88,
+				bonus: 0,
+				credited_amount: 88,
+				fee_rate: 0,
+				fee_amount: 0,
+				pay_amount: 88,
+				currency: 'CNY',
+				quote_token: 'quote-token-123',
+				expires_at: '2099-01-01T00:05:00Z',
+			},
+		})
     refreshUser.mockReset()
     fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
     showError.mockReset()
@@ -431,6 +446,19 @@ describe('PaymentView subscription preview', () => {
     routerPush.mockReset().mockResolvedValue(undefined)
     routerResolve.mockClear()
     createOrder.mockReset()
+		previewRecharge.mockReset().mockResolvedValue({
+			data: {
+				principal: 88,
+				bonus: 0,
+				credited_amount: 88,
+				fee_rate: 0,
+				fee_amount: 0,
+				pay_amount: 88,
+				currency: 'CNY',
+				quote_token: 'quote-token-123',
+				expires_at: '2099-01-01T00:05:00Z',
+			},
+		})
     refreshUser.mockReset()
     fetchActiveSubscriptions.mockReset().mockResolvedValue(undefined)
     showError.mockReset()
@@ -469,6 +497,7 @@ describe('PaymentView subscription preview', () => {
     const wrapper = shallowMount(PaymentView, {
       global: {
         stubs: {
+					AppLayout: { template: '<div><slot /></div>' },
           Teleport: true,
           Transition: false,
         },

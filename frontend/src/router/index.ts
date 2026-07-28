@@ -732,6 +732,19 @@ const routes: RouteRecordRaw[] = [
     }
   },
 
+  {
+    path: '/admin/orders/recharge-bonus',
+    name: 'AdminRechargeBonusRules',
+    component: () => import('@/views/admin/orders/AdminRechargeBonusRulesView.vue'),
+    meta: {
+      requiresAuth: true,
+      requiresAdmin: true,
+      title: 'Recharge Promotions',
+      titleKey: 'nav.rechargePromotions',
+      requiresPayment: true
+    }
+  },
+
   // ==================== 404 Not Found ====================
   {
     path: '/:pathMatch(.*)*',

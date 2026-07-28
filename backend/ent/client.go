@@ -37,6 +37,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/ent/promocode"
 	"github.com/Wei-Shaw/sub2api/ent/promocodeusage"
 	"github.com/Wei-Shaw/sub2api/ent/proxy"
+	"github.com/Wei-Shaw/sub2api/ent/rechargebonusrule"
 	"github.com/Wei-Shaw/sub2api/ent/redeemcode"
 	"github.com/Wei-Shaw/sub2api/ent/securitysecret"
 	"github.com/Wei-Shaw/sub2api/ent/setting"
@@ -106,6 +107,8 @@ type Client struct {
 	PromoCodeUsage *PromoCodeUsageClient
 	// Proxy is the client for interacting with the Proxy builders.
 	Proxy *ProxyClient
+	// RechargeBonusRule is the client for interacting with the RechargeBonusRule builders.
+	RechargeBonusRule *RechargeBonusRuleClient
 	// RedeemCode is the client for interacting with the RedeemCode builders.
 	RedeemCode *RedeemCodeClient
 	// SecuritySecret is the client for interacting with the SecuritySecret builders.
@@ -171,6 +174,7 @@ func (c *Client) init() {
 	c.PromoCode = NewPromoCodeClient(c.config)
 	c.PromoCodeUsage = NewPromoCodeUsageClient(c.config)
 	c.Proxy = NewProxyClient(c.config)
+	c.RechargeBonusRule = NewRechargeBonusRuleClient(c.config)
 	c.RedeemCode = NewRedeemCodeClient(c.config)
 	c.SecuritySecret = NewSecuritySecretClient(c.config)
 	c.Setting = NewSettingClient(c.config)
@@ -301,6 +305,7 @@ func (c *Client) Tx(ctx context.Context) (*Tx, error) {
 		PromoCode:                     NewPromoCodeClient(cfg),
 		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
 		Proxy:                         NewProxyClient(cfg),
+		RechargeBonusRule:             NewRechargeBonusRuleClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
@@ -358,6 +363,7 @@ func (c *Client) BeginTx(ctx context.Context, opts *sql.TxOptions) (*Tx, error) 
 		PromoCode:                     NewPromoCodeClient(cfg),
 		PromoCodeUsage:                NewPromoCodeUsageClient(cfg),
 		Proxy:                         NewProxyClient(cfg),
+		RechargeBonusRule:             NewRechargeBonusRuleClient(cfg),
 		RedeemCode:                    NewRedeemCodeClient(cfg),
 		SecuritySecret:                NewSecuritySecretClient(cfg),
 		Setting:                       NewSettingClient(cfg),
@@ -409,8 +415,8 @@ func (c *Client) Use(hooks ...Hook) {
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.SubscriptionRefundAllocation,
+		c.PromoCodeUsage, c.Proxy, c.RechargeBonusRule, c.RedeemCode, c.SecuritySecret,
+		c.Setting, c.SubscriptionPlan, c.SubscriptionRefundAllocation,
 		c.SubscriptionRefundRequest, c.SubscriptionSettlementOrder,
 		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
 		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
@@ -430,8 +436,8 @@ func (c *Client) Intercept(interceptors ...Interceptor) {
 		c.ChannelMonitorRequestTemplate, c.ErrorPassthroughRule, c.Group,
 		c.IdempotencyRecord, c.IdentityAdoptionDecision, c.PaymentAuditLog,
 		c.PaymentOrder, c.PaymentProviderInstance, c.PendingAuthSession, c.PromoCode,
-		c.PromoCodeUsage, c.Proxy, c.RedeemCode, c.SecuritySecret, c.Setting,
-		c.SubscriptionPlan, c.SubscriptionRefundAllocation,
+		c.PromoCodeUsage, c.Proxy, c.RechargeBonusRule, c.RedeemCode, c.SecuritySecret,
+		c.Setting, c.SubscriptionPlan, c.SubscriptionRefundAllocation,
 		c.SubscriptionRefundRequest, c.SubscriptionSettlementOrder,
 		c.TLSFingerprintProfile, c.UsageCleanupTask, c.UsageLog, c.User,
 		c.UserAllowedGroup, c.UserAttributeDefinition, c.UserAttributeValue,
@@ -488,6 +494,8 @@ func (c *Client) Mutate(ctx context.Context, m Mutation) (Value, error) {
 		return c.PromoCodeUsage.mutate(ctx, m)
 	case *ProxyMutation:
 		return c.Proxy.mutate(ctx, m)
+	case *RechargeBonusRuleMutation:
+		return c.RechargeBonusRule.mutate(ctx, m)
 	case *RedeemCodeMutation:
 		return c.RedeemCode.mutate(ctx, m)
 	case *SecuritySecretMutation:
@@ -3246,6 +3254,22 @@ func (c *PaymentOrderClient) QuerySubscriptionRefundAllocations(_m *PaymentOrder
 	return query
 }
 
+// QueryRechargeBonusRule queries the recharge_bonus_rule edge of a PaymentOrder.
+func (c *PaymentOrderClient) QueryRechargeBonusRule(_m *PaymentOrder) *RechargeBonusRuleQuery {
+	query := (&RechargeBonusRuleClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(paymentorder.Table, paymentorder.FieldID, id),
+			sqlgraph.To(rechargebonusrule.Table, rechargebonusrule.FieldID),
+			sqlgraph.Edge(sqlgraph.M2O, true, paymentorder.RechargeBonusRuleTable, paymentorder.RechargeBonusRuleColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
 // Hooks returns the client hooks.
 func (c *PaymentOrderClient) Hooks() []Hook {
 	return c.hooks.PaymentOrder
@@ -4063,6 +4087,155 @@ func (c *ProxyClient) mutate(ctx context.Context, m *ProxyMutation) (Value, erro
 		return (&ProxyDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
 	default:
 		return nil, fmt.Errorf("ent: unknown Proxy mutation op: %q", m.Op())
+	}
+}
+
+// RechargeBonusRuleClient is a client for the RechargeBonusRule schema.
+type RechargeBonusRuleClient struct {
+	config
+}
+
+// NewRechargeBonusRuleClient returns a client for the RechargeBonusRule from the given config.
+func NewRechargeBonusRuleClient(c config) *RechargeBonusRuleClient {
+	return &RechargeBonusRuleClient{config: c}
+}
+
+// Use adds a list of mutation hooks to the hooks stack.
+// A call to `Use(f, g, h)` equals to `rechargebonusrule.Hooks(f(g(h())))`.
+func (c *RechargeBonusRuleClient) Use(hooks ...Hook) {
+	c.hooks.RechargeBonusRule = append(c.hooks.RechargeBonusRule, hooks...)
+}
+
+// Intercept adds a list of query interceptors to the interceptors stack.
+// A call to `Intercept(f, g, h)` equals to `rechargebonusrule.Intercept(f(g(h())))`.
+func (c *RechargeBonusRuleClient) Intercept(interceptors ...Interceptor) {
+	c.inters.RechargeBonusRule = append(c.inters.RechargeBonusRule, interceptors...)
+}
+
+// Create returns a builder for creating a RechargeBonusRule entity.
+func (c *RechargeBonusRuleClient) Create() *RechargeBonusRuleCreate {
+	mutation := newRechargeBonusRuleMutation(c.config, OpCreate)
+	return &RechargeBonusRuleCreate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// CreateBulk returns a builder for creating a bulk of RechargeBonusRule entities.
+func (c *RechargeBonusRuleClient) CreateBulk(builders ...*RechargeBonusRuleCreate) *RechargeBonusRuleCreateBulk {
+	return &RechargeBonusRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// MapCreateBulk creates a bulk creation builder from the given slice. For each item in the slice, the function creates
+// a builder and applies setFunc on it.
+func (c *RechargeBonusRuleClient) MapCreateBulk(slice any, setFunc func(*RechargeBonusRuleCreate, int)) *RechargeBonusRuleCreateBulk {
+	rv := reflect.ValueOf(slice)
+	if rv.Kind() != reflect.Slice {
+		return &RechargeBonusRuleCreateBulk{err: fmt.Errorf("calling to RechargeBonusRuleClient.MapCreateBulk with wrong type %T, need slice", slice)}
+	}
+	builders := make([]*RechargeBonusRuleCreate, rv.Len())
+	for i := 0; i < rv.Len(); i++ {
+		builders[i] = c.Create()
+		setFunc(builders[i], i)
+	}
+	return &RechargeBonusRuleCreateBulk{config: c.config, builders: builders}
+}
+
+// Update returns an update builder for RechargeBonusRule.
+func (c *RechargeBonusRuleClient) Update() *RechargeBonusRuleUpdate {
+	mutation := newRechargeBonusRuleMutation(c.config, OpUpdate)
+	return &RechargeBonusRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOne returns an update builder for the given entity.
+func (c *RechargeBonusRuleClient) UpdateOne(_m *RechargeBonusRule) *RechargeBonusRuleUpdateOne {
+	mutation := newRechargeBonusRuleMutation(c.config, OpUpdateOne, withRechargeBonusRule(_m))
+	return &RechargeBonusRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// UpdateOneID returns an update builder for the given id.
+func (c *RechargeBonusRuleClient) UpdateOneID(id int64) *RechargeBonusRuleUpdateOne {
+	mutation := newRechargeBonusRuleMutation(c.config, OpUpdateOne, withRechargeBonusRuleID(id))
+	return &RechargeBonusRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// Delete returns a delete builder for RechargeBonusRule.
+func (c *RechargeBonusRuleClient) Delete() *RechargeBonusRuleDelete {
+	mutation := newRechargeBonusRuleMutation(c.config, OpDelete)
+	return &RechargeBonusRuleDelete{config: c.config, hooks: c.Hooks(), mutation: mutation}
+}
+
+// DeleteOne returns a builder for deleting the given entity.
+func (c *RechargeBonusRuleClient) DeleteOne(_m *RechargeBonusRule) *RechargeBonusRuleDeleteOne {
+	return c.DeleteOneID(_m.ID)
+}
+
+// DeleteOneID returns a builder for deleting the given entity by its id.
+func (c *RechargeBonusRuleClient) DeleteOneID(id int64) *RechargeBonusRuleDeleteOne {
+	builder := c.Delete().Where(rechargebonusrule.ID(id))
+	builder.mutation.id = &id
+	builder.mutation.op = OpDeleteOne
+	return &RechargeBonusRuleDeleteOne{builder}
+}
+
+// Query returns a query builder for RechargeBonusRule.
+func (c *RechargeBonusRuleClient) Query() *RechargeBonusRuleQuery {
+	return &RechargeBonusRuleQuery{
+		config: c.config,
+		ctx:    &QueryContext{Type: TypeRechargeBonusRule},
+		inters: c.Interceptors(),
+	}
+}
+
+// Get returns a RechargeBonusRule entity by its id.
+func (c *RechargeBonusRuleClient) Get(ctx context.Context, id int64) (*RechargeBonusRule, error) {
+	return c.Query().Where(rechargebonusrule.ID(id)).Only(ctx)
+}
+
+// GetX is like Get, but panics if an error occurs.
+func (c *RechargeBonusRuleClient) GetX(ctx context.Context, id int64) *RechargeBonusRule {
+	obj, err := c.Get(ctx, id)
+	if err != nil {
+		panic(err)
+	}
+	return obj
+}
+
+// QueryPaymentOrders queries the payment_orders edge of a RechargeBonusRule.
+func (c *RechargeBonusRuleClient) QueryPaymentOrders(_m *RechargeBonusRule) *PaymentOrderQuery {
+	query := (&PaymentOrderClient{config: c.config}).Query()
+	query.path = func(context.Context) (fromV *sql.Selector, _ error) {
+		id := _m.ID
+		step := sqlgraph.NewStep(
+			sqlgraph.From(rechargebonusrule.Table, rechargebonusrule.FieldID, id),
+			sqlgraph.To(paymentorder.Table, paymentorder.FieldID),
+			sqlgraph.Edge(sqlgraph.O2M, false, rechargebonusrule.PaymentOrdersTable, rechargebonusrule.PaymentOrdersColumn),
+		)
+		fromV = sqlgraph.Neighbors(_m.driver.Dialect(), step)
+		return fromV, nil
+	}
+	return query
+}
+
+// Hooks returns the client hooks.
+func (c *RechargeBonusRuleClient) Hooks() []Hook {
+	return c.hooks.RechargeBonusRule
+}
+
+// Interceptors returns the client interceptors.
+func (c *RechargeBonusRuleClient) Interceptors() []Interceptor {
+	return c.inters.RechargeBonusRule
+}
+
+func (c *RechargeBonusRuleClient) mutate(ctx context.Context, m *RechargeBonusRuleMutation) (Value, error) {
+	switch m.Op() {
+	case OpCreate:
+		return (&RechargeBonusRuleCreate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdate:
+		return (&RechargeBonusRuleUpdate{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpUpdateOne:
+		return (&RechargeBonusRuleUpdateOne{config: c.config, hooks: c.Hooks(), mutation: m}).Save(ctx)
+	case OpDelete, OpDeleteOne:
+		return (&RechargeBonusRuleDelete{config: c.config, hooks: c.Hooks(), mutation: m}).Exec(ctx)
+	default:
+		return nil, fmt.Errorf("ent: unknown RechargeBonusRule mutation op: %q", m.Op())
 	}
 }
 
@@ -7009,8 +7182,8 @@ type (
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		SubscriptionRefundAllocation, SubscriptionRefundRequest,
+		PromoCodeUsage, Proxy, RechargeBonusRule, RedeemCode, SecuritySecret, Setting,
+		SubscriptionPlan, SubscriptionRefundAllocation, SubscriptionRefundRequest,
 		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
 		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserPlatformQuota, UserSubscription []ent.Hook
@@ -7021,8 +7194,8 @@ type (
 		ChannelMonitorHistory, ChannelMonitorRequestTemplate, ErrorPassthroughRule,
 		Group, IdempotencyRecord, IdentityAdoptionDecision, PaymentAuditLog,
 		PaymentOrder, PaymentProviderInstance, PendingAuthSession, PromoCode,
-		PromoCodeUsage, Proxy, RedeemCode, SecuritySecret, Setting, SubscriptionPlan,
-		SubscriptionRefundAllocation, SubscriptionRefundRequest,
+		PromoCodeUsage, Proxy, RechargeBonusRule, RedeemCode, SecuritySecret, Setting,
+		SubscriptionPlan, SubscriptionRefundAllocation, SubscriptionRefundRequest,
 		SubscriptionSettlementOrder, TLSFingerprintProfile, UsageCleanupTask, UsageLog,
 		User, UserAllowedGroup, UserAttributeDefinition, UserAttributeValue,
 		UserPlatformQuota, UserSubscription []ent.Interceptor

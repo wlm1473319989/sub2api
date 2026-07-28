@@ -13,6 +13,7 @@ import (
 	"entgo.io/ent/schema/field"
 	"github.com/Wei-Shaw/sub2api/ent/paymentorder"
 	"github.com/Wei-Shaw/sub2api/ent/predicate"
+	"github.com/Wei-Shaw/sub2api/ent/rechargebonusrule"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionrefundallocation"
 	"github.com/Wei-Shaw/sub2api/ent/user"
 )
@@ -152,6 +153,143 @@ func (_u *PaymentOrderUpdate) SetNillableFeeRate(v *float64) *PaymentOrderUpdate
 // AddFeeRate adds value to the "fee_rate" field.
 func (_u *PaymentOrderUpdate) AddFeeRate(v float64) *PaymentOrderUpdate {
 	_u.mutation.AddFeeRate(v)
+	return _u
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (_u *PaymentOrderUpdate) SetRechargePrincipal(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetRechargePrincipal()
+	_u.mutation.SetRechargePrincipal(v)
+	return _u
+}
+
+// SetNillableRechargePrincipal sets the "recharge_principal" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRechargePrincipal(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRechargePrincipal(*v)
+	}
+	return _u
+}
+
+// AddRechargePrincipal adds value to the "recharge_principal" field.
+func (_u *PaymentOrderUpdate) AddRechargePrincipal(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddRechargePrincipal(v)
+	return _u
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (_u *PaymentOrderUpdate) SetRechargeBonus(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetRechargeBonus()
+	_u.mutation.SetRechargeBonus(v)
+	return _u
+}
+
+// SetNillableRechargeBonus sets the "recharge_bonus" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRechargeBonus(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRechargeBonus(*v)
+	}
+	return _u
+}
+
+// AddRechargeBonus adds value to the "recharge_bonus" field.
+func (_u *PaymentOrderUpdate) AddRechargeBonus(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddRechargeBonus(v)
+	return _u
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (_u *PaymentOrderUpdate) SetRechargeBonusRuleID(v int64) *PaymentOrderUpdate {
+	_u.mutation.SetRechargeBonusRuleID(v)
+	return _u
+}
+
+// SetNillableRechargeBonusRuleID sets the "recharge_bonus_rule_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRechargeBonusRuleID(v *int64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRechargeBonusRuleID(*v)
+	}
+	return _u
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (_u *PaymentOrderUpdate) ClearRechargeBonusRuleID() *PaymentOrderUpdate {
+	_u.mutation.ClearRechargeBonusRuleID()
+	return _u
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (_u *PaymentOrderUpdate) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderUpdate {
+	_u.mutation.SetRechargeBonusSnapshot(v)
+	return _u
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (_u *PaymentOrderUpdate) ClearRechargeBonusSnapshot() *PaymentOrderUpdate {
+	_u.mutation.ClearRechargeBonusSnapshot()
+	return _u
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (_u *PaymentOrderUpdate) SetRefundedBonusAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetRefundedBonusAmount()
+	_u.mutation.SetRefundedBonusAmount(v)
+	return _u
+}
+
+// SetNillableRefundedBonusAmount sets the "refunded_bonus_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRefundedBonusAmount(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRefundedBonusAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedBonusAmount adds value to the "refunded_bonus_amount" field.
+func (_u *PaymentOrderUpdate) AddRefundedBonusAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddRefundedBonusAmount(v)
+	return _u
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (_u *PaymentOrderUpdate) SetRefundedPrincipalAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetRefundedPrincipalAmount()
+	_u.mutation.SetRefundedPrincipalAmount(v)
+	return _u
+}
+
+// SetNillableRefundedPrincipalAmount sets the "refunded_principal_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRefundedPrincipalAmount(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRefundedPrincipalAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedPrincipalAmount adds value to the "refunded_principal_amount" field.
+func (_u *PaymentOrderUpdate) AddRefundedPrincipalAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddRefundedPrincipalAmount(v)
+	return _u
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (_u *PaymentOrderUpdate) SetRefundedGatewayAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.ResetRefundedGatewayAmount()
+	_u.mutation.SetRefundedGatewayAmount(v)
+	return _u
+}
+
+// SetNillableRefundedGatewayAmount sets the "refunded_gateway_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdate) SetNillableRefundedGatewayAmount(v *float64) *PaymentOrderUpdate {
+	if v != nil {
+		_u.SetRefundedGatewayAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedGatewayAmount adds value to the "refunded_gateway_amount" field.
+func (_u *PaymentOrderUpdate) AddRefundedGatewayAmount(v float64) *PaymentOrderUpdate {
+	_u.mutation.AddRefundedGatewayAmount(v)
 	return _u
 }
 
@@ -856,6 +994,11 @@ func (_u *PaymentOrderUpdate) AddSubscriptionRefundAllocations(v ...*Subscriptio
 	return _u.AddSubscriptionRefundAllocationIDs(ids...)
 }
 
+// SetRechargeBonusRule sets the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (_u *PaymentOrderUpdate) SetRechargeBonusRule(v *RechargeBonusRule) *PaymentOrderUpdate {
+	return _u.SetRechargeBonusRuleID(v.ID)
+}
+
 // Mutation returns the PaymentOrderMutation object of the builder.
 func (_u *PaymentOrderUpdate) Mutation() *PaymentOrderMutation {
 	return _u.mutation
@@ -886,6 +1029,12 @@ func (_u *PaymentOrderUpdate) RemoveSubscriptionRefundAllocations(v ...*Subscrip
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionRefundAllocationIDs(ids...)
+}
+
+// ClearRechargeBonusRule clears the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (_u *PaymentOrderUpdate) ClearRechargeBonusRule() *PaymentOrderUpdate {
+	_u.mutation.ClearRechargeBonusRule()
+	return _u
 }
 
 // Save executes the query and returns the number of nodes affected by the update operation.
@@ -1048,6 +1197,42 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 	}
 	if value, ok := _u.mutation.AddedFeeRate(); ok {
 		_spec.AddField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargePrincipal(); ok {
+		_spec.SetField(paymentorder.FieldRechargePrincipal, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRechargePrincipal(); ok {
+		_spec.AddField(paymentorder.FieldRechargePrincipal, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargeBonus(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonus, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRechargeBonus(); ok {
+		_spec.AddField(paymentorder.FieldRechargeBonus, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargeBonusSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonusSnapshot, field.TypeJSON, value)
+	}
+	if _u.mutation.RechargeBonusSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldRechargeBonusSnapshot, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RefundedBonusAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedBonusAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedBonusAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedBonusAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundedPrincipalAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedPrincipalAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedPrincipalAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedPrincipalAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundedGatewayAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedGatewayAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedGatewayAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedGatewayAmount, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -1324,6 +1509,35 @@ func (_u *PaymentOrderUpdate) sqlSave(ctx context.Context) (_node int, err error
 		}
 		_spec.Edges.Add = append(_spec.Edges.Add, edge)
 	}
+	if _u.mutation.RechargeBonusRuleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   paymentorder.RechargeBonusRuleTable,
+			Columns: []string{paymentorder.RechargeBonusRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rechargebonusrule.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RechargeBonusRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   paymentorder.RechargeBonusRuleTable,
+			Columns: []string{paymentorder.RechargeBonusRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rechargebonusrule.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
 	if _node, err = sqlgraph.UpdateNodes(ctx, _u.driver, _spec); err != nil {
 		if _, ok := err.(*sqlgraph.NotFoundError); ok {
 			err = &NotFoundError{paymentorder.Label}
@@ -1466,6 +1680,143 @@ func (_u *PaymentOrderUpdateOne) SetNillableFeeRate(v *float64) *PaymentOrderUpd
 // AddFeeRate adds value to the "fee_rate" field.
 func (_u *PaymentOrderUpdateOne) AddFeeRate(v float64) *PaymentOrderUpdateOne {
 	_u.mutation.AddFeeRate(v)
+	return _u
+}
+
+// SetRechargePrincipal sets the "recharge_principal" field.
+func (_u *PaymentOrderUpdateOne) SetRechargePrincipal(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetRechargePrincipal()
+	_u.mutation.SetRechargePrincipal(v)
+	return _u
+}
+
+// SetNillableRechargePrincipal sets the "recharge_principal" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRechargePrincipal(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRechargePrincipal(*v)
+	}
+	return _u
+}
+
+// AddRechargePrincipal adds value to the "recharge_principal" field.
+func (_u *PaymentOrderUpdateOne) AddRechargePrincipal(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddRechargePrincipal(v)
+	return _u
+}
+
+// SetRechargeBonus sets the "recharge_bonus" field.
+func (_u *PaymentOrderUpdateOne) SetRechargeBonus(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetRechargeBonus()
+	_u.mutation.SetRechargeBonus(v)
+	return _u
+}
+
+// SetNillableRechargeBonus sets the "recharge_bonus" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRechargeBonus(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRechargeBonus(*v)
+	}
+	return _u
+}
+
+// AddRechargeBonus adds value to the "recharge_bonus" field.
+func (_u *PaymentOrderUpdateOne) AddRechargeBonus(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddRechargeBonus(v)
+	return _u
+}
+
+// SetRechargeBonusRuleID sets the "recharge_bonus_rule_id" field.
+func (_u *PaymentOrderUpdateOne) SetRechargeBonusRuleID(v int64) *PaymentOrderUpdateOne {
+	_u.mutation.SetRechargeBonusRuleID(v)
+	return _u
+}
+
+// SetNillableRechargeBonusRuleID sets the "recharge_bonus_rule_id" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRechargeBonusRuleID(v *int64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRechargeBonusRuleID(*v)
+	}
+	return _u
+}
+
+// ClearRechargeBonusRuleID clears the value of the "recharge_bonus_rule_id" field.
+func (_u *PaymentOrderUpdateOne) ClearRechargeBonusRuleID() *PaymentOrderUpdateOne {
+	_u.mutation.ClearRechargeBonusRuleID()
+	return _u
+}
+
+// SetRechargeBonusSnapshot sets the "recharge_bonus_snapshot" field.
+func (_u *PaymentOrderUpdateOne) SetRechargeBonusSnapshot(v map[string]interface{}) *PaymentOrderUpdateOne {
+	_u.mutation.SetRechargeBonusSnapshot(v)
+	return _u
+}
+
+// ClearRechargeBonusSnapshot clears the value of the "recharge_bonus_snapshot" field.
+func (_u *PaymentOrderUpdateOne) ClearRechargeBonusSnapshot() *PaymentOrderUpdateOne {
+	_u.mutation.ClearRechargeBonusSnapshot()
+	return _u
+}
+
+// SetRefundedBonusAmount sets the "refunded_bonus_amount" field.
+func (_u *PaymentOrderUpdateOne) SetRefundedBonusAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetRefundedBonusAmount()
+	_u.mutation.SetRefundedBonusAmount(v)
+	return _u
+}
+
+// SetNillableRefundedBonusAmount sets the "refunded_bonus_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRefundedBonusAmount(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRefundedBonusAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedBonusAmount adds value to the "refunded_bonus_amount" field.
+func (_u *PaymentOrderUpdateOne) AddRefundedBonusAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddRefundedBonusAmount(v)
+	return _u
+}
+
+// SetRefundedPrincipalAmount sets the "refunded_principal_amount" field.
+func (_u *PaymentOrderUpdateOne) SetRefundedPrincipalAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetRefundedPrincipalAmount()
+	_u.mutation.SetRefundedPrincipalAmount(v)
+	return _u
+}
+
+// SetNillableRefundedPrincipalAmount sets the "refunded_principal_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRefundedPrincipalAmount(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRefundedPrincipalAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedPrincipalAmount adds value to the "refunded_principal_amount" field.
+func (_u *PaymentOrderUpdateOne) AddRefundedPrincipalAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddRefundedPrincipalAmount(v)
+	return _u
+}
+
+// SetRefundedGatewayAmount sets the "refunded_gateway_amount" field.
+func (_u *PaymentOrderUpdateOne) SetRefundedGatewayAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.ResetRefundedGatewayAmount()
+	_u.mutation.SetRefundedGatewayAmount(v)
+	return _u
+}
+
+// SetNillableRefundedGatewayAmount sets the "refunded_gateway_amount" field if the given value is not nil.
+func (_u *PaymentOrderUpdateOne) SetNillableRefundedGatewayAmount(v *float64) *PaymentOrderUpdateOne {
+	if v != nil {
+		_u.SetRefundedGatewayAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundedGatewayAmount adds value to the "refunded_gateway_amount" field.
+func (_u *PaymentOrderUpdateOne) AddRefundedGatewayAmount(v float64) *PaymentOrderUpdateOne {
+	_u.mutation.AddRefundedGatewayAmount(v)
 	return _u
 }
 
@@ -2170,6 +2521,11 @@ func (_u *PaymentOrderUpdateOne) AddSubscriptionRefundAllocations(v ...*Subscrip
 	return _u.AddSubscriptionRefundAllocationIDs(ids...)
 }
 
+// SetRechargeBonusRule sets the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (_u *PaymentOrderUpdateOne) SetRechargeBonusRule(v *RechargeBonusRule) *PaymentOrderUpdateOne {
+	return _u.SetRechargeBonusRuleID(v.ID)
+}
+
 // Mutation returns the PaymentOrderMutation object of the builder.
 func (_u *PaymentOrderUpdateOne) Mutation() *PaymentOrderMutation {
 	return _u.mutation
@@ -2200,6 +2556,12 @@ func (_u *PaymentOrderUpdateOne) RemoveSubscriptionRefundAllocations(v ...*Subsc
 		ids[i] = v[i].ID
 	}
 	return _u.RemoveSubscriptionRefundAllocationIDs(ids...)
+}
+
+// ClearRechargeBonusRule clears the "recharge_bonus_rule" edge to the RechargeBonusRule entity.
+func (_u *PaymentOrderUpdateOne) ClearRechargeBonusRule() *PaymentOrderUpdateOne {
+	_u.mutation.ClearRechargeBonusRule()
+	return _u
 }
 
 // Where appends a list predicates to the PaymentOrderUpdate builder.
@@ -2392,6 +2754,42 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 	}
 	if value, ok := _u.mutation.AddedFeeRate(); ok {
 		_spec.AddField(paymentorder.FieldFeeRate, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargePrincipal(); ok {
+		_spec.SetField(paymentorder.FieldRechargePrincipal, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRechargePrincipal(); ok {
+		_spec.AddField(paymentorder.FieldRechargePrincipal, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargeBonus(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonus, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRechargeBonus(); ok {
+		_spec.AddField(paymentorder.FieldRechargeBonus, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RechargeBonusSnapshot(); ok {
+		_spec.SetField(paymentorder.FieldRechargeBonusSnapshot, field.TypeJSON, value)
+	}
+	if _u.mutation.RechargeBonusSnapshotCleared() {
+		_spec.ClearField(paymentorder.FieldRechargeBonusSnapshot, field.TypeJSON)
+	}
+	if value, ok := _u.mutation.RefundedBonusAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedBonusAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedBonusAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedBonusAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundedPrincipalAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedPrincipalAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedPrincipalAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedPrincipalAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundedGatewayAmount(); ok {
+		_spec.SetField(paymentorder.FieldRefundedGatewayAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundedGatewayAmount(); ok {
+		_spec.AddField(paymentorder.FieldRefundedGatewayAmount, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.RechargeCode(); ok {
 		_spec.SetField(paymentorder.FieldRechargeCode, field.TypeString, value)
@@ -2661,6 +3059,35 @@ func (_u *PaymentOrderUpdateOne) sqlSave(ctx context.Context) (_node *PaymentOrd
 			Bidi:    false,
 			Target: &sqlgraph.EdgeTarget{
 				IDSpec: sqlgraph.NewFieldSpec(subscriptionrefundallocation.FieldID, field.TypeInt64),
+			},
+		}
+		for _, k := range nodes {
+			edge.Target.Nodes = append(edge.Target.Nodes, k)
+		}
+		_spec.Edges.Add = append(_spec.Edges.Add, edge)
+	}
+	if _u.mutation.RechargeBonusRuleCleared() {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   paymentorder.RechargeBonusRuleTable,
+			Columns: []string{paymentorder.RechargeBonusRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rechargebonusrule.FieldID, field.TypeInt64),
+			},
+		}
+		_spec.Edges.Clear = append(_spec.Edges.Clear, edge)
+	}
+	if nodes := _u.mutation.RechargeBonusRuleIDs(); len(nodes) > 0 {
+		edge := &sqlgraph.EdgeSpec{
+			Rel:     sqlgraph.M2O,
+			Inverse: true,
+			Table:   paymentorder.RechargeBonusRuleTable,
+			Columns: []string{paymentorder.RechargeBonusRuleColumn},
+			Bidi:    false,
+			Target: &sqlgraph.EdgeTarget{
+				IDSpec: sqlgraph.NewFieldSpec(rechargebonusrule.FieldID, field.TypeInt64),
 			},
 		}
 		for _, k := range nodes {

@@ -28,6 +28,20 @@ const (
 	FieldPayAmount = "pay_amount"
 	// FieldFeeRate holds the string denoting the fee_rate field in the database.
 	FieldFeeRate = "fee_rate"
+	// FieldRechargePrincipal holds the string denoting the recharge_principal field in the database.
+	FieldRechargePrincipal = "recharge_principal"
+	// FieldRechargeBonus holds the string denoting the recharge_bonus field in the database.
+	FieldRechargeBonus = "recharge_bonus"
+	// FieldRechargeBonusRuleID holds the string denoting the recharge_bonus_rule_id field in the database.
+	FieldRechargeBonusRuleID = "recharge_bonus_rule_id"
+	// FieldRechargeBonusSnapshot holds the string denoting the recharge_bonus_snapshot field in the database.
+	FieldRechargeBonusSnapshot = "recharge_bonus_snapshot"
+	// FieldRefundedBonusAmount holds the string denoting the refunded_bonus_amount field in the database.
+	FieldRefundedBonusAmount = "refunded_bonus_amount"
+	// FieldRefundedPrincipalAmount holds the string denoting the refunded_principal_amount field in the database.
+	FieldRefundedPrincipalAmount = "refunded_principal_amount"
+	// FieldRefundedGatewayAmount holds the string denoting the refunded_gateway_amount field in the database.
+	FieldRefundedGatewayAmount = "refunded_gateway_amount"
 	// FieldRechargeCode holds the string denoting the recharge_code field in the database.
 	FieldRechargeCode = "recharge_code"
 	// FieldOutTradeNo holds the string denoting the out_trade_no field in the database.
@@ -106,6 +120,8 @@ const (
 	EdgeUser = "user"
 	// EdgeSubscriptionRefundAllocations holds the string denoting the subscription_refund_allocations edge name in mutations.
 	EdgeSubscriptionRefundAllocations = "subscription_refund_allocations"
+	// EdgeRechargeBonusRule holds the string denoting the recharge_bonus_rule edge name in mutations.
+	EdgeRechargeBonusRule = "recharge_bonus_rule"
 	// Table holds the table name of the paymentorder in the database.
 	Table = "payment_orders"
 	// UserTable is the table that holds the user relation/edge.
@@ -122,6 +138,13 @@ const (
 	SubscriptionRefundAllocationsInverseTable = "subscription_refund_allocations"
 	// SubscriptionRefundAllocationsColumn is the table column denoting the subscription_refund_allocations relation/edge.
 	SubscriptionRefundAllocationsColumn = "payment_order_id"
+	// RechargeBonusRuleTable is the table that holds the recharge_bonus_rule relation/edge.
+	RechargeBonusRuleTable = "payment_orders"
+	// RechargeBonusRuleInverseTable is the table name for the RechargeBonusRule entity.
+	// It exists in this package in order to avoid circular dependency with the "rechargebonusrule" package.
+	RechargeBonusRuleInverseTable = "recharge_bonus_rules"
+	// RechargeBonusRuleColumn is the table column denoting the recharge_bonus_rule relation/edge.
+	RechargeBonusRuleColumn = "recharge_bonus_rule_id"
 )
 
 // Columns holds all SQL columns for paymentorder fields.
@@ -134,6 +157,13 @@ var Columns = []string{
 	FieldAmount,
 	FieldPayAmount,
 	FieldFeeRate,
+	FieldRechargePrincipal,
+	FieldRechargeBonus,
+	FieldRechargeBonusRuleID,
+	FieldRechargeBonusSnapshot,
+	FieldRefundedBonusAmount,
+	FieldRefundedPrincipalAmount,
+	FieldRefundedGatewayAmount,
 	FieldRechargeCode,
 	FieldOutTradeNo,
 	FieldPaymentType,
@@ -190,6 +220,16 @@ var (
 	UserNameValidator func(string) error
 	// DefaultFeeRate holds the default value on creation for the "fee_rate" field.
 	DefaultFeeRate float64
+	// DefaultRechargePrincipal holds the default value on creation for the "recharge_principal" field.
+	DefaultRechargePrincipal float64
+	// DefaultRechargeBonus holds the default value on creation for the "recharge_bonus" field.
+	DefaultRechargeBonus float64
+	// DefaultRefundedBonusAmount holds the default value on creation for the "refunded_bonus_amount" field.
+	DefaultRefundedBonusAmount float64
+	// DefaultRefundedPrincipalAmount holds the default value on creation for the "refunded_principal_amount" field.
+	DefaultRefundedPrincipalAmount float64
+	// DefaultRefundedGatewayAmount holds the default value on creation for the "refunded_gateway_amount" field.
+	DefaultRefundedGatewayAmount float64
 	// RechargeCodeValidator is a validator for the "recharge_code" field. It is called by the builders before save.
 	RechargeCodeValidator func(string) error
 	// DefaultOutTradeNo holds the default value on creation for the "out_trade_no" field.
@@ -275,6 +315,36 @@ func ByPayAmount(opts ...sql.OrderTermOption) OrderOption {
 // ByFeeRate orders the results by the fee_rate field.
 func ByFeeRate(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldFeeRate, opts...).ToFunc()
+}
+
+// ByRechargePrincipal orders the results by the recharge_principal field.
+func ByRechargePrincipal(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRechargePrincipal, opts...).ToFunc()
+}
+
+// ByRechargeBonus orders the results by the recharge_bonus field.
+func ByRechargeBonus(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRechargeBonus, opts...).ToFunc()
+}
+
+// ByRechargeBonusRuleID orders the results by the recharge_bonus_rule_id field.
+func ByRechargeBonusRuleID(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRechargeBonusRuleID, opts...).ToFunc()
+}
+
+// ByRefundedBonusAmount orders the results by the refunded_bonus_amount field.
+func ByRefundedBonusAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefundedBonusAmount, opts...).ToFunc()
+}
+
+// ByRefundedPrincipalAmount orders the results by the refunded_principal_amount field.
+func ByRefundedPrincipalAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefundedPrincipalAmount, opts...).ToFunc()
+}
+
+// ByRefundedGatewayAmount orders the results by the refunded_gateway_amount field.
+func ByRefundedGatewayAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefundedGatewayAmount, opts...).ToFunc()
 }
 
 // ByRechargeCode orders the results by the recharge_code field.
@@ -477,6 +547,13 @@ func BySubscriptionRefundAllocations(term sql.OrderTerm, terms ...sql.OrderTerm)
 		sqlgraph.OrderByNeighborTerms(s, newSubscriptionRefundAllocationsStep(), append([]sql.OrderTerm{term}, terms...)...)
 	}
 }
+
+// ByRechargeBonusRuleField orders the results by recharge_bonus_rule field.
+func ByRechargeBonusRuleField(field string, opts ...sql.OrderTermOption) OrderOption {
+	return func(s *sql.Selector) {
+		sqlgraph.OrderByNeighborTerms(s, newRechargeBonusRuleStep(), sql.OrderByField(field, opts...))
+	}
+}
 func newUserStep() *sqlgraph.Step {
 	return sqlgraph.NewStep(
 		sqlgraph.From(Table, FieldID),
@@ -489,5 +566,12 @@ func newSubscriptionRefundAllocationsStep() *sqlgraph.Step {
 		sqlgraph.From(Table, FieldID),
 		sqlgraph.To(SubscriptionRefundAllocationsInverseTable, FieldID),
 		sqlgraph.Edge(sqlgraph.O2M, false, SubscriptionRefundAllocationsTable, SubscriptionRefundAllocationsColumn),
+	)
+}
+func newRechargeBonusRuleStep() *sqlgraph.Step {
+	return sqlgraph.NewStep(
+		sqlgraph.From(Table, FieldID),
+		sqlgraph.To(RechargeBonusRuleInverseTable, FieldID),
+		sqlgraph.Edge(sqlgraph.M2O, true, RechargeBonusRuleTable, RechargeBonusRuleColumn),
 	)
 }

@@ -203,6 +203,29 @@ type SubscriptionPreviewRequest struct {
 	PaymentType string `json:"payment_type"`
 }
 
+type RechargePreviewRequest struct {
+	Amount      float64 `json:"amount"`
+	PaymentType string  `json:"payment_type" binding:"required"`
+}
+
+// PreviewRecharge returns a server-authoritative balance recharge quote.
+func (h *PaymentHandler) PreviewRecharge(c *gin.Context) {
+	if _, ok := requireAuth(c); !ok {
+		return
+	}
+	var req RechargePreviewRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	quote, err := h.paymentService.PreviewRecharge(c.Request.Context(), req.Amount, req.PaymentType)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, quote)
+}
+
 // PreviewSubscriptionOrder returns the effective purchase / renew / upgrade action for a plan.
 // POST /api/v1/payment/subscription/preview
 func (h *PaymentHandler) PreviewSubscriptionOrder(c *gin.Context) {
@@ -245,6 +268,7 @@ type CreateOrderRequest struct {
 	PaymentSource     string  `json:"payment_source"`
 	OrderType         string  `json:"order_type"`
 	PlanID            int64   `json:"plan_id"`
+	QuoteToken        string  `json:"quote_token"`
 	// IsMobile lets the frontend declare its mobile status directly. When
 	// nil we fall back to User-Agent heuristics (which miss iPadOS / some
 	// embedded browsers that strip the "Mobile" keyword).
@@ -295,6 +319,7 @@ func (h *PaymentHandler) CreateOrder(c *gin.Context) {
 		OrderType:       req.OrderType,
 		PlanID:          req.PlanID,
 		Locale:          c.GetHeader("Accept-Language"),
+		QuoteToken:      req.QuoteToken,
 	})
 	if err != nil {
 		response.ErrorFrom(c, err)
@@ -337,6 +362,9 @@ func applyWeChatPaymentResumeClaims(req *CreateOrderRequest, claims *service.WeC
 	}
 	if claims.PlanID > 0 {
 		req.PlanID = claims.PlanID
+	}
+	if strings.TrimSpace(claims.QuoteToken) != "" {
+		req.QuoteToken = claims.QuoteToken
 	}
 	return nil
 }
@@ -739,27 +767,34 @@ func isMobile(c *gin.Context) bool {
 }
 
 type PaymentOrderResult struct {
-	ID                  int64      `json:"id"`
-	UserID              int64      `json:"user_id"`
-	Amount              float64    `json:"amount"`
-	PayAmount           float64    `json:"pay_amount"`
-	FeeRate             float64    `json:"fee_rate"`
-	Currency            string     `json:"currency"`
-	PaymentType         string     `json:"payment_type"`
-	OutTradeNo          string     `json:"out_trade_no"`
-	Status              string     `json:"status"`
-	OrderType           string     `json:"order_type"`
-	CreatedAt           time.Time  `json:"created_at"`
-	ExpiresAt           time.Time  `json:"expires_at"`
-	PaidAt              *time.Time `json:"paid_at,omitempty"`
-	CompletedAt         *time.Time `json:"completed_at,omitempty"`
-	RefundAmount        float64    `json:"refund_amount"`
-	RefundReason        *string    `json:"refund_reason,omitempty"`
-	RefundRequestedAt   *time.Time `json:"refund_requested_at,omitempty"`
-	RefundRequestedBy   *string    `json:"refund_requested_by,omitempty"`
-	RefundRequestReason *string    `json:"refund_request_reason,omitempty"`
-	PlanID              *int64     `json:"plan_id,omitempty"`
-	ProviderInstanceID  *string    `json:"provider_instance_id,omitempty"`
+	ID                      int64                  `json:"id"`
+	UserID                  int64                  `json:"user_id"`
+	Amount                  float64                `json:"amount"`
+	PayAmount               float64                `json:"pay_amount"`
+	FeeRate                 float64                `json:"fee_rate"`
+	Currency                string                 `json:"currency"`
+	PaymentType             string                 `json:"payment_type"`
+	OutTradeNo              string                 `json:"out_trade_no"`
+	Status                  string                 `json:"status"`
+	OrderType               string                 `json:"order_type"`
+	CreatedAt               time.Time              `json:"created_at"`
+	ExpiresAt               time.Time              `json:"expires_at"`
+	PaidAt                  *time.Time             `json:"paid_at,omitempty"`
+	CompletedAt             *time.Time             `json:"completed_at,omitempty"`
+	RefundAmount            float64                `json:"refund_amount"`
+	RechargePrincipal       float64                `json:"recharge_principal"`
+	RechargeBonus           float64                `json:"recharge_bonus"`
+	RechargeBonusRuleID     *int64                 `json:"recharge_bonus_rule_id,omitempty"`
+	RechargeBonusSnapshot   map[string]interface{} `json:"recharge_bonus_snapshot,omitempty"`
+	RefundedBonusAmount     float64                `json:"refunded_bonus_amount"`
+	RefundedPrincipalAmount float64                `json:"refunded_principal_amount"`
+	RefundedGatewayAmount   float64                `json:"refunded_gateway_amount"`
+	RefundReason            *string                `json:"refund_reason,omitempty"`
+	RefundRequestedAt       *time.Time             `json:"refund_requested_at,omitempty"`
+	RefundRequestedBy       *string                `json:"refund_requested_by,omitempty"`
+	RefundRequestReason     *string                `json:"refund_request_reason,omitempty"`
+	PlanID                  *int64                 `json:"plan_id,omitempty"`
+	ProviderInstanceID      *string                `json:"provider_instance_id,omitempty"`
 }
 
 func sanitizePaymentOrdersForResponse(orders []*dbent.PaymentOrder) []PaymentOrderResult {
@@ -777,27 +812,34 @@ func sanitizePaymentOrderForResponse(order *dbent.PaymentOrder) *PaymentOrderRes
 		return nil
 	}
 	return &PaymentOrderResult{
-		ID:                  order.ID,
-		UserID:              order.UserID,
-		Amount:              order.Amount,
-		PayAmount:           order.PayAmount,
-		FeeRate:             order.FeeRate,
-		Currency:            service.PaymentOrderCurrency(order),
-		PaymentType:         order.PaymentType,
-		OutTradeNo:          order.OutTradeNo,
-		Status:              order.Status,
-		OrderType:           order.OrderType,
-		CreatedAt:           order.CreatedAt,
-		ExpiresAt:           order.ExpiresAt,
-		PaidAt:              order.PaidAt,
-		CompletedAt:         order.CompletedAt,
-		RefundAmount:        order.RefundAmount,
-		RefundReason:        order.RefundReason,
-		RefundRequestedAt:   order.RefundRequestedAt,
-		RefundRequestedBy:   order.RefundRequestedBy,
-		RefundRequestReason: order.RefundRequestReason,
-		PlanID:              order.PlanID,
-		ProviderInstanceID:  order.ProviderInstanceID,
+		ID:                      order.ID,
+		UserID:                  order.UserID,
+		Amount:                  order.Amount,
+		PayAmount:               order.PayAmount,
+		FeeRate:                 order.FeeRate,
+		Currency:                service.PaymentOrderCurrency(order),
+		PaymentType:             order.PaymentType,
+		OutTradeNo:              order.OutTradeNo,
+		Status:                  order.Status,
+		OrderType:               order.OrderType,
+		CreatedAt:               order.CreatedAt,
+		ExpiresAt:               order.ExpiresAt,
+		PaidAt:                  order.PaidAt,
+		CompletedAt:             order.CompletedAt,
+		RefundAmount:            order.RefundAmount,
+		RechargePrincipal:       order.RechargePrincipal,
+		RechargeBonus:           order.RechargeBonus,
+		RechargeBonusRuleID:     order.RechargeBonusRuleID,
+		RechargeBonusSnapshot:   order.RechargeBonusSnapshot,
+		RefundedBonusAmount:     order.RefundedBonusAmount,
+		RefundedPrincipalAmount: order.RefundedPrincipalAmount,
+		RefundedGatewayAmount:   order.RefundedGatewayAmount,
+		RefundReason:            order.RefundReason,
+		RefundRequestedAt:       order.RefundRequestedAt,
+		RefundRequestedBy:       order.RefundRequestedBy,
+		RefundRequestReason:     order.RefundRequestReason,
+		PlanID:                  order.PlanID,
+		ProviderInstanceID:      order.ProviderInstanceID,
 	}
 }
 

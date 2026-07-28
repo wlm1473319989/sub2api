@@ -433,6 +433,59 @@ func (h *PaymentHandler) DeletePlan(c *gin.Context) {
 	response.Success(c, gin.H{"message": "deleted"})
 }
 
+func (h *PaymentHandler) ListRechargeBonusRules(c *gin.Context) {
+	rules, err := h.configService.ListRechargeBonusRules(c.Request.Context())
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rules)
+}
+
+func (h *PaymentHandler) CreateRechargeBonusRule(c *gin.Context) {
+	var req service.RechargeBonusRuleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	rule, err := h.configService.CreateRechargeBonusRule(c.Request.Context(), req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Created(c, rule)
+}
+
+func (h *PaymentHandler) UpdateRechargeBonusRule(c *gin.Context) {
+	id, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+	var req service.RechargeBonusRuleRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	rule, err := h.configService.UpdateRechargeBonusRule(c.Request.Context(), id, req)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, rule)
+}
+
+func (h *PaymentHandler) DeleteRechargeBonusRule(c *gin.Context) {
+	id, ok := parseIDParam(c, "id")
+	if !ok {
+		return
+	}
+	if err := h.configService.DeleteRechargeBonusRule(c.Request.Context(), id); err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{"message": "deleted"})
+}
+
 // --- Provider Instances ---
 
 // ListProviders returns all payment provider instances.

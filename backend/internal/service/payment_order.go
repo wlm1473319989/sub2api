@@ -60,7 +60,16 @@ func (s *PaymentService) CreateOrder(ctx context.Context, req CreateOrderRequest
 		orderAmount = subDecision.OrderAmount
 		limitAmount = subDecision.OrderAmount
 	} else if req.OrderType == payment.OrderTypeBalance {
-		orderAmount = calculateCreditedBalance(req.Amount, cfg.BalanceRechargeMultiplier)
+		quote, quoteErr := s.calculateRechargeQuote(ctx, req.Amount, req.PaymentType, cfg)
+		if quoteErr != nil {
+			return nil, quoteErr
+		}
+		if quoteErr = s.validateRechargeQuoteToken(req.QuoteToken, req.PaymentType, quote); quoteErr != nil {
+			return nil, quoteErr
+		}
+		req.rechargeQuote = quote
+		orderAmount = quote.CreditedAmount
+		limitAmount = quote.Principal
 	}
 	feeRate := cfg.RechargeFeeRate
 	methodCurrency := payment.DefaultPaymentCurrency
@@ -205,6 +214,16 @@ func (s *PaymentService) createOrderInTx(ctx context.Context, req CreateOrderReq
 		SetExpiresAt(exp).
 		SetClientIP(req.ClientIP).
 		SetSrcHost(req.SrcHost)
+	if req.OrderType == payment.OrderTypeBalance && req.rechargeQuote != nil {
+		b.SetRechargePrincipal(req.rechargeQuote.Principal).
+			SetRechargeBonus(req.rechargeQuote.Bonus)
+		if req.rechargeQuote.ruleID != nil {
+			b.SetRechargeBonusRuleID(*req.rechargeQuote.ruleID)
+		}
+		if req.rechargeQuote.snapshot != nil {
+			b.SetRechargeBonusSnapshot(req.rechargeQuote.snapshot)
+		}
+	}
 	if req.SrcURL != "" {
 		b.SetSrcURL(req.SrcURL)
 	}
@@ -750,6 +769,9 @@ func buildWeChatPaymentOAuthStartURL(req CreateOrderRequest, scope string) (stri
 	}
 	if req.PlanID > 0 {
 		q.Set("plan_id", strconv.FormatInt(req.PlanID, 10))
+	}
+	if quoteToken := strings.TrimSpace(req.QuoteToken); quoteToken != "" {
+		q.Set("quote_token", quoteToken)
 	}
 	if scope = strings.TrimSpace(scope); scope != "" {
 		q.Set("scope", scope)

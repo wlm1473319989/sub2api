@@ -253,6 +253,8 @@ func TestResolveOrderPublicByResumeTokenReturnsFrontendContractFields(t *testing
 	require.Contains(t, resp.Data, "created_at")
 	require.Contains(t, resp.Data, "expires_at")
 	require.Contains(t, resp.Data, "refund_amount")
+	require.NotContains(t, resp.Data, "recharge_bonus_snapshot")
+	require.NotContains(t, resp.Data, "recharge_bonus_rule_id")
 }
 
 func TestResolveOrderPublicByResumeTokenReturnsBadRequestForMismatchedToken(t *testing.T) {

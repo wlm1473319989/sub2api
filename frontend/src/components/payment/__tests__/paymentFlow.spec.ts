@@ -61,6 +61,21 @@ describe('getVisibleMethods', () => {
   })
 })
 
+	describe('buildCreateOrderPayload', () => {
+		it('includes the recharge quote token when supplied', () => {
+			const payload = buildCreateOrderPayload({
+				amount: 100,
+				paymentType: 'wxpay',
+				orderType: 'balance',
+				isMobile: false,
+				isWechatBrowser: false,
+				quoteToken: 'quote-token-123',
+			})
+
+			expect(payload.quote_token).toBe('quote-token-123')
+		})
+	})
+
 describe('decidePaymentLaunch', () => {
   it('returns completed_directly for zero-payment subscription actions', () => {
     const decision = decidePaymentLaunch(createOrderResult({

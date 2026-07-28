@@ -17,6 +17,7 @@ import (
 	"github.com/Wei-Shaw/sub2api/internal/domain"
 	"github.com/Wei-Shaw/sub2api/internal/payment"
 	infraerrors "github.com/Wei-Shaw/sub2api/internal/pkg/errors"
+	"github.com/shopspring/decimal"
 )
 
 var (
@@ -159,13 +160,13 @@ func (s *PaymentService) RequestRefund(ctx context.Context, oid, uid int64, reas
 		return err
 	}
 	nr := strings.TrimSpace(reason)
-	refundAmount := o.Amount
+	refundAmount := remainingOrderRecoveryAmount(o)
 	if o.OrderType == payment.OrderTypeBalance {
 		u, err := s.userRepo.GetByID(ctx, o.UserID)
 		if err != nil {
 			return fmt.Errorf("get user: %w", err)
 		}
-		if u.Balance < o.Amount {
+		if u.Balance < refundAmount {
 			return infraerrors.BadRequest("BALANCE_NOT_ENOUGH", "refund amount exceeds balance")
 		}
 	} else if o.OrderType == payment.OrderTypeSubscription {
@@ -186,19 +187,25 @@ func (s *PaymentService) RequestRefund(ctx context.Context, oid, uid int64, reas
 	}
 	now := time.Now()
 	by := fmt.Sprintf("%d", uid)
-	c, err := s.entClient.PaymentOrder.Update().
+	requestStatuses := []string{OrderStatusCompleted}
+	if isRechargeBonusRefundOrder(o) {
+		requestStatuses = append(requestStatuses, OrderStatusPartiallyRefunded)
+	}
+	update := s.entClient.PaymentOrder.Update().
 		Where(
 			paymentorder.IDEQ(oid),
 			paymentorder.UserIDEQ(uid),
-			paymentorder.StatusEQ(OrderStatusCompleted),
+			paymentorder.StatusIn(requestStatuses...),
 			paymentorder.OrderTypeEQ(o.OrderType),
 		).
 		SetStatus(OrderStatusRefundRequested).
 		SetRefundRequestedAt(now).
 		SetRefundRequestReason(nr).
-		SetRefundRequestedBy(by).
-		SetRefundAmount(refundAmount).
-		Save(ctx)
+		SetRefundRequestedBy(by)
+	if !isRechargeBonusRefundOrder(o) {
+		update.SetRefundAmount(refundAmount)
+	}
+	c, err := update.Save(ctx)
 	if err != nil {
 		return fmt.Errorf("update: %w", err)
 	}
@@ -220,7 +227,7 @@ func (s *PaymentService) validateRefundRequestBase(ctx context.Context, oid, uid
 	if o.OrderType != payment.OrderTypeBalance && o.OrderType != payment.OrderTypeSubscription {
 		return nil, infraerrors.BadRequest("INVALID_ORDER_TYPE", "only balance or subscription orders can request refund")
 	}
-	if o.Status != OrderStatusCompleted {
+	if o.Status != OrderStatusCompleted && !(o.Status == OrderStatusPartiallyRefunded && isRechargeBonusRefundOrder(o)) {
 		return nil, infraerrors.BadRequest("INVALID_STATUS", "only completed orders can request refund")
 	}
 	return o, nil
@@ -356,11 +363,21 @@ func (s *PaymentService) PreviewUserRefund(ctx context.Context, oid, uid int64) 
 		if err != nil {
 			return nil, fmt.Errorf("get user: %w", err)
 		}
-		if u.Balance < o.Amount {
+		if u.Balance < remainingOrderRecoveryAmount(o) {
 			return nil, infraerrors.BadRequest("BALANCE_NOT_ENOUGH", "refund amount exceeds balance")
 		}
 	}
 	return s.PreviewRefund(ctx, oid, 0, "", false, true)
+}
+
+func remainingOrderRecoveryAmount(o *dbent.PaymentOrder) float64 {
+	if o == nil {
+		return 0
+	}
+	if !isRechargeBonusRefundOrder(o) {
+		return o.Amount
+	}
+	return math.Max(0, decimal.NewFromFloat(o.Amount).Sub(decimal.NewFromFloat(o.RefundAmount)).Round(2).InexactFloat64())
 }
 
 func (s *PaymentService) prepareRefundPlan(ctx context.Context, oid int64, amt float64, reason string, force, deduct bool) (*RefundPlan, *RefundResult, error) {
@@ -368,34 +385,39 @@ func (s *PaymentService) prepareRefundPlan(ctx context.Context, oid int64, amt f
 	if err != nil {
 		return nil, nil, infraerrors.NotFound("NOT_FOUND", "order not found")
 	}
-	ok := []string{OrderStatusCompleted, OrderStatusRefundRequested, OrderStatusRefundFailed}
+	ok := []string{OrderStatusCompleted, OrderStatusRefundRequested, OrderStatusRefundFailed, OrderStatusPartiallyRefunded}
 	if !psSliceContains(ok, o.Status) {
 		return nil, nil, infraerrors.BadRequest("INVALID_STATUS", "order status does not allow refund")
-	}
-	// Check provider instance allows admin refund
-	inst, instErr := s.getRefundOrderProviderInstance(ctx, o)
-	if instErr != nil {
-		slog.Warn("refund: provider instance lookup failed", "orderID", oid, "error", instErr)
-		return nil, nil, infraerrors.InternalServer("PROVIDER_LOOKUP_FAILED", "failed to look up payment provider for this order")
-	}
-	if inst == nil {
-		// Legacy order without provider_instance_id — block refund
-		return nil, nil, infraerrors.Forbidden("REFUND_DISABLED", "refund is not available for this order")
-	}
-	if !inst.RefundEnabled {
-		return nil, nil, infraerrors.Forbidden("REFUND_DISABLED", "refund is not enabled for this provider")
 	}
 	if math.IsNaN(amt) || math.IsInf(amt, 0) {
 		return nil, nil, infraerrors.BadRequest("INVALID_AMOUNT", "invalid refund amount")
 	}
-	if amt <= 0 {
-		amt = o.Amount
-	}
 	orderCurrency := PaymentOrderCurrency(o)
-	if amt-o.Amount > paymentAmountToleranceForCurrency(orderCurrency) {
-		return nil, nil, infraerrors.BadRequest("REFUND_AMOUNT_EXCEEDED", "refund amount exceeds recharge")
+	p := &RefundPlan{OrderID: oid, Order: o, Reason: strings.TrimSpace(reason), Force: force, DeductBalance: deduct, DeductionType: payment.DeductionTypeNone}
+	if isRechargeBonusRefundOrder(o) {
+		if err := prepareRechargeBonusRefundAmounts(p, amt, orderCurrency); err != nil {
+			return nil, nil, err
+		}
+	} else {
+		if amt <= 0 {
+			amt = o.Amount
+		}
+		if amt-o.Amount > paymentAmountToleranceForCurrency(orderCurrency) {
+			return nil, nil, infraerrors.BadRequest("REFUND_AMOUNT_EXCEEDED", "refund amount exceeds recharge")
+		}
+		p.RefundAmount = amt
+		p.GatewayAmount = calculateGatewayRefundAmount(o.Amount, o.PayAmount, amt, orderCurrency)
 	}
-	ga := calculateGatewayRefundAmount(o.Amount, o.PayAmount, amt, orderCurrency)
+	if p.GatewayAmount > paymentAmountToleranceForCurrency(orderCurrency) {
+		inst, instErr := s.getRefundOrderProviderInstance(ctx, o)
+		if instErr != nil {
+			slog.Warn("refund: provider instance lookup failed", "orderID", oid, "error", instErr)
+			return nil, nil, infraerrors.InternalServer("PROVIDER_LOOKUP_FAILED", "failed to look up payment provider for this order")
+		}
+		if inst == nil || !inst.RefundEnabled {
+			return nil, nil, infraerrors.Forbidden("REFUND_DISABLED", "refund is not enabled for this order")
+		}
+	}
 	rr := strings.TrimSpace(reason)
 	if rr == "" && o.RefundRequestReason != nil {
 		rr = *o.RefundRequestReason
@@ -403,7 +425,7 @@ func (s *PaymentService) prepareRefundPlan(ctx context.Context, oid int64, amt f
 	if rr == "" {
 		rr = fmt.Sprintf("refund order:%d", o.ID)
 	}
-	p := &RefundPlan{OrderID: oid, Order: o, RefundAmount: amt, GatewayAmount: ga, Reason: rr, Force: force, DeductBalance: deduct, DeductionType: payment.DeductionTypeNone}
+	p.Reason = rr
 	if deduct {
 		if er := s.prepDeduct(ctx, o, p, force); er != nil {
 			return p, er, nil
@@ -412,20 +434,63 @@ func (s *PaymentService) prepareRefundPlan(ctx context.Context, oid int64, amt f
 	return p, nil, nil
 }
 
+func isRechargeBonusRefundOrder(o *dbent.PaymentOrder) bool {
+	return o != nil && o.OrderType == payment.OrderTypeBalance && o.RechargePrincipal > 0 && o.RechargeBonusSnapshot != nil
+}
+
+func prepareRechargeBonusRefundAmounts(p *RefundPlan, requested float64, currency string) error {
+	o := p.Order
+	remaining := decimal.NewFromFloat(o.Amount).Sub(decimal.NewFromFloat(o.RefundAmount)).Round(2).InexactFloat64()
+	if requested <= 0 {
+		requested = remaining
+	}
+	if requested <= 0 || requested-remaining > paymentAmountToleranceForCurrency(currency) {
+		return infraerrors.BadRequest("REFUND_AMOUNT_EXCEEDED", "recovery amount exceeds remaining credited balance")
+	}
+	requested = decimal.NewFromFloat(requested).Round(2).InexactFloat64()
+	bonusRemaining := math.Max(0, decimal.NewFromFloat(o.RechargeBonus).Sub(decimal.NewFromFloat(o.RefundedBonusAmount)).Round(2).InexactFloat64())
+	bonusRecovery := math.Min(requested, bonusRemaining)
+	principalRefund := decimal.NewFromFloat(requested).Sub(decimal.NewFromFloat(bonusRecovery)).Round(2).InexactFloat64()
+	cumulativePrincipal := decimal.NewFromFloat(o.RefundedPrincipalAmount).Add(decimal.NewFromFloat(principalRefund)).Round(2).InexactFloat64()
+	targetGateway := calculateGatewayRefundAmount(o.RechargePrincipal, o.PayAmount, cumulativePrincipal, currency)
+	gatewayAmount := decimal.NewFromFloat(targetGateway).Sub(decimal.NewFromFloat(o.RefundedGatewayAmount)).Round(int32(payment.CurrencyMaxFractionDigits(currency))).InexactFloat64()
+	if gatewayAmount < 0 {
+		gatewayAmount = 0
+	}
+	p.RechargeBonusRefund = true
+	p.RecoveryAmount = requested
+	p.BonusRecoveryAmount = bonusRecovery
+	p.PrincipalRefundAmount = principalRefund
+	p.RefundAmount = requested
+	p.GatewayAmount = gatewayAmount
+	p.CumulativeRecoveryAmount = decimal.NewFromFloat(o.RefundAmount).Add(decimal.NewFromFloat(requested)).Round(2).InexactFloat64()
+	p.CumulativeBonusAmount = decimal.NewFromFloat(o.RefundedBonusAmount).Add(decimal.NewFromFloat(bonusRecovery)).Round(2).InexactFloat64()
+	p.CumulativePrincipalAmount = cumulativePrincipal
+	p.CumulativeGatewayAmount = decimal.NewFromFloat(o.RefundedGatewayAmount).Add(decimal.NewFromFloat(gatewayAmount)).Round(int32(payment.CurrencyMaxFractionDigits(currency))).InexactFloat64()
+	return nil
+}
+
 func refundPreviewFromPlan(p *RefundPlan, earlyResult *RefundResult) *RefundPreview {
 	if p == nil {
 		return nil
 	}
 	preview := &RefundPreview{
-		OrderAmount:     p.Order.Amount,
-		PayAmount:       p.Order.PayAmount,
-		RefundAmount:    p.RefundAmount,
-		GatewayAmount:   p.GatewayAmount,
-		Currency:        PaymentOrderCurrency(p.Order),
-		DeductionType:   p.DeductionType,
-		BalanceToDeduct: p.BalanceToDeduct,
-		SubDaysToDeduct: p.SubDaysToDeduct,
-		SettlementHead:  refundSettlementHeadInfo(p.SettlementHead, p.SettlementResidual),
+		OrderAmount:           p.Order.Amount,
+		PayAmount:             p.Order.PayAmount,
+		RefundAmount:          p.RefundAmount,
+		GatewayAmount:         p.GatewayAmount,
+		Currency:              PaymentOrderCurrency(p.Order),
+		DeductionType:         p.DeductionType,
+		BalanceToDeduct:       p.BalanceToDeduct,
+		SubDaysToDeduct:       p.SubDaysToDeduct,
+		SettlementHead:        refundSettlementHeadInfo(p.SettlementHead, p.SettlementResidual),
+		RecoveryAmount:        p.RecoveryAmount,
+		BonusRecoveryAmount:   p.BonusRecoveryAmount,
+		PrincipalRefundAmount: p.PrincipalRefundAmount,
+	}
+	if p.RechargeBonusRefund {
+		preview.RefundAmount = p.RecoveryAmount
+		preview.RemainingAmount = math.Max(0, p.Order.Amount-p.CumulativeRecoveryAmount)
 	}
 	if earlyResult != nil {
 		preview.Warning = earlyResult.Warning
@@ -629,7 +694,14 @@ func (s *PaymentService) prepDeduct(ctx context.Context, o *dbent.PaymentOrder, 
 		return nil
 	}
 	p.DeductionType = payment.DeductionTypeBalance
-	p.BalanceToDeduct = math.Min(p.RefundAmount, u.Balance)
+	deductAmount := p.RefundAmount
+	if p.RechargeBonusRefund {
+		deductAmount = p.RecoveryAmount
+	}
+	p.BalanceToDeduct = math.Min(deductAmount, u.Balance)
+	if p.BalanceToDeduct+1e-9 < deductAmount && !force {
+		return &RefundResult{Success: false, Warning: "user balance is insufficient to recover the refund amount; use force to continue", RequireForce: true, BalanceDeducted: p.BalanceToDeduct}
+	}
 	return nil
 }
 
@@ -697,7 +769,7 @@ func refundSettlementHeadInfo(head *dbent.SubscriptionSettlementOrder, residual 
 }
 
 func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
-	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(p.OrderID), paymentorder.StatusIn(OrderStatusCompleted, OrderStatusRefundRequested, OrderStatusRefundFailed)).SetStatus(OrderStatusRefunding).Save(ctx)
+	c, err := s.entClient.PaymentOrder.Update().Where(paymentorder.IDEQ(p.OrderID), paymentorder.StatusIn(OrderStatusCompleted, OrderStatusRefundRequested, OrderStatusRefundFailed, OrderStatusPartiallyRefunded)).SetStatus(OrderStatusRefunding).Save(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("lock: %w", err)
 	}
@@ -737,6 +809,10 @@ func (s *PaymentService) ExecuteRefund(ctx context.Context, p *RefundPlan) (*Ref
 }
 
 func (s *PaymentService) gwRefund(ctx context.Context, p *RefundPlan) error {
+	if p.GatewayAmount <= paymentAmountToleranceForCurrency(PaymentOrderCurrency(p.Order)) {
+		s.writeAuditLog(ctx, p.Order.ID, "REFUND_NO_GATEWAY_AMOUNT", "admin", map[string]any{"detail": "bonus recovery only"})
+		return nil
+	}
 	if p.Order.PaymentTradeNo == "" {
 		s.writeAuditLog(ctx, p.Order.ID, "REFUND_NO_TRADE_NO", "admin", map[string]any{"detail": "skipped"})
 		return nil
@@ -814,6 +890,9 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	if p.SettlementHead != nil {
 		return s.markRefundOkWithSettlement(ctx, p)
 	}
+	if p.RechargeBonusRefund {
+		return s.markRechargeBonusRefundOk(ctx, p)
+	}
 	fs := OrderStatusRefunded
 	if p.RefundAmount < p.Order.Amount {
 		fs = OrderStatusPartiallyRefunded
@@ -825,6 +904,33 @@ func (s *PaymentService) markRefundOk(ctx context.Context, p *RefundPlan) (*Refu
 	}
 	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{"refundAmount": p.RefundAmount, "reason": p.Reason, "balanceDeducted": p.BalanceToDeduct, "force": p.Force})
 	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct, SubDaysDeducted: p.SubDaysToDeduct, SettlementHead: refundSettlementHeadInfo(p.SettlementHead, p.SettlementResidual)}, nil
+}
+
+func (s *PaymentService) markRechargeBonusRefundOk(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
+	status := OrderStatusPartiallyRefunded
+	if p.CumulativeRecoveryAmount+1e-9 >= p.Order.Amount {
+		status = OrderStatusRefunded
+	}
+	now := time.Now()
+	_, err := s.entClient.PaymentOrder.UpdateOneID(p.OrderID).
+		SetStatus(status).
+		SetRefundAmount(p.CumulativeRecoveryAmount).
+		SetRefundedBonusAmount(p.CumulativeBonusAmount).
+		SetRefundedPrincipalAmount(p.CumulativePrincipalAmount).
+		SetRefundedGatewayAmount(p.CumulativeGatewayAmount).
+		SetRefundReason(p.Reason).
+		SetRefundAt(now).
+		SetForceRefund(p.Force).
+		Save(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("mark recharge bonus refund: %w", err)
+	}
+	s.writeAuditLog(ctx, p.OrderID, "REFUND_SUCCESS", "admin", map[string]any{
+		"recoveryAmount": p.RecoveryAmount, "bonusRecovered": p.BonusRecoveryAmount,
+		"principalRefunded": p.PrincipalRefundAmount, "gatewayRefunded": p.GatewayAmount,
+		"balanceDeducted": p.BalanceToDeduct, "force": p.Force,
+	})
+	return &RefundResult{Success: true, BalanceDeducted: p.BalanceToDeduct}, nil
 }
 
 func (s *PaymentService) markRefundOkWithSettlement(ctx context.Context, p *RefundPlan) (*RefundResult, error) {
@@ -915,8 +1021,8 @@ func (s *PaymentService) RollbackRefund(ctx context.Context, p *RefundPlan, gErr
 
 func (s *PaymentService) restoreStatus(ctx context.Context, p *RefundPlan) {
 	rs := OrderStatusCompleted
-	if p.Order.Status == OrderStatusRefundRequested {
-		rs = OrderStatusRefundRequested
+	if p.Order.Status == OrderStatusRefundRequested || p.Order.Status == OrderStatusPartiallyRefunded {
+		rs = p.Order.Status
 	}
 	_, _ = s.entClient.PaymentOrder.UpdateOneID(p.OrderID).SetStatus(rs).Save(ctx)
 }

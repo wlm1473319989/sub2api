@@ -780,6 +780,7 @@ const adminNavItems = computed((): NavItem[] => {
         { path: '/admin/orders/dashboard', label: t('nav.paymentDashboard'), icon: ChartIcon },
         { path: '/admin/orders', label: t('nav.orderManagement'), icon: OrderIcon },
         { path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon },
+        { path: '/admin/orders/recharge-bonus', label: t('nav.rechargePromotions'), icon: GiftIcon },
       ],
     },
     { path: '/admin/usage', label: t('nav.usage'), icon: ChartIcon }
@@ -792,6 +793,7 @@ const adminNavItems = computed((): NavItem[] => {
     const filtered = visible.filter(item => !item.hideInSimpleMode)
     if (flagAdminPayment()) {
       filtered.push({ path: '/admin/orders/plans', label: t('nav.paymentPlans'), icon: CreditCardIcon })
+      filtered.push({ path: '/admin/orders/recharge-bonus', label: t('nav.rechargePromotions'), icon: GiftIcon })
     }
     filtered.push({ path: '/keys', label: t('nav.apiKeys'), icon: KeyIcon })
     filtered.push({ path: '/admin/settings', label: t('nav.settings'), icon: CogIcon })
