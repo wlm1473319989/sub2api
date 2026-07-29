@@ -837,6 +837,24 @@ func TestHasPaymentSubscriptionOrderNoteRequiresIndependentExactLine(t *testing.
 	require.False(t, hasPaymentSubscriptionOrderNote("prefix payment order 42 suffix", "payment order 42"))
 }
 
+func TestAffiliateRebateBaseAmountUsesPaymentForBalanceAndPriceForSubscription(t *testing.T) {
+	t.Parallel()
+
+	balanceOrder := &dbent.PaymentOrder{
+		OrderType: payment.OrderTypeBalance,
+		Amount:    500,
+		PayAmount: 50,
+	}
+	require.Equal(t, 50.0, affiliateRebateBaseAmount(balanceOrder))
+
+	subscriptionOrder := &dbent.PaymentOrder{
+		OrderType: payment.OrderTypeSubscription,
+		Amount:    9.99,
+		PayAmount: 71.36,
+	}
+	require.Equal(t, 9.99, affiliateRebateBaseAmount(subscriptionOrder))
+}
+
 func createPaymentFulfillmentSubscriptionOrder(
 	t *testing.T,
 	ctx context.Context,
