@@ -70,6 +70,8 @@ type CreateSettlementRefundPreviewInput struct {
 	Currency               string
 	Reason                 *string
 	RefundResidualValue    float64
+	RefundAmount           float64
+	RefundFeeAmount        float64
 	GatewayRefundableTotal float64
 	ManualTransferAmount   float64
 	PreviewTokenHash       string
@@ -105,6 +107,8 @@ type CreateSettlementRefundRequestInput struct {
 	Currency                      string
 	Reason                        *string
 	RefundResidualValue           float64
+	RefundAmount                  float64
+	RefundFeeAmount               float64
 	GatewayRefundableTotal        float64
 	ManualTransferAmount          float64
 	PreviewTokenHash              string
@@ -187,6 +191,8 @@ type SettlementRefundRequestRecord struct {
 	Currency                      string
 	Reason                        *string
 	RefundResidualValue           float64
+	RefundAmount                  float64
+	RefundFeeAmount               float64
 	GatewayRefundableTotal        float64
 	ManualTransferAmount          float64
 	PreviewTokenHash              string
@@ -611,6 +617,8 @@ func validateUpdateSettlementRefundAllocationStatusInput(input UpdateSettlementR
 
 func insertSettlementRefundRequest(ctx context.Context, client *dbent.Client, input CreateSettlementRefundPreviewInput) (*SettlementRefundRequestRecord, error) {
 	input.RefundResidualValue = roundSettlementRefundValue(input.RefundResidualValue)
+	input.RefundAmount = roundSettlementRefundValue(input.RefundAmount)
+	input.RefundFeeAmount = roundSettlementRefundValue(input.RefundFeeAmount)
 	input.GatewayRefundableTotal = roundSettlementAmountValue(input.GatewayRefundableTotal)
 	input.ManualTransferAmount = roundSettlementRefundValue(input.ManualTransferAmount)
 
@@ -625,6 +633,8 @@ INSERT INTO subscription_refund_requests (
     currency,
     reason,
     refund_residual_value,
+    refund_amount,
+    refund_fee_amount,
     gateway_refundable_total,
     manual_transfer_amount,
     preview_token_hash,
@@ -634,7 +644,7 @@ INSERT INTO subscription_refund_requests (
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), $8, $9, $10, $11, $12, $13, $14, $15, NOW(), NOW())
+VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, NOW(), NOW())
 RETURNING id, created_at, updated_at`,
 		input.UserID,
 		input.SubscriptionID,
@@ -645,6 +655,8 @@ RETURNING id, created_at, updated_at`,
 		input.Currency,
 		nullableStringArg(input.Reason),
 		input.RefundResidualValue,
+		input.RefundAmount,
+		input.RefundFeeAmount,
 		input.GatewayRefundableTotal,
 		input.ManualTransferAmount,
 		input.PreviewTokenHash,
@@ -670,6 +682,8 @@ RETURNING id, created_at, updated_at`,
 		Currency:               input.Currency,
 		Reason:                 input.Reason,
 		RefundResidualValue:    input.RefundResidualValue,
+		RefundAmount:           input.RefundAmount,
+		RefundFeeAmount:        input.RefundFeeAmount,
 		GatewayRefundableTotal: input.GatewayRefundableTotal,
 		ManualTransferAmount:   input.ManualTransferAmount,
 		PreviewTokenHash:       input.PreviewTokenHash,
@@ -694,6 +708,8 @@ RETURNING id, created_at, updated_at`,
 
 func insertSettlementRefundRequestSubmitted(ctx context.Context, client *dbent.Client, input CreateSettlementRefundRequestInput) (*SettlementRefundRequestRecord, error) {
 	input.RefundResidualValue = roundSettlementRefundValue(input.RefundResidualValue)
+	input.RefundAmount = roundSettlementRefundValue(input.RefundAmount)
+	input.RefundFeeAmount = roundSettlementRefundValue(input.RefundFeeAmount)
 	input.GatewayRefundableTotal = roundSettlementAmountValue(input.GatewayRefundableTotal)
 	input.ManualTransferAmount = roundSettlementRefundValue(input.ManualTransferAmount)
 
@@ -708,6 +724,8 @@ INSERT INTO subscription_refund_requests (
     currency,
     reason,
     refund_residual_value,
+    refund_amount,
+    refund_fee_amount,
     gateway_refundable_total,
     manual_transfer_amount,
     preview_token_hash,
@@ -726,7 +744,7 @@ INSERT INTO subscription_refund_requests (
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, NOW(), NOW())
+VALUES ($1, $2, $3, $4, $5, $6, NULLIF($7, ''), $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, $26, NOW(), NOW())
 RETURNING id, created_at, updated_at`,
 		input.UserID,
 		input.SubscriptionID,
@@ -737,6 +755,8 @@ RETURNING id, created_at, updated_at`,
 		input.Currency,
 		nullableStringArg(input.Reason),
 		input.RefundResidualValue,
+		input.RefundAmount,
+		input.RefundFeeAmount,
 		input.GatewayRefundableTotal,
 		input.ManualTransferAmount,
 		input.PreviewTokenHash,
@@ -771,6 +791,8 @@ RETURNING id, created_at, updated_at`,
 		Currency:                      input.Currency,
 		Reason:                        input.Reason,
 		RefundResidualValue:           input.RefundResidualValue,
+		RefundAmount:                  input.RefundAmount,
+		RefundFeeAmount:               input.RefundFeeAmount,
 		GatewayRefundableTotal:        input.GatewayRefundableTotal,
 		ManualTransferAmount:          input.ManualTransferAmount,
 		PreviewTokenHash:              input.PreviewTokenHash,
@@ -959,6 +981,8 @@ RETURNING
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1039,6 +1063,8 @@ RETURNING
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1110,6 +1136,8 @@ RETURNING
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1179,6 +1207,8 @@ RETURNING
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1247,6 +1277,8 @@ RETURNING
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1379,6 +1411,8 @@ SELECT
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -1499,6 +1533,8 @@ func scanSettlementRefundRequest(scanner interface{ Scan(dest ...any) error }) (
 		&record.Currency,
 		&reason,
 		&record.RefundResidualValue,
+		&record.RefundAmount,
+		&record.RefundFeeAmount,
 		&record.GatewayRefundableTotal,
 		&record.ManualTransferAmount,
 		&record.PreviewTokenHash,
@@ -1529,6 +1565,8 @@ func scanSettlementRefundRequest(scanner interface{ Scan(dest ...any) error }) (
 	record.Reason = nullStringPtr(reason)
 	record.PreviewFingerprint = nullStringPtr(previewFingerprint)
 	record.RefundResidualValue = roundSettlementRefundValue(record.RefundResidualValue)
+	record.RefundAmount = roundSettlementRefundValue(record.RefundAmount)
+	record.RefundFeeAmount = roundSettlementRefundValue(record.RefundFeeAmount)
 	record.GatewayRefundableTotal = roundSettlementAmountValue(record.GatewayRefundableTotal)
 	record.ManualTransferAmount = roundSettlementRefundValue(record.ManualTransferAmount)
 	record.SubmittedAt = nullTimePtr(submittedAt)

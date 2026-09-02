@@ -53,8 +53,6 @@ pnpm-debug.log*
 .env.*.local
 *.env
 !.env.example
-deploy/.env.*
-!deploy/.env.example
 docker-compose.override.yml
 
 # ===================
@@ -118,9 +116,13 @@ backend/.installed
 # 其他
 # ===================
 tests
+!deploy/tests/
+!deploy/tests/**
 CLAUDE.md
 .claude
 scripts
+!backend/scripts/
+!backend/scripts/resolve-version.sh
 .code-review-state
 #openspec/
 code-reviews/
@@ -133,7 +135,7 @@ docs/*
 !docs/PAYMENT.md
 !docs/PAYMENT_CN.md
 !docs/ADMIN_PAYMENT_INTEGRATION_API.md
-!docs/CC_SWITCH_MULTI_KEY_AUTOMATION_GUIDE_CN.md
+!docs/ASYNC_IMAGE_TASKS.md
 !docs/legal/
 !docs/legal/*.md
 .serena/

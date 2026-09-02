@@ -177,6 +177,48 @@ func (_u *SubscriptionRefundRequestUpdate) AddRefundResidualValue(v float64) *Su
 	return _u
 }
 
+// SetRefundAmount sets the "refund_amount" field.
+func (_u *SubscriptionRefundRequestUpdate) SetRefundAmount(v float64) *SubscriptionRefundRequestUpdate {
+	_u.mutation.ResetRefundAmount()
+	_u.mutation.SetRefundAmount(v)
+	return _u
+}
+
+// SetNillableRefundAmount sets the "refund_amount" field if the given value is not nil.
+func (_u *SubscriptionRefundRequestUpdate) SetNillableRefundAmount(v *float64) *SubscriptionRefundRequestUpdate {
+	if v != nil {
+		_u.SetRefundAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundAmount adds value to the "refund_amount" field.
+func (_u *SubscriptionRefundRequestUpdate) AddRefundAmount(v float64) *SubscriptionRefundRequestUpdate {
+	_u.mutation.AddRefundAmount(v)
+	return _u
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (_u *SubscriptionRefundRequestUpdate) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestUpdate {
+	_u.mutation.ResetRefundFeeAmount()
+	_u.mutation.SetRefundFeeAmount(v)
+	return _u
+}
+
+// SetNillableRefundFeeAmount sets the "refund_fee_amount" field if the given value is not nil.
+func (_u *SubscriptionRefundRequestUpdate) SetNillableRefundFeeAmount(v *float64) *SubscriptionRefundRequestUpdate {
+	if v != nil {
+		_u.SetRefundFeeAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundFeeAmount adds value to the "refund_fee_amount" field.
+func (_u *SubscriptionRefundRequestUpdate) AddRefundFeeAmount(v float64) *SubscriptionRefundRequestUpdate {
+	_u.mutation.AddRefundFeeAmount(v)
+	return _u
+}
+
 // SetGatewayRefundableTotal sets the "gateway_refundable_total" field.
 func (_u *SubscriptionRefundRequestUpdate) SetGatewayRefundableTotal(v float64) *SubscriptionRefundRequestUpdate {
 	_u.mutation.ResetGatewayRefundableTotal()
@@ -831,6 +873,18 @@ func (_u *SubscriptionRefundRequestUpdate) sqlSave(ctx context.Context) (_node i
 	if value, ok := _u.mutation.AddedRefundResidualValue(); ok {
 		_spec.AddField(subscriptionrefundrequest.FieldRefundResidualValue, field.TypeFloat64, value)
 	}
+	if value, ok := _u.mutation.RefundAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundAmount(); ok {
+		_spec.AddField(subscriptionrefundrequest.FieldRefundAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundFeeAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundFeeAmount(); ok {
+		_spec.AddField(subscriptionrefundrequest.FieldRefundFeeAmount, field.TypeFloat64, value)
+	}
 	if value, ok := _u.mutation.GatewayRefundableTotal(); ok {
 		_spec.SetField(subscriptionrefundrequest.FieldGatewayRefundableTotal, field.TypeFloat64, value)
 	}
@@ -1297,6 +1351,48 @@ func (_u *SubscriptionRefundRequestUpdateOne) SetNillableRefundResidualValue(v *
 // AddRefundResidualValue adds value to the "refund_residual_value" field.
 func (_u *SubscriptionRefundRequestUpdateOne) AddRefundResidualValue(v float64) *SubscriptionRefundRequestUpdateOne {
 	_u.mutation.AddRefundResidualValue(v)
+	return _u
+}
+
+// SetRefundAmount sets the "refund_amount" field.
+func (_u *SubscriptionRefundRequestUpdateOne) SetRefundAmount(v float64) *SubscriptionRefundRequestUpdateOne {
+	_u.mutation.ResetRefundAmount()
+	_u.mutation.SetRefundAmount(v)
+	return _u
+}
+
+// SetNillableRefundAmount sets the "refund_amount" field if the given value is not nil.
+func (_u *SubscriptionRefundRequestUpdateOne) SetNillableRefundAmount(v *float64) *SubscriptionRefundRequestUpdateOne {
+	if v != nil {
+		_u.SetRefundAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundAmount adds value to the "refund_amount" field.
+func (_u *SubscriptionRefundRequestUpdateOne) AddRefundAmount(v float64) *SubscriptionRefundRequestUpdateOne {
+	_u.mutation.AddRefundAmount(v)
+	return _u
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (_u *SubscriptionRefundRequestUpdateOne) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestUpdateOne {
+	_u.mutation.ResetRefundFeeAmount()
+	_u.mutation.SetRefundFeeAmount(v)
+	return _u
+}
+
+// SetNillableRefundFeeAmount sets the "refund_fee_amount" field if the given value is not nil.
+func (_u *SubscriptionRefundRequestUpdateOne) SetNillableRefundFeeAmount(v *float64) *SubscriptionRefundRequestUpdateOne {
+	if v != nil {
+		_u.SetRefundFeeAmount(*v)
+	}
+	return _u
+}
+
+// AddRefundFeeAmount adds value to the "refund_fee_amount" field.
+func (_u *SubscriptionRefundRequestUpdateOne) AddRefundFeeAmount(v float64) *SubscriptionRefundRequestUpdateOne {
+	_u.mutation.AddRefundFeeAmount(v)
 	return _u
 }
 
@@ -1983,6 +2079,18 @@ func (_u *SubscriptionRefundRequestUpdateOne) sqlSave(ctx context.Context) (_nod
 	}
 	if value, ok := _u.mutation.AddedRefundResidualValue(); ok {
 		_spec.AddField(subscriptionrefundrequest.FieldRefundResidualValue, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundAmount(); ok {
+		_spec.AddField(subscriptionrefundrequest.FieldRefundAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.RefundFeeAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundFeeAmount, field.TypeFloat64, value)
+	}
+	if value, ok := _u.mutation.AddedRefundFeeAmount(); ok {
+		_spec.AddField(subscriptionrefundrequest.FieldRefundFeeAmount, field.TypeFloat64, value)
 	}
 	if value, ok := _u.mutation.GatewayRefundableTotal(); ok {
 		_spec.SetField(subscriptionrefundrequest.FieldGatewayRefundableTotal, field.TypeFloat64, value)

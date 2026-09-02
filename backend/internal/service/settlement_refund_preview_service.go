@@ -51,6 +51,8 @@ type SettlementRefundPreview struct {
 	UnitCost                        float64                             `json:"unit_cost"`
 	RefundMode                      string                              `json:"refund_mode"`
 	RefundResidualValue             float64                             `json:"refund_residual_value"`
+	RefundAmount                    float64                             `json:"refund_amount"`
+	RefundFeeAmount                 float64                             `json:"refund_fee_amount"`
 	GatewayRefundableTotal          float64                             `json:"gateway_refundable_total"`
 	ManualTransferAmount            float64                             `json:"manual_transfer_amount"`
 	ManualTransferRequired          bool                                `json:"manual_transfer_required"`
@@ -65,6 +67,8 @@ type settlementRefundPreviewComputation struct {
 	Head              *dbent.SubscriptionSettlementOrder
 	ResidualBreakdown *UpgradeResidualBreakdown
 	RefundMode        string
+	RefundAmount      float64
+	RefundFeeAmount   float64
 	AllocationResult  SettlementRefundAllocationResult
 }
 
@@ -165,32 +169,34 @@ func (s *SettlementRefundService) PreviewSettlementRefund(ctx context.Context, i
 	window := newSettlementRefundPreviewWindow(now)
 	reason := settlementRefundNullableReason(input.Reason)
 	entry := &SettlementRefundPreviewCacheEntry{
-		PreviewID:               previewID,
-		PreviewToken:            previewToken,
-		UserID:                  input.UserID,
-		SubscriptionID:          computation.Active.ID,
-		SettlementID:            computation.Head.ID,
-		ExpectedSettlementID:    computation.Head.ID,
-		ActionSource:            computation.Head.ActionSource,
-		TriggerRefType:          computation.Head.TriggerRefType,
-		TriggerRefID:            copyInt64Pointer(computation.Head.TriggerRefID),
-		PlanName:                settlementRefundPreviewPlanName(computation.Active, computation.Head),
-		SubscriptionExpiresAt:   computation.Active.ExpiresAt,
-		AfterSettlementValue:    roundSettlementAmountValue(settlementResidualBasisValue(computation.Head, computation.Active, computation.Head.AfterSettlementValue)),
+		PreviewID:                previewID,
+		PreviewToken:             previewToken,
+		UserID:                   input.UserID,
+		SubscriptionID:           computation.Active.ID,
+		SettlementID:             computation.Head.ID,
+		ExpectedSettlementID:     computation.Head.ID,
+		ActionSource:             computation.Head.ActionSource,
+		TriggerRefType:           computation.Head.TriggerRefType,
+		TriggerRefID:             copyInt64Pointer(computation.Head.TriggerRefID),
+		PlanName:                 settlementRefundPreviewPlanName(computation.Active, computation.Head),
+		SubscriptionExpiresAt:    computation.Active.ExpiresAt,
+		AfterSettlementValue:     roundSettlementAmountValue(settlementResidualBasisValue(computation.Head, computation.Active, computation.Head.AfterSettlementValue)),
 		TheoreticalFullMaxKnives: computation.ResidualBreakdown.TheoreticalFullMaxKnives,
-		ResidualQuotaKnives:     computation.ResidualBreakdown.ResidualQuotaKnives,
-		UnitCost:                roundSettlementAmountValue(computation.ResidualBreakdown.UnitCost),
-		RefundMode:              computation.RefundMode,
-		Reason:                  reason,
-		RefundResidualValue:     roundSettlementRefundValue(computation.AllocationResult.RefundResidualValue),
-		GatewayRefundableTotal:  roundSettlementAmountValue(computation.AllocationResult.GatewayRefundableTotal),
-		ManualTransferAmount:    roundSettlementRefundValue(computation.AllocationResult.ManualTransferAmount),
-		Currency:                settlementRefundPreviewResponseCurrency(computation.AllocationResult.Currency),
-		PreviewTokenHash:        previewTokenHash,
-		PreviewFingerprint:      settlementRefundPreviewFingerprint(computation),
-		PreviewIssuedAt:         window.IssuedAt,
-		PreviewExpiresAt:        window.ExpiresAt,
-		Allocations:             settlementRefundPreviewAllocations(computation.AllocationResult.Allocations),
+		ResidualQuotaKnives:      computation.ResidualBreakdown.ResidualQuotaKnives,
+		UnitCost:                 roundSettlementAmountValue(computation.ResidualBreakdown.UnitCost),
+		RefundMode:               computation.RefundMode,
+		Reason:                   reason,
+		RefundResidualValue:      roundSettlementRefundValue(computation.ResidualBreakdown.ResidualValue),
+		RefundAmount:             roundSettlementRefundValue(computation.RefundAmount),
+		RefundFeeAmount:          roundSettlementRefundValue(computation.RefundFeeAmount),
+		GatewayRefundableTotal:   roundSettlementAmountValue(computation.AllocationResult.GatewayRefundableTotal),
+		ManualTransferAmount:     roundSettlementRefundValue(computation.AllocationResult.ManualTransferAmount),
+		Currency:                 settlementRefundPreviewResponseCurrency(computation.AllocationResult.Currency),
+		PreviewTokenHash:         previewTokenHash,
+		PreviewFingerprint:       settlementRefundPreviewFingerprint(computation),
+		PreviewIssuedAt:          window.IssuedAt,
+		PreviewExpiresAt:         window.ExpiresAt,
+		Allocations:              settlementRefundPreviewAllocations(computation.AllocationResult.Allocations),
 	}
 	if err := s.previewCache.SetSettlementRefundPreview(ctx, entry, settlementRefundPreviewTTL); err != nil {
 		return nil, err
@@ -256,22 +262,25 @@ func (s *SettlementRefundService) computeSettlementRefundPreview(ctx context.Con
 	}
 
 	allocationResult := SettlementRefundAllocationResult{
-		RefundResidualValue: refundResidualValue,
+		RefundResidualValue: 0,
 		Currency:            payment.DefaultPaymentCurrency,
 		Allocations:         make([]SettlementRefundOrderAllocation, 0),
 	}
 	refundMode := SettlementRefundModeEntitlementOnly
+	refundAmount := 0.0
+	refundFeeAmount := 0.0
 	switch head.ActionSource {
 	case domain.SettlementActionSourceUserPurchase:
 		if head.TriggerRefType != domain.SettlementTriggerRefPaymentOrder {
 			return nil, ErrSettlementRefundSourceInvalid
 		}
+		refundAmount, refundFeeAmount = settlementRefundNetAmount(refundResidualValue)
 		candidates, candidateErr := s.previewLoadPaymentOrderCandidates(ctx, head)
 		if candidateErr != nil {
 			return nil, candidateErr
 		}
 		currency := settlementRefundPreviewCurrency(candidates)
-		allocationResult = allocateSettlementRefundAcrossOrders(refundResidualValue, currency, candidates)
+		allocationResult = allocateSettlementRefundAcrossOrders(refundAmount, currency, candidates)
 		refundMode = settlementRefundModeFromAllocation(allocationResult)
 	case domain.SettlementActionSourceExchangeCode, domain.SettlementActionSourceSubscriptionAssign:
 		refundMode = SettlementRefundModeEntitlementOnly
@@ -284,6 +293,8 @@ func (s *SettlementRefundService) computeSettlementRefundPreview(ctx context.Con
 		Head:              head,
 		ResidualBreakdown: residualBreakdown,
 		RefundMode:        refundMode,
+		RefundAmount:      refundAmount,
+		RefundFeeAmount:   refundFeeAmount,
 		AllocationResult:  allocationResult,
 	}, nil
 }
@@ -535,6 +546,9 @@ func settlementRefundPreviewFingerprint(computation *settlementRefundPreviewComp
 		strconv.FormatInt(computation.Active.UserID, 10),
 		computation.RefundMode,
 		settlementRefundPreviewResponseCurrency(computation.AllocationResult.Currency),
+		settlementRefundFingerprintMoney(computation.ResidualBreakdown.ResidualValue),
+		settlementRefundFingerprintMoney(computation.RefundAmount),
+		settlementRefundFingerprintMoney(computation.RefundFeeAmount),
 		settlementRefundFingerprintMoney(computation.AllocationResult.RefundResidualValue),
 		settlementRefundFingerprintMoney(computation.AllocationResult.GatewayRefundableTotal),
 		settlementRefundFingerprintMoney(computation.AllocationResult.ManualTransferAmount),
@@ -675,6 +689,8 @@ func settlementRefundPreviewFromCacheEntry(entry *SettlementRefundPreviewCacheEn
 		UnitCost:                        entry.UnitCost,
 		RefundMode:                      entry.RefundMode,
 		RefundResidualValue:             entry.RefundResidualValue,
+		RefundAmount:                    entry.RefundAmount,
+		RefundFeeAmount:                 entry.RefundFeeAmount,
 		GatewayRefundableTotal:          entry.GatewayRefundableTotal,
 		ManualTransferAmount:            entry.ManualTransferAmount,
 		ManualTransferRequired:          SettlementRefundManualTransferRequired(entry.ManualTransferAmount, entry.Currency),

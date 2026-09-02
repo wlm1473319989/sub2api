@@ -73,6 +73,10 @@
             <span class="text-blue-700 dark:text-blue-300">{{ t('payment.admin.refundResidualValue') }}</span>
             <span class="font-medium text-blue-950 dark:text-blue-100">{{ formatOrderMoney(refundPreview.settlement_head.refund_residual_value) }}</span>
           </div>
+          <div v-if="refundPreview.refund_fee_amount != null" class="flex justify-between">
+            <span class="text-blue-700 dark:text-blue-300">{{ t('payment.admin.refundFeeAmount') }}</span>
+            <span class="font-medium text-blue-950 dark:text-blue-100">{{ formatOrderMoney(refundPreview.refund_fee_amount) }}</span>
+          </div>
           <div class="flex justify-between">
             <span class="text-blue-700 dark:text-blue-300">{{ t('payment.admin.gatewayRefundAmount') }}</span>
             <span class="font-medium text-blue-950 dark:text-blue-100">¥{{ refundPreview.gateway_amount.toFixed(4) }}</span>
@@ -114,7 +118,17 @@
         <div class="space-y-1 font-mono text-xs sm:text-sm">
           <p>
             {{ t('payment.admin.calculationResidualFormula') }}:
-            {{ formatOrderMoney(refundPreview.settlement_head.current_residual_value) }}
+            {{ formatOrderMoney(refundPreview.settlement_head.refund_residual_value) }}
+          </p>
+          <p v-if="refundPreview.refund_fee_amount != null">
+            {{ t('payment.admin.calculationFeeFormula') }}:
+            {{ formatOrderMoney(refundPreview.settlement_head.refund_residual_value) }} × 5%, capped at {{ formatOrderMoney(10) }}
+            = {{ formatOrderMoney(refundPreview.refund_fee_amount) }}
+          </p>
+          <p v-if="refundPreview.refund_fee_amount != null">
+            {{ t('payment.admin.calculationNetFormula') }}:
+            {{ formatOrderMoney(refundPreview.settlement_head.refund_residual_value) }} - {{ formatOrderMoney(refundPreview.refund_fee_amount) }}
+            = {{ formatOrderMoney(refundPreview.refund_amount) }}
           </p>
           <p>
             {{ t('payment.admin.calculationGatewayFormula') }}:
@@ -122,7 +136,7 @@
           </p>
           <p>
             {{ t('payment.admin.calculationManualFormula') }}:
-            {{ formatOrderMoney(refundPreview.settlement_head.current_residual_value) }} - {{ formatGatewayMoney(refundPreview.gateway_amount) }}
+            {{ formatOrderMoney(refundPreview.refund_amount) }} - {{ formatGatewayMoney(refundPreview.gateway_amount) }}
             = {{ formatGatewayMoney(manualDifference) }}
           </p>
         </div>
@@ -309,8 +323,8 @@ const affiliateReward = computed(() => refundPreview.value?.affiliate_reward || 
 const deductLabel = computed(() => props.order?.order_type === 'subscription' ? t('payment.admin.deductSubscription') : t('payment.admin.deductBalance'))
 const deductHint = computed(() => props.order?.order_type === 'subscription' ? t('payment.admin.deductSubscriptionHint') : t('payment.admin.deductBalanceHint'))
 const manualDifference = computed(() => {
-  if (!refundPreview.value?.settlement_head) return 0
-  return Math.max(0, refundPreview.value.settlement_head.current_residual_value - refundPreview.value.gateway_amount)
+   if (!refundPreview.value?.settlement_head) return 0
+   return Math.max(0, refundPreview.value.refund_amount - refundPreview.value.gateway_amount)
 })
 
 watch(() => props.show, (val) => {

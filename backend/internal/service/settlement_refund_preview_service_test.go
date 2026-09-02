@@ -33,6 +33,8 @@ func (s *settlementRefundPreviewStoreStub) CreateSettlementRefundPreview(_ conte
 		Currency:               input.Currency,
 		Reason:                 input.Reason,
 		RefundResidualValue:    input.RefundResidualValue,
+		RefundAmount:           input.RefundAmount,
+		RefundFeeAmount:        input.RefundFeeAmount,
 		GatewayRefundableTotal: input.GatewayRefundableTotal,
 		ManualTransferAmount:   input.ManualTransferAmount,
 		PreviewTokenHash:       input.PreviewTokenHash,
@@ -61,12 +63,12 @@ func (s *settlementRefundPreviewStoreStub) CreateSettlementRefundPreview(_ conte
 }
 
 type settlementRefundPreviewCacheStub struct {
-	entry     *SettlementRefundPreviewCacheEntry
-	lastSet   *SettlementRefundPreviewCacheEntry
-	lastTTL   time.Duration
-	getFn     func(int64, int64) (*SettlementRefundPreviewCacheEntry, error)
-	setFn     func(*SettlementRefundPreviewCacheEntry, time.Duration) error
-	deleteFn  func(int64, int64) error
+	entry    *SettlementRefundPreviewCacheEntry
+	lastSet  *SettlementRefundPreviewCacheEntry
+	lastTTL  time.Duration
+	getFn    func(int64, int64) (*SettlementRefundPreviewCacheEntry, error)
+	setFn    func(*SettlementRefundPreviewCacheEntry, time.Duration) error
+	deleteFn func(int64, int64) error
 }
 
 func (s *settlementRefundPreviewCacheStub) GetSettlementRefundPreview(_ context.Context, userID, subscriptionID int64) (*SettlementRefundPreviewCacheEntry, error) {
@@ -206,6 +208,9 @@ func TestSettlementRefundServicePreviewBuildsHybridPaymentRefund(t *testing.T) {
 	service := &SettlementRefundService{
 		previewCache: cache,
 		now:          func() time.Time { return now },
+		generatePreviewID: func() (int64, error) {
+			return 9001, nil
+		},
 		generatePreviewToken: func() (string, string, error) {
 			return "preview-token", "preview-hash", nil
 		},
@@ -264,6 +269,9 @@ func TestSettlementRefundServicePreviewBuildsEntitlementOnlyRefund(t *testing.T)
 	service := &SettlementRefundService{
 		previewCache: cache,
 		now:          func() time.Time { return now },
+		generatePreviewID: func() (int64, error) {
+			return 9001, nil
+		},
 		generatePreviewToken: func() (string, string, error) {
 			return "preview-token", "preview-hash", nil
 		},
@@ -307,19 +315,19 @@ func TestSettlementRefundServicePreviewReusesLiveCachedPreview(t *testing.T) {
 	now := time.Date(2026, 6, 25, 10, 0, 0, 0, time.UTC)
 	cache := &settlementRefundPreviewCacheStub{
 		entry: &SettlementRefundPreviewCacheEntry{
-			PreviewID:               9001,
-			PreviewToken:            "preview-token",
-			UserID:                  11,
-			SubscriptionID:          22,
-			SettlementID:            33,
-			ExpectedSettlementID:    33,
-			RefundMode:              SettlementRefundModeEntitlementOnly,
-			Currency:                "CNY",
-			RefundResidualValue:     88.8888,
-			PreviewTokenHash:        hashSettlementRefundPreviewToken("preview-token"),
-			PreviewFingerprint:      "fingerprint",
-			PreviewIssuedAt:         now,
-			PreviewExpiresAt:        now.Add(90 * time.Second),
+			PreviewID:            9001,
+			PreviewToken:         "preview-token",
+			UserID:               11,
+			SubscriptionID:       22,
+			SettlementID:         33,
+			ExpectedSettlementID: 33,
+			RefundMode:           SettlementRefundModeEntitlementOnly,
+			Currency:             "CNY",
+			RefundResidualValue:  88.8888,
+			PreviewTokenHash:     hashSettlementRefundPreviewToken("preview-token"),
+			PreviewFingerprint:   "fingerprint",
+			PreviewIssuedAt:      now,
+			PreviewExpiresAt:     now.Add(90 * time.Second),
 		},
 	}
 	service := &SettlementRefundService{

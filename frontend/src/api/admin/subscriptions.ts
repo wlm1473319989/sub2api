@@ -19,7 +19,10 @@ import type {
   ExtendSubscriptionRequest,
   PaginatedResponse,
   ResetSubscriptionQuotaRequest,
-  AdminSubscriptionRefundListParams
+  AdminSubscriptionRefundListParams,
+  SubscriptionRefundPreviewResponse,
+  SubscriptionRefundSubmitRequest,
+  AdminSubscriptionRefundResult
 } from '@/types'
 
 /**
@@ -63,6 +66,30 @@ export async function list(
  */
 export async function getById(id: number): Promise<AdminUserSubscriptionDetail> {
   const { data } = await apiClient.get<AdminUserSubscriptionDetail>(`/admin/subscriptions/${id}`)
+  return data
+}
+
+/** Preview a settlement refund for a subscription as an administrator. */
+export async function previewRefund(
+  id: number,
+  reason = ''
+): Promise<SubscriptionRefundPreviewResponse> {
+  const { data } = await apiClient.post<SubscriptionRefundPreviewResponse>(
+    `/admin/subscriptions/${id}/refund-preview`,
+    reason ? { reason } : {}
+  )
+  return data
+}
+
+/** Submit and execute a settlement refund for a subscription as an administrator. */
+export async function refundSubscription(
+  id: number,
+  request: SubscriptionRefundSubmitRequest
+): Promise<AdminSubscriptionRefundResult> {
+  const { data } = await apiClient.post<AdminSubscriptionRefundResult>(
+    `/admin/subscriptions/${id}/refund`,
+    request
+  )
   return data
 }
 
@@ -261,6 +288,8 @@ export async function listByUser(
 export const subscriptionsAPI = {
   list,
   getById,
+  previewRefund,
+  refundSubscription,
   listRefundRequests,
   getRefundRequest,
   getProgress,

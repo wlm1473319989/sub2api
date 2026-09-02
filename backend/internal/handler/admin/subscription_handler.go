@@ -367,6 +367,190 @@ func (h *SubscriptionHandler) Revoke(c *gin.Context) {
 	response.Success(c, gin.H{"message": "Subscription revoked successfully"})
 }
 
+// SettlementRefundPreviewRequest is the request body for an admin subscription refund preview.
+type SettlementRefundPreviewRequest struct {
+	Reason string `json:"reason"`
+}
+
+// SettlementRefundSubmitRequest is the request body for an admin subscription refund.
+type SettlementRefundSubmitRequest struct {
+	PreviewID      int64                                  `json:"preview_id" binding:"required"`
+	PreviewToken   string                                 `json:"preview_token" binding:"required"`
+	Reason         string                                 `json:"reason"`
+	ManualTransfer *SettlementRefundManualTransferRequest `json:"manual_transfer"`
+}
+
+type SettlementRefundManualTransferRequest struct {
+	ReceiverType           string `json:"receiver_type"`
+	ReceiverName           string `json:"receiver_name"`
+	ReceiverAccount        string `json:"receiver_account"`
+	ReceiverQRCodeImageURL string `json:"receiver_qr_image_url"`
+	Remark                 string `json:"remark"`
+}
+
+// PreviewRefund previews a settlement refund for a subscription without mutating state.
+// POST /api/v1/admin/subscriptions/:id/refund-preview
+func (h *SubscriptionHandler) PreviewRefund(c *gin.Context) {
+	if h == nil || h.subscriptionService == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	subscriptionID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || subscriptionID <= 0 {
+		response.BadRequest(c, "Invalid subscription ID")
+		return
+	}
+
+	var req SettlementRefundPreviewRequest
+	if c.Request != nil && c.Request.ContentLength != 0 {
+		if err := c.ShouldBindJSON(&req); err != nil {
+			response.BadRequest(c, "Invalid request: "+err.Error())
+			return
+		}
+	}
+
+	subscription, err := h.subscriptionService.GetByID(c.Request.Context(), subscriptionID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	preview, err := h.settlementRefundService.PreviewSettlementRefund(c.Request.Context(), service.SettlementRefundPreviewInput{
+		SubscriptionID: subscriptionID,
+		UserID:         subscription.UserID,
+		Reason:         req.Reason,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, preview)
+}
+
+// ProcessRefund submits and executes a settlement refund for a subscription.
+// Gateway refunds are processed immediately; manual-transfer portions remain pending
+// until an administrator uploads proof and completes the request.
+// POST /api/v1/admin/subscriptions/:id/refund
+func (h *SubscriptionHandler) ProcessRefund(c *gin.Context) {
+	if h == nil || h.subscriptionService == nil || h.settlementRefundService == nil {
+		response.InternalError(c, "Settlement refund service is unavailable")
+		return
+	}
+
+	subscriptionID, err := strconv.ParseInt(c.Param("id"), 10, 64)
+	if err != nil || subscriptionID <= 0 {
+		response.BadRequest(c, "Invalid subscription ID")
+		return
+	}
+
+	var req SettlementRefundSubmitRequest
+	if err := c.ShouldBindJSON(&req); err != nil {
+		response.BadRequest(c, "Invalid request: "+err.Error())
+		return
+	}
+	subscription, err := h.subscriptionService.GetByID(c.Request.Context(), subscriptionID)
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	var manualTransfer *service.ManualTransferInput
+	if req.ManualTransfer != nil {
+		manualTransfer = &service.ManualTransferInput{
+			ReceiverType:           req.ManualTransfer.ReceiverType,
+			ReceiverName:           req.ManualTransfer.ReceiverName,
+			ReceiverAccount:        req.ManualTransfer.ReceiverAccount,
+			ReceiverQRCodeImageURL: req.ManualTransfer.ReceiverQRCodeImageURL,
+			Remark:                 req.ManualTransfer.Remark,
+		}
+	}
+
+	submitResult, err := h.settlementRefundService.SubmitSettlementRefund(c.Request.Context(), service.SettlementRefundSubmitInput{
+		SubscriptionID: subscriptionID,
+		UserID:         subscription.UserID,
+		PreviewID:      req.PreviewID,
+		PreviewToken:   req.PreviewToken,
+		Reason:         req.Reason,
+		ManualTransfer: manualTransfer,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+
+	operatorID := getAdminIDFromContext(c)
+	gatewayResult := &service.SettlementRefundGatewayResult{
+		RefundRequestID:      submitResult.RefundRequestID,
+		Status:               submitResult.RefundStatus,
+		GatewayRefundedTotal: 0,
+		ManualTransferAmount: submitResult.ManualTransferAmount,
+	}
+	// Manual-only refunds have no gateway allocation and therefore skip the
+	// gateway service step; they remain pending until proof is uploaded.
+	if submitResult.GatewayRefundableTotal > 0 {
+		gatewayResult, err = h.settlementRefundService.ProcessSettlementRefundGateway(c.Request.Context(), service.SettlementRefundGatewayInput{
+			RefundRequestID: submitResult.RefundRequestID,
+			OperatorUserID:  operatorID,
+		})
+		if err != nil {
+			response.ErrorFrom(c, err)
+			return
+		}
+	}
+
+	if gatewayResult.FailedAllocations > 0 || gatewayResult.Status == service.SettlementRefundStatusFailed {
+		response.Success(c, gin.H{
+			"success":                false,
+			"warning":                "gateway refund processing failed",
+			"refund_request_id":      submitResult.RefundRequestID,
+			"subscription_id":        subscriptionID,
+			"subscription_status":    submitResult.SubscriptionStatus,
+			"refund_status":          gatewayResult.Status,
+			"gateway_refunded_total": gatewayResult.GatewayRefundedTotal,
+			"manual_transfer_amount": gatewayResult.ManualTransferAmount,
+			"failed_allocations":     gatewayResult.FailedAllocations,
+		})
+		return
+	}
+
+	if service.SettlementRefundManualTransferRequired(gatewayResult.ManualTransferAmount, submitResult.Currency) {
+		response.Success(c, gin.H{
+			"success":                false,
+			"warning":                "manual transfer required",
+			"refund_request_id":      submitResult.RefundRequestID,
+			"subscription_id":        subscriptionID,
+			"subscription_status":    submitResult.SubscriptionStatus,
+			"refund_status":          gatewayResult.Status,
+			"gateway_refunded_total": gatewayResult.GatewayRefundedTotal,
+			"manual_transfer_amount": gatewayResult.ManualTransferAmount,
+		})
+		return
+	}
+
+	completeResult, err := h.settlementRefundService.CompleteSettlementRefund(c.Request.Context(), service.SettlementRefundCompleteInput{
+		RefundRequestID: submitResult.RefundRequestID,
+		OperatorUserID:  operatorID,
+	})
+	if err != nil {
+		response.ErrorFrom(c, err)
+		return
+	}
+	response.Success(c, gin.H{
+		"success":                true,
+		"refund_request_id":      submitResult.RefundRequestID,
+		"subscription_id":        completeResult.SubscriptionID,
+		"subscription_status":    completeResult.SubscriptionStatus,
+		"refund_status":          completeResult.Status,
+		"refund_residual_value":  completeResult.RefundResidualValue,
+		"settlement_order_id":    completeResult.SettlementOrderID,
+		"refund_amount":          submitResult.RefundAmount,
+		"refund_fee_amount":      submitResult.RefundFeeAmount,
+		"gateway_refunded_total": gatewayResult.GatewayRefundedTotal,
+		"manual_transfer_amount": gatewayResult.ManualTransferAmount,
+		"currency":               submitResult.Currency,
+	})
+}
+
 // ListRefundRequests returns settlement refund requests for admin review.
 // GET /api/v1/admin/subscription-refund-requests
 func (h *SubscriptionHandler) ListRefundRequests(c *gin.Context) {
@@ -389,9 +573,9 @@ func (h *SubscriptionHandler) ListRefundRequests(c *gin.Context) {
 		}
 	}
 	filter := &service.SettlementRefundListFilter{
-		UserID:        userID,
+		UserID:         userID,
 		SubscriptionID: subscriptionID,
-		Status:        strings.TrimSpace(c.Query("status")),
+		Status:         strings.TrimSpace(c.Query("status")),
 	}
 
 	items, paginationResult, err := h.settlementRefundService.ListSettlementRefundRequests(c.Request.Context(), pagination.PaginationParams{

@@ -69,6 +69,7 @@ type userSupportedModelPricing struct {
 	InputPrice       *float64                 `json:"input_price"`
 	OutputPrice      *float64                 `json:"output_price"`
 	CacheWritePrice  *float64                 `json:"cache_write_price"`
+	CacheWrite1hPrice *float64                `json:"cache_write_1h_price"`
 	CacheReadPrice   *float64                 `json:"cache_read_price"`
 	ImageOutputPrice *float64                 `json:"image_output_price"`
 	PerRequestPrice  *float64                 `json:"per_request_price"`
@@ -83,6 +84,7 @@ type userPricingIntervalDTO struct {
 	InputPrice      *float64 `json:"input_price"`
 	OutputPrice     *float64 `json:"output_price"`
 	CacheWritePrice *float64 `json:"cache_write_price"`
+	CacheWrite1hPrice *float64 `json:"cache_write_1h_price"`
 	CacheReadPrice  *float64 `json:"cache_read_price"`
 	PerRequestPrice *float64 `json:"per_request_price"`
 }
@@ -266,6 +268,7 @@ func toUserPricing(p *service.ChannelModelPricing) *userSupportedModelPricing {
 			InputPrice:      iv.InputPrice,
 			OutputPrice:     iv.OutputPrice,
 			CacheWritePrice: iv.CacheWritePrice,
+			CacheWrite1hPrice: iv.CacheWrite1hPrice,
 			CacheReadPrice:  iv.CacheReadPrice,
 			PerRequestPrice: iv.PerRequestPrice,
 		})
@@ -279,6 +282,7 @@ func toUserPricing(p *service.ChannelModelPricing) *userSupportedModelPricing {
 		InputPrice:       p.InputPrice,
 		OutputPrice:      p.OutputPrice,
 		CacheWritePrice:  p.CacheWritePrice,
+		CacheWrite1hPrice: p.CacheWrite1hPrice,
 		CacheReadPrice:   p.CacheReadPrice,
 		ImageOutputPrice: p.ImageOutputPrice,
 		PerRequestPrice:  p.PerRequestPrice,

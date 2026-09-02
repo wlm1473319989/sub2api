@@ -100,6 +100,10 @@
                 {{ formatCurrency(row.refund_residual_value, row.currency || 'CNY', 4) }}
               </p>
               <p class="text-xs text-gray-500 dark:text-dark-400">
+                {{ t('subscriptionRefundRequests.summary.refundFee') }}: {{ formatCurrency(row.refund_fee_amount, row.currency || 'CNY', 4) }}
+                · {{ t('subscriptionRefundRequests.summary.refundAmount') }}: {{ formatCurrency(row.refund_amount, row.currency || 'CNY', 4) }}
+              </p>
+              <p class="text-xs text-gray-500 dark:text-dark-400">
                 {{ formatCurrency(row.gateway_refunded_total, row.currency || 'CNY', 4) }}
                 / {{ formatCurrency(row.gateway_refundable_total, row.currency || 'CNY', 4) }}
               </p>

@@ -544,6 +544,8 @@ func registerSubscriptionRoutes(admin *gin.RouterGroup, h *handler.Handlers) {
 		subscriptions.POST("/bulk-reset-quota", h.Admin.Subscription.BulkResetQuota)
 		subscriptions.POST("/:id/extend", h.Admin.Subscription.Extend)
 		subscriptions.POST("/:id/reset-quota", h.Admin.Subscription.ResetQuota)
+		subscriptions.POST("/:id/refund-preview", h.Admin.Subscription.PreviewRefund)
+		subscriptions.POST("/:id/refund", h.Admin.Subscription.ProcessRefund)
 		subscriptions.DELETE("/:id", h.Admin.Subscription.Revoke)
 
 		refundRequests := subscriptions.Group("/refund-requests")

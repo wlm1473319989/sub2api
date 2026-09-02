@@ -48,6 +48,8 @@ type SettlementRefundSubmitResult struct {
 	SubscriptionStatus     string  `json:"subscription_status"`
 	RefundStatus           string  `json:"refund_status"`
 	RefundResidualValue    float64 `json:"refund_residual_value"`
+	RefundAmount           float64 `json:"refund_amount"`
+	RefundFeeAmount        float64 `json:"refund_fee_amount"`
 	GatewayRefundableTotal float64 `json:"gateway_refundable_total"`
 	ManualTransferAmount   float64 `json:"manual_transfer_amount"`
 	Currency               string  `json:"currency"`
@@ -166,6 +168,8 @@ func (s *SettlementRefundService) SubmitSettlementRefund(ctx context.Context, in
 			Currency:                      preview.Currency,
 			Reason:                        reason,
 			RefundResidualValue:           preview.RefundResidualValue,
+			RefundAmount:                  preview.RefundAmount,
+			RefundFeeAmount:               preview.RefundFeeAmount,
 			GatewayRefundableTotal:        preview.GatewayRefundableTotal,
 			ManualTransferAmount:          preview.ManualTransferAmount,
 			PreviewTokenHash:              preview.PreviewTokenHash,
@@ -234,7 +238,13 @@ func settlementRefundComputationMatchesPreview(computation *settlementRefundPrev
 	if computation.RefundMode != preview.RefundMode {
 		return false
 	}
-	if !settlementRefundFloatEquals(computation.AllocationResult.RefundResidualValue, preview.RefundResidualValue) {
+	if !settlementRefundFloatEquals(computation.ResidualBreakdown.ResidualValue, preview.RefundResidualValue) {
+		return false
+	}
+	if !settlementRefundFloatEquals(computation.RefundAmount, preview.RefundAmount) {
+		return false
+	}
+	if !settlementRefundFloatEquals(computation.RefundFeeAmount, preview.RefundFeeAmount) {
 		return false
 	}
 	if !settlementRefundFloatEquals(computation.AllocationResult.GatewayRefundableTotal, preview.GatewayRefundableTotal) {
@@ -277,6 +287,8 @@ func settlementRefundSubmitResultFromRecord(record *SettlementRefundRequestRecor
 		SubscriptionStatus:     SubscriptionStatusSuspended,
 		RefundStatus:           record.Status,
 		RefundResidualValue:    record.RefundResidualValue,
+		RefundAmount:           record.RefundAmount,
+		RefundFeeAmount:        record.RefundFeeAmount,
 		GatewayRefundableTotal: record.GatewayRefundableTotal,
 		ManualTransferAmount:   record.ManualTransferAmount,
 		Currency:               settlementRefundPreviewResponseCurrency(record.Currency),
@@ -382,23 +394,23 @@ func settlementRefundPreviewCacheEntryFromRequestRecord(record *SettlementRefund
 		return nil
 	}
 	return &SettlementRefundPreviewCacheEntry{
-		PreviewID:               record.ID,
-		PreviewToken:            previewToken,
-		UserID:                  record.UserID,
-		SubscriptionID:          record.SubscriptionID,
-		SettlementID:            record.SettlementID,
-		ExpectedSettlementID:    record.ExpectedSettlementID,
-		RefundMode:              record.RefundMode,
-		Reason:                  record.Reason,
-		RefundResidualValue:     record.RefundResidualValue,
-		GatewayRefundableTotal:  record.GatewayRefundableTotal,
-		ManualTransferAmount:    record.ManualTransferAmount,
-		Currency:                record.Currency,
-		PreviewTokenHash:        record.PreviewTokenHash,
-		PreviewFingerprint:      settlementRefundStringValue(record.PreviewFingerprint),
-		PreviewIssuedAt:         record.PreviewIssuedAt,
-		PreviewExpiresAt:        record.PreviewExpiresAt,
-		Allocations:             settlementRefundAllocationRecordsToPreviewCacheAllocations(record.Allocations),
+		PreviewID:              record.ID,
+		PreviewToken:           previewToken,
+		UserID:                 record.UserID,
+		SubscriptionID:         record.SubscriptionID,
+		SettlementID:           record.SettlementID,
+		ExpectedSettlementID:   record.ExpectedSettlementID,
+		RefundMode:             record.RefundMode,
+		Reason:                 record.Reason,
+		RefundResidualValue:    record.RefundResidualValue,
+		GatewayRefundableTotal: record.GatewayRefundableTotal,
+		ManualTransferAmount:   record.ManualTransferAmount,
+		Currency:               record.Currency,
+		PreviewTokenHash:       record.PreviewTokenHash,
+		PreviewFingerprint:     settlementRefundStringValue(record.PreviewFingerprint),
+		PreviewIssuedAt:        record.PreviewIssuedAt,
+		PreviewExpiresAt:       record.PreviewExpiresAt,
+		Allocations:            settlementRefundAllocationRecordsToPreviewCacheAllocations(record.Allocations),
 	}
 }
 

@@ -219,7 +219,10 @@ func calculateSettlementGatewayRefundAmount(orderAmount, payAmount, refundAmount
 		return 0
 	}
 	fractionDigits := int32(payment.CurrencyMaxFractionDigits(currency))
-	if math.Abs(refundAmount-orderAmount) <= paymentAmountToleranceForCurrency(currency) {
+	// A fee-adjusted refund can be within the currency tolerance of the order
+	// amount while still being intentionally lower than the gross amount.
+	// Only an amount that reaches the full order value may use the full-pay path.
+	if refundAmount >= orderAmount {
 		return decimal.NewFromFloat(payAmount).Truncate(fractionDigits).InexactFloat64()
 	}
 	return decimal.NewFromFloat(payAmount).

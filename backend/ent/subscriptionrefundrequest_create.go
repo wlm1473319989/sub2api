@@ -112,6 +112,34 @@ func (_c *SubscriptionRefundRequestCreate) SetNillableRefundResidualValue(v *flo
 	return _c
 }
 
+// SetRefundAmount sets the "refund_amount" field.
+func (_c *SubscriptionRefundRequestCreate) SetRefundAmount(v float64) *SubscriptionRefundRequestCreate {
+	_c.mutation.SetRefundAmount(v)
+	return _c
+}
+
+// SetNillableRefundAmount sets the "refund_amount" field if the given value is not nil.
+func (_c *SubscriptionRefundRequestCreate) SetNillableRefundAmount(v *float64) *SubscriptionRefundRequestCreate {
+	if v != nil {
+		_c.SetRefundAmount(*v)
+	}
+	return _c
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (_c *SubscriptionRefundRequestCreate) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestCreate {
+	_c.mutation.SetRefundFeeAmount(v)
+	return _c
+}
+
+// SetNillableRefundFeeAmount sets the "refund_fee_amount" field if the given value is not nil.
+func (_c *SubscriptionRefundRequestCreate) SetNillableRefundFeeAmount(v *float64) *SubscriptionRefundRequestCreate {
+	if v != nil {
+		_c.SetRefundFeeAmount(*v)
+	}
+	return _c
+}
+
 // SetGatewayRefundableTotal sets the "gateway_refundable_total" field.
 func (_c *SubscriptionRefundRequestCreate) SetGatewayRefundableTotal(v float64) *SubscriptionRefundRequestCreate {
 	_c.mutation.SetGatewayRefundableTotal(v)
@@ -515,6 +543,14 @@ func (_c *SubscriptionRefundRequestCreate) defaults() {
 		v := subscriptionrefundrequest.DefaultRefundResidualValue
 		_c.mutation.SetRefundResidualValue(v)
 	}
+	if _, ok := _c.mutation.RefundAmount(); !ok {
+		v := subscriptionrefundrequest.DefaultRefundAmount
+		_c.mutation.SetRefundAmount(v)
+	}
+	if _, ok := _c.mutation.RefundFeeAmount(); !ok {
+		v := subscriptionrefundrequest.DefaultRefundFeeAmount
+		_c.mutation.SetRefundFeeAmount(v)
+	}
 	if _, ok := _c.mutation.GatewayRefundableTotal(); !ok {
 		v := subscriptionrefundrequest.DefaultGatewayRefundableTotal
 		_c.mutation.SetGatewayRefundableTotal(v)
@@ -574,6 +610,12 @@ func (_c *SubscriptionRefundRequestCreate) check() error {
 	}
 	if _, ok := _c.mutation.RefundResidualValue(); !ok {
 		return &ValidationError{Name: "refund_residual_value", err: errors.New(`ent: missing required field "SubscriptionRefundRequest.refund_residual_value"`)}
+	}
+	if _, ok := _c.mutation.RefundAmount(); !ok {
+		return &ValidationError{Name: "refund_amount", err: errors.New(`ent: missing required field "SubscriptionRefundRequest.refund_amount"`)}
+	}
+	if _, ok := _c.mutation.RefundFeeAmount(); !ok {
+		return &ValidationError{Name: "refund_fee_amount", err: errors.New(`ent: missing required field "SubscriptionRefundRequest.refund_fee_amount"`)}
 	}
 	if _, ok := _c.mutation.GatewayRefundableTotal(); !ok {
 		return &ValidationError{Name: "gateway_refundable_total", err: errors.New(`ent: missing required field "SubscriptionRefundRequest.gateway_refundable_total"`)}
@@ -684,6 +726,14 @@ func (_c *SubscriptionRefundRequestCreate) createSpec() (*SubscriptionRefundRequ
 	if value, ok := _c.mutation.RefundResidualValue(); ok {
 		_spec.SetField(subscriptionrefundrequest.FieldRefundResidualValue, field.TypeFloat64, value)
 		_node.RefundResidualValue = value
+	}
+	if value, ok := _c.mutation.RefundAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundAmount, field.TypeFloat64, value)
+		_node.RefundAmount = value
+	}
+	if value, ok := _c.mutation.RefundFeeAmount(); ok {
+		_spec.SetField(subscriptionrefundrequest.FieldRefundFeeAmount, field.TypeFloat64, value)
+		_node.RefundFeeAmount = value
 	}
 	if value, ok := _c.mutation.GatewayRefundableTotal(); ok {
 		_spec.SetField(subscriptionrefundrequest.FieldGatewayRefundableTotal, field.TypeFloat64, value)
@@ -1049,6 +1099,42 @@ func (u *SubscriptionRefundRequestUpsert) UpdateRefundResidualValue() *Subscript
 // AddRefundResidualValue adds v to the "refund_residual_value" field.
 func (u *SubscriptionRefundRequestUpsert) AddRefundResidualValue(v float64) *SubscriptionRefundRequestUpsert {
 	u.Add(subscriptionrefundrequest.FieldRefundResidualValue, v)
+	return u
+}
+
+// SetRefundAmount sets the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsert) SetRefundAmount(v float64) *SubscriptionRefundRequestUpsert {
+	u.Set(subscriptionrefundrequest.FieldRefundAmount, v)
+	return u
+}
+
+// UpdateRefundAmount sets the "refund_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsert) UpdateRefundAmount() *SubscriptionRefundRequestUpsert {
+	u.SetExcluded(subscriptionrefundrequest.FieldRefundAmount)
+	return u
+}
+
+// AddRefundAmount adds v to the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsert) AddRefundAmount(v float64) *SubscriptionRefundRequestUpsert {
+	u.Add(subscriptionrefundrequest.FieldRefundAmount, v)
+	return u
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsert) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsert {
+	u.Set(subscriptionrefundrequest.FieldRefundFeeAmount, v)
+	return u
+}
+
+// UpdateRefundFeeAmount sets the "refund_fee_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsert) UpdateRefundFeeAmount() *SubscriptionRefundRequestUpsert {
+	u.SetExcluded(subscriptionrefundrequest.FieldRefundFeeAmount)
+	return u
+}
+
+// AddRefundFeeAmount adds v to the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsert) AddRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsert {
+	u.Add(subscriptionrefundrequest.FieldRefundFeeAmount, v)
 	return u
 }
 
@@ -1613,6 +1699,48 @@ func (u *SubscriptionRefundRequestUpsertOne) AddRefundResidualValue(v float64) *
 func (u *SubscriptionRefundRequestUpsertOne) UpdateRefundResidualValue() *SubscriptionRefundRequestUpsertOne {
 	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
 		s.UpdateRefundResidualValue()
+	})
+}
+
+// SetRefundAmount sets the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsertOne) SetRefundAmount(v float64) *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.SetRefundAmount(v)
+	})
+}
+
+// AddRefundAmount adds v to the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsertOne) AddRefundAmount(v float64) *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.AddRefundAmount(v)
+	})
+}
+
+// UpdateRefundAmount sets the "refund_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsertOne) UpdateRefundAmount() *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.UpdateRefundAmount()
+	})
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsertOne) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.SetRefundFeeAmount(v)
+	})
+}
+
+// AddRefundFeeAmount adds v to the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsertOne) AddRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.AddRefundFeeAmount(v)
+	})
+}
+
+// UpdateRefundFeeAmount sets the "refund_fee_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsertOne) UpdateRefundFeeAmount() *SubscriptionRefundRequestUpsertOne {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.UpdateRefundFeeAmount()
 	})
 }
 
@@ -2405,6 +2533,48 @@ func (u *SubscriptionRefundRequestUpsertBulk) AddRefundResidualValue(v float64) 
 func (u *SubscriptionRefundRequestUpsertBulk) UpdateRefundResidualValue() *SubscriptionRefundRequestUpsertBulk {
 	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
 		s.UpdateRefundResidualValue()
+	})
+}
+
+// SetRefundAmount sets the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsertBulk) SetRefundAmount(v float64) *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.SetRefundAmount(v)
+	})
+}
+
+// AddRefundAmount adds v to the "refund_amount" field.
+func (u *SubscriptionRefundRequestUpsertBulk) AddRefundAmount(v float64) *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.AddRefundAmount(v)
+	})
+}
+
+// UpdateRefundAmount sets the "refund_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsertBulk) UpdateRefundAmount() *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.UpdateRefundAmount()
+	})
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsertBulk) SetRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.SetRefundFeeAmount(v)
+	})
+}
+
+// AddRefundFeeAmount adds v to the "refund_fee_amount" field.
+func (u *SubscriptionRefundRequestUpsertBulk) AddRefundFeeAmount(v float64) *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.AddRefundFeeAmount(v)
+	})
+}
+
+// UpdateRefundFeeAmount sets the "refund_fee_amount" field to the value that was provided on create.
+func (u *SubscriptionRefundRequestUpsertBulk) UpdateRefundFeeAmount() *SubscriptionRefundRequestUpsertBulk {
+	return u.Update(func(s *SubscriptionRefundRequestUpsert) {
+		s.UpdateRefundFeeAmount()
 	})
 }
 

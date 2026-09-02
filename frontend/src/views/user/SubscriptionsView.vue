@@ -58,14 +58,6 @@
               >
                 {{ t('payment.renewNow') }}
               </button>
-              <button
-                v-if="subscription.status === 'active'"
-                class="rounded-lg bg-red-600 px-3 py-1.5 text-xs font-semibold text-white transition-colors hover:bg-red-700 dark:bg-red-500 dark:hover:bg-red-400"
-                @click="openRefundDialog(subscription)"
-              >
-                <Icon name="dollar" size="sm" class="mr-1" />
-                {{ t('userSubscriptions.refund.request') }}
-              </button>
             </div>
           </div>
 
@@ -228,12 +220,6 @@
       </div>
     </div>
 
-    <SubscriptionRefundDialog
-      :show="showRefundDialog"
-      :subscription="refundSubscription"
-      @close="closeRefundDialog"
-      @submitted="handleRefundSubmitted"
-    />
   </AppLayout>
 </template>
 
@@ -243,10 +229,9 @@ import { useI18n } from 'vue-i18n'
 import { useRouter } from 'vue-router'
 import { useAppStore } from '@/stores/app'
 import subscriptionsAPI from '@/api/subscriptions'
-import type { SubscriptionRefundSubmitResult, UserSubscription } from '@/types'
+import type { UserSubscription } from '@/types'
 import AppLayout from '@/components/layout/AppLayout.vue'
 import Icon from '@/components/icons/Icon.vue'
-import SubscriptionRefundDialog from '@/components/user/SubscriptionRefundDialog.vue'
 import { formatDateOnly } from '@/utils/format'
 import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
 
@@ -256,8 +241,6 @@ const appStore = useAppStore()
 
 const subscriptions = ref<UserSubscription[]>([])
 const loading = ref(true)
-const showRefundDialog = ref(false)
-const refundSubscription = ref<UserSubscription | null>(null)
 
 function subscriptionDisplayName(subscription: UserSubscription): string {
   if (subscription.plan_name_snapshot?.trim()) {
@@ -306,21 +289,6 @@ async function loadSubscriptions() {
   } finally {
     loading.value = false
   }
-}
-
-function openRefundDialog(subscription: UserSubscription) {
-  refundSubscription.value = subscription
-  showRefundDialog.value = true
-}
-
-function closeRefundDialog() {
-  showRefundDialog.value = false
-  refundSubscription.value = null
-}
-
-async function handleRefundSubmitted(result: SubscriptionRefundSubmitResult) {
-  closeRefundDialog()
-  await router.push(`/subscription-refund-requests/${result.refund_request_id}`)
 }
 
 function getProgressWidth(used: number | undefined, limit: number | null | undefined): string {

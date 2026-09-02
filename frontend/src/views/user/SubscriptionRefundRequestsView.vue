@@ -68,6 +68,10 @@
             <div class="text-sm font-medium text-gray-900 dark:text-white">
               {{ formatCurrency(row.refund_residual_value, row.currency || 'CNY', 4) }}
             </div>
+            <div class="text-xs text-gray-500 dark:text-dark-400">
+              {{ t('subscriptionRefundRequests.summary.refundFee') }}: {{ formatCurrency(row.refund_fee_amount, row.currency || 'CNY', 4) }}
+              · {{ t('subscriptionRefundRequests.summary.refundAmount') }}: {{ formatCurrency(row.refund_amount, row.currency || 'CNY', 4) }}
+            </div>
           </template>
 
           <template #cell-gateway="{ row }">

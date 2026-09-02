@@ -300,6 +300,8 @@ func (h *PaymentHandler) ProcessRefund(c *gin.Context) {
 			"success":               true,
 			"refund_request_id":     submitResult.RefundRequestID,
 			"settlement_order_id":   completeResult.SettlementOrderID,
+			"refund_amount":         submitResult.RefundAmount,
+			"refund_fee_amount":     submitResult.RefundFeeAmount,
 			"subscription_status":   completeResult.SubscriptionStatus,
 			"refund_residual_value": completeResult.RefundResidualValue,
 		})
@@ -328,7 +330,8 @@ func buildLegacySubscriptionRefundPreviewResponse(order *dbent.PaymentOrder, pre
 	return gin.H{
 		"order_amount":                       order.Amount,
 		"pay_amount":                         order.PayAmount,
-		"refund_amount":                      preview.RefundResidualValue,
+		"refund_amount":                      preview.RefundAmount,
+		"refund_fee_amount":                  preview.RefundFeeAmount,
 		"gateway_amount":                     preview.GatewayRefundableTotal,
 		"currency":                           preview.Currency,
 		"deduction_type":                     "subscription",

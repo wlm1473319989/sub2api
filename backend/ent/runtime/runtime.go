@@ -1689,48 +1689,56 @@ func init() {
 	subscriptionrefundrequestDescRefundResidualValue := subscriptionrefundrequestFields[8].Descriptor()
 	// subscriptionrefundrequest.DefaultRefundResidualValue holds the default value on creation for the refund_residual_value field.
 	subscriptionrefundrequest.DefaultRefundResidualValue = subscriptionrefundrequestDescRefundResidualValue.Default.(float64)
+	// subscriptionrefundrequestDescRefundAmount is the schema descriptor for refund_amount field.
+	subscriptionrefundrequestDescRefundAmount := subscriptionrefundrequestFields[9].Descriptor()
+	// subscriptionrefundrequest.DefaultRefundAmount holds the default value on creation for the refund_amount field.
+	subscriptionrefundrequest.DefaultRefundAmount = subscriptionrefundrequestDescRefundAmount.Default.(float64)
+	// subscriptionrefundrequestDescRefundFeeAmount is the schema descriptor for refund_fee_amount field.
+	subscriptionrefundrequestDescRefundFeeAmount := subscriptionrefundrequestFields[10].Descriptor()
+	// subscriptionrefundrequest.DefaultRefundFeeAmount holds the default value on creation for the refund_fee_amount field.
+	subscriptionrefundrequest.DefaultRefundFeeAmount = subscriptionrefundrequestDescRefundFeeAmount.Default.(float64)
 	// subscriptionrefundrequestDescGatewayRefundableTotal is the schema descriptor for gateway_refundable_total field.
-	subscriptionrefundrequestDescGatewayRefundableTotal := subscriptionrefundrequestFields[9].Descriptor()
+	subscriptionrefundrequestDescGatewayRefundableTotal := subscriptionrefundrequestFields[11].Descriptor()
 	// subscriptionrefundrequest.DefaultGatewayRefundableTotal holds the default value on creation for the gateway_refundable_total field.
 	subscriptionrefundrequest.DefaultGatewayRefundableTotal = subscriptionrefundrequestDescGatewayRefundableTotal.Default.(float64)
 	// subscriptionrefundrequestDescManualTransferAmount is the schema descriptor for manual_transfer_amount field.
-	subscriptionrefundrequestDescManualTransferAmount := subscriptionrefundrequestFields[10].Descriptor()
+	subscriptionrefundrequestDescManualTransferAmount := subscriptionrefundrequestFields[12].Descriptor()
 	// subscriptionrefundrequest.DefaultManualTransferAmount holds the default value on creation for the manual_transfer_amount field.
 	subscriptionrefundrequest.DefaultManualTransferAmount = subscriptionrefundrequestDescManualTransferAmount.Default.(float64)
 	// subscriptionrefundrequestDescPreviewTokenHash is the schema descriptor for preview_token_hash field.
-	subscriptionrefundrequestDescPreviewTokenHash := subscriptionrefundrequestFields[11].Descriptor()
+	subscriptionrefundrequestDescPreviewTokenHash := subscriptionrefundrequestFields[13].Descriptor()
 	// subscriptionrefundrequest.PreviewTokenHashValidator is a validator for the "preview_token_hash" field. It is called by the builders before save.
 	subscriptionrefundrequest.PreviewTokenHashValidator = subscriptionrefundrequestDescPreviewTokenHash.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescPreviewFingerprint is the schema descriptor for preview_fingerprint field.
-	subscriptionrefundrequestDescPreviewFingerprint := subscriptionrefundrequestFields[12].Descriptor()
+	subscriptionrefundrequestDescPreviewFingerprint := subscriptionrefundrequestFields[14].Descriptor()
 	// subscriptionrefundrequest.PreviewFingerprintValidator is a validator for the "preview_fingerprint" field. It is called by the builders before save.
 	subscriptionrefundrequest.PreviewFingerprintValidator = subscriptionrefundrequestDescPreviewFingerprint.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescPreviewIssuedAt is the schema descriptor for preview_issued_at field.
-	subscriptionrefundrequestDescPreviewIssuedAt := subscriptionrefundrequestFields[13].Descriptor()
+	subscriptionrefundrequestDescPreviewIssuedAt := subscriptionrefundrequestFields[15].Descriptor()
 	// subscriptionrefundrequest.DefaultPreviewIssuedAt holds the default value on creation for the preview_issued_at field.
 	subscriptionrefundrequest.DefaultPreviewIssuedAt = subscriptionrefundrequestDescPreviewIssuedAt.Default.(func() time.Time)
 	// subscriptionrefundrequestDescOriginalSubscriptionStatus is the schema descriptor for original_subscription_status field.
-	subscriptionrefundrequestDescOriginalSubscriptionStatus := subscriptionrefundrequestFields[19].Descriptor()
+	subscriptionrefundrequestDescOriginalSubscriptionStatus := subscriptionrefundrequestFields[21].Descriptor()
 	// subscriptionrefundrequest.OriginalSubscriptionStatusValidator is a validator for the "original_subscription_status" field. It is called by the builders before save.
 	subscriptionrefundrequest.OriginalSubscriptionStatusValidator = subscriptionrefundrequestDescOriginalSubscriptionStatus.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescManualReceiverType is the schema descriptor for manual_receiver_type field.
-	subscriptionrefundrequestDescManualReceiverType := subscriptionrefundrequestFields[21].Descriptor()
+	subscriptionrefundrequestDescManualReceiverType := subscriptionrefundrequestFields[23].Descriptor()
 	// subscriptionrefundrequest.ManualReceiverTypeValidator is a validator for the "manual_receiver_type" field. It is called by the builders before save.
 	subscriptionrefundrequest.ManualReceiverTypeValidator = subscriptionrefundrequestDescManualReceiverType.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescManualReceiverName is the schema descriptor for manual_receiver_name field.
-	subscriptionrefundrequestDescManualReceiverName := subscriptionrefundrequestFields[22].Descriptor()
+	subscriptionrefundrequestDescManualReceiverName := subscriptionrefundrequestFields[24].Descriptor()
 	// subscriptionrefundrequest.ManualReceiverNameValidator is a validator for the "manual_receiver_name" field. It is called by the builders before save.
 	subscriptionrefundrequest.ManualReceiverNameValidator = subscriptionrefundrequestDescManualReceiverName.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescManualReceiverAccount is the schema descriptor for manual_receiver_account field.
-	subscriptionrefundrequestDescManualReceiverAccount := subscriptionrefundrequestFields[23].Descriptor()
+	subscriptionrefundrequestDescManualReceiverAccount := subscriptionrefundrequestFields[25].Descriptor()
 	// subscriptionrefundrequest.ManualReceiverAccountValidator is a validator for the "manual_receiver_account" field. It is called by the builders before save.
 	subscriptionrefundrequest.ManualReceiverAccountValidator = subscriptionrefundrequestDescManualReceiverAccount.Validators[0].(func(string) error)
 	// subscriptionrefundrequestDescCreatedAt is the schema descriptor for created_at field.
-	subscriptionrefundrequestDescCreatedAt := subscriptionrefundrequestFields[30].Descriptor()
+	subscriptionrefundrequestDescCreatedAt := subscriptionrefundrequestFields[32].Descriptor()
 	// subscriptionrefundrequest.DefaultCreatedAt holds the default value on creation for the created_at field.
 	subscriptionrefundrequest.DefaultCreatedAt = subscriptionrefundrequestDescCreatedAt.Default.(func() time.Time)
 	// subscriptionrefundrequestDescUpdatedAt is the schema descriptor for updated_at field.
-	subscriptionrefundrequestDescUpdatedAt := subscriptionrefundrequestFields[31].Descriptor()
+	subscriptionrefundrequestDescUpdatedAt := subscriptionrefundrequestFields[33].Descriptor()
 	// subscriptionrefundrequest.DefaultUpdatedAt holds the default value on creation for the updated_at field.
 	subscriptionrefundrequest.DefaultUpdatedAt = subscriptionrefundrequestDescUpdatedAt.Default.(func() time.Time)
 	// subscriptionrefundrequest.UpdateDefaultUpdatedAt holds the default value on update for the updated_at field.

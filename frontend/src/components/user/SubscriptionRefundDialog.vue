@@ -68,6 +68,14 @@
               <span class="font-medium text-blue-950 dark:text-blue-100">{{ formatMoney(preview.refund_residual_value, preview.currency) }}</span>
             </div>
             <div class="flex justify-between gap-4">
+              <span class="text-blue-700 dark:text-blue-300">{{ t('userSubscriptions.refund.fee') }}</span>
+              <span class="font-medium text-blue-950 dark:text-blue-100">{{ formatMoney(preview.refund_fee_amount, preview.currency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4">
+              <span class="text-blue-700 dark:text-blue-300">{{ t('userSubscriptions.refund.refundAmount') }}</span>
+              <span class="font-semibold text-blue-950 dark:text-blue-100">{{ formatMoney(preview.refund_amount, preview.currency) }}</span>
+            </div>
+            <div class="flex justify-between gap-4">
               <span class="text-blue-700 dark:text-blue-300">{{ t('userSubscriptions.refund.refundMode') }}</span>
               <span class="font-medium text-blue-950 dark:text-blue-100">{{ refundModeLabel(preview.refund_mode) }}</span>
             </div>
@@ -140,12 +148,22 @@
               }) }}
             </p>
             <p>
+              {{ t('userSubscriptions.refund.calculationFeeFormula') }}:
+              {{ formatMoney(preview.refund_residual_value, preview.currency) }} × 5%, capped at {{ formatMoney(10, preview.currency) }}
+              = {{ formatMoney(preview.refund_fee_amount, preview.currency) }}
+            </p>
+            <p>
+              {{ t('userSubscriptions.refund.calculationNetFormula') }}:
+              {{ formatMoney(preview.refund_residual_value, preview.currency) }} - {{ formatMoney(preview.refund_fee_amount, preview.currency) }}
+              = {{ formatMoney(preview.refund_amount, preview.currency) }}
+            </p>
+            <p>
               {{ t('userSubscriptions.refund.calculationGatewayFormula') }}:
               {{ formatMoney(preview.gateway_refundable_total, preview.currency) }}
             </p>
             <p>
               {{ t('userSubscriptions.refund.calculationManualFormula') }}:
-              {{ formatMoney(preview.refund_residual_value, preview.currency) }} - {{ formatMoney(preview.gateway_refundable_total, preview.currency) }}
+              {{ formatMoney(preview.refund_amount, preview.currency) }} - {{ formatMoney(preview.gateway_refundable_total, preview.currency) }}
               = {{ formatMoney(preview.manual_transfer_amount, preview.currency) }}
             </p>
           </div>
@@ -212,7 +230,7 @@
         >
           <Icon v-if="submitting" name="refresh" size="sm" class="animate-spin" />
           <span :class="submitting ? 'ml-2' : ''">
-            {{ submitting ? t('common.processing') : t('userSubscriptions.refund.submit') }}
+            {{ submitting ? t('common.processing') : (props.adminMode ? t('payment.admin.confirmRefund') : t('userSubscriptions.refund.submit')) }}
           </span>
         </button>
       </div>
@@ -226,9 +244,11 @@ import { useI18n } from 'vue-i18n'
 import BaseDialog from '@/components/common/BaseDialog.vue'
 import Icon from '@/components/icons/Icon.vue'
 import subscriptionsAPI from '@/api/subscriptions'
+import adminSubscriptionsAPI from '@/api/admin/subscriptions'
 import { useAppStore } from '@/stores/app'
 import { extractI18nErrorMessage } from '@/utils/apiError'
 import type {
+  AdminSubscriptionRefundResult,
   SubscriptionRefundPreviewResponse,
   SubscriptionRefundSubmitResult,
   UserSubscription
@@ -237,6 +257,7 @@ import type {
 const props = defineProps<{
   show: boolean
   subscription: UserSubscription | null
+  adminMode?: boolean
 }>()
 
 const emit = defineEmits<{
@@ -412,7 +433,9 @@ async function loadPreview() {
   previewLoading.value = true
   previewError.value = ''
   try {
-    preview.value = await subscriptionsAPI.previewSubscriptionRefund(props.subscription.id, reason.value.trim())
+    preview.value = props.adminMode
+      ? await adminSubscriptionsAPI.previewRefund(props.subscription.id, reason.value.trim())
+      : await subscriptionsAPI.previewSubscriptionRefund(props.subscription.id, reason.value.trim())
     now.value = Date.now()
     startTimer()
   } catch (err: unknown) {
@@ -442,13 +465,27 @@ async function submitRefund() {
         }
       : undefined
 
-    const result = await subscriptionsAPI.requestSubscriptionRefund(props.subscription.id, {
+    const request = {
       preview_id: preview.value.preview_id,
       preview_token: preview.value.preview_token,
       reason: reason.value.trim(),
       manual_transfer: manualTransferPayload,
-    })
-    appStore.showSuccess(t('userSubscriptions.refund.submittedWithId', { id: result.refund_request_id }))
+    }
+    const result = props.adminMode
+      ? await adminSubscriptionsAPI.refundSubscription(props.subscription.id, request)
+      : await subscriptionsAPI.requestSubscriptionRefund(props.subscription.id, request)
+    const adminResult = result as AdminSubscriptionRefundResult
+    if (props.adminMode && adminResult.success === false) {
+      if (adminResult.warning === 'manual transfer required') {
+        appStore.showInfo(t('admin.subscriptions.refundPending'))
+      } else {
+        appStore.showError(adminResult.warning || t('admin.subscriptions.refundFailed'))
+      }
+    } else {
+      appStore.showSuccess(props.adminMode
+        ? t('admin.subscriptions.refundSuccess')
+        : t('userSubscriptions.refund.submittedWithId', { id: result.refund_request_id }))
+    }
     emit('submitted', result)
     handleClose()
   } catch (err: unknown) {

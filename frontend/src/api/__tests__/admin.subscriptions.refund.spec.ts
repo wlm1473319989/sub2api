@@ -49,6 +49,24 @@ describe('admin subscription refund api', () => {
     expect(get).toHaveBeenCalledWith('/admin/subscription-refund-requests/12')
   })
 
+  it('previews and submits a refund by subscription id', async () => {
+    await adminSubscriptionsAPI.previewRefund(9, 'customer request')
+    await adminSubscriptionsAPI.refundSubscription(9, {
+      preview_id: 100,
+      preview_token: 'token',
+      reason: 'customer request',
+    })
+
+    expect(post).toHaveBeenNthCalledWith(1, '/admin/subscriptions/9/refund-preview', {
+      reason: 'customer request',
+    })
+    expect(post).toHaveBeenNthCalledWith(2, '/admin/subscriptions/9/refund', {
+      preview_id: 100,
+      preview_token: 'token',
+      reason: 'customer request',
+    })
+  })
+
   it('uses new refund request mutation routes', async () => {
     await adminSubscriptionsAPI.uploadRefundProof(12, { proof_url: 'proof.png', admin_note: 'done' })
     await adminSubscriptionsAPI.processRefundGateway(12)

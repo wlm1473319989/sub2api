@@ -22,7 +22,7 @@
               <Icon name="x" size="sm" />
               <span>{{ t('payment.orders.cancel') }}</span>
             </button>
-            <button v-if="canRequestRefund(row)" @click="handleRefundEntry(row)" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20">
+            <button v-if="canRequestRefund(row)" @click="openRefundDialog(row)" class="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs font-medium text-purple-600 hover:bg-purple-50 dark:text-purple-400 dark:hover:bg-purple-900/20">
               <Icon name="dollar" size="sm" />
               <span>{{ t('payment.orders.requestRefund') }}</span>
             </button>
@@ -246,15 +246,6 @@ async function openRefundDialog(order: PaymentOrder) {
   }
 }
 
-async function handleRefundEntry(order: PaymentOrder) {
-  if (order.order_type === 'subscription') {
-    appStore.showInfo(t('payment.subscriptionRefundRedirect'))
-    await router.push('/subscriptions')
-    return
-  }
-  await openRefundDialog(order)
-}
-
 function closeRefundDialog() {
   refundTarget.value = null
   refundReason.value = ''
@@ -280,7 +271,7 @@ async function confirmRefund() {
 
 function canRequestRefund(order: PaymentOrder): boolean {
   if (order.status !== 'COMPLETED') return false
-  if (order.order_type === 'subscription') return true
+  if (order.order_type === 'subscription') return false
   if (!order.provider_instance_id) return false
   return refundEligibleProviders.value.has(order.provider_instance_id)
 }

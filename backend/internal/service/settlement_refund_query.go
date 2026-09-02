@@ -7,23 +7,23 @@ import (
 	"strings"
 
 	dbent "github.com/Wei-Shaw/sub2api/ent"
-	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/subscriptionsettlementorder"
+	dbuser "github.com/Wei-Shaw/sub2api/ent/user"
 	"github.com/Wei-Shaw/sub2api/ent/usersubscription"
 	"github.com/Wei-Shaw/sub2api/internal/pkg/pagination"
 )
 
 type SettlementRefundListFilter struct {
-	UserID        *int64
+	UserID         *int64
 	SubscriptionID *int64
-	Status        string
+	Status         string
 }
 
 type SettlementRefundRequestView struct {
-	Request               *SettlementRefundRequestRecord
-	User                  *User
-	Subscription          *UserSubscription
-	CurrentSettlementHead *SubscriptionSettlementOrderView
+	Request                *SettlementRefundRequestRecord
+	User                   *User
+	Subscription           *UserSubscription
+	CurrentSettlementHead  *SubscriptionSettlementOrderView
 	ExpectedSettlementHead *SubscriptionSettlementOrderView
 	GatewayRefundedTotal   float64
 	SucceededAllocations   int
@@ -281,6 +281,8 @@ SELECT
     COALESCE(currency, ''),
     reason,
     refund_residual_value::double precision,
+    refund_amount::double precision,
+    refund_fee_amount::double precision,
     gateway_refundable_total::double precision,
     manual_transfer_amount::double precision,
     preview_token_hash,
@@ -371,9 +373,9 @@ ORDER BY subscription_id, created_at DESC, id DESC`
 	markers := make(map[int64]SettlementRefundSubscriptionMarker, len(subscriptionIDs))
 	for rows.Next() {
 		var (
-			subscriptionID int64
+			subscriptionID  int64
 			refundRequestID int64
-			status string
+			status          string
 		)
 		if err := rows.Scan(&subscriptionID, &refundRequestID, &status); err != nil {
 			return nil, fmt.Errorf("scan settlement refund subscription marker: %w", err)

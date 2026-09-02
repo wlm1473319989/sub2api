@@ -38,6 +38,10 @@ type SubscriptionRefundRequest struct {
 	Reason *string `json:"reason,omitempty"`
 	// RefundResidualValue holds the value of the "refund_residual_value" field.
 	RefundResidualValue float64 `json:"refund_residual_value,omitempty"`
+	// RefundAmount holds the value of the "refund_amount" field.
+	RefundAmount float64 `json:"refund_amount,omitempty"`
+	// RefundFeeAmount holds the value of the "refund_fee_amount" field.
+	RefundFeeAmount float64 `json:"refund_fee_amount,omitempty"`
 	// GatewayRefundableTotal holds the value of the "gateway_refundable_total" field.
 	GatewayRefundableTotal float64 `json:"gateway_refundable_total,omitempty"`
 	// ManualTransferAmount holds the value of the "manual_transfer_amount" field.
@@ -178,7 +182,7 @@ func (*SubscriptionRefundRequest) scanValues(columns []string) ([]any, error) {
 	values := make([]any, len(columns))
 	for i := range columns {
 		switch columns[i] {
-		case subscriptionrefundrequest.FieldRefundResidualValue, subscriptionrefundrequest.FieldGatewayRefundableTotal, subscriptionrefundrequest.FieldManualTransferAmount:
+		case subscriptionrefundrequest.FieldRefundResidualValue, subscriptionrefundrequest.FieldRefundAmount, subscriptionrefundrequest.FieldRefundFeeAmount, subscriptionrefundrequest.FieldGatewayRefundableTotal, subscriptionrefundrequest.FieldManualTransferAmount:
 			values[i] = new(sql.NullFloat64)
 		case subscriptionrefundrequest.FieldID, subscriptionrefundrequest.FieldUserID, subscriptionrefundrequest.FieldSubscriptionID, subscriptionrefundrequest.FieldSettlementID, subscriptionrefundrequest.FieldExpectedSettlementID, subscriptionrefundrequest.FieldManualTransferOperatorUserID:
 			values[i] = new(sql.NullInt64)
@@ -262,6 +266,18 @@ func (_m *SubscriptionRefundRequest) assignValues(columns []string, values []any
 				return fmt.Errorf("unexpected type %T for field refund_residual_value", values[i])
 			} else if value.Valid {
 				_m.RefundResidualValue = value.Float64
+			}
+		case subscriptionrefundrequest.FieldRefundAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field refund_amount", values[i])
+			} else if value.Valid {
+				_m.RefundAmount = value.Float64
+			}
+		case subscriptionrefundrequest.FieldRefundFeeAmount:
+			if value, ok := values[i].(*sql.NullFloat64); !ok {
+				return fmt.Errorf("unexpected type %T for field refund_fee_amount", values[i])
+			} else if value.Valid {
+				_m.RefundFeeAmount = value.Float64
 			}
 		case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 			if value, ok := values[i].(*sql.NullFloat64); !ok {
@@ -513,6 +529,12 @@ func (_m *SubscriptionRefundRequest) String() string {
 	builder.WriteString(", ")
 	builder.WriteString("refund_residual_value=")
 	builder.WriteString(fmt.Sprintf("%v", _m.RefundResidualValue))
+	builder.WriteString(", ")
+	builder.WriteString("refund_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefundAmount))
+	builder.WriteString(", ")
+	builder.WriteString("refund_fee_amount=")
+	builder.WriteString(fmt.Sprintf("%v", _m.RefundFeeAmount))
 	builder.WriteString(", ")
 	builder.WriteString("gateway_refundable_total=")
 	builder.WriteString(fmt.Sprintf("%v", _m.GatewayRefundableTotal))

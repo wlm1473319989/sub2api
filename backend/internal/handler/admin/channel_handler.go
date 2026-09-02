@@ -63,6 +63,7 @@ type channelModelPricingRequest struct {
 	InputPrice       *float64                 `json:"input_price" binding:"omitempty,min=0"`
 	OutputPrice      *float64                 `json:"output_price" binding:"omitempty,min=0"`
 	CacheWritePrice  *float64                 `json:"cache_write_price" binding:"omitempty,min=0"`
+	CacheWrite1hPrice *float64                `json:"cache_write_1h_price" binding:"omitempty,min=0"`
 	CacheReadPrice   *float64                 `json:"cache_read_price" binding:"omitempty,min=0"`
 	ImageOutputPrice *float64                 `json:"image_output_price" binding:"omitempty,min=0"`
 	PerRequestPrice  *float64                 `json:"per_request_price" binding:"omitempty,min=0"`
@@ -76,6 +77,7 @@ type pricingIntervalRequest struct {
 	InputPrice      *float64 `json:"input_price"`
 	OutputPrice     *float64 `json:"output_price"`
 	CacheWritePrice *float64 `json:"cache_write_price"`
+	CacheWrite1hPrice *float64 `json:"cache_write_1h_price"`
 	CacheReadPrice  *float64 `json:"cache_read_price"`
 	PerRequestPrice *float64 `json:"per_request_price"`
 	SortOrder       int      `json:"sort_order"`
@@ -114,6 +116,7 @@ type channelModelPricingResponse struct {
 	InputPrice       *float64                  `json:"input_price"`
 	OutputPrice      *float64                  `json:"output_price"`
 	CacheWritePrice  *float64                  `json:"cache_write_price"`
+	CacheWrite1hPrice *float64                 `json:"cache_write_1h_price"`
 	CacheReadPrice   *float64                  `json:"cache_read_price"`
 	ImageOutputPrice *float64                  `json:"image_output_price"`
 	PerRequestPrice  *float64                  `json:"per_request_price"`
@@ -128,6 +131,7 @@ type pricingIntervalResponse struct {
 	InputPrice      *float64 `json:"input_price"`
 	OutputPrice     *float64 `json:"output_price"`
 	CacheWritePrice *float64 `json:"cache_write_price"`
+	CacheWrite1hPrice *float64 `json:"cache_write_1h_price"`
 	CacheReadPrice  *float64 `json:"cache_read_price"`
 	PerRequestPrice *float64 `json:"per_request_price"`
 	SortOrder       int      `json:"sort_order"`
@@ -221,6 +225,7 @@ func pricingToResponse(p *service.ChannelModelPricing) channelModelPricingRespon
 		InputPrice:       p.InputPrice,
 		OutputPrice:      p.OutputPrice,
 		CacheWritePrice:  p.CacheWritePrice,
+		CacheWrite1hPrice: p.CacheWrite1hPrice,
 		CacheReadPrice:   p.CacheReadPrice,
 		ImageOutputPrice: p.ImageOutputPrice,
 		PerRequestPrice:  p.PerRequestPrice,
@@ -237,6 +242,7 @@ func intervalToResponse(iv service.PricingInterval) pricingIntervalResponse {
 		InputPrice:      iv.InputPrice,
 		OutputPrice:     iv.OutputPrice,
 		CacheWritePrice: iv.CacheWritePrice,
+		CacheWrite1hPrice: iv.CacheWrite1hPrice,
 		CacheReadPrice:  iv.CacheReadPrice,
 		PerRequestPrice: iv.PerRequestPrice,
 		SortOrder:       iv.SortOrder,
@@ -260,6 +266,7 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 				InputPrice:      iv.InputPrice,
 				OutputPrice:     iv.OutputPrice,
 				CacheWritePrice: iv.CacheWritePrice,
+				CacheWrite1hPrice: iv.CacheWrite1hPrice,
 				CacheReadPrice:  iv.CacheReadPrice,
 				PerRequestPrice: iv.PerRequestPrice,
 				SortOrder:       iv.SortOrder,
@@ -272,6 +279,7 @@ func pricingRequestToService(reqs []channelModelPricingRequest) []service.Channe
 			InputPrice:       r.InputPrice,
 			OutputPrice:      r.OutputPrice,
 			CacheWritePrice:  r.CacheWritePrice,
+			CacheWrite1hPrice: r.CacheWrite1hPrice,
 			CacheReadPrice:   r.CacheReadPrice,
 			ImageOutputPrice: r.ImageOutputPrice,
 			PerRequestPrice:  r.PerRequestPrice,
@@ -492,13 +500,22 @@ func (h *ChannelHandler) GetModelDefaultPricing(c *gin.Context) {
 		return
 	}
 
+	cacheWritePrice := pricing.CacheCreationPricePerToken
+	var cacheWrite1hPrice *float64
+	if pricing.SupportsCacheBreakdown {
+		if pricing.CacheCreation5mPrice > 0 {
+			cacheWritePrice = pricing.CacheCreation5mPrice
+		}
+		cacheWrite1hPrice = &pricing.CacheCreation1hPrice
+	}
 	response.Success(c, gin.H{
-		"found":              true,
-		"input_price":        pricing.InputPricePerToken,
-		"output_price":       pricing.OutputPricePerToken,
-		"cache_write_price":  pricing.CacheCreationPricePerToken,
-		"cache_read_price":   pricing.CacheReadPricePerToken,
-		"image_output_price": pricing.ImageOutputPricePerToken,
+		"found":                true,
+		"input_price":          pricing.InputPricePerToken,
+		"output_price":         pricing.OutputPricePerToken,
+		"cache_write_price":    cacheWritePrice,
+		"cache_write_1h_price": cacheWrite1hPrice,
+		"cache_read_price":     pricing.CacheReadPricePerToken,
+		"image_output_price":   pricing.ImageOutputPricePerToken,
 	})
 }
 

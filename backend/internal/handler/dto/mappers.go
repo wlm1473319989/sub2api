@@ -816,6 +816,8 @@ func subscriptionRefundRequestFromServiceBase(view *service.SettlementRefundRequ
 		Currency:                      req.Currency,
 		Reason:                        req.Reason,
 		RefundResidualValue:           req.RefundResidualValue,
+		RefundAmount:                  req.RefundAmount,
+		RefundFeeAmount:               req.RefundFeeAmount,
 		GatewayRefundableTotal:        req.GatewayRefundableTotal,
 		ManualTransferAmount:          req.ManualTransferAmount,
 		PreviewIssuedAt:               req.PreviewIssuedAt,

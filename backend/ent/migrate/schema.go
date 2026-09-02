@@ -1397,6 +1397,8 @@ var (
 		{Name: "currency", Type: field.TypeString, Nullable: true, Size: 10},
 		{Name: "reason", Type: field.TypeString, Nullable: true, SchemaType: map[string]string{"postgres": "text"}},
 		{Name: "refund_residual_value", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "refund_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
+		{Name: "refund_fee_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "gateway_refundable_total", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "manual_transfer_amount", Type: field.TypeFloat64, Default: 0, SchemaType: map[string]string{"postgres": "decimal(20,8)"}},
 		{Name: "preview_token_hash", Type: field.TypeString, Size: 128},
@@ -1433,31 +1435,31 @@ var (
 		ForeignKeys: []*schema.ForeignKey{
 			{
 				Symbol:     "subscription_refund_requests_subscription_settlement_orders_refund_requests",
-				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[28]},
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[30]},
 				RefColumns: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "subscription_refund_requests_subscription_settlement_orders_expected_refund_requests",
-				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[29]},
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[31]},
 				RefColumns: []*schema.Column{SubscriptionSettlementOrdersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "subscription_refund_requests_users_subscription_refund_requests",
-				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[30]},
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[32]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
 			{
 				Symbol:     "subscription_refund_requests_users_operated_subscription_refund_requests",
-				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[31]},
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[33]},
 				RefColumns: []*schema.Column{UsersColumns[0]},
 				OnDelete:   schema.SetNull,
 			},
 			{
 				Symbol:     "subscription_refund_requests_user_subscriptions_refund_requests",
-				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Columns:    []*schema.Column{SubscriptionRefundRequestsColumns[34]},
 				RefColumns: []*schema.Column{UserSubscriptionsColumns[0]},
 				OnDelete:   schema.NoAction,
 			},
@@ -1466,17 +1468,17 @@ var (
 			{
 				Name:    "subscriptionrefundrequest_user_id",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[30]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
 			},
 			{
 				Name:    "subscriptionrefundrequest_subscription_id",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[34]},
 			},
 			{
 				Name:    "subscriptionrefundrequest_settlement_id",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[28]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[30]},
 			},
 			{
 				Name:    "subscriptionrefundrequest_status",
@@ -1486,12 +1488,12 @@ var (
 			{
 				Name:    "subscriptionrefundrequest_preview_expires_at",
 				Unique:  false,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[11]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[13]},
 			},
 			{
 				Name:    "subscriptionrefundrequest_subscription_previewed",
 				Unique:  true,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[34]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "status = 'previewed'",
 				},
@@ -1499,7 +1501,7 @@ var (
 			{
 				Name:    "subscriptionrefundrequest_subscription_processing",
 				Unique:  true,
-				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[32]},
+				Columns: []*schema.Column{SubscriptionRefundRequestsColumns[34]},
 				Annotation: &entsql.IndexAnnotation{
 					Where: "status IN ('submitted', 'gateway_processing', 'manual_pending', 'failed')",
 				},

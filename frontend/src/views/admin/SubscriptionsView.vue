@@ -412,6 +412,16 @@
                 <span class="text-xs">{{ t('admin.subscriptions.resetQuota') }}</span>
               </button>
               <button
+                v-if="canRefundSubscription(row)"
+                type="button"
+                data-test="subscription-refund-open"
+                @click="handleRefund(row)"
+                class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-emerald-50 hover:text-emerald-600 dark:hover:bg-emerald-900/20 dark:hover:text-emerald-400"
+              >
+                <Icon name="creditCard" size="sm" />
+                <span class="text-xs">{{ t('admin.subscriptions.refund') }}</span>
+              </button>
+              <button
                 v-if="row.status === 'active'"
                 @click="handleRevoke(row)"
                 class="flex flex-col items-center gap-0.5 rounded-lg p-1.5 text-gray-500 transition-colors hover:bg-red-50 hover:text-red-600 dark:hover:bg-red-900/20 dark:hover:text-red-400"
@@ -865,6 +875,14 @@
         </div>
       </template>
     </BaseDialog>
+    <!-- Subscription Refund Modal -->
+    <SubscriptionRefundDialog
+      :show="showRefundModal"
+      :subscription="refundingSubscription"
+      :admin-mode="true"
+      @close="closeRefundModal"
+      @submitted="handleRefundSubmitted"
+    />
     <!-- Subscription Guide Modal -->
     <teleport to="body">
       <transition name="modal">
@@ -967,6 +985,7 @@ import ConfirmDialog from '@/components/common/ConfirmDialog.vue'
 import EmptyState from '@/components/common/EmptyState.vue'
 import Select from '@/components/common/Select.vue'
 import Icon from '@/components/icons/Icon.vue'
+import SubscriptionRefundDialog from '@/components/user/SubscriptionRefundDialog.vue'
 import { getRemainingDurationParts, isOneTimeDailyQuota, type RemainingDurationParts } from '@/utils/subscriptionQuota'
 
 const { t } = useI18n()
@@ -1024,6 +1043,11 @@ const canAdjustSubscription = (subscription: UserSubscription): boolean =>
 
 const canResetSubscription = (subscription: UserSubscription): boolean =>
   subscription.status === 'active'
+
+const canRefundSubscription = (subscription: UserSubscription): boolean =>
+  subscription.status === 'active' &&
+  !subscription.refund_freeze_active &&
+  !subscription.active_refund_request_id
 
 const selectedSubscriptionLabel = (subscription: UserSubscription): string =>
   subscription.user?.email || t('admin.redeem.userPrefix', { id: subscription.user_id })
@@ -1171,11 +1195,13 @@ const showBulkExtendModal = ref(false)
 const showBulkResetQuotaModal = ref(false)
 const showRevokeDialog = ref(false)
 const showResetQuotaModal = ref(false)
+const showRefundModal = ref(false)
 const submitting = ref(false)
 const resettingSubscription = ref<UserSubscription | null>(null)
 const resettingQuota = ref(false)
 const extendingSubscription = ref<UserSubscription | null>(null)
 const revokingSubscription = ref<UserSubscription | null>(null)
+const refundingSubscription = ref<UserSubscription | null>(null)
 const selectedSubscriptionIds = ref<number[]>([])
 
 const assignForm = reactive({
@@ -1703,6 +1729,22 @@ const handleBulkResetQuota = async () => {
 const handleRevoke = (subscription: UserSubscription) => {
   revokingSubscription.value = subscription
   showRevokeDialog.value = true
+}
+
+const handleRefund = (subscription: UserSubscription) => {
+  if (!canRefundSubscription(subscription)) return
+  refundingSubscription.value = subscription
+  showRefundModal.value = true
+}
+
+const closeRefundModal = () => {
+  showRefundModal.value = false
+  refundingSubscription.value = null
+}
+
+const handleRefundSubmitted = async () => {
+  closeRefundModal()
+  await loadSubscriptions()
 }
 
 const confirmRevoke = async () => {

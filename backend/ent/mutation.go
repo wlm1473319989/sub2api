@@ -36778,6 +36778,10 @@ type SubscriptionRefundRequestMutation struct {
 	reason                            *string
 	refund_residual_value             *float64
 	addrefund_residual_value          *float64
+	refund_amount                     *float64
+	addrefund_amount                  *float64
+	refund_fee_amount                 *float64
+	addrefund_fee_amount              *float64
 	gateway_refundable_total          *float64
 	addgateway_refundable_total       *float64
 	manual_transfer_amount            *float64
@@ -37287,6 +37291,118 @@ func (m *SubscriptionRefundRequestMutation) AddedRefundResidualValue() (r float6
 func (m *SubscriptionRefundRequestMutation) ResetRefundResidualValue() {
 	m.refund_residual_value = nil
 	m.addrefund_residual_value = nil
+}
+
+// SetRefundAmount sets the "refund_amount" field.
+func (m *SubscriptionRefundRequestMutation) SetRefundAmount(f float64) {
+	m.refund_amount = &f
+	m.addrefund_amount = nil
+}
+
+// RefundAmount returns the value of the "refund_amount" field in the mutation.
+func (m *SubscriptionRefundRequestMutation) RefundAmount() (r float64, exists bool) {
+	v := m.refund_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundAmount returns the old "refund_amount" field's value of the SubscriptionRefundRequest entity.
+// If the SubscriptionRefundRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionRefundRequestMutation) OldRefundAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundAmount: %w", err)
+	}
+	return oldValue.RefundAmount, nil
+}
+
+// AddRefundAmount adds f to the "refund_amount" field.
+func (m *SubscriptionRefundRequestMutation) AddRefundAmount(f float64) {
+	if m.addrefund_amount != nil {
+		*m.addrefund_amount += f
+	} else {
+		m.addrefund_amount = &f
+	}
+}
+
+// AddedRefundAmount returns the value that was added to the "refund_amount" field in this mutation.
+func (m *SubscriptionRefundRequestMutation) AddedRefundAmount() (r float64, exists bool) {
+	v := m.addrefund_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRefundAmount resets all changes to the "refund_amount" field.
+func (m *SubscriptionRefundRequestMutation) ResetRefundAmount() {
+	m.refund_amount = nil
+	m.addrefund_amount = nil
+}
+
+// SetRefundFeeAmount sets the "refund_fee_amount" field.
+func (m *SubscriptionRefundRequestMutation) SetRefundFeeAmount(f float64) {
+	m.refund_fee_amount = &f
+	m.addrefund_fee_amount = nil
+}
+
+// RefundFeeAmount returns the value of the "refund_fee_amount" field in the mutation.
+func (m *SubscriptionRefundRequestMutation) RefundFeeAmount() (r float64, exists bool) {
+	v := m.refund_fee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// OldRefundFeeAmount returns the old "refund_fee_amount" field's value of the SubscriptionRefundRequest entity.
+// If the SubscriptionRefundRequest object wasn't provided to the builder, the object is fetched from the database.
+// An error is returned if the mutation operation is not UpdateOne, or the database query fails.
+func (m *SubscriptionRefundRequestMutation) OldRefundFeeAmount(ctx context.Context) (v float64, err error) {
+	if !m.op.Is(OpUpdateOne) {
+		return v, errors.New("OldRefundFeeAmount is only allowed on UpdateOne operations")
+	}
+	if m.id == nil || m.oldValue == nil {
+		return v, errors.New("OldRefundFeeAmount requires an ID field in the mutation")
+	}
+	oldValue, err := m.oldValue(ctx)
+	if err != nil {
+		return v, fmt.Errorf("querying old value for OldRefundFeeAmount: %w", err)
+	}
+	return oldValue.RefundFeeAmount, nil
+}
+
+// AddRefundFeeAmount adds f to the "refund_fee_amount" field.
+func (m *SubscriptionRefundRequestMutation) AddRefundFeeAmount(f float64) {
+	if m.addrefund_fee_amount != nil {
+		*m.addrefund_fee_amount += f
+	} else {
+		m.addrefund_fee_amount = &f
+	}
+}
+
+// AddedRefundFeeAmount returns the value that was added to the "refund_fee_amount" field in this mutation.
+func (m *SubscriptionRefundRequestMutation) AddedRefundFeeAmount() (r float64, exists bool) {
+	v := m.addrefund_fee_amount
+	if v == nil {
+		return
+	}
+	return *v, true
+}
+
+// ResetRefundFeeAmount resets all changes to the "refund_fee_amount" field.
+func (m *SubscriptionRefundRequestMutation) ResetRefundFeeAmount() {
+	m.refund_fee_amount = nil
+	m.addrefund_fee_amount = nil
 }
 
 // SetGatewayRefundableTotal sets the "gateway_refundable_total" field.
@@ -38601,7 +38717,7 @@ func (m *SubscriptionRefundRequestMutation) Type() string {
 // order to get all numeric fields that were incremented/decremented, call
 // AddedFields().
 func (m *SubscriptionRefundRequestMutation) Fields() []string {
-	fields := make([]string, 0, 32)
+	fields := make([]string, 0, 34)
 	if m.user != nil {
 		fields = append(fields, subscriptionrefundrequest.FieldUserID)
 	}
@@ -38628,6 +38744,12 @@ func (m *SubscriptionRefundRequestMutation) Fields() []string {
 	}
 	if m.refund_residual_value != nil {
 		fields = append(fields, subscriptionrefundrequest.FieldRefundResidualValue)
+	}
+	if m.refund_amount != nil {
+		fields = append(fields, subscriptionrefundrequest.FieldRefundAmount)
+	}
+	if m.refund_fee_amount != nil {
+		fields = append(fields, subscriptionrefundrequest.FieldRefundFeeAmount)
 	}
 	if m.gateway_refundable_total != nil {
 		fields = append(fields, subscriptionrefundrequest.FieldGatewayRefundableTotal)
@@ -38724,6 +38846,10 @@ func (m *SubscriptionRefundRequestMutation) Field(name string) (ent.Value, bool)
 		return m.Reason()
 	case subscriptionrefundrequest.FieldRefundResidualValue:
 		return m.RefundResidualValue()
+	case subscriptionrefundrequest.FieldRefundAmount:
+		return m.RefundAmount()
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		return m.RefundFeeAmount()
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		return m.GatewayRefundableTotal()
 	case subscriptionrefundrequest.FieldManualTransferAmount:
@@ -38797,6 +38923,10 @@ func (m *SubscriptionRefundRequestMutation) OldField(ctx context.Context, name s
 		return m.OldReason(ctx)
 	case subscriptionrefundrequest.FieldRefundResidualValue:
 		return m.OldRefundResidualValue(ctx)
+	case subscriptionrefundrequest.FieldRefundAmount:
+		return m.OldRefundAmount(ctx)
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		return m.OldRefundFeeAmount(ctx)
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		return m.OldGatewayRefundableTotal(ctx)
 	case subscriptionrefundrequest.FieldManualTransferAmount:
@@ -38914,6 +39044,20 @@ func (m *SubscriptionRefundRequestMutation) SetField(name string, value ent.Valu
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.SetRefundResidualValue(v)
+		return nil
+	case subscriptionrefundrequest.FieldRefundAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundAmount(v)
+		return nil
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.SetRefundFeeAmount(v)
 		return nil
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		v, ok := value.(float64)
@@ -39087,6 +39231,12 @@ func (m *SubscriptionRefundRequestMutation) AddedFields() []string {
 	if m.addrefund_residual_value != nil {
 		fields = append(fields, subscriptionrefundrequest.FieldRefundResidualValue)
 	}
+	if m.addrefund_amount != nil {
+		fields = append(fields, subscriptionrefundrequest.FieldRefundAmount)
+	}
+	if m.addrefund_fee_amount != nil {
+		fields = append(fields, subscriptionrefundrequest.FieldRefundFeeAmount)
+	}
 	if m.addgateway_refundable_total != nil {
 		fields = append(fields, subscriptionrefundrequest.FieldGatewayRefundableTotal)
 	}
@@ -39103,6 +39253,10 @@ func (m *SubscriptionRefundRequestMutation) AddedField(name string) (ent.Value, 
 	switch name {
 	case subscriptionrefundrequest.FieldRefundResidualValue:
 		return m.AddedRefundResidualValue()
+	case subscriptionrefundrequest.FieldRefundAmount:
+		return m.AddedRefundAmount()
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		return m.AddedRefundFeeAmount()
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		return m.AddedGatewayRefundableTotal()
 	case subscriptionrefundrequest.FieldManualTransferAmount:
@@ -39122,6 +39276,20 @@ func (m *SubscriptionRefundRequestMutation) AddField(name string, value ent.Valu
 			return fmt.Errorf("unexpected type %T for field %s", value, name)
 		}
 		m.AddRefundResidualValue(v)
+		return nil
+	case subscriptionrefundrequest.FieldRefundAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundAmount(v)
+		return nil
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		v, ok := value.(float64)
+		if !ok {
+			return fmt.Errorf("unexpected type %T for field %s", value, name)
+		}
+		m.AddRefundFeeAmount(v)
 		return nil
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		v, ok := value.(float64)
@@ -39301,6 +39469,12 @@ func (m *SubscriptionRefundRequestMutation) ResetField(name string) error {
 		return nil
 	case subscriptionrefundrequest.FieldRefundResidualValue:
 		m.ResetRefundResidualValue()
+		return nil
+	case subscriptionrefundrequest.FieldRefundAmount:
+		m.ResetRefundAmount()
+		return nil
+	case subscriptionrefundrequest.FieldRefundFeeAmount:
+		m.ResetRefundFeeAmount()
 		return nil
 	case subscriptionrefundrequest.FieldGatewayRefundableTotal:
 		m.ResetGatewayRefundableTotal()

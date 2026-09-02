@@ -107,6 +107,7 @@ describe('user SubscriptionsView', () => {
     expect(wrapper.text()).toContain('Starter Plan')
     expect(wrapper.text()).toContain('12.50 / 100.00')
     expect(wrapper.text()).not.toContain('$9.00 / $20.00')
+    expect(wrapper.text()).not.toContain('userSubscriptions.refund.request')
 
     const renewButton = wrapper
       .findAll('button')

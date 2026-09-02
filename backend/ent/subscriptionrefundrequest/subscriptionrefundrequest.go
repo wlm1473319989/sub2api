@@ -32,6 +32,10 @@ const (
 	FieldReason = "reason"
 	// FieldRefundResidualValue holds the string denoting the refund_residual_value field in the database.
 	FieldRefundResidualValue = "refund_residual_value"
+	// FieldRefundAmount holds the string denoting the refund_amount field in the database.
+	FieldRefundAmount = "refund_amount"
+	// FieldRefundFeeAmount holds the string denoting the refund_fee_amount field in the database.
+	FieldRefundFeeAmount = "refund_fee_amount"
 	// FieldGatewayRefundableTotal holds the string denoting the gateway_refundable_total field in the database.
 	FieldGatewayRefundableTotal = "gateway_refundable_total"
 	// FieldManualTransferAmount holds the string denoting the manual_transfer_amount field in the database.
@@ -148,6 +152,8 @@ var Columns = []string{
 	FieldCurrency,
 	FieldReason,
 	FieldRefundResidualValue,
+	FieldRefundAmount,
+	FieldRefundFeeAmount,
 	FieldGatewayRefundableTotal,
 	FieldManualTransferAmount,
 	FieldPreviewTokenHash,
@@ -194,6 +200,10 @@ var (
 	CurrencyValidator func(string) error
 	// DefaultRefundResidualValue holds the default value on creation for the "refund_residual_value" field.
 	DefaultRefundResidualValue float64
+	// DefaultRefundAmount holds the default value on creation for the "refund_amount" field.
+	DefaultRefundAmount float64
+	// DefaultRefundFeeAmount holds the default value on creation for the "refund_fee_amount" field.
+	DefaultRefundFeeAmount float64
 	// DefaultGatewayRefundableTotal holds the default value on creation for the "gateway_refundable_total" field.
 	DefaultGatewayRefundableTotal float64
 	// DefaultManualTransferAmount holds the default value on creation for the "manual_transfer_amount" field.
@@ -271,6 +281,16 @@ func ByReason(opts ...sql.OrderTermOption) OrderOption {
 // ByRefundResidualValue orders the results by the refund_residual_value field.
 func ByRefundResidualValue(opts ...sql.OrderTermOption) OrderOption {
 	return sql.OrderByField(FieldRefundResidualValue, opts...).ToFunc()
+}
+
+// ByRefundAmount orders the results by the refund_amount field.
+func ByRefundAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefundAmount, opts...).ToFunc()
+}
+
+// ByRefundFeeAmount orders the results by the refund_fee_amount field.
+func ByRefundFeeAmount(opts ...sql.OrderTermOption) OrderOption {
+	return sql.OrderByField(FieldRefundFeeAmount, opts...).ToFunc()
 }
 
 // ByGatewayRefundableTotal orders the results by the gateway_refundable_total field.

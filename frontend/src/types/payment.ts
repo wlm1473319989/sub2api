@@ -177,6 +177,7 @@ export interface RefundPreview {
   order_amount: number
   pay_amount: number
   refund_amount: number
+  refund_fee_amount?: number
   gateway_amount: number
   currency?: string
   deduction_type?: string

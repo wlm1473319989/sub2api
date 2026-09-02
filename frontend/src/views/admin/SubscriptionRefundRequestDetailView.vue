@@ -70,13 +70,29 @@
             </span>
           </div>
 
-          <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div class="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
             <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900/60">
               <p class="text-xs font-medium uppercase text-gray-500 dark:text-dark-400">
                 {{ t('subscriptionRefundRequests.summary.residual') }}
               </p>
               <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
                 {{ formatCurrency(request.refund_residual_value, request.currency || 'CNY', 4) }}
+              </p>
+            </div>
+            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900/60">
+              <p class="text-xs font-medium uppercase text-gray-500 dark:text-dark-400">
+                {{ t('subscriptionRefundRequests.summary.refundFee') }}
+              </p>
+              <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                {{ formatCurrency(request.refund_fee_amount, request.currency || 'CNY', 4) }}
+              </p>
+            </div>
+            <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900/60">
+              <p class="text-xs font-medium uppercase text-gray-500 dark:text-dark-400">
+                {{ t('subscriptionRefundRequests.summary.refundAmount') }}
+              </p>
+              <p class="mt-2 text-lg font-semibold text-gray-900 dark:text-white">
+                {{ formatCurrency(request.refund_amount, request.currency || 'CNY', 4) }}
               </p>
             </div>
             <div class="rounded-xl bg-gray-50 p-4 dark:bg-dark-900/60">

@@ -648,6 +648,8 @@ type SubscriptionRefundRequest struct {
 	Currency                      string                         `json:"currency"`
 	Reason                        *string                        `json:"reason,omitempty"`
 	RefundResidualValue           float64                        `json:"refund_residual_value"`
+	RefundAmount                  float64                        `json:"refund_amount"`
+	RefundFeeAmount               float64                        `json:"refund_fee_amount"`
 	GatewayRefundableTotal        float64                        `json:"gateway_refundable_total"`
 	ManualTransferAmount          float64                        `json:"manual_transfer_amount"`
 	PreviewIssuedAt               time.Time                      `json:"preview_issued_at"`

@@ -1703,6 +1703,8 @@ export interface SubscriptionRefundPreviewResponse {
   unit_cost?: number
   refund_mode: SubscriptionRefundMode
   refund_residual_value: number
+  refund_amount: number
+  refund_fee_amount: number
   gateway_refundable_total: number
   manual_transfer_amount: number
   manual_transfer_required: boolean
@@ -1762,6 +1764,8 @@ export interface SubscriptionRefundRequest {
   currency: string
   reason?: string | null
   refund_residual_value: number
+  refund_amount: number
+  refund_fee_amount: number
   gateway_refundable_total: number
   manual_transfer_amount: number
   preview_issued_at: string
@@ -1807,9 +1811,20 @@ export interface SubscriptionRefundSubmitResult {
   subscription_status: UserSubscription['status']
   refund_status: SubscriptionRefundStatus
   refund_residual_value: number
+  refund_amount: number
+  refund_fee_amount: number
   gateway_refundable_total: number
   manual_transfer_amount: number
   currency: string
+}
+
+/** Additional response fields returned by the administrator refund endpoint. */
+export interface AdminSubscriptionRefundResult extends SubscriptionRefundSubmitResult {
+  success: boolean
+  warning?: string
+  gateway_refunded_total?: number
+  failed_allocations?: number
+  settlement_order_id?: number
 }
 
 export interface SubscriptionRefundListParams {
